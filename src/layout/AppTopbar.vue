@@ -1,9 +1,9 @@
 <script setup>
-import { useLayout } from '@/layout/composables/layout';
 import { useAuth } from '@/composables/useAuth';
-import { useRouter } from 'vue-router';
-import { useToast } from 'primevue/usetoast';
+import { useLayout } from '@/layout/composables/layout';
 import { useConfirm } from 'primevue/useconfirm';
+import { useToast } from 'primevue/usetoast';
+import { useRouter } from 'vue-router';
 import AppConfigurator from './AppConfigurator.vue';
 
 const { toggleMenu, toggleDarkMode, isDarkTheme } = useLayout();
@@ -30,7 +30,7 @@ const handleLogout = () => {
                     detail: 'Has cerrado sesión exitosamente',
                     life: 3000
                 });
-                router.push('/login');
+                router.push('/');
             } catch (error) {
                 console.error('Error al cerrar sesión:', error);
                 toast.add({
@@ -39,6 +39,7 @@ const handleLogout = () => {
                     detail: 'Error al cerrar sesión',
                     life: 3000
                 });
+                router.push('/');
             }
         },
         reject: () => {
@@ -55,11 +56,7 @@ const handleLogout = () => {
                 <i class="pi pi-bars"></i>
             </button>
             <router-link to="/" class="layout-topbar-logo">
-                <img 
-                    src="/logo-csr.webp" 
-                    alt="Logo Clínica Santa Rosa" 
-                    class="layout-logo-image"
-                />
+                <img src="/logo-csr.webp" alt="Logo Clínica Santa Rosa" class="layout-logo-image" />
                 <span>Clínica Santa Rosa</span>
             </router-link>
         </div>
@@ -161,7 +158,7 @@ const handleLogout = () => {
     .layout-topbar-logo span {
         display: none;
     }
-    
+
     .layout-logo-image {
         margin-right: 0;
     }

@@ -1,4 +1,5 @@
 import { useAuthStore } from '@/store/authStore';
+import { usePermissions } from '@/composables/usePermissions';
 
 /**
  * Route guard para autenticación
@@ -14,11 +15,27 @@ export async function authGuard(to, from, next) {
         if (isValidAuth) {
             // Usuario autenticado y token válido
             authStore.updateActivity();
-            next();
+            
+            // Verificar permisos específicos de la ruta
+            if (to.meta?.positions) {
+                const { canAccessRoute } = usePermissions();
+                
+                if (canAccessRoute(to.meta.positions)) {
+                    next();
+                } else {
+                    // Redirigir a página de acceso denegado
+                    next({
+                        path: '/auth/access',
+                        query: { from: to.fullPath }
+                    });
+                }
+            } else {
+                next();
+            }
         } else {
             // No autenticado o token inválido
             next({
-                path: '/login',
+                path: '/',
                 query: { redirect: to.fullPath }
             });
         }
@@ -27,7 +44,7 @@ export async function authGuard(to, from, next) {
 
         // En caso de error, redirigir a login
         next({
-            path: '/login',
+            path: '/',
             query: { redirect: to.fullPath }
         });
     }
@@ -46,5 +63,75 @@ export function guestGuard(to, from, next) {
     } else {
         // Usuario no autenticado, permitir acceso a ruta de invitado
         next();
+    }
+}
+
+/**
+ * Guard para rutas que requieren posición específica
+ * @param {Array|String} requiredPositions - Posiciones requeridas
+ */
+export function positionGuard(requiredPositions) {
+    return (to, from, next) => {
+        const authStore = useAuthStore();
+        const { hasAnyPosition } = usePermissions();
+        
+        // Verificar autenticación primero
+        if (!authStore.isLoggedIn) {
+            next({
+                path: '/',
+                query: { redirect: to.fullPath }
+            });
+            return;
+        }
+        
+        // Convertir a array si es string
+        const positions = Array.isArray(requiredPositions) 
+            ? requiredPositions 
+            : [requiredPositions];
+        
+        // Verificar si tiene la posición requerida
+        if (hasAnyPosition(positions)) {
+            next();
+        } else {
+            next({
+                path: '/auth/access',
+                query: { 
+                    from: to.fullPath,
+                    required: positions.join(', ')
+                }
+            });
+        }
+    };
+}
+
+/**
+ * Guard para rutas administrativas
+ */
+export function adminGuard(to, from, next) {
+    const { isSystemAdmin, hasFullAccess } = usePermissions();
+    
+    if (isSystemAdmin.value || hasFullAccess.value) {
+        next();
+    } else {
+        next({
+            path: '/auth/access',
+            query: { from: to.fullPath, reason: 'admin_required' }
+        });
+    }
+}
+
+/**
+ * Guard para rutas médicas
+ */
+export function medicalGuard(to, from, next) {
+    const { isMedicalStaff, hasFullAccess } = usePermissions();
+    
+    if (isMedicalStaff.value || hasFullAccess.value) {
+        next();
+    } else {
+        next({
+            path: '/auth/access',
+            query: { from: to.fullPath, reason: 'medical_staff_required' }
+        });
     }
 }
