@@ -4,8 +4,8 @@ import { defineStore } from 'pinia';
 import { computed, reactive } from 'vue';
 
 // Configuración de seguridad
-const TOKEN_STORAGE_KEY = 'auth_token';
-const USER_STORAGE_KEY = 'current_user';
+const TOKEN_STORAGE_KEY = 'token';
+const USER_STORAGE_KEY = 'currentUser';
 const REFRESH_THRESHOLD_MINUTES = 5; // Refrescar token 5 minutos antes de expirar
 
 export const useAuthStore = defineStore('auth', () => {
@@ -16,13 +16,15 @@ export const useAuthStore = defineStore('auth', () => {
         isAuthenticated: false,
         isLoading: false,
         tokenExpiresAt: null,
-        lastActivity: Date.now()
+        lastActivity: Date.now(),
+        isInitialized: false // Flag para saber si ya se inicializó
     });
 
     // Computadas
     const getUser = computed(() => state.user);
     const getToken = computed(() => state.token);
     const isLoggedIn = computed(() => state.isAuthenticated && !!state.token);
+    const isInitialized = computed(() => state.isInitialized);
     const isTokenExpired = computed(() => {
         if (!state.tokenExpiresAt) return true;
         return Date.now() >= state.tokenExpiresAt;
@@ -139,8 +141,9 @@ export const useAuthStore = defineStore('auth', () => {
             state.tokenExpiresAt = Date.now() + expiresInMs;
             state.lastActivity = Date.now();
 
-            // Guardar en cache de forma segura
-            cache.setItem(TOKEN_STORAGE_KEY, {
+            // Guardar token de forma compatible con sistema existente
+            cache.setItem(TOKEN_STORAGE_KEY, authData.access_token);
+            cache.setItem('auth_token', {
                 token: authData.access_token,
                 expiresAt: state.tokenExpiresAt
             });
@@ -155,42 +158,80 @@ export const useAuthStore = defineStore('auth', () => {
     };
 
     const loadAuthDataFromCache = () => {
+        console.log('🔍 [AUTH] Intentando cargar datos de autenticación desde caché...');
         try {
-            const tokenData = cache.getItem(TOKEN_STORAGE_KEY);
+            // Intentar cargar tanto el formato nuevo como el existente
+            let tokenData = cache.getItem('auth_token');
+            let tokenString = cache.getItem(TOKEN_STORAGE_KEY);
             const userData = cache.getItem(USER_STORAGE_KEY);
 
+            console.log('🔍 [AUTH] Datos de caché obtenidos:', {
+                authToken: tokenData ? { hasToken: !!tokenData.token, expiresAt: tokenData.expiresAt } : null,
+                tokenString: tokenString ? 'present' : null,
+                userData: userData ? { name: userData.name, email: userData.email } : null
+            });
+
+            // Si no hay estructura de auth_token pero sí token string, crear estructura
+            if (!tokenData && tokenString && typeof tokenString === 'string') {
+                console.log('🔍 [AUTH] Usando token existente, creando estructura temporal');
+                // Asumir token válido por 1 hora desde ahora si no hay expiración
+                tokenData = {
+                    token: tokenString,
+                    expiresAt: Date.now() + 3600 * 1000 // 1 hora
+                };
+            }
+
             if (tokenData && tokenData.token && tokenData.expiresAt) {
+                const now = Date.now();
+                const isExpired = now >= tokenData.expiresAt;
+                const timeToExpiry = tokenData.expiresAt - now;
+
+                console.log('🔍 [AUTH] Verificando token:', {
+                    now: new Date(now).toISOString(),
+                    expiresAt: new Date(tokenData.expiresAt).toISOString(),
+                    isExpired: isExpired,
+                    timeToExpiryMinutes: Math.round(timeToExpiry / (1000 * 60))
+                });
+
                 // Verificar si el token no ha expirado
-                if (Date.now() < tokenData.expiresAt) {
+                if (!isExpired) {
                     state.token = tokenData.token;
                     state.tokenExpiresAt = tokenData.expiresAt;
                     state.user = userData;
                     state.isAuthenticated = true;
                     state.lastActivity = Date.now();
+                    console.log('✅ [AUTH] Datos de autenticación cargados desde caché exitosamente');
                     return true;
                 }
+
+                console.log('⏰ [AUTH] Token expirado, limpiando datos');
+            } else {
+                console.log('❌ [AUTH] No hay datos válidos en caché');
             }
 
             // Token expirado o inv�lido, limpiar
             clearAuthData();
             return false;
         } catch (error) {
-            console.error('Error cargando datos de autenticaci�n:', error);
+            console.error('❌ [AUTH] Error cargando datos de autenticación:', error);
             clearAuthData();
             return false;
         }
     };
 
     const clearAuthData = () => {
+        console.log('🧹 [AUTH] Limpiando datos de autenticación...');
         state.user = null;
         state.token = null;
         state.isAuthenticated = false;
         state.tokenExpiresAt = null;
         state.lastActivity = Date.now();
 
-        // Limpiar cache
+        // Limpiar cache (tanto claves nuevas como existentes)
         cache.removeItem(TOKEN_STORAGE_KEY);
+        cache.removeItem('auth_token');
         cache.removeItem(USER_STORAGE_KEY);
+        console.log('🧹 [AUTH] Datos de autenticación limpiados');
     };
 
     // M�todos de autenticaci�n
@@ -357,26 +398,39 @@ export const useAuthStore = defineStore('auth', () => {
 
     // M�todo para refrescar token autom�ticamente si es necesario
     const checkAndRefreshToken = async () => {
+        console.log('🔄 [AUTH] Verificando estado de token...');
+
         if (!state.isAuthenticated || !state.token) {
+            console.log('❌ [AUTH] No hay token o no está autenticado');
             return false;
         }
 
+        console.log('🔄 [AUTH] Estado del token:', {
+            isExpired: isTokenExpired.value,
+            shouldRefresh: shouldRefreshToken.value,
+            tokenExpiresAt: state.tokenExpiresAt ? new Date(state.tokenExpiresAt).toISOString() : null
+        });
+
         if (isTokenExpired.value) {
+            console.log('⏰ [AUTH] Token expirado, limpiando datos');
             clearAuthData();
             return false;
         }
 
         if (shouldRefreshToken.value) {
+            console.log('🔄 [AUTH] Token necesita refresh, iniciando...');
             try {
                 await refreshToken();
+                console.log('✅ [AUTH] Token refrescado exitosamente');
                 return true;
             } catch (error) {
-                console.error('Error en refresh autom�tico:', error);
+                console.error('❌ [AUTH] Error en refresh automático:', error);
                 clearAuthData();
                 return false;
             }
         }
 
+        console.log('✅ [AUTH] Token válido, no necesita refresh');
         return true;
     };
 
@@ -392,7 +446,15 @@ export const useAuthStore = defineStore('auth', () => {
 
     // Inicializar store al cargar
     const initialize = () => {
-        loadAuthDataFromCache();
+        console.log('🔄 [AUTH] Inicializando AuthStore...');
+        const wasLoaded = loadAuthDataFromCache();
+
+        console.log('🔄 [AUTH] Estado después de cargar caché:', {
+            wasLoaded,
+            isAuthenticated: state.isAuthenticated,
+            hasToken: !!state.token,
+            hasUser: !!state.user
+        });
 
         // Limpiar interval previo si existe
         if (refreshInterval) {
@@ -402,26 +464,32 @@ export const useAuthStore = defineStore('auth', () => {
         // Auto-refrescar token peri�dicamente
         refreshInterval = setInterval(async () => {
             if (state.isAuthenticated && shouldRefreshToken.value) {
+                console.log('⏰ [AUTH] Iniciando refresh automático de token...');
                 try {
                     await refreshToken();
+                    console.log('✅ [AUTH] Token refrescado automáticamente');
                 } catch (error) {
-                    console.error('Error en refresh peri�dico:', error);
+                    console.error('❌ [AUTH] Error en refresh periódico:', error);
                     clearInterval(refreshInterval);
                     refreshInterval = null;
                 }
             }
         }, 60000); // Cada minuto
 
+        // Marcar como inicializado
+        state.isInitialized = true;
+        console.log('✅ [AUTH] AuthStore inicializado correctamente');
         return refreshInterval;
     };
 
-    // M�todo para limpiar recursos
+    // M�todo para limpiar recursos (NO datos de sesión)
     const cleanup = () => {
+        console.log('🧹 [AUTH] Limpiando recursos (intervals), manteniendo sesión');
         if (refreshInterval) {
             clearInterval(refreshInterval);
             refreshInterval = null;
         }
-        clearAuthData();
+        // NO llamar clearAuthData() - queremos mantener la sesión
     };
 
     return {
@@ -432,6 +500,7 @@ export const useAuthStore = defineStore('auth', () => {
         getUser,
         getToken,
         isLoggedIn,
+        isInitialized,
         isTokenExpired,
         shouldRefreshToken,
 

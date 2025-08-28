@@ -1,5 +1,5 @@
-import { useAuthStore } from '@/store/authStore';
 import { usePermissions } from '@/composables/usePermissions';
+import { useAuthStore } from '@/store/authStore';
 
 /**
  * Route guard para autenticación
@@ -15,11 +15,11 @@ export async function authGuard(to, from, next) {
         if (isValidAuth) {
             // Usuario autenticado y token válido
             authStore.updateActivity();
-            
+
             // Verificar permisos específicos de la ruta
             if (to.meta?.positions) {
                 const { canAccessRoute } = usePermissions();
-                
+
                 if (canAccessRoute(to.meta.positions)) {
                     next();
                 } else {
@@ -74,7 +74,7 @@ export function positionGuard(requiredPositions) {
     return (to, from, next) => {
         const authStore = useAuthStore();
         const { hasAnyPosition } = usePermissions();
-        
+
         // Verificar autenticación primero
         if (!authStore.isLoggedIn) {
             next({
@@ -83,19 +83,17 @@ export function positionGuard(requiredPositions) {
             });
             return;
         }
-        
+
         // Convertir a array si es string
-        const positions = Array.isArray(requiredPositions) 
-            ? requiredPositions 
-            : [requiredPositions];
-        
+        const positions = Array.isArray(requiredPositions) ? requiredPositions : [requiredPositions];
+
         // Verificar si tiene la posición requerida
         if (hasAnyPosition(positions)) {
             next();
         } else {
             next({
                 path: '/auth/access',
-                query: { 
+                query: {
                     from: to.fullPath,
                     required: positions.join(', ')
                 }
@@ -109,7 +107,7 @@ export function positionGuard(requiredPositions) {
  */
 export function adminGuard(to, from, next) {
     const { isSystemAdmin, hasFullAccess } = usePermissions();
-    
+
     if (isSystemAdmin.value || hasFullAccess.value) {
         next();
     } else {
@@ -125,7 +123,7 @@ export function adminGuard(to, from, next) {
  */
 export function medicalGuard(to, from, next) {
     const { isMedicalStaff, hasFullAccess } = usePermissions();
-    
+
     if (isMedicalStaff.value || hasFullAccess.value) {
         next();
     } else {

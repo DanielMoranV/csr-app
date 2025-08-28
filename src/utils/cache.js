@@ -31,6 +31,8 @@ export default {
      * @return {Object}
      */
     setItem: (key, value) => {
+        console.log(`💾 [CACHE] Guardando item con key: "${key}"`, typeof value === 'object' ? Object.keys(value) : value);
+        
         if (typeof key !== 'string' || key.trim() === '') {
             throw new Error('Key must be a non-empty string');
         }
@@ -38,8 +40,10 @@ export default {
         try {
             const encoded = base64EncodeUnicode(JSON.stringify(value));
             storage.setItem(key, encoded);
+            console.log(`✅ [CACHE] Item guardado exitosamente: "${key}"`);
             return encoded;
         } catch (error) {
+            console.error(`❌ [CACHE] Error guardando item "${key}":`, error);
             if (error.name === 'QuotaExceededError') {
                 throw new Error('Storage quota exceeded. Consider clearing old data.');
             }
@@ -63,19 +67,25 @@ export default {
      * @returns {Object}
      */
     getItem: (key) => {
+        console.log(`🔍 [CACHE] Buscando item con key: "${key}"`);
+        
         if (typeof key !== 'string') {
+            console.log(`❌ [CACHE] Key inválido para "${key}" (no es string)`);
             return null;
         }
 
         const item = storage.getItem(key);
         if (item !== null && typeof item !== 'undefined') {
             try {
-                return JSON.parse(base64DecodeUnicode(item));
+                const decoded = JSON.parse(base64DecodeUnicode(item));
+                console.log(`✅ [CACHE] Item encontrado: "${key}"`, typeof decoded === 'object' ? Object.keys(decoded) : decoded);
+                return decoded;
             } catch (e) {
-                console.error('Error parsing cached item:', e);
+                console.error(`❌ [CACHE] Error parsing cached item "${key}":`, e);
                 return null;
             }
         }
+        console.log(`🔍 [CACHE] Item no encontrado: "${key}"`);
         return null;
     },
 
@@ -84,9 +94,13 @@ export default {
      * @returns  {void}
      */
     removeItem: (key) => {
+        console.log(`🗑️ [CACHE] Eliminando item con key: "${key}"`);
         if (typeof key === 'string') {
-            return storage.removeItem(key);
+            storage.removeItem(key);
+            console.log(`✅ [CACHE] Item eliminado: "${key}"`);
+            return;
         }
+        console.log(`❌ [CACHE] Key inválido para eliminar: "${key}"`);
     },
 
     /**

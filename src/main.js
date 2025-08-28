@@ -24,20 +24,18 @@ app.use(PrimeVue, {
             ...Lara,
             semantic: {
                 ...Lara.semantic,
-                semantic: {
-                    primary: {
-                        50: '{cyan.50}',
-                        100: '{cyan.100}',
-                        200: '{cyan.200}',
-                        300: '{cyan.300}',
-                        400: '{cyan.400}',
-                        500: '{cyan.500}', // Este es el color principal
-                        600: '{cyan.600}',
-                        700: '{cyan.700}',
-                        800: '{cyan.800}',
-                        900: '{cyan.900}',
-                        950: '{cyan.950}'
-                    }
+                primary: {
+                    50: '{cyan.50}',
+                    100: '{cyan.100}',
+                    200: '{cyan.200}',
+                    300: '{cyan.300}',
+                    400: '{cyan.400}',
+                    500: '{cyan.500}', // Este es el color principal
+                    600: '{cyan.600}',
+                    700: '{cyan.700}',
+                    800: '{cyan.800}',
+                    900: '{cyan.900}',
+                    950: '{cyan.950}'
                 }
             }
         },
@@ -166,12 +164,21 @@ app.use(PrimeVue, {
 app.use(ToastService);
 app.use(ConfirmationService);
 
-// Inicializar el store de autenticación después de montar la app
-app.mount('#app');
-
-// Inicializar autenticación una vez que Pinia esté disponible
+// Inicializar autenticación antes de montar la app
+console.log('🚀 [MAIN] Iniciando aplicación...');
 const authStore = useAuthStore();
+console.log('🔐 [MAIN] AuthStore creado, iniciando inicialización...');
 authStore.initialize();
+console.log('🔐 [MAIN] AuthStore inicializado. Estado actual:', {
+    isAuthenticated: authStore.isLoggedIn,
+    hasUser: !!authStore.getUser,
+    hasToken: !!authStore.getToken
+});
+
+// Montar la aplicación
+console.log('🏗️ [MAIN] Montando aplicación en DOM...');
+app.mount('#app');
+console.log('✅ [MAIN] Aplicación montada exitosamente');
 
 // Limpiar recursos cuando la aplicación se desmonte
 window.addEventListener('beforeunload', () => {
