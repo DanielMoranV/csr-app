@@ -187,10 +187,10 @@ onMounted(loadUserProfile);
                 <div class="user-info">
                     <h2 class="user-name">{{ userProfile.name || 'Nombre de Usuario' }}</h2>
                     <p class="user-position">{{ userProfile.position || 'Sin cargo asignado' }}</p>
-                    <div class="user-meta">
+                    <!-- <div class="user-meta">
                         <span v-if="userProfile.nick"><i class="pi pi-at"></i> {{ userProfile.nick }}</span>
                         <span v-if="userProfile.email"><i class="pi pi-envelope"></i> {{ userProfile.email }}</span>
-                    </div>
+                    </div> -->
                 </div>
             </div>
             <div class="header-status">
@@ -354,15 +354,13 @@ onMounted(loadUserProfile);
 <style scoped>
 .user-profile-page {
     background: var(--surface-ground);
-    min-height: 100vh;
-    padding: 1.5rem;
 }
 
 /* Header Card */
 .profile-header-card {
     background: var(--surface-card);
     border-radius: 12px;
-    padding: 2rem;
+    padding: 1rem;
     margin-bottom: 1.5rem;
     box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
     display: flex;
