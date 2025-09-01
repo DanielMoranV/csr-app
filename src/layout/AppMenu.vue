@@ -1,7 +1,7 @@
 <script setup>
-import { ref, computed } from 'vue';
 import { useAuth } from '@/composables/useAuth';
 import { usePermissions } from '@/composables/usePermissions';
+import { computed, ref } from 'vue';
 
 import AppMenuItem from './AppMenuItem.vue';
 
@@ -17,9 +17,9 @@ const model = ref([
     {
         label: 'Principal',
         items: [
-            { 
-                label: 'Dashboard', 
-                icon: 'pi pi-fw pi-home', 
+            {
+                label: 'Dashboard',
+                icon: 'pi pi-fw pi-home',
                 to: '/dashboard',
                 positions: ['*'] // Acceso para todas las posiciones
             }
@@ -28,10 +28,10 @@ const model = ref([
     {
         label: 'Mi Cuenta',
         items: [
-            { 
-                label: 'Perfil', 
-                icon: 'pi pi-fw pi-user', 
-                to: '/perfil',
+            {
+                label: 'Perfil',
+                icon: 'pi pi-fw pi-user',
+                to: '/profile',
                 positions: ['*'] // Acceso público para todas las posiciones
             }
         ]
@@ -39,9 +39,9 @@ const model = ref([
     {
         label: 'Administración',
         items: [
-            { 
-                label: 'Usuarios', 
-                icon: 'pi pi-fw pi-users', 
+            {
+                label: 'Usuarios',
+                icon: 'pi pi-fw pi-users',
                 to: '/usuarios',
                 positions: ['SISTEMAS', 'RRHH', 'ADMINISTRACION'] // Solo estas 3 posiciones
             }

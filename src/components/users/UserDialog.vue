@@ -690,7 +690,6 @@ small.text-500 {
         max-height: calc(90vh - 100px);
     }
 
-
     .compact-form .col-12.md\\:col-6 {
         width: 100%;
         margin-bottom: 0.5rem;
@@ -716,8 +715,6 @@ small.text-500 {
     :deep(.p-dialog-content) {
         max-height: calc(95vh - 80px);
     }
-
-
 
     .compact-label {
         font-size: 0.8rem;

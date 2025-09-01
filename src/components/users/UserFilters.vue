@@ -168,7 +168,7 @@ const clearAllFilters = () => {
     border: 1px solid var(--surface-border);
     border-radius: 16px;
     overflow: hidden;
-    box-shadow: 
+    box-shadow:
         0 1px 3px rgba(0, 0, 0, 0.05),
         0 4px 12px rgba(0, 0, 0, 0.05),
         0 0 0 1px rgba(255, 255, 255, 0.1) inset;
@@ -177,7 +177,7 @@ const clearAllFilters = () => {
 }
 
 .filters-compact:hover {
-    box-shadow: 
+    box-shadow:
         0 2px 8px rgba(0, 0, 0, 0.08),
         0 8px 24px rgba(0, 0, 0, 0.08),
         0 0 0 1px rgba(255, 255, 255, 0.15) inset;
@@ -303,7 +303,7 @@ const clearAllFilters = () => {
 
 .search-input:focus {
     border-color: var(--primary-400);
-    box-shadow: 
+    box-shadow:
         0 0 0 3px var(--primary-100),
         0 1px 3px rgba(0, 0, 0, 0.05) inset;
     transform: translateY(-1px);
@@ -475,7 +475,7 @@ const clearAllFilters = () => {
     .filter-item--search {
         min-width: 200px;
     }
-    
+
     .filter-item--sort {
         min-width: 180px;
     }
@@ -491,11 +491,11 @@ const clearAllFilters = () => {
         min-width: 160px;
         flex: 1.6;
     }
-    
+
     .filters-header {
         padding: 1rem 1.25rem;
     }
-    
+
     .filter-item {
         padding: 1rem 1.25rem;
     }
@@ -512,7 +512,7 @@ const clearAllFilters = () => {
         padding: 1rem 1.25rem;
         margin: 0;
     }
-    
+
     .filter-item:not(:last-child)::after {
         display: none;
     }
@@ -535,7 +535,7 @@ const clearAllFilters = () => {
         width: 44px;
         height: 44px;
     }
-    
+
     .search-input {
         padding: 0.75rem 1rem 0.75rem 2.5rem;
     }
@@ -563,16 +563,16 @@ const clearAllFilters = () => {
         padding: 0.75rem 0.875rem 0.75rem 2.25rem;
         font-size: 0.875rem;
     }
-    
+
     .sort-direction-btn {
         width: 40px;
         height: 40px;
     }
-    
+
     .filters-title {
         font-size: 0.85rem;
     }
-    
+
     .clear-btn {
         width: 32px;
         height: 32px;
@@ -635,24 +635,24 @@ const clearAllFilters = () => {
 @media (prefers-color-scheme: dark) {
     .filters-compact {
         border-color: var(--surface-600);
-        box-shadow: 
+        box-shadow:
             0 1px 3px rgba(0, 0, 0, 0.2),
             0 4px 12px rgba(0, 0, 0, 0.15),
             0 0 0 1px rgba(255, 255, 255, 0.05) inset;
     }
-    
+
     .filters-compact:hover {
-        box-shadow: 
+        box-shadow:
             0 2px 8px rgba(0, 0, 0, 0.25),
             0 8px 24px rgba(0, 0, 0, 0.2),
             0 0 0 1px rgba(255, 255, 255, 0.08) inset;
     }
-    
+
     .filters-header {
         background: linear-gradient(135deg, var(--surface-700) 0%, var(--surface-600) 100%);
         border-bottom-color: var(--surface-500);
     }
-    
+
     .search-input,
     .filter-dropdown :deep(.p-dropdown),
     .sort-dropdown :deep(.p-dropdown),

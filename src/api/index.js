@@ -41,3 +41,23 @@ export const users = {
     // Eliminar usuario
     delete: (id) => axios.delete(`/users/${id}`)
 };
+
+// Profile Management
+export const profile = {
+    // Obtener perfil del usuario actual
+    get: () => axios.get('/profile'),
+    
+    // Actualizar perfil del usuario
+    update: (profileData) => axios.put('/profile', profileData),
+    
+    // Cambiar contraseña
+    changePassword: (passwordData) => axios.put('/profile/password', passwordData),
+    
+    // Subir avatar
+    uploadAvatar: (formData) => axios.post('/profile/avatar', formData, {
+        headers: { 'Content-Type': 'multipart/form-data' }
+    }),
+    
+    // Eliminar avatar
+    deleteAvatar: () => axios.delete('/profile/avatar')
+};

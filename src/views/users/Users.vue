@@ -18,7 +18,7 @@ const {
     allUsers,
     isLoading,
     isSaving,
-    isDeleting,
+    //isDeleting,
     userStats,
     operationInProgress,
 
@@ -47,7 +47,7 @@ const {
     loadUserStats,
 
     // Utilidades
-    getUserById,
+    //getUserById,
     formatPositionLabel
 } = useUsers();
 
