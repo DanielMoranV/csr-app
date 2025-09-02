@@ -245,17 +245,6 @@ const onRowUnselect = (event) => {
     emit('row-unselect', event.data);
 };
 
-// Mostrar/ocultar acciones en hover para mejor UX móvil
-const showActions = (userId) => {
-    isActionsVisible.value[userId] = true;
-};
-
-const hideActions = (userId) => {
-    setTimeout(() => {
-        isActionsVisible.value[userId] = false;
-    }, 300);
-};
-
 // Confirmación de acciones críticas con ConfirmPopup
 const confirmAction = (event, action, userData, callback) => {
     const actionConfigs = {
@@ -648,11 +637,11 @@ onMounted(() => {
                             :icon="data.is_active ? 'pi pi-pause' : 'pi pi-play'"
                             @click="(event) => handleToggleStatus(event, data)"
                             :class="['medical-toggle-btn', data.is_active ? 'active-toggle' : 'inactive-toggle']"
-                            :v-tooltip.top="data.is_active ? 'Pausar' : 'Activar'"
                             :severity="data.is_active ? 'success' : 'secondary'"
                             size="small"
                             text
                             rounded
+                            v-tooltip.top="data.is_active ? 'Pausar usuario' : 'Activar usuario'"
                         />
                     </div>
                 </template>
@@ -669,14 +658,9 @@ onMounted(() => {
 .medical-table-container {
     background: var(--surface-card);
     border-radius: 12px;
-    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
-    border: 1px solid var(--surface-border);
     overflow: hidden;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
     transition: all 0.3s ease;
-}
-
-.medical-table-container:hover {
-    box-shadow: 0 6px 30px rgba(0, 0, 0, 0.12);
 }
 
 /* Header médico */
@@ -1061,6 +1045,8 @@ onMounted(() => {
     align-items: center;
     gap: 0.5rem;
     justify-content: flex-start;
+    min-width: 120px;
+    flex-wrap: nowrap;
 }
 
 .medical-split-button {
@@ -1751,6 +1737,7 @@ onMounted(() => {
     .medical-toggle-btn {
         width: 2rem;
         height: 2rem;
+        font-size: 0.875rem;
     }
 
     .medical-split-button :deep(.p-splitbutton-defaultbutton) {
@@ -1801,11 +1788,13 @@ onMounted(() => {
 
     .medical-actions-compact {
         flex-direction: column;
-        gap: 0.25rem;
+        gap: 0.5rem;
+        width: 100%;
     }
 
     .medical-split-button {
         width: 100%;
+        order: 1;
     }
 
     .medical-split-button :deep(.p-splitbutton) {
@@ -1815,13 +1804,24 @@ onMounted(() => {
     .medical-split-button :deep(.p-splitbutton-defaultbutton) {
         flex: 1;
         justify-content: center;
+        min-width: auto;
+        padding: 0.625rem 1rem;
+    }
+
+    .medical-split-button :deep(.p-splitbutton-menubutton) {
+        min-width: auto;
+        padding: 0.625rem;
     }
 
     .medical-toggle-btn {
         width: 100%;
         height: 2.5rem;
-        border-radius: 6px;
+        border-radius: 8px;
         justify-content: center;
+        font-size: 1.1rem;
+        order: 2;
+        display: flex;
+        align-items: center;
     }
 }
 

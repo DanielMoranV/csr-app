@@ -57,9 +57,6 @@ const userForm = reactive({
 const validationErrors = ref({});
 const touchedFields = ref({});
 
-// Expresión regular para contraseña fuerte
-const strongPasswordRegex = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]{8,}$/;
-
 // Watchers
 watch(
     () => props.user,
@@ -301,7 +298,7 @@ const onImagePreviewError = (event) => {
 </script>
 
 <template>
-    <Dialog v-model:visible="dialogVisible" :header="dialogTitle" :modal="true" class="p-fluid user-dialog" :style="{ width: '900px', maxHeight: '85vh' }" :closable="!saving" :closeOnEscape="!saving" @hide="onDialogHide">
+    <Dialog v-model:visible="dialogVisible" :header="dialogTitle" :modal="true" class="p-fluid user-dialog" :style="{ width: '500px', maxHeight: '85vh' }" :closable="!saving" :closeOnEscape="!saving" @hide="onDialogHide">
         <template #header>
             <div class="flex align-items-center gap-2">
                 <i :class="isEditing ? 'pi pi-user-edit text-orange-600' : 'pi pi-user-plus text-green-600'" class="text-xl"></i>
@@ -499,8 +496,7 @@ const onImagePreviewError = (event) => {
 :deep(.compact-input) {
     padding: 0.5rem 0.75rem !important;
     font-size: 0.9rem !important;
-    border-radius: 6px !important;
-    border: 1px solid var(--surface-300) !important;
+
     transition: all 0.15s ease !important;
     height: 2.5rem !important;
 }
@@ -508,8 +504,7 @@ const onImagePreviewError = (event) => {
 .compact-input,
 :deep(.compact-input-select) {
     font-size: 0.9rem !important;
-    border-radius: 6px !important;
-    border: 1px solid var(--surface-300) !important;
+
     transition: all 0.15s ease !important;
     height: 2.5rem !important;
 }

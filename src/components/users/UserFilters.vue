@@ -165,23 +165,9 @@ const clearAllFilters = () => {
 /* Contenedor principal mejorado */
 .filters-compact {
     background: var(--surface-card);
-    border: 1px solid var(--surface-border);
-    border-radius: 16px;
+    border-radius: 12px;
     overflow: hidden;
-    box-shadow:
-        0 1px 3px rgba(0, 0, 0, 0.05),
-        0 4px 12px rgba(0, 0, 0, 0.05),
-        0 0 0 1px rgba(255, 255, 255, 0.1) inset;
-    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-    backdrop-filter: blur(8px);
-}
-
-.filters-compact:hover {
-    box-shadow:
-        0 2px 8px rgba(0, 0, 0, 0.08),
-        0 8px 24px rgba(0, 0, 0, 0.08),
-        0 0 0 1px rgba(255, 255, 255, 0.15) inset;
-    transform: translateY(-1px);
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
 }
 
 /* Header mejorado */
@@ -639,13 +625,6 @@ const clearAllFilters = () => {
             0 1px 3px rgba(0, 0, 0, 0.2),
             0 4px 12px rgba(0, 0, 0, 0.15),
             0 0 0 1px rgba(255, 255, 255, 0.05) inset;
-    }
-
-    .filters-compact:hover {
-        box-shadow:
-            0 2px 8px rgba(0, 0, 0, 0.25),
-            0 8px 24px rgba(0, 0, 0, 0.2),
-            0 0 0 1px rgba(255, 255, 255, 0.08) inset;
     }
 
     .filters-header {
