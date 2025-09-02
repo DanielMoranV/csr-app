@@ -1347,9 +1347,9 @@ onMounted(() => {
 /* Modo oscuro completo con clase CSS */
 .app-dark .medical-table-container,
 :root[data-theme='dark'] .medical-table-container {
-    background: var(--surface-800);
+    background: var(--surface-card);
     border-color: var(--surface-700);
-    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.4);
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.06);
 }
 
 .app-dark .medical-table-header,
@@ -1360,7 +1360,7 @@ onMounted(() => {
 
 .app-dark .medical-icon,
 :root[data-theme='dark'] .medical-icon {
-    background: var(--surface-800);
+    background: var(--surface-card);
     color: var(--primary-400);
     box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
 }
@@ -1584,7 +1584,7 @@ onMounted(() => {
 /* Estilos de ConfirmPopup en modo oscuro */
 .app-dark :deep(.p-confirmpopup),
 :root[data-theme='dark'] :deep(.p-confirmpopup) {
-    background: var(--surface-800);
+    background: var(--surface-card);
     border-color: var(--surface-700);
     box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4);
 }
@@ -1610,7 +1610,7 @@ onMounted(() => {
 /* ConfirmPopup en detección automática de modo oscuro */
 @media (prefers-color-scheme: dark) {
     :deep(.p-confirmpopup) {
-        background: var(--surface-800);
+        background: var(--surface-card);
         border-color: var(--surface-700);
         box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4);
     }
@@ -1629,9 +1629,9 @@ onMounted(() => {
 /* Detección automática de modo oscuro del sistema */
 @media (prefers-color-scheme: dark) {
     .medical-table-container {
-        background: var(--surface-800);
+        background: var(--surface-card);
         border-color: var(--surface-700);
-        box-shadow: 0 4px 20px rgba(0, 0, 0, 0.4);
+        box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
     }
 
     .medical-table-header {
@@ -1640,7 +1640,7 @@ onMounted(() => {
     }
 
     .medical-icon {
-        background: var(--surface-800);
+        background: var(--surface-card);
         color: var(--primary-400);
     }
 
@@ -1873,11 +1873,6 @@ onMounted(() => {
     box-shadow: 0 0 0 4px rgba(59, 130, 246, 0.3);
 }
 
-/* Indicadores de estado accesibles */
-.medical-status-indicator {
-    /* Añadir texto alternativo para lectores de pantalla */
-}
-
 .medical-status-indicator::after {
     content: attr(aria-label);
     position: absolute;
@@ -1885,11 +1880,6 @@ onMounted(() => {
     width: 1px;
     height: 1px;
     overflow: hidden;
-}
-
-/* Colores con alto contraste para WCAG AA */
-.medical-table-container {
-    /* Asegurar contraste mínimo de 4.5:1 */
 }
 
 /* Navegación por teclado mejorada */
@@ -1944,11 +1934,6 @@ onMounted(() => {
     }
 }
 
-/* Estados de teclado y navegación */
-.medical-datatable :deep(.p-datatable) {
-    /* Asegurar que la tabla sea navegable por teclado */
-}
-
 .medical-datatable :deep(.p-datatable-tbody > tr[tabindex='0']) {
     cursor: pointer;
 }
@@ -1971,12 +1956,6 @@ onMounted(() => {
     width: 1px;
     height: 1px;
     overflow: hidden;
-}
-
-/* Indicadores de carga accesibles */
-.loading-spinner {
-    role: 'progressbar';
-    aria-label: 'Cargando personal médico';
 }
 
 /* Mensajes de estado para lectores de pantalla */

@@ -22,7 +22,6 @@ const toast = useToast();
 const editMode = ref(false);
 const saving = ref(false);
 const changingPassword = ref(false);
-const showAvatarUpload = ref(false);
 
 const userProfile = ref({
     name: '',
@@ -47,10 +46,6 @@ const passwordErrors = ref({});
 
 const isPasswordFormValid = computed(() => {
     return passwordData.value.current && passwordData.value.new && passwordData.value.confirm && passwordData.value.new === passwordData.value.confirm && passwordData.value.new.length >= 8;
-});
-
-const isProfileFormValid = computed(() => {
-    return userProfile.value.name?.trim() && userProfile.value.email?.trim() && validateEmail(userProfile.value.email);
 });
 
 const userInitials = computed(() => {
@@ -87,32 +82,6 @@ const validatePasswordForm = () => {
     if (passwordData.value.new !== passwordData.value.confirm) errors.confirm = 'Las contraseñas no coinciden';
     passwordErrors.value = errors;
     return Object.keys(errors).length === 0;
-};
-
-const onAvatarUpload = async (event) => {
-    const file = event.files[0];
-    if (!file) return;
-    try {
-        const formData = new FormData();
-        formData.append('avatar', file);
-        const response = await profile.uploadAvatar(formData);
-        userProfile.value.avatar = response.data.avatar_url;
-        showToast('success', 'Avatar Actualizado');
-    } catch (error) {
-        showToast('error', 'Error al subir el avatar');
-    } finally {
-        showAvatarUpload.value = false;
-    }
-};
-
-const removeAvatar = async () => {
-    try {
-        await profile.deleteAvatar();
-        userProfile.value.avatar = '';
-        showToast('success', 'Avatar Eliminado');
-    } catch (error) {
-        showToast('error', 'Error al eliminar el avatar');
-    }
 };
 
 const loadUserProfile = () => {
