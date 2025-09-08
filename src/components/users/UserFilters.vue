@@ -1,7 +1,6 @@
 <script setup>
 import Badge from 'primevue/badge';
 import Button from 'primevue/button';
-import Dropdown from 'primevue/dropdown';
 import InputText from 'primevue/inputtext';
 import { computed, ref } from 'vue';
 
@@ -123,18 +122,18 @@ const clearAllFilters = () => {
 
             <!-- Filtro por Posición -->
             <div class="filter-item">
-                <Dropdown v-model="localFilters.position" :options="positionOptions" optionLabel="label" optionValue="value" placeholder="Posición" class="filter-dropdown" :showClear="true" @change="onPositionChange" />
+                <Select v-model="localFilters.position" :options="positionOptions" optionLabel="label" optionValue="value" placeholder="Posición" class="filter-dropdown" :showClear="true" @change="onPositionChange" />
             </div>
 
             <!-- Filtro por Estado -->
             <div class="filter-item">
-                <Dropdown v-model="localFilters.status" :options="statusOptions" optionLabel="label" optionValue="value" placeholder="Estado" class="filter-dropdown" :showClear="true" @change="onStatusChange" />
+                <Select v-model="localFilters.status" :options="statusOptions" optionLabel="label" optionValue="value" placeholder="Estado" class="filter-dropdown" :showClear="true" @change="onStatusChange" />
             </div>
 
             <!-- Ordenamiento -->
             <div class="filter-item filter-item--sort">
                 <div class="sort-controls">
-                    <Dropdown v-model="localFilters.sortBy" :options="sortOptions" optionLabel="label" optionValue="value" placeholder="Ordenar" class="sort-dropdown" @change="onSortChange" />
+                    <Select v-model="localFilters.sortBy" :options="sortOptions" optionLabel="label" optionValue="value" placeholder="Ordenar" class="sort-dropdown" @change="onSortChange" />
                     <Button
                         :icon="localFilters.sortDirection === 'asc' ? 'pi pi-sort-amount-up' : 'pi pi-sort-amount-down'"
                         class="sort-direction-btn"

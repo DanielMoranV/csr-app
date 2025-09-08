@@ -2,11 +2,9 @@
 import Badge from 'primevue/badge';
 import Button from 'primevue/button';
 import Column from 'primevue/column';
-import ConfirmPopup from 'primevue/confirmpopup';
 import DataTable from 'primevue/datatable';
 import SplitButton from 'primevue/splitbutton';
 import Tag from 'primevue/tag';
-import { useConfirm } from 'primevue/useconfirm';
 import { useToast } from 'primevue/usetoast';
 import { onMounted, ref } from 'vue';
 
@@ -32,7 +30,6 @@ const props = defineProps({
 const emit = defineEmits(['view-user', 'edit-user', 'create-user', 'delete-user', 'toggle-status', 'reset-password', 'refresh', 'row-select', 'row-unselect']);
 
 const toast = useToast();
-const confirm = useConfirm();
 
 // Campos para filtro global
 const globalFilterFields = ['name', 'dni', 'email', 'nick', 'position', 'phone'];
@@ -245,69 +242,6 @@ const onRowUnselect = (event) => {
     emit('row-unselect', event.data);
 };
 
-// Confirmación de acciones críticas con ConfirmPopup
-const confirmAction = (event, action, userData, callback) => {
-    const actionConfigs = {
-        delete: {
-            message: `¿Está seguro de eliminar a ${userData.name}?`,
-            header: '🗑️ Eliminar Personal',
-            icon: 'pi pi-exclamation-triangle',
-            acceptClass: 'p-button-danger',
-            acceptLabel: 'Eliminar',
-            rejectLabel: 'Cancelar',
-            accept: callback
-        },
-        toggleStatus: {
-            message: `¿Desea ${userData.is_active ? 'desactivar' : 'activar'} a ${userData.name}?`,
-            header: userData.is_active ? '⚠️ Desactivar Personal' : '✅ Activar Personal',
-            icon: userData.is_active ? 'pi pi-pause-circle' : 'pi pi-play-circle',
-            acceptClass: userData.is_active ? 'p-button-warning' : 'p-button-success',
-            acceptLabel: userData.is_active ? 'Desactivar' : 'Activar',
-            rejectLabel: 'Cancelar',
-            accept: callback
-        },
-        resetPassword: {
-            message: `¿Resetear contraseña de ${userData.name}?`,
-            header: '🔑 Resetear Contraseña',
-            icon: 'pi pi-key',
-            acceptClass: 'p-button-info',
-            acceptLabel: 'Resetear',
-            rejectLabel: 'Cancelar',
-            accept: callback
-        }
-    };
-
-    const config = actionConfigs[action];
-    if (config && event?.currentTarget) {
-        confirm.require({
-            target: event.currentTarget,
-            message: config.message,
-            header: config.header,
-            icon: config.icon,
-            acceptClass: config.acceptClass,
-            acceptLabel: config.acceptLabel,
-            rejectLabel: config.rejectLabel,
-            accept: config.accept,
-            reject: () => {
-                toast.add({
-                    severity: 'info',
-                    summary: '✖️ Acción cancelada',
-                    detail: 'La operación fue cancelada',
-                    life: 2000
-                });
-            }
-        });
-    } else {
-        // Fallback: ejecutar callback directamente si no hay evento
-        if (callback) {
-            const confirmed = confirm(`${config ? config.message : '¿Está seguro?'}`);
-            if (confirmed) {
-                callback();
-            }
-        }
-    }
-};
-
 // Funciones de acción mejoradas con accesibilidad
 const handleViewUser = (userData) => {
     emit('view-user', userData);
@@ -342,32 +276,16 @@ const handleEditUser = (userData) => {
     });
 };
 
-const handleResetPassword = (event, userData) => {
-    confirmAction(event, 'resetPassword', userData, () => {
-        emit('reset-password', userData);
-        toast.add({
-            severity: 'success',
-            summary: '🔑 Contraseña reseteada',
-            detail: `Nueva contraseña enviada a ${userData.email}`,
-            life: 4000
-        });
-    });
+const handleResetPassword = (userData) => {
+    emit('reset-password', userData);
 };
 
-const handleToggleStatus = (event, userData) => {
+const handleToggleStatus = (userData) => {
     emit('toggle-status', userData);
 };
 
-const handleDeleteUser = (event, userData) => {
-    confirmAction(event, 'delete', userData, () => {
-        emit('delete-user', userData);
-        toast.add({
-            severity: 'error',
-            summary: '🗑️ Personal eliminado',
-            detail: `${userData.name} ha sido eliminado del sistema`,
-            life: 3000
-        });
-    });
+const handleDeleteUser = (userData) => {
+    emit('delete-user', userData);
 };
 
 // Generar items del menú de acciones
@@ -381,13 +299,7 @@ const getActionItems = (userData) => {
         {
             label: 'Resetear contraseña',
             icon: 'pi pi-key',
-            command: (event) => {
-                // Crear un evento sintético para el ConfirmPopup
-                const syntheticEvent = {
-                    currentTarget: event.originalEvent?.target || document.body
-                };
-                handleResetPassword(syntheticEvent, userData);
-            }
+            command: () => handleResetPassword(userData)
         },
         {
             separator: true
@@ -395,13 +307,7 @@ const getActionItems = (userData) => {
         {
             label: userData.is_active ? 'Desactivar personal' : 'Activar personal',
             icon: userData.is_active ? 'pi pi-user-minus' : 'pi pi-user-plus',
-            command: (event) => {
-                // Crear un evento sintético para el ConfirmPopup
-                const syntheticEvent = {
-                    currentTarget: event.originalEvent?.target || document.body
-                };
-                handleToggleStatus(syntheticEvent, userData);
-            },
+            command: () => handleToggleStatus(userData),
             class: userData.is_active ? 'text-warning-600' : 'text-success-600'
         },
         {
@@ -410,13 +316,7 @@ const getActionItems = (userData) => {
         {
             label: 'Eliminar registro',
             icon: 'pi pi-trash',
-            command: (event) => {
-                // Crear un evento sintético para el ConfirmPopup
-                const syntheticEvent = {
-                    currentTarget: event.originalEvent?.target || document.body
-                };
-                handleDeleteUser(syntheticEvent, userData);
-            },
+            command: () => handleDeleteUser(userData),
             class: 'text-danger-600'
         }
     ];
@@ -635,7 +535,7 @@ onMounted(() => {
                         <!-- Toggle de estado rápido -->
                         <Button
                             :icon="data.is_active ? 'pi pi-pause' : 'pi pi-play'"
-                            @click="(event) => handleToggleStatus(event, data)"
+                            @click="handleToggleStatus(data)"
                             :class="['medical-toggle-btn', data.is_active ? 'active-toggle' : 'inactive-toggle']"
                             :severity="data.is_active ? 'success' : 'secondary'"
                             size="small"
@@ -647,9 +547,6 @@ onMounted(() => {
                 </template>
             </Column>
         </DataTable>
-
-        <!-- ConfirmPopup para confirmaciones -->
-        <ConfirmPopup></ConfirmPopup>
     </div>
 </template>
 
@@ -1131,115 +1028,6 @@ onMounted(() => {
 .medical-split-button :deep(.p-menu .p-menuitem-separator) {
     margin: 0.25rem 0;
     border-color: var(--surface-border);
-}
-
-/* Estilos personalizados para ConfirmPopup médico */
-:deep(.p-confirmpopup) {
-    border-radius: 12px;
-    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.15);
-    border: 1px solid var(--surface-border);
-    min-width: 300px;
-    max-width: 400px;
-}
-
-:deep(.p-confirmpopup .p-confirmpopup-content) {
-    padding: 1.5rem;
-}
-
-:deep(.p-confirmpopup .p-confirmpopup-icon) {
-    font-size: 2rem;
-    margin-right: 1rem;
-    margin-top: 0.25rem;
-}
-
-:deep(.p-confirmpopup .p-confirmpopup-icon.pi-exclamation-triangle) {
-    color: var(--red-500);
-}
-
-:deep(.p-confirmpopup .p-confirmpopup-icon.pi-pause-circle) {
-    color: var(--orange-500);
-}
-
-:deep(.p-confirmpopup .p-confirmpopup-icon.pi-play-circle) {
-    color: var(--green-500);
-}
-
-:deep(.p-confirmpopup .p-confirmpopup-icon.pi-key) {
-    color: var(--blue-500);
-}
-
-:deep(.p-confirmpopup .p-confirmpopup-message) {
-    font-size: 1rem;
-    line-height: 1.5;
-    margin-left: 0;
-    font-weight: 500;
-    color: var(--text-color);
-}
-
-:deep(.p-confirmpopup .p-confirmpopup-footer) {
-    padding-top: 1.25rem;
-    gap: 0.75rem;
-    justify-content: flex-end;
-}
-
-:deep(.p-confirmpopup .p-confirmpopup-footer .p-button) {
-    border-radius: 8px;
-    padding: 0.75rem 1.5rem;
-    font-weight: 600;
-    font-size: 0.875rem;
-    transition: all 0.2s ease;
-}
-
-:deep(.p-confirmpopup .p-confirmpopup-footer .p-button:hover) {
-    transform: translateY(-1px);
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
-}
-
-:deep(.p-confirmpopup .p-confirmpopup-footer .p-button.p-button-danger) {
-    background: linear-gradient(135deg, var(--red-500), var(--red-600));
-    border: none;
-}
-
-:deep(.p-confirmpopup .p-confirmpopup-footer .p-button.p-button-danger:hover) {
-    background: linear-gradient(135deg, var(--red-600), var(--red-700));
-}
-
-:deep(.p-confirmpopup .p-confirmpopup-footer .p-button.p-button-warning) {
-    background: linear-gradient(135deg, var(--orange-500), var(--orange-600));
-    border: none;
-}
-
-:deep(.p-confirmpopup .p-confirmpopup-footer .p-button.p-button-warning:hover) {
-    background: linear-gradient(135deg, var(--orange-600), var(--orange-700));
-}
-
-:deep(.p-confirmpopup .p-confirmpopup-footer .p-button.p-button-success) {
-    background: linear-gradient(135deg, var(--green-500), var(--green-600));
-    border: none;
-}
-
-:deep(.p-confirmpopup .p-confirmpopup-footer .p-button.p-button-success:hover) {
-    background: linear-gradient(135deg, var(--green-600), var(--green-700));
-}
-
-:deep(.p-confirmpopup .p-confirmpopup-footer .p-button.p-button-info) {
-    background: linear-gradient(135deg, var(--blue-500), var(--blue-600));
-    border: none;
-}
-
-:deep(.p-confirmpopup .p-confirmpopup-footer .p-button.p-button-info:hover) {
-    background: linear-gradient(135deg, var(--blue-600), var(--blue-700));
-}
-
-:deep(.p-confirmpopup .p-confirmpopup-footer .p-button.p-button-secondary) {
-    background: var(--surface-100);
-    color: var(--text-color);
-    border: 1px solid var(--surface-300);
-}
-
-:deep(.p-confirmpopup .p-confirmpopup-footer .p-button.p-button-secondary:hover) {
-    background: var(--surface-200);
-    border-color: var(--surface-400);
 }
 
 /* Estados vacíos y carga */
@@ -1998,8 +1786,5 @@ onMounted(() => {
     --medical-success: #10b981;
     --medical-warning: #f59e0b;
     --medical-danger: #ef4444;
-    --medical-info: #8b5cf6;
-    --medical-light: #f8fafc;
-    --medical-dark: #1e293b;
 }
 </style>

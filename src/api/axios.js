@@ -5,7 +5,7 @@ const api_url = import.meta.env.VITE_API_URL;
 
 const instance = axios.create({
     baseURL: api_url,
-    timeout: 30000, // 30 segundos (reducido de 90000000)
+    timeout: 90000000, // 30 segundos (reducido de 90000000)
     headers: {
         'Content-Type': 'application/json',
         Accept: 'application/json',

@@ -1,6 +1,5 @@
 <script setup>
 import { useUsers } from '@/composables/useUsers.js';
-import Button from 'primevue/button';
 import { useToast } from 'primevue/usetoast';
 import { onMounted, reactive, ref } from 'vue';
 

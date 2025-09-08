@@ -4,18 +4,6 @@ import { useAuth } from '@/composables/useAuth';
 import { useToast } from 'primevue/usetoast';
 import { computed, onMounted, ref } from 'vue';
 
-// PrimeVue Components
-import Avatar from 'primevue/avatar';
-import Button from 'primevue/button';
-import Card from 'primevue/card';
-import IconField from 'primevue/iconfield';
-import InputIcon from 'primevue/inputicon';
-import InputText from 'primevue/inputtext';
-import Password from 'primevue/password';
-import TabPanel from 'primevue/tabpanel';
-import TabView from 'primevue/tabview';
-import Tag from 'primevue/tag';
-
 const { user } = useAuth();
 const toast = useToast();
 
@@ -168,155 +156,167 @@ onMounted(loadUserProfile);
         </div>
 
         <!-- TabView for Profile Details -->
-        <TabView class="profile-tabview">
-            <TabPanel>
-                <template #header>
+        <Tabs class="profile-tabview" value="1">
+            <TabList>
+                <Tab key="general" value="1">
                     <i class="pi pi-user mr-2" />
                     <span>Información General</span>
-                </template>
-                <Card class="form-card">
-                    <template #title>
-                        <div class="card-title-container">
+                </Tab>
+                <Tab key="personal" value="2">
+                    <i class="pi pi-user-edit mr-2" />
+                    <span>Datos Personales y de Contacto</span>
+                </Tab>
+                <Tab key="password" value="3">
+                    <i class="pi pi-lock mr-2" />
+                    <span>Cambiar Contraseña</span>
+                </Tab>
+            </TabList>
+            <TabPanels>
+                <TabPanel key="general" value="1">
+                    <Card class="form-card">
+                        <template #title>
+                            <div class="card-title-container">
+                                <div class="flex align-items-center">
+                                    <i class="pi pi-user-edit mr-2 text-xl text-primary"></i>
+                                    <span>Datos Personales y de Contacto</span>
+                                </div>
+                                <div class="card-actions">
+                                    <Button v-if="!editMode" label="Editar" icon="pi pi-pencil" @click="enableEdit" text />
+                                    <template v-else>
+                                        <Button label="Cancelar" icon="pi pi-times" @click="cancelEdit" text severity="secondary" class="mr-2" />
+                                        <Button label="Guardar" icon="pi pi-check" @click="saveProfile" :loading="saving" />
+                                    </template>
+                                </div>
+                            </div>
+                        </template>
+                        <template #content>
+                            <div class="form-panel">
+                                <div class="formgrid grid">
+                                    <div class="field col-12 md:col-6">
+                                        <label>Nombre completo</label>
+                                        <IconField iconPosition="left">
+                                            <InputIcon class="pi pi-user" />
+                                            <InputText v-model="userProfile.name" :readonly="!editMode" :class="{ 'p-invalid': profileErrors.name }" class="w-full" />
+                                        </IconField>
+                                    </div>
+                                    <div class="field col-12 md:col-6">
+                                        <label>Documento (DNI)</label>
+                                        <IconField iconPosition="left">
+                                            <InputIcon class="pi pi-id-card" />
+                                            <InputText v-model="userProfile.dni" readonly class="w-full" />
+                                        </IconField>
+                                    </div>
+                                    <div class="field col-12 md:col-6">
+                                        <label>Correo Electrónico</label>
+                                        <IconField iconPosition="left">
+                                            <InputIcon class="pi pi-envelope" />
+                                            <InputText v-model="userProfile.email" :readonly="!editMode" :class="{ 'p-invalid': profileErrors.email }" class="w-full" />
+                                        </IconField>
+                                    </div>
+                                    <div class="field col-12 md:col-6">
+                                        <label>Teléfono</label>
+                                        <IconField iconPosition="left">
+                                            <InputIcon class="pi pi-phone" />
+                                            <InputText v-model="userProfile.phone" :readonly="!editMode" :class="{ 'p-invalid': profileErrors.phone }" class="w-full" />
+                                        </IconField>
+                                    </div>
+                                    <div class="field col-12 md:col-6">
+                                        <label>Cargo / Especialidad</label>
+                                        <IconField iconPosition="left">
+                                            <InputIcon class="pi pi-briefcase" />
+                                            <InputText v-model="userProfile.position" readonly class="w-full" />
+                                        </IconField>
+                                    </div>
+                                    <div class="field col-12 md:col-6">
+                                        <label>Nombre de usuario</label>
+                                        <IconField iconPosition="left">
+                                            <InputIcon class="pi pi-at" />
+                                            <InputText v-model="userProfile.nick" :readonly="!editMode" :class="{ 'p-invalid': profileErrors.nick }" class="w-full" />
+                                        </IconField>
+                                    </div>
+                                </div>
+                            </div>
+                        </template>
+                    </Card>
+                </TabPanel>
+
+                <TabPanel key="password" value="3">
+                    <template #header>
+                        <i class="pi pi-shield mr-2" />
+                        <span>Seguridad</span>
+                    </template>
+                    <Card class="form-card">
+                        <template #title>
                             <div class="flex align-items-center">
-                                <i class="pi pi-user-edit mr-2 text-xl text-primary"></i>
-                                <span>Datos Personales y de Contacto</span>
+                                <i class="pi pi-key mr-2 text-xl text-primary"></i>
+                                <span>Cambiar Contraseña</span>
                             </div>
-                            <div class="card-actions">
-                                <Button v-if="!editMode" label="Editar" icon="pi pi-pencil" @click="enableEdit" text />
-                                <template v-else>
-                                    <Button label="Cancelar" icon="pi pi-times" @click="cancelEdit" text severity="secondary" class="mr-2" />
-                                    <Button label="Guardar" icon="pi pi-check" @click="saveProfile" :loading="saving" />
-                                </template>
+                        </template>
+                        <template #content>
+                            <div class="form-panel security-panel">
+                                <div class="field">
+                                    <label>Contraseña actual</label>
+                                    <Password v-model="passwordData.current" :feedback="false" toggleMask :class="{ 'p-invalid': passwordErrors.current }" placeholder="&#9679;&#9679;&#9679;&#9679;&#9679;&#9679;&#9679;&#9679;" fluid />
+                                </div>
+                                <div class="field">
+                                    <label>Nueva contraseña</label>
+                                    <Password v-model="passwordData.new" :feedback="false" toggleMask :class="{ 'p-invalid': passwordErrors.new }" placeholder="Mínimo 8 caracteres" fluid />
+                                </div>
+                                <div class="field">
+                                    <label>Confirmar contraseña</label>
+                                    <Password v-model="passwordData.confirm" :feedback="false" toggleMask :class="{ 'p-invalid': passwordErrors.confirm }" placeholder="Repita la nueva contraseña" fluid />
+                                </div>
+                                <Button label="Actualizar Contraseña" icon="pi pi-key" class="w-full mt-3" :loading="changingPassword" :disabled="!isPasswordFormValid" @click="changePassword" fluid />
                             </div>
-                        </div>
-                    </template>
-                    <template #content>
-                        <div class="form-panel">
-                            <div class="formgrid grid">
-                                <div class="field col-12 md:col-6">
-                                    <label>Nombre completo</label>
-                                    <IconField iconPosition="left">
-                                        <InputIcon class="pi pi-user" />
-                                        <InputText v-model="userProfile.name" :readonly="!editMode" :class="{ 'p-invalid': profileErrors.name }" class="w-full" />
-                                    </IconField>
-                                </div>
-                                <div class="field col-12 md:col-6">
-                                    <label>Documento (DNI)</label>
-                                    <IconField iconPosition="left">
-                                        <InputIcon class="pi pi-id-card" />
-                                        <InputText v-model="userProfile.dni" readonly class="w-full" />
-                                    </IconField>
-                                </div>
-                                <div class="field col-12 md:col-6">
-                                    <label>Correo Electrónico</label>
-                                    <IconField iconPosition="left">
-                                        <InputIcon class="pi pi-envelope" />
-                                        <InputText v-model="userProfile.email" :readonly="!editMode" :class="{ 'p-invalid': profileErrors.email }" class="w-full" />
-                                    </IconField>
-                                </div>
-                                <div class="field col-12 md:col-6">
-                                    <label>Teléfono</label>
-                                    <IconField iconPosition="left">
-                                        <InputIcon class="pi pi-phone" />
-                                        <InputText v-model="userProfile.phone" :readonly="!editMode" :class="{ 'p-invalid': profileErrors.phone }" class="w-full" />
-                                    </IconField>
-                                </div>
-                                <div class="field col-12 md:col-6">
-                                    <label>Cargo / Especialidad</label>
-                                    <IconField iconPosition="left">
-                                        <InputIcon class="pi pi-briefcase" />
-                                        <InputText v-model="userProfile.position" readonly class="w-full" />
-                                    </IconField>
-                                </div>
-                                <div class="field col-12 md:col-6">
-                                    <label>Nombre de usuario</label>
-                                    <IconField iconPosition="left">
-                                        <InputIcon class="pi pi-at" />
-                                        <InputText v-model="userProfile.nick" :readonly="!editMode" :class="{ 'p-invalid': profileErrors.nick }" class="w-full" />
-                                    </IconField>
-                                </div>
-                            </div>
-                        </div>
-                    </template>
-                </Card>
-            </TabPanel>
+                        </template>
+                    </Card>
+                </TabPanel>
 
-            <TabPanel>
-                <template #header>
-                    <i class="pi pi-shield mr-2" />
-                    <span>Seguridad</span>
-                </template>
-                <Card class="form-card">
-                    <template #title>
-                        <div class="flex align-items-center">
-                            <i class="pi pi-key mr-2 text-xl text-primary"></i>
-                            <span>Cambiar Contraseña</span>
-                        </div>
+                <TabPanel key="personal" value="2">
+                    <template #header>
+                        <i class="pi pi-info-circle mr-2" />
+                        <span>Información de Sistema</span>
                     </template>
-                    <template #content>
-                        <div class="form-panel security-panel">
-                            <div class="field">
-                                <label>Contraseña actual</label>
-                                <Password v-model="passwordData.current" :feedback="false" toggleMask :class="{ 'p-invalid': passwordErrors.current }" placeholder="&#9679;&#9679;&#9679;&#9679;&#9679;&#9679;&#9679;&#9679;" fluid />
+                    <Card class="form-card">
+                        <template #title>
+                            <div class="flex align-items-center">
+                                <i class="pi pi-cog mr-2 text-xl text-primary"></i>
+                                <span>Detalles de la Cuenta</span>
                             </div>
-                            <div class="field">
-                                <label>Nueva contraseña</label>
-                                <Password v-model="passwordData.new" :feedback="false" toggleMask :class="{ 'p-invalid': passwordErrors.new }" placeholder="Mínimo 8 caracteres" fluid />
-                            </div>
-                            <div class="field">
-                                <label>Confirmar contraseña</label>
-                                <Password v-model="passwordData.confirm" :feedback="false" toggleMask :class="{ 'p-invalid': passwordErrors.confirm }" placeholder="Repita la nueva contraseña" fluid />
-                            </div>
-                            <Button label="Actualizar Contraseña" icon="pi pi-key" class="w-full mt-3" :loading="changingPassword" :disabled="!isPasswordFormValid" @click="changePassword" fluid />
-                        </div>
-                    </template>
-                </Card>
-            </TabPanel>
-
-            <TabPanel>
-                <template #header>
-                    <i class="pi pi-info-circle mr-2" />
-                    <span>Información de Sistema</span>
-                </template>
-                <Card class="form-card">
-                    <template #title>
-                        <div class="flex align-items-center">
-                            <i class="pi pi-cog mr-2 text-xl text-primary"></i>
-                            <span>Detalles de la Cuenta</span>
-                        </div>
-                    </template>
-                    <template #content>
-                        <ul class="info-list">
-                            <li>
-                                <i class="pi pi-user"></i>
-                                <strong>Usuario del sistema:</strong>
-                                <span>{{ userProfile.nick || 'No asignado' }}</span>
-                            </li>
-                            <li>
-                                <i class="pi pi-clock"></i>
-                                <strong>Último acceso:</strong>
-                                <span>{{ formatDate(new Date()) }}</span>
-                            </li>
-                            <li>
-                                <i class="pi pi-shield-check"></i>
-                                <strong>Estado de la cuenta:</strong>
-                                <Tag value="Activa" severity="success" />
-                            </li>
-                            <li>
-                                <i class="pi pi-briefcase"></i>
-                                <strong>Rol / Cargo:</strong>
-                                <span>{{ userProfile.position || 'No asignado' }}</span>
-                            </li>
-                            <li>
-                                <i class="pi pi-envelope"></i>
-                                <strong>Email de recuperación:</strong>
-                                <span>{{ userProfile.email || 'No disponible' }}</span>
-                            </li>
-                        </ul>
-                    </template>
-                </Card>
-            </TabPanel>
-        </TabView>
+                        </template>
+                        <template #content>
+                            <ul class="info-list">
+                                <li>
+                                    <i class="pi pi-user"></i>
+                                    <strong>Usuario del sistema:</strong>
+                                    <span>{{ userProfile.nick || 'No asignado' }}</span>
+                                </li>
+                                <li>
+                                    <i class="pi pi-clock"></i>
+                                    <strong>Último acceso:</strong>
+                                    <span>{{ formatDate(new Date()) }}</span>
+                                </li>
+                                <li>
+                                    <i class="pi pi-shield-check"></i>
+                                    <strong>Estado de la cuenta:</strong>
+                                    <Tag value="Activa" severity="success" />
+                                </li>
+                                <li>
+                                    <i class="pi pi-briefcase"></i>
+                                    <strong>Rol / Cargo:</strong>
+                                    <span>{{ userProfile.position || 'No asignado' }}</span>
+                                </li>
+                                <li>
+                                    <i class="pi pi-envelope"></i>
+                                    <strong>Email de recuperación:</strong>
+                                    <span>{{ userProfile.email || 'No disponible' }}</span>
+                                </li>
+                            </ul>
+                        </template>
+                    </Card>
+                </TabPanel>
+            </TabPanels>
+        </Tabs>
     </div>
 </template>
 
@@ -384,13 +384,13 @@ onMounted(loadUserProfile);
     border: none;
 }
 
-:deep(.p-tabview-nav) {
+:deep(.p-tabs-nav) {
     background: transparent;
     border: none;
     margin-bottom: 0.5rem;
 }
 
-:deep(.p-tabview-nav-link) {
+:deep(.p-tab-header a) {
     background: var(--surface-card) !important;
     border: 1px solid var(--surface-border) !important;
     border-radius: 8px 8px 0 0 !important;
@@ -398,17 +398,17 @@ onMounted(loadUserProfile);
     transition: all 0.2s ease !important;
 }
 
-:deep(.p-tabview-nav-link:not(.p-highlight):hover) {
+:deep(.p-tab-header:not(.p-highlight) a:hover) {
     background: var(--surface-100) !important;
 }
 
-:deep(.p-tabview-nav .p-highlight .p-tabview-nav-link) {
+:deep(.p-tabs-nav .p-highlight a) {
     background: var(--primary-500) !important;
     color: var(--primary-color-text) !important;
     border-color: var(--primary-500) !important;
 }
 
-:deep(.p-tabview-panels) {
+:deep(.p-tabs-panels) {
     padding: 0;
 }
 

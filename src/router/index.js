@@ -27,6 +27,18 @@ const router = createRouter({
                     name: 'usuarios',
                     component: () => import('@/views/users/Users.vue'),
                     meta: { requiresAuth: true, positions: ['SISTEMAS', 'RRHH', 'ADMINISTRACION'] }
+                },
+                {
+                    path: '/sisclin/import',
+                    name: 'sisclin-import',
+                    component: () => import('@/views/sisclin/SisclinImport.vue'),
+                    meta: { requiresAuth: true, positions: ['SISTEMAS', 'ADMINISTRACION', 'DIRECTOR MEDICO', 'HOSPITALIZACION'] }
+                },
+                {
+                    path: '/hospital-attentions',
+                    name: 'hospital-attentions',
+                    component: () => import('@/views/attentions/HospitalAttentions.vue'),
+                    meta: { requiresAuth: true, positions: ['*'] }
                 }
             ]
         },

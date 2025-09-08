@@ -13,7 +13,7 @@ export const users = {
     getAll: (params = {}) => {
         // Filtrar parámetros para omitir 'paginate' y otros que no están en la documentación
         const { paginate, per_page, limit, all, page, ...cleanParams } = params;
-        
+
         return axios.get('/users', { params: cleanParams });
     },
 
@@ -46,18 +46,28 @@ export const users = {
 export const profile = {
     // Obtener perfil del usuario actual
     get: () => axios.get('/profile'),
-    
+
     // Actualizar perfil del usuario
     update: (profileData) => axios.put('/profile', profileData),
-    
+
     // Cambiar contraseña
     changePassword: (passwordData) => axios.put('/profile/password', passwordData),
-    
+
     // Subir avatar
-    uploadAvatar: (formData) => axios.post('/profile/avatar', formData, {
-        headers: { 'Content-Type': 'multipart/form-data' }
-    }),
-    
+    uploadAvatar: (formData) =>
+        axios.post('/profile/avatar', formData, {
+            headers: { 'Content-Type': 'multipart/form-data' }
+        }),
+
     // Eliminar avatar
     deleteAvatar: () => axios.delete('/profile/avatar')
 };
+
+// SISCLIN Hospitalization Management
+export const sisclin = {
+    // Importación masiva de hospitalizaciones
+    bulkImportHospitalizations: (data) => axios.post('/sisclin/hospitalization/bulk', data)
+};
+
+// Hospital Attentions Management
+export { hospitalAttentions } from './hospitalAttentions';

@@ -1,7 +1,6 @@
 <script setup>
 import Button from 'primevue/button';
 import Dialog from 'primevue/dialog';
-import Dropdown from 'primevue/dropdown';
 import InputText from 'primevue/inputtext';
 import Password from 'primevue/password';
 import { computed, reactive, ref, watch } from 'vue';
@@ -360,7 +359,7 @@ const onImagePreviewError = (event) => {
                 <div class="col-12 md:col-6">
                     <div class="field">
                         <label for="position" class="compact-label"> Rol * </label>
-                        <Dropdown
+                        <Select
                             id="position"
                             v-model="userForm.position"
                             :options="positionOptions"
@@ -649,7 +648,7 @@ small.text-500 {
     box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
 }
 
-/* Dropdown panel compacto */
+/* Select panel compacto */
 :deep(.p-dropdown-panel) {
     border-radius: 6px;
     box-shadow: 0 4px 12px rgba(0, 0, 0, 0.12);

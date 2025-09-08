@@ -1,11 +1,9 @@
 <script setup>
-import { useAuth } from '@/composables/useAuth';
 import { usePermissions } from '@/composables/usePermissions';
 import { computed, ref } from 'vue';
 
 import AppMenuItem from './AppMenuItem.vue';
 
-const { user } = useAuth();
 const { filterMenuItems } = usePermissions();
 
 // Menú filtrado basado en permisos del usuario
@@ -44,6 +42,41 @@ const model = ref([
                 icon: 'pi pi-fw pi-users',
                 to: '/usuarios',
                 positions: ['SISTEMAS', 'RRHH', 'ADMINISTRACION'] // Solo estas 3 posiciones
+            }
+        ]
+    },
+
+    {
+        label: 'Hospitalización',
+        items: [
+            {
+                label: 'Atenciones',
+                icon: 'pi pi-fw pi-clipboard',
+                to: '/hospital-attentions',
+                positions: ['*'] // Acceso para todas las posiciones
+            },
+            {
+                label: 'Listadado',
+                icon: 'pi pi-fw pi-list',
+                to: '/hospitalizacion/consultas',
+                positions: ['SISTEMAS', 'ADMINISTRACION', 'DIRECTOR MEDICO', 'HOSPITALIZACION']
+            },
+            {
+                label: 'Camas',
+                icon: 'pi pi-fw pi-calendar',
+                to: '/hospitalizacion/pacientes',
+                positions: ['SISTEMAS', 'ADMINISTRACION', 'DIRECTOR MEDICO', 'HOSPITALIZACION']
+            }
+        ]
+    },
+    {
+        label: 'SISCLIN',
+        items: [
+            {
+                label: 'Import. Hosp.',
+                icon: 'pi pi-fw pi-database',
+                to: '/sisclin/import',
+                positions: ['SISTEMAS', 'ADMINISTRACION', 'DIRECTOR MEDICO', 'HOSPITALIZACION']
             }
         ]
     }

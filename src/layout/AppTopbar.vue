@@ -13,6 +13,7 @@ const toast = useToast();
 const confirm = useConfirm();
 
 const handleLogout = () => {
+    console.log('Iniciando proceso de cierre de sesión...');
     confirm.require({
         message: '¿Estás seguro que deseas cerrar sesión?',
         header: 'Confirmación',
