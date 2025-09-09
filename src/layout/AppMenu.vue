@@ -56,16 +56,10 @@ const model = ref([
                 positions: ['*'] // Acceso para todas las posiciones
             },
             {
-                label: 'Listadado',
-                icon: 'pi pi-fw pi-list',
-                to: '/hospitalizacion/consultas',
-                positions: ['SISTEMAS', 'ADMINISTRACION', 'DIRECTOR MEDICO', 'HOSPITALIZACION']
-            },
-            {
-                label: 'Camas',
-                icon: 'pi pi-fw pi-calendar',
-                to: '/hospitalizacion/pacientes',
-                positions: ['SISTEMAS', 'ADMINISTRACION', 'DIRECTOR MEDICO', 'HOSPITALIZACION']
+                label: 'Habitaciones',
+                icon: 'pi pi-fw pi-building',
+                to: '/habitaciones',
+                positions: ['SISTEMAS', 'ADMINISTRACION', 'DIRECTOR MEDICO', 'HOSPITALIZACION', 'RRHH']
             }
         ]
     },
