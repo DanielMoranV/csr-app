@@ -26,7 +26,6 @@ const toggleBedStatus = (bed) => emit('toggle-bed-status', bed);
 
 const getSeverity = (isActive) => (isActive ? 'success' : 'danger');
 const getBedSeverity = (isActive) => (isActive ? 'success' : 'warning');
-
 </script>
 
 <template>
@@ -50,7 +49,7 @@ const getBedSeverity = (isActive) => (isActive ? 'success' : 'warning');
         <Column header="Acciones" style="min-width: 12rem">
             <template #body="{ data }">
                 <Button icon="pi pi-pencil" class="p-button-rounded p-button-success mr-2" @click="editRoom(data)" />
-                <Button icon="pi pi-power-off" class="p-button-rounded p-button-warning mr-2" @click="toggleStatus(data)" v-tooltip.bottom="data.is_active ? 'Desactivar' : 'Activar'"/>
+                <Button icon="pi pi-power-off" class="p-button-rounded p-button-warning mr-2" @click="toggleStatus(data)" v-tooltip.bottom="data.is_active ? 'Desactivar' : 'Activar'" />
                 <Button icon="pi pi-trash" class="p-button-rounded p-button-danger" @click="deleteRoom(data)" />
             </template>
         </Column>
@@ -71,7 +70,7 @@ const getBedSeverity = (isActive) => (isActive ? 'success' : 'warning');
                     <Column header="Acciones">
                         <template #body="{ data: bedData }">
                             <Button icon="pi pi-pencil" class="p-button-rounded p-button-success mr-2" @click="editBed(bedData)" />
-                            <Button icon="pi pi-power-off" class="p-button-rounded p-button-warning mr-2" @click="toggleBedStatus(bedData)" v-tooltip.bottom="bedData.is_active ? 'Marcar Ocupada' : 'Marcar Libre'"/>
+                            <Button icon="pi pi-power-off" class="p-button-rounded p-button-warning mr-2" @click="toggleBedStatus(bedData)" v-tooltip.bottom="bedData.is_active ? 'Marcar Ocupada' : 'Marcar Libre'" />
                             <Button icon="pi pi-trash" class="p-button-rounded p-button-danger" @click="deleteBed(bedData)" />
                         </template>
                     </Column>

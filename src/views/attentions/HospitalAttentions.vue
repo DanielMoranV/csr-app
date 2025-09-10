@@ -1,13 +1,17 @@
 <script setup>
 import { useHospitalAttentionsStore } from '@/store/hospitalAttentionsStore';
 import { FilterMatchMode } from '@primevue/core/api';
-
-import { computed, onMounted, ref } from 'vue';
+import { computed, onMounted, ref, watch } from 'vue';
 
 const hospitalAttentionsStore = useHospitalAttentionsStore();
 
 const attentions = computed(() => hospitalAttentionsStore.allAttentions);
 const isLoading = computed(() => hospitalAttentionsStore.isLoading);
+
+const isDetailsSidebarVisible = ref(false);
+const isTasksSidebarVisible = ref(false);
+const selectedAttention = ref(null);
+const selectedAttentionForTasks = ref(null);
 
 const filters = ref({
     global: { value: null, matchMode: FilterMatchMode.CONTAINS },
@@ -20,6 +24,42 @@ const filters = ref({
 onMounted(() => {
     hospitalAttentionsStore.fetchAttentions();
 });
+
+const openDetailsSidebar = (attention) => {
+    selectedAttention.value = attention;
+    isDetailsSidebarVisible.value = true;
+};
+
+const openTasksSidebar = (attention) => {
+    selectedAttentionForTasks.value = attention;
+    isTasksSidebarVisible.value = true;
+};
+
+const handleCreateTask = async (taskData) => {
+    await hospitalAttentionsStore.createTask(taskData);
+};
+
+const handleUpdateTask = async (taskData) => {
+    await hospitalAttentionsStore.updateTask(taskData.id, taskData);
+};
+
+const handleDeleteTask = async (taskId) => {
+    await hospitalAttentionsStore.deleteTask(taskId);
+};
+
+const handleCreateDetails = async (detailsData) => {
+    await hospitalAttentionsStore.createDetails(detailsData);
+};
+
+const handleUpdateDetails = async (detailsId, detailsData) => {
+    await hospitalAttentionsStore.updateDetails(detailsId, detailsData);
+};
+
+const handleDeleteDetails = async (detailsId) => {
+    await hospitalAttentionsStore.deleteDetails(detailsId);
+    // also close the sidebar if the detail is deleted
+    isDetailsSidebarVisible.value = false;
+};
 
 const formatDate = (value) => {
     if (!value) return 'N/A';
@@ -38,21 +78,6 @@ const getSeverity = (isActive) => {
     return isActive ? 'success' : 'danger';
 };
 
-const openNew = () => {
-    // Logic to open a dialog to create a new attention
-    console.log('Open new attention dialog');
-};
-
-const editAttention = (attention) => {
-    // Logic to open a dialog to edit an attention
-    console.log('Edit attention', attention);
-};
-
-const confirmDeleteAttention = (attention) => {
-    // Logic to open a confirmation dialog to delete an attention
-    console.log('Confirm delete attention', attention);
-};
-
 const formatAge = (ageString) => {
     if (!ageString || !ageString.includes('años')) return ageString || 'N/A';
     try {
@@ -69,8 +94,69 @@ const getBedTagClass = (bedName, roomNumber) => {
     const letter = bedName.replace(roomNumber, '').toUpperCase();
     return `bed-tag-${letter}`;
 };
-</script>
 
+const getTasksSeverity = (tasks) => {
+    if (!tasks || tasks.length === 0) return 'secondary';
+    const hasPending = tasks.some((task) => task.status === 'pendiente');
+    const hasCancelled = tasks.some((task) => task.status === 'anulado');
+
+    if (hasPending) return 'warning';
+    if (hasCancelled) return 'danger';
+    return 'success';
+};
+
+const hasPendingTasks = (tasks) => {
+    if (!tasks || tasks.length === 0) return false;
+    return tasks.some((task) => task.status === 'pendiente');
+};
+
+// Watch para mantener selectedAttention sincronizada con los datos actualizados
+watch(
+    attentions,
+    (newAttentions) => {
+        if (newAttentions.length > 0) {
+            // Actualizar selectedAttention para detalles
+            if (selectedAttention.value) {
+                const updatedAttention = newAttentions.find((attention) => attention.id === selectedAttention.value.id);
+
+                if (updatedAttention) {
+                    selectedAttention.value = updatedAttention;
+                }
+            }
+
+            // Actualizar selectedAttentionForTasks para tareas
+            if (selectedAttentionForTasks.value) {
+                const updatedAttentionForTasks = newAttentions.find((attention) => attention.id === selectedAttentionForTasks.value.id);
+
+                if (updatedAttentionForTasks) {
+                    selectedAttentionForTasks.value = updatedAttentionForTasks;
+                }
+            }
+        }
+    },
+    { deep: true }
+);
+
+// Computed para obtener la atención seleccionada siempre actualizada (para detalles)
+const currentSelectedAttention = computed(() => {
+    if (!selectedAttention.value) return null;
+
+    // Buscar en el store la versión más actualizada
+    const updated = attentions.value.find((attention) => attention.id === selectedAttention.value.id);
+
+    return updated || selectedAttention.value;
+});
+
+// Computed para obtener la atención seleccionada siempre actualizada (para tareas)
+const currentSelectedAttentionForTasks = computed(() => {
+    if (!selectedAttentionForTasks.value) return null;
+
+    // Buscar en el store la versión más actualizada
+    const updated = attentions.value.find((attention) => attention.id === selectedAttentionForTasks.value.id);
+
+    return updated || selectedAttentionForTasks.value;
+});
+</script>
 <template>
     <div class="card">
         <h2 class="text-2xl font-bold mb-4">Gestión de Atenciones Hospitalarias</h2>
@@ -93,7 +179,6 @@ const getBedTagClass = (bedName, roomNumber) => {
         >
             <template #header>
                 <div class="flex justify-between items-center">
-                    <!-- <Button label="Nueva Atención" icon="pi pi-plus" class="p-button-success mr-2" @click="openNew" /> -->
                     <IconField>
                         <InputIcon class="pi pi-search" />
                         <InputText v-model="filters['global'].value" placeholder="Buscar..." />
@@ -102,7 +187,6 @@ const getBedTagClass = (bedName, roomNumber) => {
             </template>
 
             <template #empty> No se encontraron atenciones. </template>
-
             <template #loading> Cargando datos de atenciones... </template>
 
             <Column field="number" header="Admisión" sortable style="min-width: 6rem"></Column>
@@ -120,9 +204,25 @@ const getBedTagClass = (bedName, roomNumber) => {
                 </template>
             </Column>
 
-            <Column field="doctor" header="Médico" sortable filterField="doctor" :showFilterMatchModes="false" style="min-width: 16rem"></Column>
-
-            <Column field="insurance" header="Seguro" sortable style="min-width: 10rem"></Column>
+            <Column field="doctor" header="Médico" sortable filterField="doctor" :showFilterMatchModes="false" style="min-width: 16rem">
+                <template #body="{ data }">
+                    <div>
+                        <div class="font-medium">{{ data.doctor }}</div>
+                        <div v-if="data.code_doctor" class="text-xs text-gray-500">Código: {{ data.code_doctor }}</div>
+                    </div>
+                </template>
+            </Column>
+            <Column header="Seguro & Tipo" sortable style="min-width: 12rem">
+                <template #body="{ data }">
+                    <div class="text-xs">
+                        <div class="font-medium">{{ data.insurance }}</div>
+                        <div v-if="data.type_attention" class="mt-1">
+                            <Tag :value="data.type_attention" severity="info" class="text-xs" />
+                        </div>
+                        <div v-if="data.origin_attention" class="text-gray-600 mt-1">Origen: {{ data.origin_attention }}</div>
+                    </div>
+                </template>
+            </Column>
 
             <Column header="Habitación" sortable sortField="bed.room.number" style="min-width: 10rem">
                 <template #body="{ data }">
@@ -134,39 +234,35 @@ const getBedTagClass = (bedName, roomNumber) => {
                 </template>
             </Column>
 
-            <Column header="Periodo Estancia" sortable sortField="entry_at" style="min-width: 14rem">
+            <Column header="Periodo Estancia" sortable sortField="entry_at" style="min-width: 16rem">
                 <template #body="{ data }">
                     <div class="text-xs">
                         <div><span class="font-semibold">Ingreso:</span> {{ formatDate(data.entry_at) }}</div>
                         <div><span class="font-semibold">Salida:</span> {{ formatDate(data.exit_at) }}</div>
+                        <div v-if="data.duration_days" class="text-gray-600 mt-1">
+                            <i class="pi pi-calendar mr-1"></i>
+                            <span>Duración: {{ Math.ceil(data.duration_days) }} días</span>
+                        </div>
+                        <div v-if="data.request_at" class="text-gray-600">
+                            <i class="pi pi-send mr-1"></i>
+                            <span>Solicitado: {{ formatDate(data.request_at) }}</span>
+                        </div>
                     </div>
                 </template>
             </Column>
 
-            <Column field="duration_days" header="Días Est." sortable style="min-width: 8rem">
+            <Column field="is_active" header="Estado" sortable dataType="boolean" style="min-width: 12rem">
                 <template #body="{ data }">
-                    {{ data.duration_days ? data.duration_days.toFixed(2) : 'N/A' }}
-                </template>
-            </Column>
-
-            <Column field="cie10" header="Diagnósticos" style="min-width: 12rem">
-                <template #body="{ data }">
-                    <div v-if="data.cie10 && data.cie10.length > 0">
-                        <span v-for="(dx, index) in data.cie10" :key="index" class="p-tag p-tag-info mr-1 mb-1">{{ dx }}</span>
+                    <div class="space-y-1">
+                        <Tag :value="data.is_active ? 'Activa' : 'Cerrada'" :severity="getSeverity(data.is_active)" />
+                        <div v-if="!data.is_active && data.medical_discharge_type" class="text-xs text-gray-600">
+                            {{ data.medical_discharge_type }}
+                        </div>
+                        <div v-if="data.cie10_count" class="text-xs flex items-center text-blue-600">
+                            <i class="pi pi-list mr-1"></i>
+                            CIE10: {{ data.cie10_count }}
+                        </div>
                     </div>
-                    <div v-else>N/A</div>
-                </template>
-            </Column>
-
-            <Column field="medical_discharge_type" header="Tipo Alta" sortable style="min-width: 12rem">
-                <template #body="{ data }">
-                    {{ data.medical_discharge_type?.split('.')[1] || 'N/A' }}
-                </template>
-            </Column>
-
-            <Column field="is_active" header="Estado" sortable dataType="boolean" style="min-width: 10rem">
-                <template #body="{ data }">
-                    <Tag :value="data.is_active ? 'Activa' : 'Cerrada'" :severity="getSeverity(data.is_active)" />
                 </template>
                 <template #filter="{ filterModel }">
                     <div class="flex items-center gap-2">
@@ -178,13 +274,109 @@ const getBedTagClass = (bedName, roomNumber) => {
                 </template>
             </Column>
 
-            <!-- <Column header="Acciones" style="min-width: 10rem" :exportable="false">
+            <Column header="Acciones" style="min-width: 12rem">
                 <template #body="{ data }">
-                    <Button icon="pi pi-pencil" class="p-button-rounded p-button-success mr-2" @click="editAttention(data)" />
-                    <Button icon="pi pi-trash" class="p-button-rounded p-button-warning" @click="confirmDeleteAttention(data)" />
+                    <div class="flex items-center gap-1">
+                        <Button icon="pi pi-eye" class="p-button-rounded p-button-info p-button-sm" @click="openDetailsSidebar(data)" v-tooltip.top="'Ver Detalles de Atención'" />
+                        <Button icon="pi pi-list-check" class="p-button-rounded p-button-secondary p-button-sm" @click="openTasksSidebar(data)" v-tooltip.top="'Ver Tareas'" />
+                        <div v-if="data.tasks && data.tasks.length > 0" class="flex items-center gap-1 ml-1">
+                            <Tag :value="data.tasks.length" :severity="getTasksSeverity(data.tasks)" class="text-xs" v-tooltip.top="'Número de tareas'" />
+                            <i v-if="hasPendingTasks(data.tasks)" class="pi pi-exclamation-triangle text-warning" v-tooltip.top="'Tiene tareas pendientes'"></i>
+                        </div>
+                    </div>
                 </template>
-            </Column> -->
+            </Column>
         </DataTable>
+
+        <!-- Drawer para Detalles de Atención -->
+        <Drawer v-model:visible="isDetailsSidebarVisible" position="right" class="!w-full md:!w-[48rem] lg:!w-[56rem] xl:!w-[64rem]">
+            <template #header>
+                <div v-if="currentSelectedAttention" class="flex flex-col gap-2">
+                    <h3 class="text-xl font-bold flex items-center gap-2">
+                        <i class="pi pi-file-edit text-blue-600"></i>
+                        Detalles de Atención
+                    </h3>
+                    <div class="text-sm text-gray-600 grid grid-cols-2 gap-2">
+                        <div class="flex items-center">
+                            <i class="pi pi-user mr-1"></i>
+                            {{ formatAge(currentSelectedAttention.patient.age_formatted) }}
+                        </div>
+                        <div class="flex items-center">
+                            <i class="pi pi-ticket mr-1"></i>
+                            {{ currentSelectedAttention.number }}
+                        </div>
+                        <div v-if="currentSelectedAttention.bed && currentSelectedAttention.bed.room" class="flex items-center">
+                            <i class="pi pi-inbox mr-1"></i>
+                            {{ currentSelectedAttention.bed.name }}
+                        </div>
+                        <div class="flex items-center">
+                            <i class="pi pi-shield mr-1"></i>
+                            {{ currentSelectedAttention.insurance }}
+                        </div>
+                        <div v-if="currentSelectedAttention.doctor" class="flex items-center col-span-2">
+                            <i class="pi pi-user-plus mr-1"></i>
+                            Dr. {{ currentSelectedAttention.doctor }}
+                        </div>
+                    </div>
+
+                    <!-- Status Indicators -->
+                    <div class="flex items-center gap-2 mt-2">
+                        <Tag :value="currentSelectedAttention.is_active ? 'Activa' : 'Cerrada'" :severity="getSeverity(currentSelectedAttention.is_active)" class="text-xs" />
+                        <Tag v-if="currentSelectedAttention.type_attention" :value="currentSelectedAttention.type_attention" severity="info" class="text-xs" />
+                    </div>
+                </div>
+            </template>
+            <div v-if="currentSelectedAttention">
+                <AttentionDetails :details="currentSelectedAttention.details_attention" :attention-id="currentSelectedAttention.id" @create-details="handleCreateDetails" @update-details="handleUpdateDetails" @delete-details="handleDeleteDetails" />
+            </div>
+        </Drawer>
+
+        <!-- Drawer para Tareas -->
+        <Drawer v-model:visible="isTasksSidebarVisible" position="right" class="!w-full md:!w-[40rem] lg:!w-[48rem] xl:!w-[56rem]">
+            <template #header>
+                <div v-if="currentSelectedAttentionForTasks" class="flex flex-col gap-2">
+                    <h3 class="text-xl font-bold flex items-center gap-2">
+                        <i class="pi pi-list-check text-green-600"></i>
+                        Tareas de Atención
+                    </h3>
+                    <div class="text-sm font-medium text-gray-700">{{ currentSelectedAttentionForTasks.patient.name }}</div>
+                    <div class="text-sm text-gray-600 grid grid-cols-2 gap-2">
+                        <div class="flex items-center">
+                            <i class="pi pi-user mr-1"></i>
+                            {{ formatAge(currentSelectedAttentionForTasks.patient.age_formatted) }}
+                        </div>
+                        <div class="flex items-center">
+                            <i class="pi pi-ticket mr-1"></i>
+                            {{ currentSelectedAttentionForTasks.number }}
+                        </div>
+                        <div v-if="currentSelectedAttentionForTasks.bed && currentSelectedAttentionForTasks.bed.room" class="flex items-center">
+                            <i class="pi pi-inbox mr-1"></i>
+                            {{ currentSelectedAttentionForTasks.bed.name }}
+                        </div>
+                        <div class="flex items-center">
+                            <i class="pi pi-shield mr-1"></i>
+                            {{ currentSelectedAttentionForTasks.insurance }}
+                        </div>
+                        <div v-if="currentSelectedAttentionForTasks.doctor" class="flex items-center col-span-2">
+                            <i class="pi pi-user-plus mr-1"></i>
+                            Dr. {{ currentSelectedAttentionForTasks.doctor }}
+                        </div>
+                    </div>
+
+                    <!-- Tasks Status Indicators -->
+                    <div class="flex items-center gap-2 mt-2">
+                        <Tag :value="currentSelectedAttentionForTasks.is_active ? 'Activa' : 'Cerrada'" :severity="getSeverity(currentSelectedAttentionForTasks.is_active)" class="text-xs" />
+                        <div v-if="currentSelectedAttentionForTasks.tasks && currentSelectedAttentionForTasks.tasks.length > 0" class="flex items-center gap-1">
+                            <Tag :value="`${currentSelectedAttentionForTasks.tasks.length} tareas`" :severity="getTasksSeverity(currentSelectedAttentionForTasks.tasks)" class="text-xs" />
+                            <i v-if="hasPendingTasks(currentSelectedAttentionForTasks.tasks)" class="pi pi-exclamation-triangle text-orange-500 text-xs"></i>
+                        </div>
+                    </div>
+                </div>
+            </template>
+            <div v-if="currentSelectedAttentionForTasks">
+                <AttentionTasks :tasks="currentSelectedAttentionForTasks.tasks" :attention-id="currentSelectedAttentionForTasks.id" @create-task="handleCreateTask" @update-task="handleUpdateTask" @delete-task="handleDeleteTask" />
+            </div>
+        </Drawer>
     </div>
 </template>
 
@@ -220,5 +412,29 @@ const getBedTagClass = (bedName, roomNumber) => {
 }
 :deep(.bed-tag-default) {
     background-color: #9e9e9e !important;
+}
+
+/* Enhanced button styles */
+.p-button-sm {
+    padding: 0.25rem 0.5rem;
+    font-size: 0.75rem;
+}
+
+.p-button-sm .pi {
+    font-size: 0.875rem;
+}
+
+/* Task status indicators */
+.text-warning {
+    color: #f59e0b;
+}
+
+/* Grid enhancements for sidebar header */
+.grid-cols-2 {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.col-span-2 {
+    grid-column: span 2 / span 2;
 }
 </style>

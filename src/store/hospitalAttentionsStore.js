@@ -80,6 +80,66 @@ export const useHospitalAttentionsStore = defineStore('hospitalAttentions', () =
         }
     }
 
+    async function createTask(taskData) {
+        try {
+            await hospitalAttentionsApi.createTask(taskData);
+            await fetchAttentions(); // Refresh list
+        } catch (e) {
+            console.error('Error creating task:', e);
+            throw e;
+        }
+    }
+
+    async function updateTask(id, taskData) {
+        try {
+            await hospitalAttentionsApi.updateTask(id, taskData);
+            await fetchAttentions(); // Refresh list
+        } catch (e) {
+            console.error('Error updating task:', e);
+            throw e;
+        }
+    }
+
+    async function deleteTask(id) {
+        try {
+            await hospitalAttentionsApi.deleteTask(id);
+            await fetchAttentions(); // Refresh list
+        } catch (e) {
+            console.error('Error deleting task:', e);
+            throw e;
+        }
+    }
+
+    async function createDetails(detailsData) {
+        try {
+            await hospitalAttentionsApi.createDetails(detailsData);
+            await fetchAttentions(); // Refresh list
+        } catch (e) {
+            console.error('Error creating details:', e);
+            throw e;
+        }
+    }
+
+    async function updateDetails(id, detailsData) {
+        try {
+            await hospitalAttentionsApi.updateDetails(id, detailsData);
+            await fetchAttentions(); // Refresh list
+        } catch (e) {
+            console.error('Error updating details:', e);
+            throw e;
+        }
+    }
+
+    async function deleteDetails(id) {
+        try {
+            await hospitalAttentionsApi.deleteDetails(id);
+            await fetchAttentions(); // Refresh list
+        } catch (e) {
+            console.error('Error deleting details:', e);
+            throw e;
+        }
+    }
+
     return {
         // State
         attentions,
@@ -94,6 +154,12 @@ export const useHospitalAttentionsStore = defineStore('hospitalAttentions', () =
         fetchStats,
         createAttention,
         updateAttention,
-        deleteAttention
+        deleteAttention,
+        createTask,
+        updateTask,
+        deleteTask,
+        createDetails,
+        updateDetails,
+        deleteDetails
     };
 });

@@ -86,7 +86,7 @@ const handleSubmit = async () => {
             dni: formData.value.dni,
             password: '***hidden***'
         });
-        
+
         const result = await login(formData.value.dni, formData.value.password, {
             redirect: true,
             redirectTo: '/dashboard'

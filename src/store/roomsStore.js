@@ -31,11 +31,7 @@ export const useRoomsStore = defineStore('rooms', () => {
 
         if (state.filters.global) {
             const searchTerm = state.filters.global.toLowerCase();
-            filtered = filtered.filter(
-                (room) =>
-                    room.number.toLowerCase().includes(searchTerm) ||
-                    (room.notes && room.notes.toLowerCase().includes(searchTerm))
-            );
+            filtered = filtered.filter((room) => room.number.toLowerCase().includes(searchTerm) || (room.notes && room.notes.toLowerCase().includes(searchTerm)));
         }
 
         if (state.filters.is_active !== null) {
@@ -163,7 +159,7 @@ export const useRoomsStore = defineStore('rooms', () => {
             const response = await bedsApi.create(bedData);
             if (apiUtils.isSuccess(response)) {
                 const newBed = apiUtils.getData(response);
-                const roomIndex = state.rooms.findIndex(r => r.id === newBed.id_rooms);
+                const roomIndex = state.rooms.findIndex((r) => r.id === newBed.id_rooms);
                 if (roomIndex !== -1) {
                     state.rooms[roomIndex].beds.push(newBed);
                 }
@@ -184,9 +180,9 @@ export const useRoomsStore = defineStore('rooms', () => {
             const response = await bedsApi.update(bedId, bedData);
             if (apiUtils.isSuccess(response)) {
                 const updatedBed = apiUtils.getData(response);
-                const roomIndex = state.rooms.findIndex(r => r.id === updatedBed.id_rooms);
+                const roomIndex = state.rooms.findIndex((r) => r.id === updatedBed.id_rooms);
                 if (roomIndex !== -1) {
-                    const bedIndex = state.rooms[roomIndex].beds.findIndex(b => b.id === bedId);
+                    const bedIndex = state.rooms[roomIndex].beds.findIndex((b) => b.id === bedId);
                     if (bedIndex !== -1) {
                         state.rooms[roomIndex].beds[bedIndex] = updatedBed;
                     }
@@ -207,9 +203,9 @@ export const useRoomsStore = defineStore('rooms', () => {
         try {
             const response = await bedsApi.delete(bedId);
             if (apiUtils.isSuccess(response)) {
-                const roomIndex = state.rooms.findIndex(r => r.id === roomId);
+                const roomIndex = state.rooms.findIndex((r) => r.id === roomId);
                 if (roomIndex !== -1) {
-                    state.rooms[roomIndex].beds = state.rooms[roomIndex].beds.filter(b => b.id !== bedId);
+                    state.rooms[roomIndex].beds = state.rooms[roomIndex].beds.filter((b) => b.id !== bedId);
                 }
                 return response;
             }
@@ -228,9 +224,9 @@ export const useRoomsStore = defineStore('rooms', () => {
             const response = await bedsApi.toggleStatus(bedId);
             if (apiUtils.isSuccess(response)) {
                 const updatedBed = apiUtils.getData(response);
-                const roomIndex = state.rooms.findIndex(r => r.id === roomId);
+                const roomIndex = state.rooms.findIndex((r) => r.id === roomId);
                 if (roomIndex !== -1) {
-                    const bedIndex = state.rooms[roomIndex].beds.findIndex(b => b.id === bedId);
+                    const bedIndex = state.rooms[roomIndex].beds.findIndex((b) => b.id === bedId);
                     if (bedIndex !== -1) {
                         state.rooms[roomIndex].beds[bedIndex].is_active = updatedBed.is_active;
                     }

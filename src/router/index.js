@@ -45,6 +45,12 @@ const router = createRouter({
                     name: 'habitaciones',
                     component: () => import('@/views/rooms/Rooms.vue'),
                     meta: { requiresAuth: true, positions: ['SISTEMAS', 'RRHH', 'ADMINISTRACION', 'HOSPITALIZACION'] }
+                },
+                {
+                    path: '/hospitalizacion',
+                    name: 'hospitalizacion',
+                    component: () => import('@/views/hospitalization/HospitalizationStatus.vue'),
+                    meta: { requiresAuth: true, positions: ['*'] }
                 }
             ]
         },

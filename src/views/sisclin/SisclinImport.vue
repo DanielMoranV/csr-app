@@ -238,7 +238,7 @@ const processExcelFile = () => {
                                     console.log(`🗓️ Procesando fecha ${header}:`, { originalValue: value, type: typeof value });
                                     // Convertir a Date object primero
                                     let dateObj = null;
-                                    
+
                                     if (typeof value === 'number') {
                                         // Excel serial date
                                         try {
@@ -254,7 +254,7 @@ const processExcelFile = () => {
                                     } else if (typeof value === 'string') {
                                         // Intentar parsear diferentes formatos
                                         const trimmed = value.trim();
-                                        
+
                                         if (trimmed.includes('/')) {
                                             // dd/mm/yyyy or mm/dd/yyyy or yyyy/mm/dd
                                             const parts = trimmed.split('/');
@@ -304,7 +304,7 @@ const processExcelFile = () => {
                                             }
                                         }
                                     }
-                                    
+
                                     // Si no se pudo parsear, usar fecha actual
                                     if (!dateObj || isNaN(dateObj.getTime())) {
                                         console.warn(`⚠️ Fecha inválida para ${header}, usando fecha actual`);
@@ -314,7 +314,7 @@ const processExcelFile = () => {
                                         // Formatear como dd-mm-yyyy
                                         value = `${String(dateObj.getDate()).padStart(2, '0')}-${String(dateObj.getMonth() + 1).padStart(2, '0')}-${dateObj.getFullYear()}`;
                                     }
-                                    
+
                                     // Validar formato final (dd-mm-yyyy)
                                     if (!/^\d{2}-\d{2}-\d{4}$/.test(value)) {
                                         console.warn(`⚠️ Formato de fecha incorrecto para ${header}: ${value}, usando fecha actual`);
@@ -351,7 +351,7 @@ const processExcelFile = () => {
                                         const now = new Date();
                                         value = `${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`;
                                     }
-                                    
+
                                     // Validar formato final de hora
                                     if (!/^\d{2}:\d{2}$/.test(value)) {
                                         console.warn(`⚠️ Formato de hora incorrecto para ${header}: ${value}, usando hora actual`);
@@ -398,7 +398,9 @@ const processExcelFile = () => {
                 processedData.value = hospitalizations;
 
                 const message =
-                    hospitalizations.length > BATCH_SIZE ? `${hospitalizations.length} registros procesados. Se importarán en ${Math.ceil(hospitalizations.length / BATCH_SIZE)} lotes.` : `${hospitalizations.length} registros procesados correctamente.`;
+                    hospitalizations.length > BATCH_SIZE
+                        ? `${hospitalizations.length} registros procesados. Se importarán en ${Math.ceil(hospitalizations.length / BATCH_SIZE)} lotes.`
+                        : `${hospitalizations.length} registros procesados correctamente.`;
 
                 toast.add({
                     severity: 'success',
@@ -454,18 +456,18 @@ const importData = async (hospitalizations) => {
             fsal_doc: firstRecord.fsal_doc,
             fnac_pac: firstRecord.fnac_pac
         });
-        
+
         // Validar que todas las fechas tengan el formato correcto dd-mm-yyyy
         const dateFields = ['fec_doc', 'fing_doc'];
         const optionalDateFields = ['fsal_doc', 'fnac_pac'];
-        
-        dateFields.forEach(field => {
+
+        dateFields.forEach((field) => {
             if (firstRecord[field] && !/^\d{2}-\d{2}-\d{4}$/.test(firstRecord[field])) {
                 console.error(`❌ Formato de fecha incorrecto en ${field}: ${firstRecord[field]}`);
             }
         });
-        
-        optionalDateFields.forEach(field => {
+
+        optionalDateFields.forEach((field) => {
             if (firstRecord[field] && firstRecord[field].trim() && !/^\d{2}-\d{2}-\d{4}$/.test(firstRecord[field])) {
                 console.error(`❌ Formato de fecha opcional incorrecto en ${field}: ${firstRecord[field]}`);
             }
@@ -561,7 +563,7 @@ const importBatchData = async (hospitalizations) => {
                 });
 
                 const batchData = { hospitalizations: cleanBatch };
-                
+
                 // Log para debug del primer registro del lote
                 if (i === 0 && cleanBatch.length > 0) {
                     console.log(`📤 Lote ${i + 1} - Primer registro enviado al backend:`, JSON.stringify(cleanBatch[0], null, 2));
@@ -572,7 +574,7 @@ const importBatchData = async (hospitalizations) => {
                         fnac_pac: cleanBatch[0].fnac_pac
                     });
                 }
-                
+
                 const response = await sisclinStore.bulkImportHospitalizations(batchData);
 
                 if (response.success) {
@@ -735,18 +737,7 @@ const startNewImport = () => {
                             <h2 class="text-xl font-bold text-gray-800 mb-1">Importación Masiva de Hospitalizaciones</h2>
                             <p class="text-gray-500 mb-6">Comience cargando su archivo de datos.</p>
 
-                            <FileUpload
-                                ref="fileUpload"
-                                name="excelFile"
-                                @select="onFileSelect"
-                                :multiple="false"
-                                accept=".xlsx,.xls"
-                                :maxFileSize="10000000"
-                                :showUploadButton="false"
-                                :showCancelButton="false"
-                                :customUpload="true"
-                                class="w-full"
-                            >
+                            <FileUpload ref="fileUpload" name="excelFile" @select="onFileSelect" :multiple="false" accept=".xlsx,.xls" :maxFileSize="10000000" :showUploadButton="false" :showCancelButton="false" :customUpload="true" class="w-full">
                                 <template #empty>
                                     <div class="flex flex-col items-center justify-center p-12 border-2 border-dashed border-gray-300 rounded-lg text-center cursor-pointer hover:border-blue-500 transition-colors">
                                         <i class="pi pi-cloud-upload text-4xl text-gray-400 mb-3"></i>
@@ -774,7 +765,7 @@ const startNewImport = () => {
                         <div v-if="processedData.length > 0 && !hasImportResult && !hasBatchResults">
                             <h2 class="text-xl font-bold text-gray-800 mb-1">Revisar y Confirmar</h2>
                             <p class="text-gray-500 mb-4">Se han procesado {{ processedData.length }} registros desde su archivo.</p>
-                            
+
                             <div class="border rounded-lg overflow-hidden">
                                 <DataTable :value="processedData.slice(0, 5)" responsiveLayout="scroll" class="p-datatable-sm">
                                     <Column field="num_doc" header="Nro. Doc"></Column>
@@ -785,9 +776,7 @@ const startNewImport = () => {
                             </div>
                             <p class="text-sm text-gray-500 mt-2">Mostrando los primeros 5 de {{ processedData.length }} registros.</p>
 
-                            <Message v-if="processedData.length > BATCH_SIZE" severity="warn" class="mt-4">
-                                Su archivo excede los {{ BATCH_SIZE }} registros y será procesado en {{ Math.ceil(processedData.length / BATCH_SIZE) }} lotes.
-                            </Message>
+                            <Message v-if="processedData.length > BATCH_SIZE" severity="warn" class="mt-4"> Su archivo excede los {{ BATCH_SIZE }} registros y será procesado en {{ Math.ceil(processedData.length / BATCH_SIZE) }} lotes. </Message>
 
                             <div class="mt-6 flex items-center justify-end gap-3">
                                 <Button label="Cancelar" icon="pi pi-times" @click="clearData" class="p-button-text" />
@@ -857,10 +846,14 @@ const startNewImport = () => {
                     </Column>
                     <Column field="summary.total" header="Total"></Column>
                     <Column field="summary.successful" header="Exitosos">
-                        <template #body="{ data }"><span class="text-green-600 font-semibold">{{ data.summary.successful }}</span></template>
+                        <template #body="{ data }"
+                            ><span class="text-green-600 font-semibold">{{ data.summary.successful }}</span></template
+                        >
                     </Column>
                     <Column field="summary.failed" header="Fallidos">
-                        <template #body="{ data }"><span class="text-red-600 font-semibold">{{ data.summary.failed }}</span></template>
+                        <template #body="{ data }"
+                            ><span class="text-red-600 font-semibold">{{ data.summary.failed }}</span></template
+                        >
                     </Column>
                     <Column header="Tasa Éxito">
                         <template #body="{ data }">

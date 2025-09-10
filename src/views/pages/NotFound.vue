@@ -16,11 +16,7 @@ import Button from 'primevue/button';
         <div class="content-wrapper">
             <!-- Header con logo -->
             <div class="header-section">
-                <img 
-                    src="/logo-csr.webp" 
-                    alt="Logo Clínica Santa Rosa" 
-                    class="clinic-logo"
-                />
+                <img src="/logo-csr.webp" alt="Logo Clínica Santa Rosa" class="clinic-logo" />
                 <h2 class="clinic-name">Clínica Santa Rosa</h2>
             </div>
 
@@ -35,20 +31,14 @@ import Button from 'primevue/button';
                 </div>
                 <h1 class="error-title">Página No Encontrada</h1>
                 <p class="error-description">
-                    Lo sentimos, la página que buscas no está disponible.<br>
+                    Lo sentimos, la página que buscas no está disponible.<br />
                     Es posible que haya sido movida o eliminada.
                 </p>
             </div>
 
-
             <!-- Botón principal -->
             <div class="main-action">
-                <Button 
-                    as="router-link" 
-                    to="/" 
-                    class="home-button"
-                    size="large"
-                >
+                <Button as="router-link" to="/" class="home-button" size="large">
                     <i class="pi pi-home"></i>
                     Volver al Inicio
                 </Button>
@@ -233,7 +223,6 @@ import Button from 'primevue/button';
     max-width: 500px;
 }
 
-
 /* Botón principal */
 .main-action {
     margin-bottom: 3rem;
@@ -293,13 +282,23 @@ import Button from 'primevue/button';
 
 /* Animaciones */
 @keyframes float {
-    0%, 100% { transform: translateY(0px) rotate(0deg); }
-    50% { transform: translateY(-20px) rotate(5deg); }
+    0%,
+    100% {
+        transform: translateY(0px) rotate(0deg);
+    }
+    50% {
+        transform: translateY(-20px) rotate(5deg);
+    }
 }
 
 @keyframes heartbeat {
-    0%, 100% { transform: scale(1); }
-    50% { transform: scale(1.1); }
+    0%,
+    100% {
+        transform: scale(1);
+    }
+    50% {
+        transform: scale(1.1);
+    }
 }
 
 @keyframes fadeInUp {
@@ -318,33 +317,33 @@ import Button from 'primevue/button';
     .not-found-page .content-wrapper {
         padding: 1rem;
     }
-    
+
     .not-found-page .number {
         font-size: 6rem;
     }
-    
+
     .not-found-page .medical-icon {
         width: 60px;
         height: 60px;
     }
-    
+
     .not-found-page .medical-icon i {
         font-size: 2rem;
     }
-    
+
     .not-found-page .error-title {
         font-size: 2rem;
     }
-    
+
     .not-found-page .clinic-logo {
         width: 60px;
         height: 60px;
     }
-    
+
     .not-found-page .clinic-name {
         font-size: 1.25rem;
     }
-    
+
     .not-found-page .home-button {
         padding: 1rem 2rem !important;
         font-size: 1.1rem !important;
@@ -355,28 +354,28 @@ import Button from 'primevue/button';
     .not-found-page .number {
         font-size: 4rem;
     }
-    
+
     .not-found-page .error-number {
         gap: 0.5rem;
     }
-    
+
     .not-found-page .medical-icon {
         width: 50px;
         height: 50px;
     }
-    
+
     .not-found-page .medical-icon i {
         font-size: 1.5rem;
     }
-    
+
     .not-found-page .error-title {
         font-size: 1.75rem;
     }
-    
+
     .not-found-page .error-description {
         font-size: 1rem;
     }
-    
+
     .not-found-page .home-button {
         padding: 0.875rem 1.5rem !important;
         font-size: 1rem !important;
@@ -394,19 +393,19 @@ import Button from 'primevue/button';
         --csr-text-secondary: #94a3b8;
         background: linear-gradient(135deg, #1e293b 0%, #334155 100%);
     }
-    
+
     .not-found-page .clinic-name {
         color: #f1f5f9;
     }
-    
+
     .not-found-page .error-title {
         color: #f1f5f9;
     }
-    
+
     .not-found-page .error-description {
         color: #94a3b8;
     }
-    
+
     .not-found-page .support-info {
         background: #475569;
         border-color: #64748b;

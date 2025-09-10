@@ -32,7 +32,7 @@ export default {
      */
     setItem: (key, value) => {
         console.log(`💾 [CACHE] Guardando item con key: "${key}"`, typeof value === 'object' ? Object.keys(value) : value);
-        
+
         if (typeof key !== 'string' || key.trim() === '') {
             throw new Error('Key must be a non-empty string');
         }
@@ -68,7 +68,7 @@ export default {
      */
     getItem: (key) => {
         console.log(`🔍 [CACHE] Buscando item con key: "${key}"`);
-        
+
         if (typeof key !== 'string') {
             console.log(`❌ [CACHE] Key inválido para "${key}" (no es string)`);
             return null;

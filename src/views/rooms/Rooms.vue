@@ -6,19 +6,7 @@ import { useRooms } from '@/composables/useRooms';
 import { onMounted, ref } from 'vue';
 import BedDialog from '@/components/rooms/BedDialog.vue';
 
-const { 
-    rooms, 
-    isLoading, 
-    fetchRooms, 
-    createRoom, 
-    updateRoom, 
-    deleteRoom, 
-    toggleRoomStatus,
-    addBed,
-    updateBed,
-    deleteBed,
-    toggleBedStatus: toggleBed
-} = useRooms();
+const { rooms, isLoading, fetchRooms, createRoom, updateRoom, deleteRoom, toggleRoomStatus, addBed, updateBed, deleteBed, toggleBedStatus: toggleBed } = useRooms();
 
 const roomDialogVisible = ref(false);
 const bedDialogVisible = ref(false);
@@ -101,7 +89,6 @@ const confirmDeleteBed = (bed) => {
     // Implement deletion confirmation logic
     deleteBed(bed.id, bed.id_rooms); // Direct deletion for now
 };
-
 </script>
 
 <template>
@@ -111,38 +98,12 @@ const confirmDeleteBed = (bed) => {
             <Button label="Nueva Habitación" icon="pi pi-plus" @click="openNewRoom" />
         </div>
 
-        <RoomTable 
-            :rooms="rooms" 
-            :loading="isLoading" 
-            @edit-room="editRoom" 
-            @delete-room="confirmDeleteRoom" 
-            @toggle-status="toggleRoomStatus"
-            @add-bed="openNewBed"
-            @edit-bed="editBed"
-            @delete-bed="confirmDeleteBed"
-            @toggle-bed-status="toggleBed"
-        />
+        <RoomTable :rooms="rooms" :loading="isLoading" @edit-room="editRoom" @delete-room="confirmDeleteRoom" @toggle-status="toggleRoomStatus" @add-bed="openNewBed" @edit-bed="editBed" @delete-bed="confirmDeleteBed" @toggle-bed-status="toggleBed" />
 
-        <RoomDialog 
-            v-model:visible="roomDialogVisible" 
-            :room="selectedRoom" 
-            :editing="isEditingRoom" 
-            @save="handleSaveRoom" 
-        />
+        <RoomDialog v-model:visible="roomDialogVisible" :room="selectedRoom" :editing="isEditingRoom" @save="handleSaveRoom" />
 
-        <BedDialog 
-            v-model:visible="bedDialogVisible" 
-            :bed="selectedBed" 
-            :editing="isEditingBed" 
-            :room-id="currentRoomId"
-            @save="handleSaveBed" 
-        />
+        <BedDialog v-model:visible="bedDialogVisible" :bed="selectedBed" :editing="isEditingBed" :room-id="currentRoomId" @save="handleSaveBed" />
 
-        <ConfirmDeleteDialog 
-            v-model:visible="confirmDialogVisible" 
-            :room="roomToDelete" 
-            @confirm="handleDeleteRoom" 
-        />
-
+        <ConfirmDeleteDialog v-model:visible="confirmDialogVisible" :room="roomToDelete" @confirm="handleDeleteRoom" />
     </div>
 </template>

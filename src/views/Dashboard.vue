@@ -64,7 +64,6 @@ onMounted(() => {
 });
 
 watch(stats, setChartData, { immediate: true, deep: true });
-
 </script>
 
 <template>

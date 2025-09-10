@@ -50,6 +50,12 @@ const model = ref([
         label: 'Hospitalización',
         items: [
             {
+                label: 'Estado Actual',
+                icon: 'pi pi-fw pi-th-large',
+                to: '/hospitalizacion',
+                positions: ['*']
+            },
+            {
                 label: 'Atenciones',
                 icon: 'pi pi-fw pi-clipboard',
                 to: '/hospital-attentions',
