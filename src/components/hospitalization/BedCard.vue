@@ -43,19 +43,19 @@ const activeAttentions = computed(() => {
 });
 
 // Función para obtener el estado de las tareas
-const getTaskStatusSeverity = (status) => {
-    switch (status) {
-        case 'realizado':
-        case 'completado':
-            return 'success';
-        case 'pendiente':
-            return 'warning';
-        case 'cancelado':
-            return 'danger';
-        default:
-            return 'info';
-    }
-};
+// const getTaskStatusSeverity = (status) => {
+//     switch (status) {
+//         case 'realizado':
+//         case 'completado':
+//             return 'success';
+//         case 'pendiente':
+//             return 'warning';
+//         case 'cancelado':
+//             return 'danger';
+//         default:
+//             return 'info';
+//     }
+// };
 
 // Función para formatear fecha
 const formatDate = (dateString) => {
@@ -73,7 +73,6 @@ const formatDate = (dateString) => {
 const getPendingTasks = (tasks) => {
     return tasks ? tasks.filter((task) => task.status === 'pendiente') : [];
 };
-
 </script>
 
 <template>
@@ -137,7 +136,6 @@ const getPendingTasks = (tasks) => {
             <i class="pi pi-exclamation-triangle mr-2"></i>
             <span class="text-sm">Ocupada sin datos de atención</span>
         </div>
-
     </div>
 </template>
 
@@ -145,5 +143,4 @@ const getPendingTasks = (tasks) => {
 .list-none li {
     margin-bottom: 0.5rem;
 }
-
 </style>

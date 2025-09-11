@@ -177,6 +177,7 @@ const totalPendingTasks = computed(() => {
 
                         <!-- Indicadores médicos importantes -->
                         <div class="medical-indicators">
+                            <Tag v-if="bed.attention.details?.ram" value="RAM" severity="warn" class="indicator-tag" title="Reacciones Alérgicas a Medicamentos" />
                             <Tag v-if="bed.attention.details?.medical_order" value="Órdenes" severity="info" class="indicator-tag" />
                             <Tag v-if="bed.attention.details?.interconsultation" value="Interconsulta" severity="secondary" class="indicator-tag" />
                             <Tag v-if="bed.attention.details?.laboratory_exams" value="Lab" severity="success" class="indicator-tag" />
@@ -330,25 +331,25 @@ const totalPendingTasks = computed(() => {
 }
 
 .bed-indicator--occupied {
-    background: var(--blue-50);
-    border-color: var(--blue-300);
-    color: var(--blue-700);
+    background: var(--blue-50) !important;
+    border-color: var(--blue-300) !important;
+    color: var(--blue-700) !important;
 }
 
 .bed-indicator--occupied:hover {
-    background: var(--blue-100);
-    border-color: var(--blue-400);
+    background: var(--blue-100) !important;
+    border-color: var(--blue-400) !important;
 }
 
 .bed-indicator--free {
-    background: var(--green-50);
-    border-color: var(--green-300);
-    color: var(--green-700);
+    background: var(--green-50) !important;
+    border-color: var(--green-300) !important;
+    color: var(--green-700) !important;
 }
 
 .bed-indicator--free:hover {
-    background: var(--green-100);
-    border-color: var(--green-400);
+    background: var(--green-100) !important;
+    border-color: var(--green-400) !important;
 }
 
 .bed-indicator--alert {
@@ -379,11 +380,11 @@ const totalPendingTasks = computed(() => {
 }
 
 .bed-content--occupied {
-    background: linear-gradient(135deg, var(--blue-50) 0%, var(--blue-25) 100%);
+    background: linear-gradient(135deg, var(--blue-50) 0%, var(--blue-25) 100%) !important;
 }
 
 .bed-content--free {
-    background: linear-gradient(135deg, var(--green-50) 0%, var(--green-25) 100%);
+    background: linear-gradient(135deg, var(--green-50) 0%, var(--green-25) 100%) !important;
     display: flex;
     flex-direction: column;
     align-items: center;
@@ -575,5 +576,36 @@ const totalPendingTasks = computed(() => {
         grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
         gap: 1rem;
     }
+}
+
+/* Estilos adicionales con mayor especificidad para forzar colores */
+.room-card .bed-indicator.bed-indicator--occupied {
+    background-color: #eff6ff !important; /* blue-50 */
+    border-color: #93c5fd !important; /* blue-300 */
+    color: #1d4ed8 !important; /* blue-700 */
+}
+
+.room-card .bed-indicator.bed-indicator--occupied:hover {
+    background-color: #dbeafe !important; /* blue-100 */
+    border-color: #60a5fa !important; /* blue-400 */
+}
+
+.room-card .bed-indicator.bed-indicator--free {
+    background-color: #f0fdf4 !important; /* green-50 */
+    border-color: #86efac !important; /* green-300 */
+    color: #15803d !important; /* green-700 */
+}
+
+.room-card .bed-indicator.bed-indicator--free:hover {
+    background-color: #dcfce7 !important; /* green-100 */
+    border-color: #4ade80 !important; /* green-400 */
+}
+
+.room-card .bed-content.bed-content--occupied {
+    background: linear-gradient(135deg, #eff6ff 0%, #f8fafc 100%) !important;
+}
+
+.room-card .bed-content.bed-content--free {
+    background: linear-gradient(135deg, #f0fdf4 0%, #f8fafc 100%) !important;
 }
 </style>

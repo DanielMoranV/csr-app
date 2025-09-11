@@ -283,6 +283,18 @@ const getRiskSeverity = (score, maxScore) => {
     if (percentage >= 40) return 'warn';
     return 'success';
 };
+
+// Función para calcular porcentaje seguro
+const getScorePercentage = (score, maxScore) => {
+    if (!score || !maxScore || maxScore === 0) return 0;
+    const percentage = Math.round((score / maxScore) * 100);
+    return Math.min(Math.max(percentage, 0), 100); // Asegurar que esté entre 0 y 100
+};
+
+// Función para obtener el valor del score de forma segura
+const getScoreValue = (score) => {
+    return score && typeof score === 'number' ? score : 0;
+};
 </script>
 
 <template>
@@ -298,22 +310,20 @@ const getRiskSeverity = (score, maxScore) => {
 
     <!-- Contenido principal con datos -->
     <div v-else class="medical-details-container">
-        <!-- Header con información general -->
-        <div v-if="!isEditing && details" class="details-header mb-4 p-3 bg-gray-50 rounded-lg">
-            <div class="flex items-center justify-between">
-                <div class="flex items-center gap-3">
-                    <div class="flex items-center justify-center w-10 h-10 bg-blue-100 rounded-lg">
-                        <i class="pi pi-file-edit text-blue-600"></i>
-                    </div>
-                    <div>
-                        <h3 class="text-lg font-semibold text-gray-800 m-0">Detalles Médicos</h3>
-                        <p class="text-sm text-gray-600 m-0">Información clínica registrada</p>
+        <!-- Header compacto con información general -->
+        <div v-if="!isEditing && details" class="details-header-compact">
+            <div class="header-content">
+                <div class="header-info">
+                    <i class="pi pi-file-edit header-icon"></i>
+                    <div class="header-text">
+                        <h3 class="header-title">Detalles Médicos</h3>
+                        <span class="header-subtitle">Información clínica</span>
                     </div>
                 </div>
-                <div class="flex items-center gap-2">
-                    <Tag v-if="hasContent" value="Con datos" severity="success" />
-                    <Tag v-else value="Sin datos" severity="warn" />
-                    <Badge v-if="details.id" :value="'ID: ' + details.id" severity="info" />
+                <div class="header-badges">
+                    <Tag v-if="hasContent" value="Con datos" severity="success" size="small" />
+                    <Tag v-else value="Sin datos" severity="warn" size="small" />
+                    <Badge v-if="details.id" :value="details.id" severity="info" size="small" />
                 </div>
             </div>
         </div>
@@ -333,145 +343,121 @@ const getRiskSeverity = (score, maxScore) => {
                 </TabList>
 
                 <TabPanels>
-                    <!-- Panel de Scores -->
-                    <TabPanel value="0" class="pt-4">
-                        <div v-if="scoreFields.some((score) => localDetails[score.key] > 0)" class="grid">
-                            <div v-for="score in scoreFields" :key="score.key" class="col-12 md:col-4">
-                                <Panel class="h-full score-panel" :class="{ 'has-data': localDetails[score.key] > 0 }">
-                                    <template #header>
-                                        <div class="flex align-items-center gap-2">
-                                            <i :class="score.icon" class="text-sm"></i>
-                                            <span class="font-medium text-sm">{{ score.label }}</span>
-                                        </div>
-                                    </template>
-                                    <div class="text-center">
-                                        <div class="text-3xl font-bold mb-2" :class="'text-' + getRiskSeverity(localDetails[score.key] || 0, score.max)">{{ localDetails[score.key] || 0 }}{{ score.suffix }}</div>
-                                        <ProgressBar :value="((localDetails[score.key] || 0) / score.max) * 100" :severity="getRiskSeverity(localDetails[score.key] || 0, score.max)" class="mb-2" />
-                                        <small class="text-500">{{ score.help }}</small>
+                    <!-- Panel de Scores Compacto -->
+                    <TabPanel value="0" class="pt-3">
+                        <div v-if="scoreFields.some((score) => getScoreValue(localDetails[score.key]) > 0)" class="scores-container">
+                            <div v-for="score in scoreFields" :key="score.key" class="score-card" :class="{ 'score-card--active': getScoreValue(localDetails[score.key]) > 0 }">
+                                <div class="score-header">
+                                    <i :class="score.icon" class="score-icon"></i>
+                                    <span class="score-title">{{ score.label }}</span>
+                                </div>
+                                <div class="score-body">
+                                    <div class="score-value" :class="'score-value--' + getRiskSeverity(getScoreValue(localDetails[score.key]), score.max)">{{ getScoreValue(localDetails[score.key]) }}{{ score.suffix }}</div>
+                                    <div class="score-progress">
+                                        <ProgressBar :value="getScorePercentage(getScoreValue(localDetails[score.key]), score.max)" :severity="getRiskSeverity(getScoreValue(localDetails[score.key]), score.max)" />
                                     </div>
-                                </Panel>
+                                    <div class="score-percentage">{{ getScorePercentage(getScoreValue(localDetails[score.key]), score.max) }}% de {{ score.max }}{{ score.suffix }}</div>
+                                    <small class="score-help">{{ score.help }}</small>
+                                </div>
                             </div>
                         </div>
-                        <div v-else class="text-center py-6 text-gray-500">
-                            <i class="pi pi-chart-bar text-4xl mb-3 block text-gray-300"></i>
-                            <p class="text-lg font-medium">No hay evaluaciones de riesgo registradas</p>
-                            <Button label="Añadir Evaluación" icon="pi pi-plus" severity="secondary" outlined @click="startEditing" />
+                        <div v-else class="empty-scores">
+                            <i class="pi pi-chart-bar"></i>
+                            <span>No hay evaluaciones de riesgo</span>
+                            <Button label="Añadir" icon="pi pi-plus" size="small" severity="secondary" outlined @click="startEditing" />
                         </div>
                     </TabPanel>
 
-                    <!-- Panel de Información Clínica -->
-                    <TabPanel value="1" class="pt-4">
-                        <div v-if="detailFields.some((field) => localDetails[field.key])" class="grid">
-                            <div v-for="field in detailFields" :key="field.key" class="col-12">
-                                <Panel v-if="localDetails[field.key]" class="mb-3 clinical-panel">
-                                    <template #header>
-                                        <div class="flex align-items-center gap-2">
-                                            <i :class="[field.icon, 'text-' + (field.severity || 'primary')]"></i>
-                                            <span class="font-medium">{{ field.label }}</span>
-                                            <Badge v-if="field.priority === 'high'" value="Importante" severity="info" size="small" />
-                                        </div>
-                                    </template>
-                                    <div class="white-space-pre-wrap line-height-3 text-gray-800">
+                    <!-- Panel de Información Clínica Compacta -->
+                    <TabPanel value="1" class="pt-3">
+                        <div v-if="detailFields.some((field) => field && localDetails[field.key])" class="clinical-grid">
+                            <template v-for="field in detailFields" :key="field?.key || 'unknown'">
+                                <div v-if="field && localDetails[field.key]" class="clinical-item">
+                                    <div class="clinical-header">
+                                        <i :class="[field.icon, 'clinical-icon', 'text-' + (field.severity || 'primary')]"></i>
+                                        <span class="clinical-title">{{ field.label }}</span>
+                                        <Badge v-if="field.priority === 'high'" value="Importante" severity="info" size="small" />
+                                    </div>
+                                    <div class="clinical-content">
                                         {{ localDetails[field.key] }}
                                     </div>
-                                </Panel>
-                            </div>
+                                </div>
+                            </template>
                         </div>
-                        <div v-else class="text-center py-6 text-gray-500">
-                            <i class="pi pi-file-edit text-4xl mb-3 block text-gray-300"></i>
-                            <p class="text-lg font-medium">No hay información clínica registrada</p>
-                            <Button label="Añadir Información" icon="pi pi-plus" severity="secondary" outlined @click="startEditing" />
+                        <div v-else class="empty-clinical">
+                            <i class="pi pi-file-edit"></i>
+                            <span>No hay información clínica</span>
+                            <Button label="Añadir" icon="pi pi-plus" size="small" severity="secondary" outlined @click="startEditing" />
                         </div>
                     </TabPanel>
                 </TabPanels>
             </Tabs>
         </div>
 
-        <!-- Modo Edición/Creación -->
-        <div v-else class="edit-mode">
-            <div class="mb-4 p-3 bg-blue-50 rounded-lg border-l-4 border-blue-500">
-                <div class="flex items-center gap-2">
-                    <i class="pi pi-info-circle text-blue-600"></i>
-                    <span class="font-medium text-blue-800">
-                        {{ details ? 'Editando detalles médicos' : 'Creando nuevos detalles médicos' }}
-                    </span>
-                </div>
-                <p class="text-sm text-blue-700 mt-1 mb-0">Todos los campos son opcionales. Complete solo la información disponible.</p>
+        <!-- Modo Edición/Creación Compacto -->
+        <div v-else class="edit-mode-compact">
+            <div class="edit-info">
+                <i class="pi pi-info-circle"></i>
+                <span>{{ details ? 'Editando detalles médicos' : 'Creando nuevos detalles médicos' }}</span>
+                <small>Todos los campos son opcionales</small>
             </div>
 
-            <Tabs value="0" class="custom-tabs edit-tabs">
-                <TabList>
-                    <Tab value="0">
-                        <i class="pi pi-chart-bar mr-2"></i>
+            <div class="edit-content">
+                <!-- Sección de Scores -->
+                <div class="edit-section">
+                    <h4 class="edit-section-title">
+                        <i class="pi pi-chart-bar"></i>
                         Evaluación de Riesgos
-                    </Tab>
-                    <Tab value="1">
-                        <i class="pi pi-file-edit mr-2"></i>
-                        Información Clínica
-                    </Tab>
-                </TabList>
-
-                <TabPanels>
-                    <!-- Panel de Edición de Scores -->
-                    <TabPanel value="0" class="pt-4">
-                        <div class="grid">
-                            <div v-for="score in scoreFields" :key="score.key" class="field col-12 md:col-4">
-                                <label :for="score.key" class="font-medium mb-2 block">
-                                    <i :class="score.icon" class="mr-1"></i>
-                                    {{ score.label }}
-                                </label>
-                                <InputNumber
-                                    :id="score.key"
-                                    v-model="localDetails[score.key]"
-                                    mode="decimal"
-                                    :min="score.min"
-                                    :max="score.max"
-                                    :suffix="' ' + score.suffix"
-                                    show-buttons
-                                    class="w-full"
-                                    :placeholder="`0 - ${score.max} ${score.suffix}`"
-                                />
-                                <small class="text-500 block mt-1">{{ score.help }}</small>
-                            </div>
+                    </h4>
+                    <div class="scores-edit-grid">
+                        <div v-for="score in scoreFields" :key="score.key" class="score-edit-field">
+                            <label :for="score.key" class="field-label">
+                                <i :class="score.icon"></i>
+                                {{ score.label }}
+                            </label>
+                            <InputNumber :id="score.key" v-model="localDetails[score.key]" mode="decimal" :min="score.min" :max="score.max" :suffix="' ' + score.suffix" show-buttons size="small" class="w-full" :placeholder="`0-${score.max}`" />
+                            <small class="field-help">{{ score.help }}</small>
                         </div>
-                    </TabPanel>
-
-                    <!-- Panel de Edición de Información Clínica -->
-                    <TabPanel value="1" class="pt-4">
-                        <div class="grid">
-                            <div v-for="field in detailFields" :key="field.key" class="field col-12">
-                                <label :for="field.key" class="font-medium mb-2 block">
-                                    <i :class="[field.icon, 'text-' + (field.severity || 'primary'), 'mr-1']"></i>
-                                    {{ field.label }}
-                                    <Badge v-if="field.priority === 'high'" value="Importante" severity="info" size="small" class="ml-2" />
-                                </label>
-                                <Textarea :id="field.key" v-model="localDetails[field.key]" :placeholder="field.placeholder" rows="4" auto-resize class="w-full" />
-                            </div>
-                        </div>
-                    </TabPanel>
-                </TabPanels>
-            </Tabs>
-        </div>
-
-        <!-- Footer con acciones -->
-        <div class="details-footer mt-6 pt-4 border-t border-gray-200">
-            <div class="flex justify-between items-center">
-                <div class="flex items-center gap-2 text-sm text-gray-500">
-                    <i class="pi pi-info-circle"></i>
-                    <span v-if="!isEditing && details"> Última actualización: {{ new Date().toLocaleDateString('es-ES') }} </span>
-                    <span v-else> Todos los campos son opcionales </span>
+                    </div>
                 </div>
 
-                <div class="flex gap-2">
-                    <div v-if="!isEditing && details" class="flex gap-2">
-                        <Button label="Editar" icon="pi pi-pencil" severity="info" :disabled="isLoading" @click="startEditing" />
-                        <Button label="Eliminar" icon="pi pi-trash" severity="danger" outlined :disabled="isLoading" @click="handleDelete" />
+                <!-- Sección de Información Clínica -->
+                <div class="edit-section">
+                    <h4 class="edit-section-title">
+                        <i class="pi pi-file-edit"></i>
+                        Información Clínica
+                    </h4>
+                    <div class="clinical-edit-grid">
+                        <div v-for="field in detailFields" :key="field.key" class="clinical-edit-field">
+                            <label :for="field.key" class="field-label">
+                                <i :class="[field.icon, 'text-' + (field.severity || 'primary')]"></i>
+                                {{ field.label }}
+                                <Badge v-if="field.priority === 'high'" value="Importante" severity="info" size="small" />
+                            </label>
+                            <Textarea :id="field.key" v-model="localDetails[field.key]" :placeholder="field.placeholder" rows="3" auto-resize class="w-full" />
+                        </div>
                     </div>
+                </div>
+            </div>
+        </div>
 
-                    <div v-else class="flex gap-2">
-                        <Button v-if="details" label="Cancelar" icon="pi pi-times" severity="secondary" outlined :disabled="isLoading" @click="cancelEditing" />
-                        <Button :label="details ? 'Actualizar' : 'Guardar'" icon="pi pi-check" :disabled="!isFormValid || isLoading" :loading="isLoading" @click="handleSave" />
-                    </div>
+        <!-- Footer compacto con acciones -->
+        <div class="details-footer-compact">
+            <div class="footer-content">
+                <div class="footer-info">
+                    <i class="pi pi-info-circle"></i>
+                    <span v-if="!isEditing && details">Actualizado: {{ new Date().toLocaleDateString('es-ES') }}</span>
+                    <span v-else>Campos opcionales</span>
+                </div>
+                <div class="footer-actions">
+                    <template v-if="!isEditing && details">
+                        <Button label="Editar" icon="pi pi-pencil" severity="info" size="small" :disabled="isLoading" @click="startEditing" />
+                        <Button label="Eliminar" icon="pi pi-trash" severity="danger" outlined size="small" :disabled="isLoading" @click="handleDelete" />
+                    </template>
+                    <template v-else>
+                        <Button v-if="details" label="Cancelar" icon="pi pi-times" severity="secondary" outlined size="small" :disabled="isLoading" @click="cancelEditing" />
+                        <Button :label="details ? 'Actualizar' : 'Guardar'" icon="pi pi-check" size="small" :disabled="!isFormValid || isLoading" :loading="isLoading" @click="handleSave" />
+                    </template>
                 </div>
             </div>
         </div>
@@ -482,9 +468,12 @@ const getRiskSeverity = (score, maxScore) => {
 </template>
 
 <style scoped>
-/* Contenedor principal */
+/* Contenedor principal compacto */
 .medical-details-container {
-    padding: 1rem;
+    padding: 0.75rem;
+    background: var(--surface-card);
+    border-radius: 8px;
+    border: 1px solid var(--surface-border);
 }
 
 /* Estado vacío */
@@ -601,16 +590,6 @@ const getRiskSeverity = (score, maxScore) => {
     border-radius: 8px;
     padding: 1rem;
     margin: 0 -1rem -1rem -1rem;
-}
-
-/* Progress bars mejoradas */
-:deep(.p-progressbar) {
-    height: 8px;
-    border-radius: 4px;
-}
-
-:deep(.p-progressbar .p-progressbar-value) {
-    border-radius: 4px;
 }
 
 /* Responsive */
@@ -731,5 +710,476 @@ const getRiskSeverity = (score, maxScore) => {
 }
 .text-gray-800 {
     color: #1f2937;
+}
+
+/* ===== NUEVOS ESTILOS COMPACTOS ===== */
+
+/* Header Compacto */
+.details-header-compact {
+    margin-bottom: 1rem;
+    padding: 0.75rem;
+    background: var(--surface-50);
+    border: 1px solid var(--surface-200);
+    border-radius: 8px;
+}
+
+.header-content {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 1rem;
+}
+
+.header-info {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+}
+
+.header-icon {
+    color: var(--primary-color);
+    font-size: 1.25rem;
+}
+
+.header-text {
+    display: flex;
+    flex-direction: column;
+    gap: 0.125rem;
+}
+
+.header-title {
+    font-size: 1.1rem;
+    font-weight: 600;
+    margin: 0;
+    color: var(--text-color);
+}
+
+.header-subtitle {
+    font-size: 0.8rem;
+    color: var(--text-color-secondary);
+}
+
+.header-badges {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+/* Scores Compactos */
+.scores-container {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 1rem;
+    margin-bottom: 0.5rem;
+}
+
+.score-card {
+    flex: 1;
+    min-width: 180px;
+    background: var(--surface-card);
+    border: 1px solid var(--surface-200);
+    border-radius: 8px;
+    padding: 0.75rem;
+    transition: all 0.2s ease;
+}
+
+.score-card--active {
+    border-color: var(--primary-color);
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.score-header {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    margin-bottom: 0.75rem;
+}
+
+.score-icon {
+    font-size: 0.9rem;
+    color: var(--text-color-secondary);
+}
+
+.score-title {
+    font-size: 0.85rem;
+    font-weight: 600;
+    color: var(--text-color);
+}
+
+.score-body {
+    text-align: center;
+}
+
+.score-value {
+    font-size: 1.5rem;
+    font-weight: 700;
+    margin-bottom: 0.5rem;
+}
+
+.score-value--success {
+    color: var(--green-600);
+}
+
+.score-value--warn {
+    color: var(--orange-600);
+}
+
+.score-value--danger {
+    color: var(--red-600);
+}
+
+.score-progress {
+    margin-bottom: 0.5rem;
+}
+
+.score-help {
+    color: var(--text-color-secondary);
+    font-size: 0.75rem;
+    display: block;
+}
+
+.score-percentage {
+    font-size: 0.7rem;
+    color: var(--text-color-secondary);
+    text-align: center;
+    margin-bottom: 0.25rem;
+    font-weight: 500;
+}
+
+.empty-scores {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0.75rem;
+    padding: 2rem;
+    text-align: center;
+    color: var(--text-color-secondary);
+}
+
+.empty-scores i {
+    font-size: 2rem;
+    color: var(--surface-400);
+}
+
+/* Información Clínica Compacta */
+.clinical-grid {
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+}
+
+.clinical-item {
+    background: var(--surface-card);
+    border: 1px solid var(--surface-200);
+    border-radius: 8px;
+    padding: 0.75rem;
+    transition: all 0.2s ease;
+}
+
+.clinical-item:hover {
+    border-color: var(--primary-color-text);
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+}
+
+.clinical-header {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    margin-bottom: 0.5rem;
+}
+
+.clinical-icon {
+    font-size: 0.9rem;
+}
+
+.clinical-title {
+    font-size: 0.9rem;
+    font-weight: 600;
+    color: var(--text-color);
+}
+
+.clinical-content {
+    font-size: 0.9rem;
+    line-height: 1.4;
+    color: var(--text-color);
+    white-space: pre-wrap;
+}
+
+.empty-clinical {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0.75rem;
+    padding: 2rem;
+    text-align: center;
+    color: var(--text-color-secondary);
+}
+
+.empty-clinical i {
+    font-size: 2rem;
+    color: var(--surface-400);
+}
+
+/* Modo Edición Compacto */
+.edit-mode-compact {
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+}
+
+.edit-info {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.75rem;
+    background: var(--blue-50);
+    border: 1px solid var(--blue-200);
+    border-radius: 6px;
+    font-size: 0.9rem;
+}
+
+.edit-info i {
+    color: var(--blue-600);
+}
+
+.edit-info span {
+    font-weight: 500;
+    color: var(--blue-800);
+}
+
+.edit-info small {
+    color: var(--blue-700);
+    margin-left: auto;
+}
+
+.edit-content {
+    display: flex;
+    flex-direction: column;
+    gap: 1.5rem;
+}
+
+.edit-section {
+    background: var(--surface-50);
+    border: 1px solid var(--surface-200);
+    border-radius: 8px;
+    padding: 1rem;
+}
+
+.edit-section-title {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    margin: 0 0 1rem 0;
+    font-size: 1rem;
+    font-weight: 600;
+    color: var(--text-color);
+}
+
+.edit-section-title i {
+    color: var(--primary-color);
+}
+
+/* Grid de Scores en Edición */
+.scores-edit-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 1rem;
+}
+
+.score-edit-field {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+}
+
+/* Grid de Clínica en Edición */
+.clinical-edit-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+    gap: 1rem;
+}
+
+.clinical-edit-field {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+}
+
+.field-label {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    font-size: 0.9rem;
+    font-weight: 500;
+    color: var(--text-color);
+}
+
+.field-label i {
+    font-size: 0.85rem;
+}
+
+.field-help {
+    color: var(--text-color-secondary);
+    font-size: 0.75rem;
+    line-height: 1.3;
+}
+
+/* Footer Compacto */
+.details-footer-compact {
+    margin-top: 1rem;
+    padding: 0.75rem;
+    background: var(--surface-50);
+    border: 1px solid var(--surface-200);
+    border-radius: 6px;
+}
+
+.footer-content {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 1rem;
+}
+
+.footer-info {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    font-size: 0.8rem;
+    color: var(--text-color-secondary);
+}
+
+.footer-info i {
+    font-size: 0.75rem;
+}
+
+.footer-actions {
+    display: flex;
+    gap: 0.5rem;
+}
+
+/* Responsive para diseño compacto */
+@media (max-width: 768px) {
+    .medical-details-container {
+        padding: 0.5rem;
+    }
+
+    .header-content {
+        flex-direction: column;
+        align-items: stretch;
+        text-align: center;
+    }
+
+    .scores-container {
+        flex-direction: column;
+    }
+
+    .score-card {
+        min-width: auto;
+    }
+
+    .scores-edit-grid {
+        grid-template-columns: 1fr;
+    }
+
+    .clinical-edit-grid {
+        grid-template-columns: 1fr;
+    }
+
+    .footer-content {
+        flex-direction: column;
+        align-items: stretch;
+    }
+
+    .footer-actions {
+        justify-content: center;
+    }
+
+    .edit-info {
+        flex-direction: column;
+        align-items: flex-start;
+        text-align: left;
+    }
+
+    .edit-info small {
+        margin-left: 0;
+        margin-top: 0.25rem;
+    }
+}
+
+@media (max-width: 480px) {
+    .footer-actions {
+        flex-direction: column;
+    }
+
+    .scores-edit-grid,
+    .clinical-edit-grid {
+        grid-template-columns: 1fr;
+    }
+}
+
+/* Optimizaciones de espacio */
+.custom-tabs :deep(.p-tablist) {
+    margin-bottom: 0.75rem;
+    padding: 0.25rem;
+}
+
+.custom-tabs :deep(.p-tab) {
+    padding: 0.5rem 1rem;
+    font-size: 0.9rem;
+}
+
+.custom-tabs :deep(.p-tabpanel) {
+    padding: 0;
+}
+
+/* Progress Bar Optimizada */
+:deep(.p-progressbar) {
+    height: 14px;
+    border-radius: 7px;
+    background-color: var(--surface-200);
+    overflow: hidden;
+    border: 1px solid var(--surface-300);
+    box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.1);
+}
+
+:deep(.p-progressbar .p-progressbar-value) {
+    border-radius: 6px;
+    transition: width 0.3s ease;
+    position: relative;
+    overflow: hidden;
+}
+
+/* Efecto de brillo en la barra */
+:deep(.p-progressbar .p-progressbar-value::after) {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 50%;
+    background: linear-gradient(to bottom, rgba(255, 255, 255, 0.3), rgba(255, 255, 255, 0.1));
+    border-radius: 6px 6px 0 0;
+}
+
+/* Colores específicos para los diferentes niveles de severidad */
+:deep(.p-progressbar.p-progressbar-success .p-progressbar-value) {
+    background: linear-gradient(90deg, var(--green-500), var(--green-400));
+}
+
+:deep(.p-progressbar.p-progressbar-warn .p-progressbar-value) {
+    background: linear-gradient(90deg, var(--orange-500), var(--orange-400));
+}
+
+:deep(.p-progressbar.p-progressbar-danger .p-progressbar-value) {
+    background: linear-gradient(90deg, var(--red-500), var(--red-400));
+}
+
+:deep(.p-inputnumber-input) {
+    padding: 0.5rem;
+}
+
+:deep(.p-inputtextarea) {
+    padding: 0.5rem;
+    font-size: 0.9rem;
 }
 </style>
