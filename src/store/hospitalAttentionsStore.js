@@ -22,9 +22,7 @@ export const useHospitalAttentionsStore = defineStore('hospitalAttentions', () =
             const response = await hospitalAttentionsApi.list(); // Cargar todo, sin paginar
             // Asumimos una estructura de respuesta { success: true, data: { data: [...] } }
 
-            console.log('Fetching hospital attentions...', response);
             attentions.value = response.data?.data || [];
-            console.log('Fetched attentions:', attentions.value);
         } catch (err) {
             // El interceptor de axios rechaza la promesa con un objeto de error estandarizado.
             error.value = err;

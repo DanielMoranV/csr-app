@@ -1,7 +1,8 @@
 <script setup>
+import echo from '@/echo';
 import { useHospitalAttentionsStore } from '@/store/hospitalAttentionsStore';
 import { FilterMatchMode } from '@primevue/core/api';
-import { computed, onMounted, ref, watch } from 'vue';
+import { computed, onMounted, onUnmounted, ref, watch } from 'vue';
 
 const hospitalAttentionsStore = useHospitalAttentionsStore();
 
@@ -23,6 +24,33 @@ const filters = ref({
 
 onMounted(() => {
     hospitalAttentionsStore.fetchAttentions();
+
+    // Suscribirse a los canales de Pusher
+    echo.channel('hospitalizations')
+        .listen('hospitalization.created', (e) => {
+            console.log('Evento hospitalization.created en canal hospitalizations:', e);
+            // Aquí puedes añadir lógica para actualizar el store o la UI
+        })
+        .listen('hospitalization.updated', (e) => {
+            console.log('Evento hospitalization.updated en canal hospitalizations:', e);
+            // Aquí puedes añadir lógica para actualizar el store o la UI
+        });
+
+    echo.channel('hospital-dashboard')
+        .listen('hospitalization.created', (e) => {
+            console.log('Evento hospitalization.created en canal hospital-dashboard:', e);
+            // Aquí puedes añadir lógica para actualizar el store o la UI
+        })
+        .listen('hospitalization.updated', (e) => {
+            console.log('Evento hospitalization.updated en canal hospital-dashboard:', e);
+            // Aquí puedes añadir lógica para actualizar el store o la UI
+        });
+});
+
+onUnmounted(() => {
+    // Desuscribirse de los canales de Pusher al desmontar el componente
+    echo.leaveChannel('hospitalizations');
+    echo.leaveChannel('hospital-dashboard');
 });
 
 const openDetailsSidebar = (attention) => {

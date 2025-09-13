@@ -23,7 +23,6 @@ export const useHospitalizationStore = defineStore('hospitalization', () => {
             // Assuming getStatus returns the full axios response
             // and you have a utility to check for success and get data.
             // If not, you might need to adjust this part.
-            console.log('fetchHospitalizationStatus', response);
             if (response && response.data) {
                 state.status = response.data;
                 state.lastFetch = Date.now();

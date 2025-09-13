@@ -81,12 +81,6 @@ const handleSubmit = async () => {
     isSubmitting.value = true;
 
     try {
-        // Debug: log de datos que se envían
-        console.log('Datos de login:', {
-            dni: formData.value.dni,
-            password: '***hidden***'
-        });
-
         const result = await login(formData.value.dni, formData.value.password, {
             redirect: true,
             redirectTo: '/dashboard'
