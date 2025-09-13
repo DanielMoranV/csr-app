@@ -1,6 +1,6 @@
 <script setup>
-import echo from '@/echo';
 import { useHospitalAttentionsStore } from '@/store/hospitalAttentionsStore';
+import useEcho from '@/websocket/echo';
 import { FilterMatchMode } from '@primevue/core/api';
 import { computed, onMounted, onUnmounted, ref, watch } from 'vue';
 
@@ -14,6 +14,36 @@ const isTasksSidebarVisible = ref(false);
 const selectedAttention = ref(null);
 const selectedAttentionForTasks = ref(null);
 
+const listenerRegistered = ref(false);
+const echoChannel = ref(null);
+
+const listenForMedicalRecordEvents = () => {
+    if (listenerRegistered.value) return; // Evitar múltiples registros
+    listenerRegistered.value = true;
+
+    echoChannel.value = useEcho
+        .channel('hospitalizations')
+        .listen('hospitalization.created', (e) => {
+            console.log('Evento hospitalization.created en canal hospitalizations:', e);
+            // Aquí puedes añadir lógica para actualizar el store o la UI
+        })
+        .listen('hospitalization.updated', (e) => {
+            console.log('Evento hospitalization.updated en canal hospitalizations:', e);
+            // Aquí puedes añadir lógica para actualizar el store o la UI
+        });
+
+    useEcho
+        .channel('hospital-dashboard')
+        .listen('hospitalization.created', (e) => {
+            console.log('Evento hospitalization.created en canal hospital-dashboard:', e);
+            // Aquí puedes añadir lógica para actualizar el store o la UI
+        })
+        .listen('hospitalization.updated', (e) => {
+            console.log('Evento hospitalization.updated en canal hospital-dashboard:', e);
+            // Aquí puedes añadir lógica para actualizar el store o la UI
+        });
+};
+
 const filters = ref({
     global: { value: null, matchMode: FilterMatchMode.CONTAINS },
     'patient.name': { value: null, matchMode: FilterMatchMode.CONTAINS },
@@ -24,33 +54,18 @@ const filters = ref({
 
 onMounted(() => {
     hospitalAttentionsStore.fetchAttentions();
-
-    // Suscribirse a los canales de Pusher
-    echo.channel('hospitalizations')
-        .listen('hospitalization.created', (e) => {
-            console.log('Evento hospitalization.created en canal hospitalizations:', e);
-            // Aquí puedes añadir lógica para actualizar el store o la UI
-        })
-        .listen('hospitalization.updated', (e) => {
-            console.log('Evento hospitalization.updated en canal hospitalizations:', e);
-            // Aquí puedes añadir lógica para actualizar el store o la UI
-        });
-
-    echo.channel('hospital-dashboard')
-        .listen('hospitalization.created', (e) => {
-            console.log('Evento hospitalization.created en canal hospital-dashboard:', e);
-            // Aquí puedes añadir lógica para actualizar el store o la UI
-        })
-        .listen('hospitalization.updated', (e) => {
-            console.log('Evento hospitalization.updated en canal hospital-dashboard:', e);
-            // Aquí puedes añadir lógica para actualizar el store o la UI
-        });
+    listenForMedicalRecordEvents();
 });
-
+const cleanupWebSocketListeners = () => {
+    if (echoChannel.value) {
+        useEcho.leaveChannel('hospitalizations');
+        useEcho.leaveChannel('hospital-dashboard');
+        echoChannel.value = null;
+        listenerRegistered.value = false;
+    }
+};
 onUnmounted(() => {
-    // Desuscribirse de los canales de Pusher al desmontar el componente
-    echo.leaveChannel('hospitalizations');
-    echo.leaveChannel('hospital-dashboard');
+    cleanupWebSocketListeners();
 });
 
 const openDetailsSidebar = (attention) => {

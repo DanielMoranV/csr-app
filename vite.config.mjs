@@ -8,6 +8,7 @@ import { defineConfig } from 'vite';
 // https://vitejs.dev/config/
 export default defineConfig({
     optimizeDeps: {
+        include: ['laravel-echo', 'pusher-js'],
         noDiscovery: true
     },
     plugins: [
