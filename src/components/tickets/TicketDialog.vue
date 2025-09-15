@@ -4,7 +4,6 @@ import { apiUtils } from '@/api/axios';
 import Button from 'primevue/button';
 import Calendar from 'primevue/calendar';
 import Dialog from 'primevue/dialog';
-import Dropdown from 'primevue/dropdown';
 import InputText from 'primevue/inputtext';
 import Textarea from 'primevue/textarea';
 import { computed, reactive, ref, watch } from 'vue';
@@ -166,9 +165,7 @@ let clientSearchTimeout = null;
 const searchClients = (event) => {
     const query = event.value;
     if (query && query.length >= 2) {
-        clientSearchResults.value = initialClientList.value.filter(client =>
-            client.name.toLowerCase().includes(query.toLowerCase())
-        );
+        clientSearchResults.value = initialClientList.value.filter((client) => client.name.toLowerCase().includes(query.toLowerCase()));
     } else {
         clientSearchResults.value = initialClientList.value;
     }
@@ -178,9 +175,7 @@ let positionSearchTimeout = null;
 const searchPositions = (event) => {
     const query = event.value;
     if (query && query.length >= 2) {
-        positionSearchResults.value = initialPositionList.value.filter(position =>
-            position.name.toLowerCase().includes(query.toLowerCase())
-        );
+        positionSearchResults.value = initialPositionList.value.filter((position) => position.name.toLowerCase().includes(query.toLowerCase()));
     } else {
         positionSearchResults.value = initialPositionList.value;
     }
