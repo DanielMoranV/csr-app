@@ -51,6 +51,12 @@ const router = createRouter({
                     name: 'hospitalizacion',
                     component: () => import('@/views/hospitalization/HospitalizationStatus.vue'),
                     meta: { requiresAuth: true, positions: ['*'] }
+                },
+                {
+                    path: '/tickets',
+                    name: 'tickets',
+                    component: () => import('@/views/tickets/Tickets.vue'),
+                    meta: { requiresAuth: true, positions: ['*'] }
                 }
             ]
         },
@@ -195,7 +201,7 @@ router.beforeEach(async (to, from, next) => {
 });
 
 // Actualizar actividad del usuario en cada navegación exitosa
-router.afterEach((to, from) => {
+router.afterEach((to) => {
     console.log(`✅ [ROUTER] Navegación completada a "${to.name || to.path}"`);
     const authStore = useAuthStore();
 

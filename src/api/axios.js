@@ -47,11 +47,13 @@ instance.interceptors.response.use(
             return response;
         }
 
+        console.log('Response Axios:', response);
+
         const data = response.data;
 
         // Validar formato de respuesta estandarizado
         if (typeof data === 'object' && data !== null) {
-            if (!data.hasOwnProperty('success')) {
+            if (!Object.prototype.hasOwnProperty.call(data, 'success')) {
                 console.warn('[API] Respuesta no sigue formato estandarizado:', data);
             }
 
@@ -109,7 +111,7 @@ function processBackendError(error) {
     const backendData = error.response?.data;
 
     // Si el backend ya devolvió formato estandarizado, usarlo
-    if (backendData && typeof backendData === 'object' && backendData.hasOwnProperty('success')) {
+    if (backendData && typeof backendData === 'object' && Object.prototype.hasOwnProperty.call(backendData, 'success')) {
         // Agregar información adicional útil para debugging
         const enhancedError = {
             ...backendData,

@@ -147,11 +147,6 @@ const mapExcelColumn = (columnName) => {
     return lowerColumnName;
 };
 
-const formatDate = (dateString) => {
-    if (!dateString) return '-';
-    return new Date(dateString).toLocaleDateString('es-PE');
-};
-
 const formatDateTime = (dateString) => {
     if (!dateString) return '-';
     return new Date(dateString).toLocaleString('es-PE');
@@ -475,7 +470,7 @@ const importData = async (hospitalizations) => {
         const response = await sisclinStore.bulkImportHospitalizations(cleanData);
 
         if (response.success) {
-            const { successful, failed, summary } = importResult.value || { successful: [], failed: [], summary: {} };
+            const { failed, summary } = importResult.value || { successful: [], failed: [], summary: {} };
 
             if (failed.length === 0) {
                 toast.add({

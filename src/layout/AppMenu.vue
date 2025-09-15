@@ -79,6 +79,17 @@ const model = ref([
                 positions: ['SISTEMAS', 'ADMINISTRACION', 'DIRECTOR MEDICO', 'HOSPITALIZACION']
             }
         ]
+    },
+    {
+        label: 'Soporte Técnico',
+        items: [
+            {
+                label: 'Gestión de Tickets',
+                icon: 'pi pi-fw pi-ticket',
+                to: '/tickets',
+                positions: ['*']
+            }
+        ]
     }
 ]);
 </script>

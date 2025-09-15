@@ -38,10 +38,10 @@ const activeTab = ref('0');
 // Computed para obtener los datos de la atención
 const attention = computed(() => {
     if (!props.bed?.attention) return null;
-    
+
     // La estructura de los datos puede ser diferente, intentamos adaptarla
     const bedAttention = props.bed.attention;
-    
+
     return {
         id: bedAttention.hospital_attention_id,
         hospital_attention_id: bedAttention.hospital_attention_id,
@@ -138,17 +138,16 @@ const handleDeleteDetails = async (detailsId) => {
 };
 
 // Watch para resetear el tab activo cuando se cambia de cama
-watch(() => props.bed, () => {
-    activeTab.value = '0';
-});
+watch(
+    () => props.bed,
+    () => {
+        activeTab.value = '0';
+    }
+);
 </script>
 
 <template>
-    <Drawer 
-        v-model:visible="drawerVisible" 
-        position="right" 
-        class="!w-full md:!w-[48rem] lg:!w-[56rem] xl:!w-[64rem]"
-    >
+    <Drawer v-model:visible="drawerVisible" position="right" class="!w-full md:!w-[48rem] lg:!w-[56rem] xl:!w-[64rem]">
         <template #header>
             <div v-if="bed && attention" class="flex flex-col gap-3 w-full">
                 <!-- Título principal -->
@@ -156,21 +155,15 @@ watch(() => props.bed, () => {
                     <i class="pi pi-bed text-primary"></i>
                     Gestión de Cama {{ bed.bed_number }}
                 </h3>
-                
+
                 <!-- Estado de la cama -->
                 <div class="flex items-center gap-2">
-                    <Tag 
-                        :value="bed.status === 'occupied' ? 'OCUPADA' : 'LIBRE'" 
-                        :severity="getBedStatusSeverity(bed.status)" 
-                    />
-                    <span v-if="bed.status === 'occupied'" class="text-sm text-600">
-                        Atención #{{ attention.hospital_attention_id }}
-                    </span>
+                    <Tag :value="bed.status === 'occupied' ? 'OCUPADA' : 'LIBRE'" :severity="getBedStatusSeverity(bed.status)" />
+                    <span v-if="bed.status === 'occupied'" class="text-sm text-600"> Atención #{{ attention.hospital_attention_id }} </span>
                 </div>
-                
+
                 <!-- Información del paciente -->
-                <div v-if="bed.status === 'occupied' && attention.patient" 
-                     class="bg-primary-50 p-3 border-round border-l-4 border-primary-500">
+                <div v-if="bed.status === 'occupied' && attention.patient" class="bg-primary-50 p-3 border-round border-l-4 border-primary-500">
                     <div class="grid">
                         <div class="col-12 md:col-6">
                             <div class="flex items-center gap-2 mb-2">
@@ -187,21 +180,15 @@ watch(() => props.bed, () => {
                                 <i class="pi pi-calendar"></i>
                                 <span>Ingreso: {{ formatDate(attention.entry_date) }}</span>
                             </div>
-                            <div v-if="attention.tasks && attention.tasks.length > 0" 
-                                 class="flex items-center gap-1 text-sm">
+                            <div v-if="attention.tasks && attention.tasks.length > 0" class="flex items-center gap-1 text-sm">
                                 <i class="pi pi-list-check text-orange-500"></i>
                                 <span class="text-600">{{ attention.tasks.length }} tareas</span>
-                                <Tag 
-                                    v-if="attention.tasks.some(t => t.status === 'pendiente')" 
-                                    value="Pendientes" 
-                                    severity="warning" 
-                                    class="text-xs"
-                                />
+                                <Tag v-if="attention.tasks.some((t) => t.status === 'pendiente')" value="Pendientes" severity="warning" class="text-xs" />
                             </div>
                         </div>
                     </div>
                 </div>
-                
+
                 <!-- Estado cuando la cama está libre -->
                 <div v-else class="bg-green-50 p-3 border-round border-l-4 border-green-500">
                     <div class="flex items-center gap-2">
@@ -225,52 +212,28 @@ watch(() => props.bed, () => {
                         <Tab value="1">
                             <i class="pi pi-list-check mr-2"></i>
                             Tareas
-                            <Badge 
-                                v-if="attention.tasks?.length" 
-                                :value="attention.tasks.length" 
-                                severity="info" 
-                                class="ml-2"
-                            />
+                            <Badge v-if="attention.tasks?.length" :value="attention.tasks.length" severity="info" class="ml-2" />
                         </Tab>
                     </TabList>
-                    
+
                     <TabPanels class="flex-1">
                         <TabPanel value="0" class="h-full">
-                            <AttentionDetails
-                                :details="attention.details_attention"
-                                :attention-id="attention.hospital_attention_id"
-                                @create-details="handleCreateDetails"
-                                @update-details="handleUpdateDetails"
-                                @delete-details="handleDeleteDetails"
-                            />
+                            <AttentionDetails :details="attention.details_attention" :attention-id="attention.hospital_attention_id" @create-details="handleCreateDetails" @update-details="handleUpdateDetails" @delete-details="handleDeleteDetails" />
                         </TabPanel>
-                        
+
                         <TabPanel value="1" class="h-full">
-                            <AttentionTasks
-                                :tasks="attention.tasks || []"
-                                :attention-id="attention.hospital_attention_id"
-                                @create-task="handleCreateTask"
-                                @update-task="handleUpdateTask"
-                                @delete-task="handleDeleteTask"
-                            />
+                            <AttentionTasks :tasks="attention.tasks || []" :attention-id="attention.hospital_attention_id" @create-task="handleCreateTask" @update-task="handleUpdateTask" @delete-task="handleDeleteTask" />
                         </TabPanel>
                     </TabPanels>
                 </Tabs>
             </div>
-            
+
             <!-- Estado cuando la cama está libre -->
             <div v-else class="flex flex-col items-center justify-center h-full text-center py-8">
                 <i class="pi pi-bed text-6xl text-gray-300 mb-4"></i>
                 <h3 class="text-xl font-semibold text-gray-600 mb-2">Cama Libre</h3>
-                <p class="text-gray-500 mb-4">
-                    Esta cama está disponible para recibir un nuevo paciente.
-                </p>
-                <Button 
-                    label="Cerrar" 
-                    icon="pi pi-times" 
-                    outlined 
-                    @click="drawerVisible = false"
-                />
+                <p class="text-gray-500 mb-4">Esta cama está disponible para recibir un nuevo paciente.</p>
+                <Button label="Cerrar" icon="pi pi-times" outlined @click="drawerVisible = false" />
             </div>
         </div>
     </Drawer>
@@ -311,12 +274,12 @@ watch(() => props.bed, () => {
     .bed-drawer-tabs :deep(.p-tablist) {
         flex-wrap: wrap;
     }
-    
+
     .bed-drawer-tabs :deep(.p-tab) {
         flex: 1;
         min-width: 120px;
     }
-    
+
     .bed-drawer-tabs :deep(.p-tabpanel) {
         height: calc(100vh - 320px);
     }

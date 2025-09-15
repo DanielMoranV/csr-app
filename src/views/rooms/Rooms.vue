@@ -81,7 +81,6 @@ const handleSaveBed = async (bedData) => {
     bedDialogVisible.value = false;
 };
 
-const bedToDelete = ref(null);
 const confirmDeleteBed = (bed) => {
     // For now, we can use the same confirm dialog if it is generic enough
     // or create a new one for beds.

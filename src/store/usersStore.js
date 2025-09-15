@@ -87,7 +87,7 @@ export const useUsersStore = defineStore('users', () => {
 
     // Opciones para dropdowns
     const positionOptions = computed(() => {
-        return Object.entries(USER_POSITIONS).map(([key, value]) => ({
+        return Object.entries(USER_POSITIONS).map(([_key, value]) => ({
             label: formatPositionLabel(value),
             value: value
         }));
@@ -339,7 +339,7 @@ export const useUsersStore = defineStore('users', () => {
             const existingUser = state.users.find((u) => u.id === id);
             const changedData = {};
 
-            Object.entries(cleanData).forEach(([key, value]) => {
+            Object.entries(errors).forEach(([field, messages]) => {
                 if (existingUser[key] !== value) {
                     changedData[key] = value;
                 }

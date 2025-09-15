@@ -1,6 +1,7 @@
 <script setup>
 import { defineProps, defineEmits } from 'vue';
 
+// eslint-disable-next-line vue/no-setup-props-destructure
 const props = defineProps({
     visible: Boolean,
     room: Object

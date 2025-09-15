@@ -96,9 +96,12 @@ const handleSubmit = async () => {
         }
     } catch (error) {
         console.error('Error en login:', error);
+        console.log('Tipo de error recibido:', typeof error);
+        console.log('Contenido del error recibido:', error);
 
         // Manejar errores de validación del backend
         if (error.errors && typeof error.errors === 'object') {
+            console.log('Error contiene campo "errors":', error.errors);
             // Limpiar errores previos y agregar nuevos errores del backend
             const newErrors = {};
             Object.entries(error.errors).forEach(([field, messages]) => {
@@ -109,18 +112,22 @@ const handleSubmit = async () => {
                 }
             });
             errors.value = newErrors;
+            console.log('Errores de validación procesados (errors.value):', errors.value);
+
+            // Si hay errores de campo, no mostrar el toast general
+            if (Object.keys(errors.value).length > 0) {
+                return; // Salir para evitar el toast general
+            }
         }
 
         // Mostrar mensaje de error general si no hay errores específicos de campo
-        if (!error.errors || Object.keys(error.errors).length === 0) {
-            const errorMessage = apiUtils.getMessage(error) || 'Error al iniciar sesión';
-            toast.add({
-                severity: 'error',
-                summary: 'Error de Autenticación',
-                detail: errorMessage,
-                life: 5000
-            });
-        }
+        const errorMessage = apiUtils.getMessage(error) || 'Error al iniciar sesión';
+        toast.add({
+            severity: 'error',
+            summary: 'Error de Autenticación',
+            detail: errorMessage,
+            life: 5000
+        });
 
         // Limpiar contraseña en caso de error
         formData.value.password = '';
@@ -537,6 +544,12 @@ onMounted(() => {
     gap: 0.25rem;
     color: var(--error);
     font-size: 0.875rem;
+    /* Añadido para depuración */
+    background-color: rgba(255, 0, 0, 0.1); /* Fondo rojo claro para visibilidad */
+    padding: 0.25rem 0.5rem;
+    border-radius: 4px;
+    margin-top: 0.5rem; /* Espacio para que no se pegue al input */
+    display: block; /* Asegurar que ocupe su propio espacio */
 }
 
 .error-message i {
