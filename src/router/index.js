@@ -57,6 +57,12 @@ const router = createRouter({
                     name: 'tickets',
                     component: () => import('@/views/tickets/Tickets.vue'),
                     meta: { requiresAuth: true, positions: ['*'] }
+                },
+                {
+                    path: '/tickets/recurrence-rules',
+                    name: 'ticket-recurrence-rules',
+                    component: () => import('@/views/tickets/RecurrenceRules.vue'),
+                    meta: { requiresAuth: true, positions: ['SISTEMAS', 'ADMINISTRACION'] }
                 }
             ]
         },

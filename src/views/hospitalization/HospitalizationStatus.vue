@@ -502,7 +502,7 @@ onMounted(() => {
     flex-shrink: 0;
 }
 
-/* Dropdown Option Styles */
+/* Select Option Styles */
 .dropdown-option {
     display: flex;
     align-items: center;

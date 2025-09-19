@@ -164,21 +164,11 @@ app.use(PrimeVue, {
 app.use(ToastService);
 app.use(ConfirmationService);
 
-// Inicializar autenticación antes de montar la app
-console.log('🚀 [MAIN] Iniciando aplicación...');
 const authStore = useAuthStore();
-console.log('🔐 [MAIN] AuthStore creado, iniciando inicialización...');
-authStore.initialize();
-console.log('🔐 [MAIN] AuthStore inicializado. Estado actual:', {
-    isAuthenticated: authStore.isLoggedIn,
-    hasUser: !!authStore.getUser,
-    hasToken: !!authStore.getToken
-});
+await authStore.initialize();
 
 // Montar la aplicación
-console.log('🏗️ [MAIN] Montando aplicación en DOM...');
 app.mount('#app');
-console.log('✅ [MAIN] Aplicación montada exitosamente');
 
 // Limpiar recursos cuando la aplicación se desmonte
 window.addEventListener('beforeunload', () => {

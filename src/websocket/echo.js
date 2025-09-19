@@ -1,9 +1,9 @@
 import { useAuthStore } from '@/store/authStore';
 import Echo from 'laravel-echo';
 import Pusher from 'pusher-js';
+import axios from 'axios'; // Ensure axios is imported for potential use in authEndpoint
 
 const api_url = import.meta.env.VITE_API_URL;
-const { getToken } = useAuthStore();
 
 window.Pusher = Pusher;
 Pusher.logToConsole = true;
@@ -11,6 +11,14 @@ Pusher.logToConsole = true;
 const broadcaster = import.meta.env.VITE_BROADCAST_DRIVER;
 
 let echoConfig;
+
+const getAuthHeaders = () => {
+    const authStore = useAuthStore();
+    const token = authStore.getToken;
+    return {
+        Authorization: `Bearer ${token}`
+    };
+};
 
 if (broadcaster === 'reverb') {
     echoConfig = {
@@ -26,9 +34,7 @@ if (broadcaster === 'reverb') {
         enabledTransports: ['ws', 'wss'],
         authEndpoint: `${api_url}/broadcasting/auth`,
         auth: {
-            headers: {
-                Authorization: `Bearer ${getToken}`
-            }
+            headers: getAuthHeaders
         }
     };
 } else if (broadcaster === 'pusher') {
@@ -39,9 +45,7 @@ if (broadcaster === 'reverb') {
         authEndpoint: `${api_url}/broadcasting/auth`,
         forceTLS: true,
         auth: {
-            headers: {
-                Authorization: `Bearer ${getToken}`
-            }
+            headers: getAuthHeaders
         }
     };
 }

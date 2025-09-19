@@ -1,4 +1,6 @@
 <script setup>
+import { useAuthStore } from '@/store/authStore';
+import { useTicketsStore } from '@/store/ticketsStore';
 import Badge from 'primevue/badge';
 import Button from 'primevue/button';
 import Column from 'primevue/column';
@@ -21,11 +23,11 @@ const props = defineProps({
         type: String,
         default: 'No se encontraron tickets con los filtros aplicados'
     },
-    rowsPerPage: {
-        type: Number,
-        default: 25
-    },
     getStatusSeverity: {
+        type: Function,
+        required: true
+    },
+    getPrioritySeverity: {
         type: Function,
         required: true
     }
@@ -34,6 +36,12 @@ const props = defineProps({
 const emit = defineEmits(['view-ticket', 'edit-ticket', 'create-ticket', 'delete-ticket', 'refresh', 'row-select', 'row-unselect']);
 
 const toast = useToast();
+const authStore = useAuthStore();
+const store = useTicketsStore();
+
+const onPageChange = (event) => {
+    store.onPage(event);
+};
 
 // Campos para filtro global
 const globalFilterFields = ['title', 'description', 'status', 'creator.name', 'assignee.name', 'assignee_position'];
@@ -209,7 +217,7 @@ const handleDeleteTicket = (ticketData) => {
 
 // Generar items del menú de acciones
 const getActionItems = (ticketData) => {
-    return [
+    const items = [
         {
             label: 'Ver detalles',
             icon: 'pi pi-eye',
@@ -222,14 +230,23 @@ const getActionItems = (ticketData) => {
         },
         {
             separator: true
-        },
-        {
+        }
+    ];
+
+    const currentUser = authStore.authUser;
+    const isCreator = currentUser && currentUser.id === ticketData.creator_user_id;
+    const isAssignee = currentUser && currentUser.id === ticketData.assignee_user_id;
+
+    if (isCreator || isAssignee) {
+        items.push({
             label: 'Eliminar ticket',
             icon: 'pi pi-trash',
             command: () => handleDeleteTicket(ticketData),
             class: 'text-danger-600'
-        }
-    ];
+        });
+    }
+
+    return items;
 };
 </script>
 
@@ -257,6 +274,11 @@ const getActionItems = (ticketData) => {
         <DataTable
             :value="tickets"
             :loading="loading"
+            paginator
+            :rows="store.pagination.per_page"
+            :total-records="store.pagination.total"
+            lazy
+            @page="onPageChange"
             responsiveLayout="scroll"
             :resizableColumns="true"
             columnResizeMode="expand"
@@ -272,12 +294,6 @@ const getActionItems = (ticketData) => {
                 header: { class: 'ticket-table-head' },
                 bodyrow: { class: 'ticket-table-row' }
             }"
-            :paginator="true"
-            :rows="rowsPerPage"
-            :rowsPerPageOptions="[10, 25, 50, 100]"
-            paginatorTemplate="RowsPerPageDropdown FirstPageLink PrevPageLink CurrentPageReport NextPageLink LastPageLink"
-            currentPageReportTemplate="{first} - {last} de {totalRecords} tickets"
-            :alwaysShowPaginator="false"
             stripedRows
             scrollable
             scrollHeight="500px"
@@ -320,6 +336,13 @@ const getActionItems = (ticketData) => {
             <Column field="description" header="Descripción" style="min-width: 300px">
                 <template #body="{ data }">
                     <span class="ticket-description">{{ data.description.substring(0, 100) + (data.description.length > 100 ? '...' : '') }}</span>
+                </template>
+            </Column>
+
+            <!-- Prioridad -->
+            <Column field="priority" header="Prioridad" :sortable="true" style="min-width: 120px">
+                <template #body="{ data }">
+                    <Tag :value="data.priority" :severity="getPrioritySeverity(data.priority)" class="ticket-priority-tag" rounded />
                 </template>
             </Column>
 
@@ -546,6 +569,13 @@ const getActionItems = (ticketData) => {
 }
 
 .ticket-status-tag {
+    font-weight: 600;
+    font-size: 0.85rem;
+    padding: 0.5rem 1rem;
+    border-radius: 20px;
+}
+
+.ticket-priority-tag {
     font-weight: 600;
     font-size: 0.85rem;
     padding: 0.5rem 1rem;
@@ -851,6 +881,11 @@ const getActionItems = (ticketData) => {
     filter: brightness(0.9) saturate(1.2);
 }
 
+.app-dark .ticket-priority-tag,
+:root[data-theme='dark'] .ticket-priority-tag {
+    filter: brightness(0.9) saturate(1.2);
+}
+
 .app-dark .ticket-user-name,
 :root[data-theme='dark'] .ticket-user-name {
     color: var(--surface-0);
@@ -900,39 +935,7 @@ const getActionItems = (ticketData) => {
     background: var(--surface-750) !important;
 }
 
-/* Paginación en modo oscuro */
-.app-dark .ticket-datatable :deep(.p-paginator),
-:root[data-theme='dark'] .ticket-datatable :deep(.p-paginator) {
-    background: var(--surface-700) !important;
-    border-top-color: var(--surface-500) !important;
-    color: var(--surface-100);
-}
 
-.app-dark .ticket-datatable :deep(.p-paginator .p-paginator-pages .p-paginator-page),
-:root[data-theme='dark'] .ticket-datatable :deep(.p-paginator .p-paginator-pages .p-paginator-page) {
-    color: var(--surface-200);
-    border-color: var(--surface-600);
-}
-
-.app-dark .ticket-datatable :deep(.p-paginator .p-paginator-pages .p-paginator-page:hover),
-:root[data-theme='dark'] .ticket-datatable :deep(.p-paginator .p-paginator-pages .p-paginator-page:hover) {
-    background: var(--surface-600) !important;
-    color: var(--surface-0) !important;
-}
-
-.app-dark .ticket-datatable :deep(.p-paginator .p-paginator-pages .p-paginator-page.p-highlight),
-:root[data-theme='dark'] .ticket-datatable :deep(.p-paginator .p-paginator-pages .p-paginator-page.p-highlight) {
-    background: var(--primary-600) !important;
-    border-color: var(--primary-600) !important;
-    color: white !important;
-}
-
-.app-dark .ticket-datatable :deep(.p-paginator .p-paginator-current),
-:root[data-theme='dark'] .ticket-datatable :deep(.p-paginator .p-paginator-current) {
-    background: var(--surface-600) !important;
-    border-color: var(--surface-500) !important;
-    color: var(--surface-0) !important;
-}
 
 /* Estados vacíos en modo oscuro */
 .app-dark .ticket-empty-state,
@@ -1019,6 +1022,10 @@ const getActionItems = (ticketData) => {
         font-size: 1.25rem;
     }
 
+    .title-content .subtitle {
+        font-size: 0.9rem;
+    }
+
     :deep(.ticket-datatable .p-datatable-thead > tr > th),
     :deep(.ticket-datatable .p-datatable-tbody > tr > td) {
         padding: 0.75rem 0.5rem;
@@ -1036,31 +1043,30 @@ const getActionItems = (ticketData) => {
     }
 
     .ticket-actions-compact {
-        gap: 0.25rem;
+        flex-direction: column;
+        gap: 0.5rem;
+        width: 100%;
+    }
+
+    .ticket-split-button {
+        width: 100%;
+        order: 1;
+    }
+
+    .ticket-split-button :deep(.p-splitbutton) {
+        width: 100%;
     }
 
     .ticket-split-button :deep(.p-splitbutton-defaultbutton) {
-        padding: 0.4rem 0.6rem;
-        min-width: 2rem;
+        flex: 1;
+        justify-content: center;
+        min-width: auto;
+        padding: 0.625rem 1rem;
     }
 
     .ticket-split-button :deep(.p-splitbutton-menubutton) {
-        padding: 0.4rem;
-        min-width: 1.75rem;
-    }
-
-    :deep(.p-paginator) {
-        padding: 1rem;
-        flex-wrap: wrap;
-        gap: 0.5rem;
-        justify-content: center;
-    }
-
-    :deep(.p-paginator .p-paginator-current) {
-        order: -1;
-        width: 100%;
-        text-align: center;
-        margin: 0 0 0.5rem 0;
+        min-width: auto;
+        padding: 0.625rem;
     }
 }
 

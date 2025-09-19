@@ -1,10 +1,14 @@
-import { apiUtils } from '@/api/axios.js';
-import { TicketService } from '@/api/index.js';
+import { TicketService } from '@/api/tickets';
+import useEcho from '@/websocket/echo';
 import { defineStore } from 'pinia';
+import { useToast } from 'primevue/usetoast';
 import { computed, reactive } from 'vue';
+import { useAuthStore } from './authStore';
 
 export const useTicketsStore = defineStore('tickets', () => {
-    // Estado reactivo
+    const toast = useToast();
+    const authStore = useAuthStore();
+
     const state = reactive({
         tickets: [],
         currentTicket: null,
@@ -13,20 +17,18 @@ export const useTicketsStore = defineStore('tickets', () => {
         isDeleting: false,
         lastFetch: null,
         filters: {
-            global: '',
             status: null,
-            sort_by: 'created_at',
-            sort_direction: 'desc'
+            priority: null,
+            search: ''
+        },
+        pagination: {
+            total: 0,
+            current_page: 1
         }
     });
 
-    // Computadas
+    // --- GETTERS / COMPUTED ---
     const allTickets = computed(() => state.tickets);
-    const pendingTickets = computed(() => state.tickets.filter((ticket) => ticket.status === 'pendiente'));
-    const inProcessTickets = computed(() => state.tickets.filter((ticket) => ticket.status === 'en proceso'));
-    const concludedTickets = computed(() => state.tickets.filter((ticket) => ticket.status === 'concluido'));
-
-    // Opciones para dropdowns de estado
     const statusOptions = computed(() => [
         { label: 'Pendiente', value: 'pendiente' },
         { label: 'En Proceso', value: 'en proceso' },
@@ -34,54 +36,98 @@ export const useTicketsStore = defineStore('tickets', () => {
         { label: 'Rechazado', value: 'rechazado' },
         { label: 'Anulado', value: 'anulado' }
     ]);
-
-    const sortOptions = computed(() => [
-        { label: 'Título', value: 'title' },
-        { label: 'Estado', value: 'status' },
-        { label: 'Fecha de Creación', value: 'created_at' },
-        { label: 'Fecha Límite', value: 'due_date' }
+    const priorityOptions = computed(() => [
+        { label: 'Baja', value: 'baja' },
+        { label: 'Media', value: 'media' },
+        { label: 'Alta', value: 'alta' },
+        { label: 'Urgente', value: 'urgente' }
     ]);
 
-    // Métodos de API
-    const fetchTickets = async (params = {}) => {
-        state.isLoading = true;
-        try {
-            const response = await TicketService.getTickets({
-                ...state.filters,
-                ...params
-            });
-
-            console.log('Fetch Tickets Response:', response);
-
-            if (apiUtils.isSuccess(response)) {
-                const data = apiUtils.getData(response);
-                state.tickets = data || [];
-                state.lastFetch = Date.now();
-                return response;
-            } else {
-                throw response;
-            }
-        } catch (error) {
-            console.error('Error fetching tickets:', error);
-            throw error;
-        } finally {
-            state.isLoading = false;
+    // --- REAL-TIME EVENT HANDLERS ---
+    const handleTicketCreated = (e) => {
+        const ticket = e.ticket;
+        const exists = state.tickets.some((t) => t.id === ticket.id);
+        if (!exists) {
+            state.tickets.unshift(ticket);
+            state.pagination.total++;
+            toast.add({ severity: 'info', summary: 'Nuevo Ticket', detail: `Ticket #${ticket.id}: ${ticket.title}`, life: 5000 });
         }
     };
 
-    const fetchTicket = async (id) => {
+    const handleTicketUpdated = (e) => {
+        const ticket = e.ticket;
+        const index = state.tickets.findIndex((t) => t.id === ticket.id);
+        if (index !== -1) {
+            state.tickets[index] = ticket;
+            toast.add({ severity: 'success', summary: 'Ticket Actualizado', detail: `Ticket #${ticket.id}: ${ticket.title} (${ticket.status})`, life: 5000 });
+        }
+        if (state.currentTicket && state.currentTicket.id === ticket.id) {
+            state.currentTicket = ticket;
+        }
+    };
+
+    const initEchoListeners = () => {
+        const userId = authStore.authUser?.id;
+        const userPosition = authStore.authUser?.position;
+
+        if (userId) {
+            useEcho.private(`App.Models.User.${userId}`).listen('.ticket.created', handleTicketCreated).listen('.ticket.updated', handleTicketUpdated);
+            console.log(`Listening to private user channel: App.Models.User.${userId}`);
+        }
+
+        if (userPosition) {
+            useEcho
+                .join(`tickets.position.${userPosition}`)
+                .here((users) => {
+                    console.log(`Users in position channel ${userPosition}:`, users);
+                })
+                .joining((user) => {
+                    console.log(`${user.name} joined position channel ${userPosition}.`);
+                })
+                .leaving((user) => {
+                    console.log(`${user.name} left position channel ${userPosition}.`);
+                })
+                .listen('.ticket.created', handleTicketCreated)
+                .listen('.ticket.updated', handleTicketUpdated);
+            console.log(`Listening to presence position channel: tickets.position.${userPosition}`);
+        }
+    };
+
+    const leaveEchoChannels = () => {
+        const userId = authStore.authUser?.id;
+        const userPosition = authStore.authUser?.position;
+
+        if (userId) {
+            useEcho.leave(`App.Models.User.${userId}`);
+            console.log(`Left private user channel: App.Models.User.${userId}`);
+        }
+
+        if (userPosition) {
+            useEcho.leave(`tickets.position.${userPosition}`);
+            console.log(`Left presence position channel: tickets.position.${userPosition}`);
+        }
+    };
+
+    // --- API ACTIONS ---
+    const fetchTickets = async () => {
         state.isLoading = true;
         try {
-            const response = await TicketService.getTicket(id);
-            if (apiUtils.isSuccess(response)) {
-                state.currentTicket = apiUtils.getData(response);
-                return response;
-            } else {
-                throw response;
-            }
+            const response = await TicketService.getTickets(state.filters);
+            const responseData = response.data;
+
+            console.log('Fetched tickets:', responseData);
+
+            // Non-paginated response
+            state.tickets = responseData;
+            state.pagination = {
+                total: responseData.length,
+                per_page: responseData.length,
+                current_page: 1
+            };
+            state.lastFetch = Date.now();
         } catch (error) {
-            console.error(`Error fetching ticket ${id}:`, error);
-            throw error;
+            console.error('Error fetching tickets:', error);
+            toast.add({ severity: 'error', summary: 'Error', detail: 'No se pudieron cargar los tickets.', life: 3000 });
         } finally {
             state.isLoading = false;
         }
@@ -91,13 +137,8 @@ export const useTicketsStore = defineStore('tickets', () => {
         state.isSaving = true;
         try {
             const response = await TicketService.createTicket(ticketData);
-            if (apiUtils.isSuccess(response)) {
-                const newTicket = apiUtils.getData(response);
-                state.tickets.push(newTicket);
-                return response;
-            } else {
-                throw response;
-            }
+            toast.add({ severity: 'success', summary: 'Ticket Creado', detail: `Ticket #${response.id} creado correctamente.`, life: 3000 });
+            return response;
         } catch (error) {
             console.error('Error creating ticket:', error);
             throw error;
@@ -110,20 +151,8 @@ export const useTicketsStore = defineStore('tickets', () => {
         state.isSaving = true;
         try {
             const response = await TicketService.updateTicket(id, ticketData);
-            if (apiUtils.isSuccess(response)) {
-                const updatedTicket = apiUtils.getData(response);
-                const index = state.tickets.findIndex((t) => t.id === id);
-                if (index !== -1) {
-                    state.tickets[index] = updatedTicket;
-                }
-                // If currentTicket is being updated, refresh it
-                if (state.currentTicket && state.currentTicket.id === id) {
-                    state.currentTicket = updatedTicket;
-                }
-                return response;
-            } else {
-                throw response;
-            }
+            toast.add({ severity: 'success', summary: 'Ticket Actualizado', detail: `Ticket #${response.id} actualizado correctamente.`, life: 3000 });
+            return response;
         } catch (error) {
             console.error(`Error updating ticket ${id}:`, error);
             throw error;
@@ -135,15 +164,11 @@ export const useTicketsStore = defineStore('tickets', () => {
     const deleteTicket = async (id) => {
         state.isDeleting = true;
         try {
-            const response = await TicketService.deleteTicket(id);
-            if (apiUtils.isSuccess(response)) {
-                const index = state.tickets.findIndex((t) => t.id === id);
-                if (index !== -1) {
-                    state.tickets.splice(index, 1);
-                }
-                return response;
-            } else {
-                throw response;
+            await TicketService.deleteTicket(id);
+            const index = state.tickets.findIndex((t) => t.id === id);
+            if (index !== -1) {
+                state.tickets.splice(index, 1);
+                state.pagination.total--;
             }
         } catch (error) {
             console.error(`Error deleting ticket ${id}:`, error);
@@ -153,61 +178,47 @@ export const useTicketsStore = defineStore('tickets', () => {
         }
     };
 
-    // Métodos de filtros
+    // --- UI ACTIONS ---
     const setFilter = (key, value) => {
         state.filters[key] = value;
+        fetchTickets();
     };
 
     const clearFilters = () => {
-        state.filters = {
-            global: '',
-            status: null,
-            sort_by: 'created_at',
-            sort_direction: 'desc'
-        };
-    };
-
-    const setSort = (field, direction = 'asc') => {
-        state.filters.sort_by = field;
-        state.filters.sort_direction = direction;
-    };
-
-    // Método para resetear el estado
-    const resetState = () => {
-        state.tickets = [];
-        state.currentTicket = null;
-        state.isLoading = false;
-        state.isSaving = false;
-        state.isDeleting = false;
-        state.lastFetch = null;
-        clearFilters();
+        state.filters.status = null;
+        state.filters.priority = null;
+        state.filters.search = '';
+        fetchTickets();
     };
 
     return {
-        // Estado
-        state,
+        // State (direct access)
+        tickets: computed(() => state.tickets),
+        isLoading: computed(() => state.isLoading),
+        isSaving: computed(() => state.isSaving),
+        isDeleting: computed(() => state.isDeleting),
+        filters: state.filters, // Direct access for v-model
+        pagination: computed(() => state.pagination),
 
-        // Computadas
+        // Getters
         allTickets,
-        pendingTickets,
-        inProcessTickets,
-        concludedTickets,
         statusOptions,
-        sortOptions,
+        priorityOptions,
 
-        // Métodos de API
+        // API Actions
         fetchTickets,
-        fetchTicket,
         createTicket,
         updateTicket,
         deleteTicket,
 
-        // Métodos de filtros
-        setFilter,
-        clearFilters,
-        setSort,
+        // Real-time handlers
+        handleTicketCreated,
+        handleTicketUpdated,
+        initEchoListeners,
+        leaveEchoChannels,
 
-        // Utilidades
-        resetState
+        // UI Actions
+        setFilter,
+        clearFilters
     };
 });

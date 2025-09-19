@@ -1,11 +1,18 @@
 <script setup>
 import { useLayout } from '@/layout/composables/layout';
-import { computed, ref, watch } from 'vue';
+import { computed, ref, watch, onMounted } from 'vue';
 import AppFooter from './AppFooter.vue';
 import AppSidebar from './AppSidebar.vue';
 import AppTopbar from './AppTopbar.vue';
 
+// Imports for real-time functionality
+import { useAuthStore } from '@/store/authStore';
+import { useTicketsStore } from '@/store/ticketsStore';
+import Echo from '@/websocket/echo.js';
+
 const { layoutConfig, layoutState, isSidebarActive } = useLayout();
+const authStore = useAuthStore();
+const ticketsStore = useTicketsStore();
 
 const outsideClickListener = ref(null);
 
@@ -53,6 +60,62 @@ function isOutsideClicked(event) {
 
     return !(sidebarEl.isSameNode(event.target) || sidebarEl.contains(event.target) || topbarEl.isSameNode(event.target) || topbarEl.contains(event.target));
 }
+
+// --- REAL-TIME WEBSOCKET LISTENERS ---
+onMounted(() => {
+    // Watch for login status changes to setup or teardown websocket listeners
+    watch(
+        () => authStore.isLoggedIn,
+        (isLoggedIn) => {
+            if (isLoggedIn && authStore.authUser) {
+                const userId = authStore.authUser.id;
+                const userPosition = authStore.authUser.position?.name;
+
+                // Disconnect from any existing channels to prevent duplicates on hot-reload
+                Echo.leave(`App.Models.User.${userId}`);
+                if (userPosition) {
+                    Echo.leave(`tickets.position.${userPosition}`);
+                }
+
+                // Listen for events on the private user channel
+                Echo.private(`App.Models.User.${userId}`)
+                    .listen('.ticket.created', (e) => {
+                        console.log('Event received: ticket.created for me', e.ticket);
+                        ticketsStore.handleTicketCreated(e.ticket);
+                    })
+                    .listen('.ticket.updated', (e) => {
+                        console.log('Event received: ticket.updated for me', e.ticket);
+                        ticketsStore.handleTicketUpdated(e.ticket);
+                    });
+
+                // Listen for events on the position-based presence channel
+                if (userPosition) {
+                    Echo.join(`tickets.position.${userPosition}`)
+                        .here((users) => {
+                            console.log('Connected to position channel. Users here:', users);
+                        })
+                        .joining((user) => {
+                            console.log(user.name, 'joined position channel.');
+                        })
+                        .leaving((user) => {
+                            console.log(user.name, 'left position channel.');
+                        })
+                        .listen('.ticket.created', (e) => {
+                            console.log('Event received: ticket.created for my position', e.ticket);
+                            ticketsStore.handleTicketCreated(e.ticket);
+                        })
+                        .listen('.ticket.updated', (e) => {
+                            console.log('Event received: ticket.updated for my position', e.ticket);
+                            ticketsStore.handleTicketUpdated(e.ticket);
+                        });
+                }
+            } else {
+                Echo.disconnect();
+            }
+        },
+        { immediate: true } // Run on component mount
+    );
+});
 </script>
 
 <template>

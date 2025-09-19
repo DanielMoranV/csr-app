@@ -1,47 +1,17 @@
 <script setup>
-import { useTickets } from '@/composables/useTickets.js';
 import { useToast } from 'primevue/usetoast';
 import { onMounted, reactive, ref } from 'vue';
+import { useTicketsStore } from '@/store/ticketsStore.js';
+import { useAuthStore } from '@/store/authStore.js';
 
-// Componentes modulares (placeholders por ahora)
+// Componentes modulares
 import ConfirmDialog from '@/components/tickets/ConfirmDialog.vue';
 import TicketDialog from '@/components/tickets/TicketDialog.vue';
 import TicketFilters from '@/components/tickets/TicketFilters.vue';
 import TicketTable from '@/components/tickets/TicketTable.vue';
-// import TicketStats from '@/components/tickets/TicketStats.vue'; // Si se necesitan estadísticas
 
-// Composables
-const {
-    // Estados
-    tickets,
-    allTickets,
-    isLoading,
-    isSaving,
-    // eslint-disable-next-line no-unused-vars
-    isDeleting,
-    operationInProgress,
-
-    // Opciones
-    statusOptions,
-    sortOptions,
-
-    // Métodos principales
-    initializeTickets,
-    refreshTickets,
-    createTicket,
-    updateTicket,
-    deleteTicket,
-
-    // Métodos de filtrado
-    setGlobalFilter,
-    setStatusFilter,
-    setSorting,
-    clearAllFilters,
-
-    // Utilidades
-    getStatusSeverity
-} = useTickets();
-
+const ticketsStore = useTicketsStore();
+const authStore = useAuthStore();
 const toast = useToast();
 
 // Estado local de la vista
@@ -63,21 +33,14 @@ const confirmData = reactive({
     confirmationText: 'CONFIRMAR'
 });
 
-// Métodos de inicialización
-onMounted(async () => {
-    try {
-        await initializeTickets();
-        // await loadTicketStats(); // Si se necesitan estadísticas
-    } catch (error) {
-        console.error('Error al inicializar tickets:', error);
-        toast.add({
-            severity: 'error',
-            summary: 'Error de Inicialización',
-            detail: 'No se pudo cargar la lista de tickets',
-            life: 5000
-        });
+onMounted(() => {
+    // Si no hay tickets en el store, los carga
+    if (!ticketsStore.tickets || ticketsStore.tickets.length === 0) {
+        ticketsStore.fetchTickets();
     }
 });
+
+
 
 // Métodos de gestión de tickets
 const openCreateTicketDialog = () => {
@@ -93,7 +56,6 @@ const editTicket = (ticket) => {
 };
 
 const viewTicketDetails = (ticket) => {
-    // Podría redirigir a una vista de detalle o abrir un diálogo más complejo
     editTicket(ticket); // Por ahora, usa el mismo diálogo de edición
 };
 
@@ -106,14 +68,25 @@ const closeTicketDialog = () => {
 const handleSaveTicket = async (ticketData) => {
     try {
         if (isEditing.value && selectedTicket.value?.id) {
-            await updateTicket(selectedTicket.value.id, ticketData);
+            await ticketsStore.updateTicket(selectedTicket.value.id, ticketData);
         } else {
-            await createTicket(ticketData);
+            await ticketsStore.createTicket(ticketData);
         }
         closeTicketDialog();
+        toast.add({
+            severity: 'success',
+            summary: 'Ticket Guardado',
+            detail: `Ticket ${isEditing.value ? 'actualizado' : 'creado'} correctamente`,
+            life: 3000
+        });
     } catch (error) {
-        // El error ya es manejado por el composable
         console.error('Error al guardar ticket:', error);
+        toast.add({
+            severity: 'error',
+            summary: 'Error al Guardar',
+            detail: error.message || 'No se pudo guardar el ticket',
+            life: 5000
+        });
     }
 };
 
@@ -125,7 +98,7 @@ const confirmDeleteTicket = (ticket) => {
         details: 'Esta acción eliminará permanentemente el ticket y no se puede deshacer.',
         actionType: 'delete',
         ticket: ticket,
-        action: () => deleteTicket(ticket),
+        action: () => ticketsStore.deleteTicket(ticket.id),
         processingMessage: 'Eliminando ticket...',
         requireTextConfirmation: true,
         confirmationText: 'ELIMINAR'
@@ -138,9 +111,20 @@ const handleConfirmAction = async () => {
         try {
             await confirmData.action();
             closeConfirmDialog();
+            toast.add({
+                severity: 'success',
+                summary: 'Ticket Eliminado',
+                detail: `El ticket "${confirmData.ticket.title}" ha sido eliminado`,
+                life: 3000
+            });
         } catch (error) {
-            // El error ya es manejado por el composable
             console.error('Error en acción confirmada:', error);
+            toast.add({
+                severity: 'error',
+                summary: 'Error al Eliminar',
+                detail: error.message || 'No se pudo eliminar el ticket',
+                life: 5000
+            });
         }
     }
 };
@@ -162,27 +146,23 @@ const closeConfirmDialog = () => {
 
 // Métodos de utilidad
 const getEmptyMessage = () => {
-    if (isLoading.value) {
+    if (ticketsStore.isLoading) {
         return 'Cargando tickets...';
     }
-
-    const hasFilters = tickets.value.length !== allTickets.value.length;
-
-    if (hasFilters) {
+    if (ticketsStore.tickets.length === 0 && (ticketsStore.filters.search || ticketsStore.filters.status || ticketsStore.filters.priority)) {
         return 'No se encontraron tickets que coincidan con los filtros aplicados. Intente ajustar los criterios de búsqueda.';
     }
-
     return 'No hay tickets registrados en el sistema. Haga clic en "Nuevo Ticket" para agregar el primero.';
 };
 
 const exportTickets = () => {
     try {
-        // Crear datos para exportar
-        const dataToExport = tickets.value.map((ticket) => ({
+        const dataToExport = ticketsStore.tickets.map((ticket) => ({
             ID: ticket.id,
             Título: ticket.title,
             Descripción: ticket.description,
             Estado: ticket.status,
+            Prioridad: ticket.priority,
             'Creador ID': ticket.creator_user_id,
             'Creador Nombre': ticket.creator?.name,
             'Asignado ID': ticket.assignee_user_id,
@@ -192,10 +172,8 @@ const exportTickets = () => {
             'Fecha de Creación': new Date(ticket.created_at).toLocaleString('es-PE')
         }));
 
-        // Convertir a CSV
         const csvContent = convertToCSV(dataToExport);
 
-        // Descargar archivo
         const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
         const link = document.createElement('a');
         const url = URL.createObjectURL(blob);
@@ -209,7 +187,7 @@ const exportTickets = () => {
         toast.add({
             severity: 'success',
             summary: 'Exportación Completa',
-            detail: `Se exportaron ${tickets.value.length} tickets`,
+            detail: `Se exportaron ${ticketsStore.tickets.length} tickets`,
             life: 3000
         });
     } catch (error) {
@@ -239,10 +217,42 @@ const convertToCSV = (data) => {
 
     return [csvHeaders, ...csvRows].join('\n');
 };
+
+const getStatusSeverity = (status) => {
+    switch (status) {
+        case 'pendiente':
+            return 'info';
+        case 'en proceso':
+            return 'warning';
+        case 'concluido':
+            return 'success';
+        case 'rechazado':
+            return 'danger';
+        case 'anulado':
+            return 'secondary';
+        default:
+            return null;
+    }
+};
+
+const getPrioritySeverity = (priority) => {
+    switch (priority) {
+        case 'baja':
+            return 'info';
+        case 'media':
+            return 'warning';
+        case 'alta':
+            return 'danger';
+        case 'urgente':
+            return 'danger'; // Or a specific urgent color
+        default:
+            return null;
+    }
+};
 </script>
 
 <template>
-    <div class="tickets-management" :data-loading="isLoading">
+    <div class="tickets-management" :data-loading="ticketsStore.isLoading">
         <!-- Header mejorado -->
         <div class="header-section">
             <div class="header-content">
@@ -266,7 +276,7 @@ const convertToCSV = (data) => {
                 <!-- Acciones rápidas mejoradas -->
                 <div class="actions-section">
                     <div class="quick-actions">
-                        <Button icon="pi pi-refresh" class="p-button-outlined action-btn" @click="refreshTickets" v-tooltip.bottom="'Actualizar lista'" :loading="isLoading" severity="secondary" />
+                        <Button icon="pi pi-refresh" class="p-button-outlined action-btn" @click="ticketsStore.fetchTickets()" v-tooltip.bottom="'Actualizar lista'" :loading="ticketsStore.isLoading" severity="secondary" />
                         <Button icon="pi pi-download" class="p-button-outlined action-btn" @click="exportTickets" v-tooltip.bottom="'Exportar tickets'" severity="info" />
                         <Button label="Nuevo Ticket" icon="pi pi-plus" class="primary-action-btn" @click="openCreateTicketDialog" severity="success" />
                     </div>
@@ -276,45 +286,30 @@ const convertToCSV = (data) => {
 
         <!-- Contenido principal -->
         <div class="main-content">
-            <!-- Estadísticas (opcional) -->
-            <!-- <div class="stats-section">
-                <TicketStats :stats="ticketStats" :loading="isLoading" @refresh-stats="loadTicketStats" />
-            </div> -->
-
             <!-- Panel de filtros -->
             <div class="filters-section">
-                <TicketFilters
-                    :status-options="statusOptions"
-                    :sort-options="sortOptions"
-                    :result-count="tickets.length"
-                    :total-count="allTickets.length"
-                    :is-filtering="isLoading"
-                    @update-global-filter="setGlobalFilter"
-                    @update-status-filter="setStatusFilter"
-                    @update-sort="setSorting"
-                    @clear-filters="clearAllFilters"
-                />
+                <TicketFilters />
             </div>
 
             <!-- Tabla de tickets -->
             <div class="table-section">
                 <TicketTable
-                    :tickets="tickets"
-                    :loading="isLoading"
+                    :tickets="ticketsStore.tickets"
+                    :loading="ticketsStore.isLoading"
                     :empty-message="getEmptyMessage()"
-                    :rows-per-page="25"
                     @view-ticket="viewTicketDetails"
                     @edit-ticket="editTicket"
                     @create-ticket="openCreateTicketDialog"
                     @delete-ticket="confirmDeleteTicket"
-                    @refresh="refreshTickets"
+                    @refresh="ticketsStore.fetchTickets()"
                     :get-status-severity="getStatusSeverity"
+                    :get-priority-severity="getPrioritySeverity"
                 />
             </div>
         </div>
 
         <!-- Diálogo de ticket -->
-        <TicketDialog v-model:visible="ticketDialogVisible" :ticket="selectedTicket" :saving="isSaving" @save-ticket="handleSaveTicket" @close="closeTicketDialog" />
+        <TicketDialog v-model:visible="ticketDialogVisible" :ticket="selectedTicket" :saving="ticketsStore.isSaving" @save-ticket="handleSaveTicket" @close="closeTicketDialog" />
 
         <!-- Diálogo de confirmación -->
         <ConfirmDialog
@@ -324,7 +319,7 @@ const convertToCSV = (data) => {
             :details="confirmData.details"
             :action-type="confirmData.actionType"
             :ticket="confirmData.ticket"
-            :processing="operationInProgress"
+            :processing="ticketsStore.isDeleting"
             :processing-message="confirmData.processingMessage"
             :require-text-confirmation="confirmData.requireTextConfirmation"
             :confirmation-text="confirmData.confirmationText"
