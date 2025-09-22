@@ -41,6 +41,38 @@ const authStore = useAuthStore();
 const globalFilterFields = ['title', 'description', 'status', 'creator.name', 'assignee.name', 'assignee_position'];
 
 // Métodos de utilidad
+const getStatusIcon = (status) => {
+    switch (status) {
+        case 'pendiente':
+            return 'pi pi-clock';
+        case 'en proceso':
+            return 'pi pi-spin pi-spinner';
+        case 'concluido':
+            return 'pi pi-check-circle';
+        case 'rechazado':
+            return 'pi pi-times-circle';
+        case 'anulado':
+            return 'pi pi-ban';
+        default:
+            return 'pi pi-question-circle';
+    }
+};
+
+const getPriorityIcon = (priority) => {
+    switch (priority) {
+        case 'baja':
+            return 'pi pi-arrow-down';
+        case 'media':
+            return 'pi pi-minus';
+        case 'alta':
+            return 'pi pi-arrow-up';
+        case 'urgente':
+            return 'pi pi-exclamation-triangle';
+        default:
+            return 'pi pi-question-circle';
+    }
+};
+
 const getInitials = (name) => {
     if (!name) return '';
     return name
@@ -280,16 +312,20 @@ const getActionItems = (ticketData) => {
             </Column>
 
             <!-- Prioridad -->
-            <Column field="priority" header="Prioridad" :sortable="true" style="min-width: 120px">
+            <Column field="priority" header="Prioridad" :sortable="true" style="min-width: 120px; text-align: center">
                 <template #body="{ data }">
-                    <Tag :value="data.priority" :severity="getPrioritySeverity(data.priority)" class="ticket-priority-tag" rounded />
+                    <Tag v-tooltip.top="data.priority" :severity="getPrioritySeverity(data.priority)" class="ticket-priority-tag" rounded>
+                        <i :class="getPriorityIcon(data.priority)"></i>
+                    </Tag>
                 </template>
             </Column>
 
             <!-- Estado -->
-            <Column field="status" header="Estado" :sortable="true" style="min-width: 120px">
+            <Column field="status" header="Estado" :sortable="true" style="min-width: 120px; text-align: center">
                 <template #body="{ data }">
-                    <Tag :value="data.status" :severity="getStatusSeverity(data.status)" class="ticket-status-tag" rounded />
+                    <Tag v-tooltip.top="data.status" :severity="getStatusSeverity(data.status)" class="ticket-status-tag" rounded>
+                        <i :class="getStatusIcon(data.status)"></i>
+                    </Tag>
                 </template>
             </Column>
 
@@ -508,18 +544,14 @@ const getActionItems = (ticketData) => {
     font-size: 0.9rem;
 }
 
-.ticket-status-tag {
-    font-weight: 600;
-    font-size: 0.85rem;
-    padding: 0.5rem 1rem;
-    border-radius: 20px;
-}
-
+.ticket-status-tag,
 .ticket-priority-tag {
-    font-weight: 600;
-    font-size: 0.85rem;
-    padding: 0.5rem 1rem;
-    border-radius: 20px;
+    width: 2.25rem;
+    height: 2.25rem;
+    display: inline-flex;
+    justify-content: center;
+    align-items: center;
+    font-size: 1.1rem;
 }
 
 .ticket-user-cell {
