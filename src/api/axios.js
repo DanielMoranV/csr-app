@@ -16,6 +16,7 @@ const instance = axios.create({
 // Request interceptor - Agregar token automáticamente
 instance.interceptors.request.use(
     (config) => {
+        console.log('Request Axios:', config);
         const authStore = useAuthStore();
         const token = authStore.getToken;
 

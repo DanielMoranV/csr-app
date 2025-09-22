@@ -113,8 +113,35 @@ const uploadFile = async () => {
     }
 };
 
-const downloadAttachment = (attachment) => {
-    window.open(`${api_url}/tickets/${attachment.ticket_id}/attachments/${attachment.id}`, '_blank');
+const downloadAttachment = async (attachment) => {
+    toast.add({ severity: 'info', summary: 'Descargando', detail: `Descargando ${attachment.file_name}...`, life: 3000 });
+    try {
+        const response = await axios.get(`${api_url}/tickets/${attachment.attachable_id}/attachments/${attachment.id}`, {
+            responseType: 'blob' // Important to handle binary data
+        });
+
+        // Create a URL for the blob
+        const url = window.URL.createObjectURL(new Blob([response.data]));
+        const link = document.createElement('a');
+        link.href = url;
+        link.setAttribute('download', attachment.file_name); // Set the filename for download
+        document.body.appendChild(link);
+        link.click();
+
+        // Clean up
+        link.parentNode.removeChild(link);
+        window.URL.revokeObjectURL(url);
+
+        toast.add({ severity: 'success', summary: '¡Éxito!', detail: 'La descarga ha comenzado.', life: 3000 });
+    } catch (error) {
+        console.error('Error downloading attachment:', error);
+        toast.add({
+            severity: 'error',
+            summary: 'Error en la descarga',
+            detail: error.response?.data?.message || 'No se pudo descargar el archivo. Verifique su conexión o permisos.',
+            life: 5000
+        });
+    }
 };
 
 const confirmDeleteAttachment = (attachment) => {

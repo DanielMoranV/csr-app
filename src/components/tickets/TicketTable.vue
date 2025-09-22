@@ -1,6 +1,5 @@
 <script setup>
 import { useAuthStore } from '@/store/authStore';
-import { useTicketsStore } from '@/store/ticketsStore';
 import Badge from 'primevue/badge';
 import Button from 'primevue/button';
 import Column from 'primevue/column';
@@ -37,11 +36,6 @@ const emit = defineEmits(['view-ticket', 'edit-ticket', 'create-ticket', 'delete
 
 const toast = useToast();
 const authStore = useAuthStore();
-const store = useTicketsStore();
-
-const onPageChange = (event) => {
-    store.onPage(event);
-};
 
 // Campos para filtro global
 const globalFilterFields = ['title', 'description', 'status', 'creator.name', 'assignee.name', 'assignee_position'];
@@ -65,16 +59,6 @@ const getAvatarColor = (name) => {
     }, 0);
 
     return colors[Math.abs(hash) % colors.length];
-};
-
-const formatDate = (dateString) => {
-    if (!dateString) return '';
-    const date = new Date(dateString);
-    return date.toLocaleDateString('es-PE', {
-        day: '2-digit',
-        month: '2-digit',
-        year: 'numeric'
-    });
 };
 
 const formatDateTime = (dateString) => {
@@ -103,54 +87,6 @@ const getTimeAgo = (dateString) => {
     if (days < 30) return `Hace ${Math.floor(days / 7)} semanas`;
     if (days < 365) return `Hace ${Math.floor(days / 30)} meses`;
     return `Hace ${Math.floor(days / 365)} años`;
-};
-
-const copyToClipboard = async (text) => {
-    // eslint-disable-line no-unused-vars
-    // eslint-disable-line no-unused-vars // eslint-disable-line no-unused-vars
-    try {
-        await navigator.clipboard.writeText(text);
-        toast.add({
-            severity: 'success',
-            summary: '✅ Copiado exitosamente',
-            detail: `${text} copiado al portapapeles`,
-            life: 2500
-        });
-
-        const button = event?.target?.closest('button');
-        if (button) {
-            button.style.transform = 'scale(0.95)';
-            setTimeout(() => {
-                button.style.transform = 'scale(1)';
-            }, 150);
-        }
-    } catch (error) {
-        try {
-            const textArea = document.createElement('textarea');
-            textArea.value = text;
-            textArea.style.position = 'fixed';
-            textArea.style.opacity = '0';
-            document.body.appendChild(textArea);
-            textArea.focus();
-            textArea.select();
-            document.execCommand('copy');
-            document.body.removeChild(textArea);
-
-            toast.add({
-                severity: 'success',
-                summary: '✅ Copiado exitosamente',
-                detail: `${text} copiado al portapapeles`,
-                life: 2500
-            });
-        } catch (fallbackError) {
-            toast.add({
-                severity: 'error',
-                summary: '❌ Error al copiar',
-                detail: 'No se pudo copiar al portapapeles. Intente seleccionar y copiar manualmente.',
-                life: 4000
-            });
-        }
-    }
 };
 
 const onImageError = (event) => {
@@ -275,10 +211,7 @@ const getActionItems = (ticketData) => {
             :value="tickets"
             :loading="loading"
             paginator
-            :rows="store.pagination.per_page"
-            :total-records="store.pagination.total"
-            lazy
-            @page="onPageChange"
+            :rows="15"
             responsiveLayout="scroll"
             :resizableColumns="true"
             columnResizeMode="expand"
@@ -321,6 +254,13 @@ const getActionItems = (ticketData) => {
                     <div class="loading-text">Cargando tickets...</div>
                 </div>
             </template>
+
+            <!-- Id del Ticket -->
+            <Column field="id" header="ID" :sortable="true" style="min-width: 100px">
+                <template #body="{ data }">
+                    <span class="ticket-id">{{ data.id }}</span>
+                </template>
+            </Column>
 
             <!-- Título del Ticket -->
             <Column field="title" header="Título" :sortable="true" style="min-width: 250px">
@@ -934,8 +874,6 @@ const getActionItems = (ticketData) => {
 :root[data-theme='dark'] .ticket-datatable :deep(.p-datatable-striped .p-datatable-tbody > tr:nth-child(odd)) {
     background: var(--surface-750) !important;
 }
-
-
 
 /* Estados vacíos en modo oscuro */
 .app-dark .ticket-empty-state,

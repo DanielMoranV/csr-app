@@ -540,7 +540,13 @@ const getAvatarColor = (name) => {
             </TabPanel>
 
             <TabPanel header="Historial de Estados" :disabled="!isEditing">
-                <TicketStatusHistory :ticket="props.ticket" />
+                <TicketStatusHistory v-if="isEditing" :ticket="props.ticket" />
+                <div v-else class="p-message p-message-info mt-3">
+                    <div class="p-message-wrapper">
+                        <span class="p-message-icon pi pi-info-circle"></span>
+                        <div class="p-message-text">El historial de estados estará disponible una vez que el ticket sea creado.</div>
+                    </div>
+                </div>
             </TabPanel>
 
             <TabPanel header="Comentarios" :disabled="!isEditing">

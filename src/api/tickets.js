@@ -2,7 +2,14 @@ import api from './axios';
 
 export const TicketService = {
     async getTickets(params = {}) {
-        const response = await api.get('/tickets', { params });
+        // Clean up filters: remove null, undefined, or empty string values
+        const activeFilters = {};
+        for (const key in params) {
+            if (params[key] !== null && params[key] !== undefined && params[key] !== '') {
+                activeFilters[key] = params[key];
+            }
+        }
+        const response = await api.get('/tickets', { params: activeFilters });
         return response;
     },
 

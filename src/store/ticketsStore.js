@@ -19,7 +19,8 @@ export const useTicketsStore = defineStore('tickets', () => {
         filters: {
             status: null,
             priority: null,
-            search: ''
+            search: '',
+            ticket_id: null
         },
         pagination: {
             total: 0,
@@ -115,13 +116,20 @@ export const useTicketsStore = defineStore('tickets', () => {
             const response = await TicketService.getTickets(state.filters);
             const responseData = response.data;
 
-            console.log('Fetched tickets:', responseData);
+            // Handle response wrapped in a 'data' object, or as a direct array
+            if (responseData && Array.isArray(responseData.data)) {
+                state.tickets = responseData.data;
+            } else if (Array.isArray(responseData)) {
+                state.tickets = responseData;
+            } else {
+                console.warn('Unexpected API response structure for tickets:', responseData);
+                state.tickets = [];
+            }
 
-            // Non-paginated response
-            state.tickets = responseData;
+            // Update pagination state for client-side table info
             state.pagination = {
-                total: responseData.length,
-                per_page: responseData.length,
+                total: state.tickets.length,
+                per_page: state.tickets.length,
                 current_page: 1
             };
             state.lastFetch = Date.now();
@@ -188,6 +196,7 @@ export const useTicketsStore = defineStore('tickets', () => {
         state.filters.status = null;
         state.filters.priority = null;
         state.filters.search = '';
+        state.filters.ticket_id = null;
         fetchTickets();
     };
 

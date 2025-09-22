@@ -1,8 +1,7 @@
 <script setup>
+import { useTicketsStore } from '@/store/ticketsStore.js';
 import { useToast } from 'primevue/usetoast';
 import { onMounted, reactive, ref } from 'vue';
-import { useTicketsStore } from '@/store/ticketsStore.js';
-import { useAuthStore } from '@/store/authStore.js';
 
 // Componentes modulares
 import ConfirmDialog from '@/components/tickets/ConfirmDialog.vue';
@@ -11,7 +10,6 @@ import TicketFilters from '@/components/tickets/TicketFilters.vue';
 import TicketTable from '@/components/tickets/TicketTable.vue';
 
 const ticketsStore = useTicketsStore();
-const authStore = useAuthStore();
 const toast = useToast();
 
 // Estado local de la vista
@@ -39,8 +37,6 @@ onMounted(() => {
         ticketsStore.fetchTickets();
     }
 });
-
-
 
 // Métodos de gestión de tickets
 const openCreateTicketDialog = () => {
@@ -79,6 +75,8 @@ const handleSaveTicket = async (ticketData) => {
             detail: `Ticket ${isEditing.value ? 'actualizado' : 'creado'} correctamente`,
             life: 3000
         });
+        // Refrescar la lista de tickets para mostrar los cambios
+        await ticketsStore.fetchTickets();
     } catch (error) {
         console.error('Error al guardar ticket:', error);
         toast.add({
@@ -117,6 +115,8 @@ const handleConfirmAction = async () => {
                 detail: `El ticket "${confirmData.ticket.title}" ha sido eliminado`,
                 life: 3000
             });
+            // Refrescar la lista de tickets para mostrar los cambios
+            await ticketsStore.fetchTickets();
         } catch (error) {
             console.error('Error en acción confirmada:', error);
             toast.add({
