@@ -24,6 +24,7 @@ export const useAuthStore = defineStore('auth', () => {
     // Computadas
     const getUser = computed(() => state.user);
     const getToken = computed(() => state.token);
+
     const isLoggedIn = computed(() => state.isAuthenticated && !!state.token);
     const isInitialized = computed(() => state.isInitialized);
     const isTokenExpired = computed(() => {

@@ -1,7 +1,6 @@
 import { useAuthStore } from '@/store/authStore';
 import Echo from 'laravel-echo';
 import Pusher from 'pusher-js';
-import axios from 'axios'; // Ensure axios is imported for potential use in authEndpoint
 
 const api_url = import.meta.env.VITE_API_URL;
 
@@ -28,8 +27,7 @@ if (broadcaster === 'reverb') {
         wsHost: import.meta.env.VITE_REVERB_HOST,
         wsPort: import.meta.env.VITE_REVERB_PORT,
         wssPort: import.meta.env.VITE_REVERB_PORT,
-        forceTLS: false,
-        encrypted: true,
+        forceTLS: import.meta.env.VITE_REVERB_SCHEME === 'https',
         disableStats: true,
         enabledTransports: ['ws', 'wss'],
         authEndpoint: `${api_url}/broadcasting/auth`,
