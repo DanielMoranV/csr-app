@@ -96,8 +96,6 @@ const handleSubmit = async () => {
         }
     } catch (error) {
         console.error('Error en login:', error);
-        console.log('Tipo de error recibido:', typeof error);
-        console.log('Contenido del error recibido:', error);
 
         // Manejar errores de validación del backend
         if (error.errors && typeof error.errors === 'object') {

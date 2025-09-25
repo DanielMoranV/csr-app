@@ -200,7 +200,6 @@ export const useAuthStore = defineStore('auth', () => {
     };
 
     const clearAuthData = () => {
-        console.log('🧹 [AUTH] Limpiando datos de autenticación...');
         state.user = null;
         state.token = null;
         state.isAuthenticated = false;

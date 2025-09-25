@@ -23,22 +23,22 @@ const listenForMedicalRecordEvents = () => {
 
     echoChannel.value = useEcho
         .channel('hospitalizations')
-        .listen('hospitalization.created', (e) => {
+        .listen('.hospitalization.created', (e) => {
             console.log('Evento hospitalization.created en canal hospitalizations:', e);
             // Aquí puedes añadir lógica para actualizar el store o la UI
         })
-        .listen('hospitalization.updated', (e) => {
+        .listen('.hospitalization.updated', (e) => {
             console.log('Evento hospitalization.updated en canal hospitalizations:', e);
             // Aquí puedes añadir lógica para actualizar el store o la UI
         });
 
     useEcho
         .channel('hospital-dashboard')
-        .listen('hospitalization.created', (e) => {
+        .listen('.hospitalization.created', (e) => {
             console.log('Evento hospitalization.created en canal hospital-dashboard:', e);
             // Aquí puedes añadir lógica para actualizar el store o la UI
         })
-        .listen('hospitalization.updated', (e) => {
+        .listen('.hospitalization.updated', (e) => {
             console.log('Evento hospitalization.updated en canal hospital-dashboard:', e);
             // Aquí puedes añadir lógica para actualizar el store o la UI
         });
@@ -58,8 +58,8 @@ onMounted(() => {
 });
 const cleanupWebSocketListeners = () => {
     if (echoChannel.value) {
-        useEcho.leaveChannel('hospitalizations');
-        useEcho.leaveChannel('hospital-dashboard');
+        useEcho.leave('hospitalizations');
+        useEcho.leave('hospital-dashboard');
         echoChannel.value = null;
         listenerRegistered.value = false;
     }

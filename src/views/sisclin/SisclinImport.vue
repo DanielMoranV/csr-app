@@ -230,7 +230,6 @@ const processExcelFile = () => {
 
                                 // Formateo de fechas - API expects dd-mm-yyyy format
                                 if (header.includes('fec_') || header.includes('fnac_') || header === 'fing_doc' || header === 'fsal_doc') {
-                                    console.log(`🗓️ Procesando fecha ${header}:`, { originalValue: value, type: typeof value });
                                     // Convertir a Date object primero
                                     let dateObj = null;
 
@@ -316,12 +315,10 @@ const processExcelFile = () => {
                                         const today = new Date();
                                         value = `${String(today.getDate()).padStart(2, '0')}-${String(today.getMonth() + 1).padStart(2, '0')}-${today.getFullYear()}`;
                                     }
-                                    console.log(`✅ Fecha ${header} procesada:`, { finalValue: value });
                                 }
 
                                 // Formateo de horas - API expects HH:MM format
                                 if (header.includes('hi_') || header.includes('hs_') || header === 'hip_doc') {
-                                    console.log(`🕐 Procesando hora ${header}:`, { originalValue: value, type: typeof value });
                                     if (typeof value === 'number' && value < 1) {
                                         const totalMinutes = Math.round(value * 24 * 60);
                                         const hours = Math.floor(totalMinutes / 60);
@@ -353,7 +350,6 @@ const processExcelFile = () => {
                                         const now = new Date();
                                         value = `${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`;
                                     }
-                                    console.log(`✅ Hora ${header} procesada:`, { finalValue: value });
                                 }
 
                                 obj[header] = String(value).trim();
@@ -444,13 +440,6 @@ const importData = async (hospitalizations) => {
 
         // Validación final de fechas antes de envío
         const firstRecord = cleanData.hospitalizations[0];
-        console.log('📤 Datos enviados al backend (primer registro):', JSON.stringify(firstRecord, null, 2));
-        console.log('📅 Campos de fecha en el primer registro:', {
-            fec_doc: firstRecord.fec_doc,
-            fing_doc: firstRecord.fing_doc,
-            fsal_doc: firstRecord.fsal_doc,
-            fnac_pac: firstRecord.fnac_pac
-        });
 
         // Validar que todas las fechas tengan el formato correcto dd-mm-yyyy
         const dateFields = ['fec_doc', 'fing_doc'];
@@ -558,17 +547,6 @@ const importBatchData = async (hospitalizations) => {
                 });
 
                 const batchData = { hospitalizations: cleanBatch };
-
-                // Log para debug del primer registro del lote
-                if (i === 0 && cleanBatch.length > 0) {
-                    console.log(`📤 Lote ${i + 1} - Primer registro enviado al backend:`, JSON.stringify(cleanBatch[0], null, 2));
-                    console.log('📅 Campos de fecha en el primer registro del lote:', {
-                        fec_doc: cleanBatch[0].fec_doc,
-                        fing_doc: cleanBatch[0].fing_doc,
-                        fsal_doc: cleanBatch[0].fsal_doc,
-                        fnac_pac: cleanBatch[0].fnac_pac
-                    });
-                }
 
                 const response = await sisclinStore.bulkImportHospitalizations(batchData);
 

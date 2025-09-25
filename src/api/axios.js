@@ -16,7 +16,6 @@ const instance = axios.create({
 // Request interceptor - Agregar token automáticamente
 instance.interceptors.request.use(
     (config) => {
-        console.log('Request Axios:', config);
         const authStore = useAuthStore();
         const token = authStore.getToken;
 
@@ -47,8 +46,6 @@ instance.interceptors.response.use(
         if (response.config.responseType === 'blob') {
             return response;
         }
-
-        console.log('Response Axios:', response);
 
         const data = response.data;
 
