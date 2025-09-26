@@ -4,6 +4,7 @@ import { defineStore } from 'pinia';
 import { useToast } from 'primevue/usetoast';
 import { computed, reactive } from 'vue';
 import { useAuthStore } from './authStore';
+import { useTicketCommentsStore } from './ticketCommentsStore';
 
 export const useTicketsStore = defineStore('tickets', () => {
     const toast = useToast();
@@ -148,19 +149,13 @@ export const useTicketsStore = defineStore('tickets', () => {
 
     const handleTicketCommentCreated = (e) => {
         const comment = e.comment;
-        const ticketId = e.ticket_id;
+        const ticketId = e.comment.ticket_id; // Corrected: get ticket_id from the comment object
 
-        // Si el ticket está en la lista, refrescarlo para obtener los comentarios actualizados
         const ticket = state.tickets.find((t) => t.id === ticketId);
         if (ticket) {
             // Notify comments store about the new comment
-            try {
-                const { useTicketCommentsStore } = require('./ticketCommentsStore');
-                const commentsStore = useTicketCommentsStore();
-                commentsStore.handleCommentCreated(comment, ticketId);
-            } catch (error) {
-                console.warn('[TicketsStore] Could not notify comments store:', error);
-            }
+            const commentsStore = useTicketCommentsStore();
+            commentsStore.handleCommentCreated(comment, ticketId);
 
             toast.add({
                 severity: 'info',
@@ -173,19 +168,13 @@ export const useTicketsStore = defineStore('tickets', () => {
 
     const handleTicketCommentUpdated = (e) => {
         const comment = e.comment;
-        const ticketId = e.ticket_id;
+        const ticketId = e.comment.ticket_id; // Corrected: get ticket_id from the comment object
 
-        // Similar al comentario creado, actualizar si es necesario
         const ticket = state.tickets.find((t) => t.id === ticketId);
         if (ticket) {
             // Notify comments store about the updated comment
-            try {
-                const { useTicketCommentsStore } = require('./ticketCommentsStore');
-                const commentsStore = useTicketCommentsStore();
-                commentsStore.handleCommentUpdated(comment, ticketId);
-            } catch (error) {
-                console.warn('[TicketsStore] Could not notify comments store:', error);
-            }
+            const commentsStore = useTicketCommentsStore();
+            commentsStore.handleCommentUpdated(comment, ticketId);
 
             toast.add({
                 severity: 'info',
@@ -223,14 +212,14 @@ export const useTicketsStore = defineStore('tickets', () => {
         const userId = user?.id;
         const userPosition = user?.position;
         const token = authStore.getToken;
-        
+
         console.log('[TicketsStore] Initializing real-time events for user:', userId);
-        
+
         if (!authStore.isLoggedIn) {
             console.warn('[TicketsStore] User not logged in, skipping Echo initialization');
             return;
         }
-        
+
         if (!token) {
             console.warn('[TicketsStore] No token available, skipping Echo initialization');
             return;
@@ -238,9 +227,9 @@ export const useTicketsStore = defineStore('tickets', () => {
 
         if (userId) {
             console.log(`[TicketsStore] Attempting to subscribe to private channel: App.Models.User.${userId}`);
-            
+
             const privateChannel = useEcho.private(`App.Models.User.${userId}`);
-            
+
             // Agregar manejadores de eventos del canal
             privateChannel
                 .subscribed(() => {
@@ -256,7 +245,7 @@ export const useTicketsStore = defineStore('tickets', () => {
                 .listen('.ticket.comment.created', handleTicketCommentCreated)
                 .listen('.ticket.comment.updated', handleTicketCommentUpdated)
                 .listen('.ticket.deleted', handleTicketDeleted);
-                
+
             console.log(`[TicketsStore] Listening to private user channel: App.Models.User.${userId}`);
         } else {
             console.warn('[TicketsStore] No userId found, cannot subscribe to private channel');
@@ -264,9 +253,9 @@ export const useTicketsStore = defineStore('tickets', () => {
 
         if (userPosition) {
             console.log(`[TicketsStore] Attempting to join presence channel: tickets.position.${userPosition}`);
-            
+
             const presenceChannel = useEcho.join(`tickets.position.${userPosition}`);
-            
+
             presenceChannel
                 .subscribed(() => {
                     console.log(`[TicketsStore] Successfully joined presence channel: tickets.position.${userPosition}`);
@@ -290,7 +279,7 @@ export const useTicketsStore = defineStore('tickets', () => {
                 .listen('.ticket.comment.created', handleTicketCommentCreated)
                 .listen('.ticket.comment.updated', handleTicketCommentUpdated)
                 .listen('.ticket.deleted', handleTicketDeleted);
-                
+
             console.log(`[TicketsStore] Listening to presence position channel: tickets.position.${userPosition}`);
         } else {
             console.warn('[TicketsStore] No userPosition found, cannot subscribe to presence channel');

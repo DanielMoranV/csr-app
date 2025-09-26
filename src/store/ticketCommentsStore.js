@@ -1,8 +1,7 @@
-import { defineStore } from 'pinia';
-import { reactive, computed } from 'vue';
-import { TicketCommentService } from '@/api/ticketComments';
 import { apiUtils } from '@/api/axios';
-import { useTicketsStore } from './ticketsStore';
+import { TicketCommentService } from '@/api/ticketComments';
+import { defineStore } from 'pinia';
+import { computed, reactive } from 'vue';
 
 export const useTicketCommentsStore = defineStore('ticketComments', () => {
     // State
@@ -24,6 +23,7 @@ export const useTicketCommentsStore = defineStore('ticketComments', () => {
         state.currentTicketId = ticketId;
         try {
             const response = await TicketCommentService.getComments(ticketId);
+            console.log(`[TicketCommentsStore] Fetched comments for ticket ${ticketId}:`, response);
             if (apiUtils.isSuccess(response)) {
                 state.comments = apiUtils.getData(response) || [];
                 return response;
@@ -62,7 +62,7 @@ export const useTicketCommentsStore = defineStore('ticketComments', () => {
     const handleCommentCreated = (comment, ticketId) => {
         // Only add comment if we're currently viewing this ticket
         if (state.currentTicketId === ticketId) {
-            const exists = state.comments.some(c => c.id === comment.id);
+            const exists = state.comments.some((c) => c.id === comment.id);
             if (!exists) {
                 state.comments.push(comment);
                 console.log(`[TicketCommentsStore] Comment added for ticket ${ticketId}:`, comment);
@@ -73,7 +73,7 @@ export const useTicketCommentsStore = defineStore('ticketComments', () => {
     const handleCommentUpdated = (comment, ticketId) => {
         // Only update comment if we're currently viewing this ticket
         if (state.currentTicketId === ticketId) {
-            const index = state.comments.findIndex(c => c.id === comment.id);
+            const index = state.comments.findIndex((c) => c.id === comment.id);
             if (index !== -1) {
                 state.comments[index] = comment;
                 console.log(`[TicketCommentsStore] Comment updated for ticket ${ticketId}:`, comment);

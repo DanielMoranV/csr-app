@@ -4,7 +4,6 @@ import { apiUtils } from '@/api/axios';
 import { useAuthStore } from '@/store/authStore';
 import { useTicketCommentsStore } from '@/store/ticketCommentsStore';
 import { useTicketsStore } from '@/store/ticketsStore';
-import Avatar from 'primevue/avatar';
 import Button from 'primevue/button';
 import Calendar from 'primevue/calendar';
 import Dialog from 'primevue/dialog';
@@ -55,9 +54,9 @@ const isEditing = computed(() => !!props.ticket?.id);
 // Computed para obtener el ticket actualizado del store
 const currentTicket = computed(() => {
     if (!props.ticket?.id) return props.ticket;
-    
+
     // Buscar el ticket actualizado en el store
-    const updatedTicket = ticketsStore.tickets.find(t => t.id === props.ticket.id);
+    const updatedTicket = ticketsStore.tickets.find((t) => t.id === props.ticket.id);
     return updatedTicket || props.ticket;
 });
 
@@ -84,18 +83,18 @@ const touchedFields = ref({});
 
 // Opciones para dropdowns
 const priorityOptions = ref([
-    { label: 'Baja', value: 'baja' },
-    { label: 'Media', value: 'media' },
-    { label: 'Alta', value: 'alta' },
-    { label: 'Urgente', value: 'urgente' }
+    { label: '🟢 Baja', value: 'baja', color: '#10B981', description: 'Tareas rutinarias, puede esperar' },
+    { label: '🟡 Media', value: 'media', color: '#F59E0B', description: 'Requiere atención en el día' },
+    { label: '🟠 Alta', value: 'alta', color: '#EF4444', description: 'Requiere atención inmediata' },
+    { label: '🔴 Urgente', value: 'urgente', color: '#DC2626', description: 'Emergencia operativa - resolver YA' }
 ]);
 
 const statusOptions = ref([
-    { label: 'Pendiente', value: 'pendiente' },
-    { label: 'En Proceso', value: 'en proceso' },
-    { label: 'Concluido', value: 'concluido' },
-    { label: 'Rechazado', value: 'rechazado' },
-    { label: 'Anulado', value: 'anulado' }
+    { label: '📋 Pendiente', value: 'pendiente', color: '#6B7280', description: 'Ticket registrado, pendiente de asignación' },
+    { label: '🚀 En Proceso', value: 'en proceso', color: '#3B82F6', description: 'Personal trabajando en la solución' },
+    { label: '✅ Resuelto', value: 'concluido', color: '#10B981', description: 'Problema solucionado satisfactoriamente' },
+    { label: '❌ Rechazado', value: 'rechazado', color: '#EF4444', description: 'No procede o requiere replanteamiento' },
+    { label: '🚫 Anulado', value: 'anulado', color: '#6B7280', description: 'Ticket cancelado o anulado' }
 ]);
 
 // Computed para opciones de estado filtradas por autorización
@@ -263,7 +262,9 @@ const validateField = (fieldName) => {
     switch (fieldName) {
         case 'title':
             if (!ticketForm.title?.trim()) {
-                validationErrors.value.title = 'El título es obligatorio';
+                validationErrors.value.title = 'El título del ticket es obligatorio';
+            } else if (ticketForm.title.trim().length < 5) {
+                validationErrors.value.title = 'Describa brevemente el problema (mínimo 5 caracteres)';
             } else if (ticketForm.title.trim().length > 255) {
                 validationErrors.value.title = 'El título no puede exceder 255 caracteres';
             } else {
@@ -273,7 +274,9 @@ const validateField = (fieldName) => {
 
         case 'description':
             if (!ticketForm.description?.trim()) {
-                validationErrors.value.description = 'La descripción es obligatoria';
+                validationErrors.value.description = 'La descripción detallada es obligatoria';
+            } else if (ticketForm.description.trim().length < 10) {
+                validationErrors.value.description = 'Proporcione más detalles (mínimo 10 caracteres)';
             } else {
                 delete validationErrors.value.description;
             }
@@ -282,15 +285,23 @@ const validateField = (fieldName) => {
         case 'assignee_user_id':
         case 'assignee_position':
             if (ticketForm.assignee_user_id && ticketForm.assignee_position) {
-                validationErrors.value.assignee = 'No se puede asignar a un usuario y una posición al mismo tiempo';
+                validationErrors.value.assignee = 'Seleccione solo un profesional O una especialidad, no ambos';
             } else {
                 delete validationErrors.value.assignee;
             }
             break;
 
         case 'due_date':
-            if (ticketForm.due_date && new Date(ticketForm.due_date) < new Date()) {
-                validationErrors.value.due_date = 'La fecha límite no puede ser en el pasado';
+            if (ticketForm.due_date) {
+                const selectedDate = new Date(ticketForm.due_date);
+                const now = new Date();
+                if (selectedDate < now) {
+                    validationErrors.value.due_date = 'La fecha límite no puede ser en el pasado';
+                } else if (selectedDate > new Date(now.getTime() + 365 * 24 * 60 * 60 * 1000)) {
+                    validationErrors.value.due_date = 'La fecha no puede ser mayor a un año';
+                } else {
+                    delete validationErrors.value.due_date;
+                }
             } else {
                 delete validationErrors.value.due_date;
             }
@@ -320,7 +331,7 @@ const validateAllFields = () => {
     });
 
     if (ticketForm.assignee_user_id && ticketForm.assignee_position) {
-        validationErrors.value.assignee = 'No se puede asignar a un usuario y una posición al mismo tiempo';
+        validationErrors.value.assignee = 'No se puede asignar a un usuario y un cargo al mismo tiempo';
     } else {
         delete validationErrors.value.assignee;
     }
@@ -363,23 +374,6 @@ const onDialogHide = () => {
     emit('close');
 };
 
-// const getStatusSeverity = (status) => {
-//     switch (status) {
-//         case 'pendiente':
-//             return 'info';
-//         case 'en proceso':
-//             return 'warning';
-//         case 'concluido':
-//             return 'success';
-//         case 'rechazado':
-//             return 'danger';
-//         case 'anulado':
-//             return 'secondary';
-//         default:
-//             return null;
-//     }
-// };
-
 const addComment = async () => {
     if (!newCommentContent.value.trim()) return;
     if (!props.ticket?.id) return; // Cannot add comment to a new ticket
@@ -392,24 +386,14 @@ const addComment = async () => {
     }
 };
 
-const getInitials = (name) => {
-    if (!name) return '';
-    return name
-        .split(' ')
-        .map((word) => word.charAt(0).toUpperCase())
-        .slice(0, 2)
-        .join('');
+const isOwnComment = (comment) => {
+    const currentUser = authStore.getUser;
+    return currentUser && currentUser.id === comment.user?.id;
 };
 
-const getAvatarColor = (name) => {
-    if (!name) return '#ccc';
-    const colors = ['#3B82F6', '#8B5CF6', '#10B981', '#F59E0B', '#EF4444', '#06B6D4', '#84CC16', '#F97316', '#6366F1', '#EC4899', '#14B8A6', '#F87171'];
-
-    const hash = name.split('').reduce((acc, char) => {
-        return char.charCodeAt(0) + ((acc << 5) - acc);
-    }, 0);
-
-    return colors[Math.abs(hash) % colors.length];
+const formatCommentDate = (dateString) => {
+    const date = new Date(dateString);
+    return date.toLocaleString('es-ES', { hour: 'numeric', minute: 'numeric', day: 'numeric', month: 'short' });
 };
 </script>
 
@@ -417,37 +401,59 @@ const getAvatarColor = (name) => {
     <Dialog v-model:visible="dialogVisible" :header="dialogTitle" :modal="true" class="p-fluid ticket-dialog" :style="{ width: '700px', maxHeight: '90vh' }" :closable="!saving" :closeOnEscape="!saving" @hide="onDialogHide">
         <template #header>
             <div class="flex align-items-center gap-2">
-                <i :class="isEditing ? 'pi pi-ticket text-orange-600' : 'pi pi-plus-circle text-green-600'" class="text-xl"></i>
+                <i :class="isEditing ? 'pi pi-ticket text-blue-600' : 'pi pi-plus-circle text-green-600'" class="text-xl"></i>
                 <span class="font-semibold">{{ dialogTitle }}</span>
+                <div v-if="currentTicket?.priority" class="ml-auto">
+                    <span class="priority-badge" :class="`priority-${currentTicket.priority}`">
+                        {{ priorityOptions.find((p) => p.value === currentTicket.priority)?.label || currentTicket.priority }}
+                    </span>
+                </div>
             </div>
         </template>
 
         <TabView>
-            <TabPanel header="Detalles del Ticket">
+            <TabPanel header="📝 Detalles del Ticket">
                 <form @submit.prevent="saveTicket" class="mt-3">
                     <!-- Fila 1: Título y Descripción -->
                     <div class="formgrid grid compact-form mb-3">
                         <div class="col-12">
                             <div class="field">
-                                <label for="title" class="compact-label"> Título * </label>
-                                <InputText id="title" v-model="ticketForm.title" :class="{ 'p-invalid': getFieldError('title') }" placeholder="Problema con la impresora" maxlength="255" @blur="validateField('title')" class="compact-input" fluid />
+                                <label for="title" class="compact-label">
+                                    <i class="pi pi-clipboard text-primary-500 mr-2"></i>
+                                    Título del Ticket *
+                                </label>
+                                <InputText
+                                    id="title"
+                                    v-model="ticketForm.title"
+                                    :class="{ 'p-invalid': getFieldError('title') }"
+                                    placeholder="Ej: Falla en impresora consulta 3, Solicitud de insumos, Error en sistema de citas"
+                                    maxlength="255"
+                                    @blur="validateField('title')"
+                                    class="compact-input"
+                                    fluid
+                                />
+                                <small class="field-help text-500">Describa brevemente el problema o solicitud</small>
                                 <small class="p-error" v-if="getFieldError('title')">{{ getFieldError('title') }}</small>
                             </div>
                         </div>
                         <div class="col-12">
                             <div class="field">
-                                <label for="description" class="compact-label"> Descripción * </label>
+                                <label for="description" class="compact-label">
+                                    <i class="pi pi-file-edit text-primary-500 mr-2"></i>
+                                    Descripción Detallada *
+                                </label>
                                 <Textarea
                                     id="description"
                                     v-model="ticketForm.description"
                                     :class="{ 'p-invalid': getFieldError('description') }"
-                                    placeholder="La impresora del departamento de contabilidad no funciona."
+                                    placeholder="Describa detalladamente: ubicación del problema, pasos para reproducir el error, impacto en las operaciones, recursos necesarios, etc."
                                     rows="5"
                                     cols="30"
                                     @blur="validateField('description')"
                                     class="compact-input"
                                     fluid
                                 />
+                                <small class="field-help text-500">Incluya toda la información relevante para resolver el problema</small>
                                 <small class="p-error" v-if="getFieldError('description')">{{ getFieldError('description') }}</small>
                             </div>
                         </div>
@@ -457,7 +463,10 @@ const getAvatarColor = (name) => {
                     <div class="formgrid grid compact-form mb-3">
                         <div class="col-12 md:col-6">
                             <div class="field">
-                                <label for="priority" class="compact-label"> Prioridad * </label>
+                                <label for="priority" class="compact-label">
+                                    <i class="pi pi-exclamation-triangle text-orange-500 mr-2"></i>
+                                    Prioridad *
+                                </label>
                                 <Select
                                     id="priority"
                                     v-model="ticketForm.priority"
@@ -467,15 +476,26 @@ const getAvatarColor = (name) => {
                                     placeholder="Seleccionar prioridad"
                                     :class="{ 'p-invalid': getFieldError('priority') }"
                                     @change="validateField('priority')"
-                                    class="compact-input-select"
+                                    class="compact-input-select priority-select"
                                     fluid
-                                />
+                                >
+                                    <template #option="slotProps">
+                                        <div class="priority-option" :style="{ borderLeft: `4px solid ${slotProps.option.color}` }">
+                                            <div class="font-semibold">{{ slotProps.option.label }}</div>
+                                            <div class="text-sm text-500">{{ slotProps.option.description }}</div>
+                                        </div>
+                                    </template>
+                                </Select>
+                                <small class="field-help text-500">Seleccione según el impacto en las operaciones de la clínica</small>
                                 <small class="p-error" v-if="getFieldError('priority')">{{ getFieldError('priority') }}</small>
                             </div>
                         </div>
                         <div class="col-12 md:col-6">
                             <div class="field">
-                                <label for="status" class="compact-label"> Estado * </label>
+                                <label for="status" class="compact-label">
+                                    <i class="pi pi-flag text-blue-500 mr-2"></i>
+                                    Estado del Ticket *
+                                </label>
                                 <Select
                                     id="status"
                                     v-model="ticketForm.status"
@@ -485,9 +505,17 @@ const getAvatarColor = (name) => {
                                     placeholder="Seleccionar estado"
                                     :class="{ 'p-invalid': getFieldError('status') }"
                                     @change="validateField('status')"
-                                    class="compact-input-select"
+                                    class="compact-input-select status-select"
                                     fluid
-                                />
+                                >
+                                    <template #option="slotProps">
+                                        <div class="status-option" :style="{ borderLeft: `4px solid ${slotProps.option.color}` }">
+                                            <div class="font-semibold">{{ slotProps.option.label }}</div>
+                                            <div class="text-sm text-500">{{ slotProps.option.description }}</div>
+                                        </div>
+                                    </template>
+                                </Select>
+                                <small class="field-help text-500">Estado actual del proceso de resolución</small>
                                 <small class="p-error" v-if="getFieldError('status')">{{ getFieldError('status') }}</small>
                             </div>
                         </div>
@@ -497,16 +525,19 @@ const getAvatarColor = (name) => {
                     <div class="formgrid grid compact-form mb-3">
                         <div class="col-12 md:col-6">
                             <div class="field">
-                                <label for="assignee_user_id" class="compact-label"> Asignar a Usuario (Opcional) </label>
+                                <label for="assignee_user_id" class="compact-label">
+                                    <i class="pi pi-user-plus text-green-500 mr-2"></i>
+                                    Asignar a Usuario (Opcional)
+                                </label>
                                 <Select
                                     id="assignee_user_id"
                                     v-model="ticketForm.assignee_user_id"
                                     :options="clientSearchResults"
                                     optionLabel="name"
                                     optionValue="id"
-                                    placeholder="Seleccionar usuario"
+                                    placeholder="Buscar personal: administrativo, técnico, enfermero/a..."
                                     :filter="true"
-                                    filterPlaceholder="Buscar usuario"
+                                    filterPlaceholder="Escriba el nombre del usuario"
                                     @filter="searchClients"
                                     :class="{ 'p-invalid': getFieldError('assignee') }"
                                     @change="validateField('assignee_user_id')"
@@ -514,21 +545,25 @@ const getAvatarColor = (name) => {
                                     fluid
                                     :showClear="true"
                                 />
+                                <small class="field-help text-500">Asigne a una persona específica responsable de resolver</small>
                                 <small class="p-error" v-if="getFieldError('assignee')">{{ getFieldError('assignee') }}</small>
                             </div>
                         </div>
                         <div class="col-12 md:col-6">
                             <div class="field">
-                                <label for="assignee_position" class="compact-label"> Asignar a Cargo (Opcional) </label>
+                                <label for="assignee_position" class="compact-label">
+                                    <i class="pi pi-briefcase text-blue-500 mr-2"></i>
+                                    Asignar por Cargo/Departamento (Opcional)
+                                </label>
                                 <Select
                                     id="assignee_position"
                                     v-model="ticketForm.assignee_position"
                                     :options="positionSearchResults"
                                     optionLabel="name"
                                     optionValue="id"
-                                    placeholder="Seleccionar cargo"
+                                    placeholder="Ej: Administración, IT, Mantención, Enfermería..."
                                     :filter="true"
-                                    filterPlaceholder="Buscar cargo"
+                                    filterPlaceholder="Buscar cargo o departamento"
                                     @filter="searchPositions"
                                     :class="{ 'p-invalid': getFieldError('assignee') }"
                                     @change="validateField('assignee_position')"
@@ -536,6 +571,7 @@ const getAvatarColor = (name) => {
                                     fluid
                                     :showClear="true"
                                 />
+                                <small class="field-help text-500">Asigne a un departamento o cargo específico</small>
                                 <small class="p-error" v-if="getFieldError('assignee')">{{ getFieldError('assignee') }}</small>
                             </div>
                         </div>
@@ -545,20 +581,24 @@ const getAvatarColor = (name) => {
                     <div class="formgrid grid compact-form mb-3">
                         <div class="col-12">
                             <div class="field">
-                                <label for="due_date" class="compact-label"> Fecha y Hora Límite (Opcional) </label>
+                                <label for="due_date" class="compact-label">
+                                    <i class="pi pi-clock text-orange-500 mr-2"></i>
+                                    Fecha Límite (Opcional)
+                                </label>
                                 <Calendar
                                     id="due_date"
                                     v-model="ticketForm.due_date"
                                     showTime
                                     hourFormat="24"
                                     dateFormat="dd/mm/yy"
-                                    placeholder="Seleccionar fecha y hora"
+                                    placeholder="Fecha límite para resolver el ticket"
                                     @blur="validateField('due_date')"
                                     class="compact-input-select"
                                     fluid
                                     :showIcon="true"
                                     :showClear="true"
                                 />
+                                <small class="field-help text-500">Establezca cuándo debe estar resuelto este ticket</small>
                                 <small class="p-error" v-if="getFieldError('due_date')">{{ getFieldError('due_date') }}</small>
                             </div>
                         </div>
@@ -566,7 +606,7 @@ const getAvatarColor = (name) => {
                 </form>
             </TabPanel>
 
-            <TabPanel header="Historial de Estados" :disabled="!isEditing">
+            <TabPanel header="📈 Historial de Estados" :disabled="!isEditing">
                 <TicketStatusHistory v-if="isEditing" :ticket="props.ticket" />
                 <div v-else class="p-message p-message-info mt-3">
                     <div class="p-message-wrapper">
@@ -576,32 +616,39 @@ const getAvatarColor = (name) => {
                 </div>
             </TabPanel>
 
-            <TabPanel header="Comentarios" :disabled="!isEditing">
-                <div v-if="ticketCommentsStore.state.isLoading" class="text-center p-4"><i class="pi pi-spin pi-spinner text-xl"></i> Cargando comentarios...</div>
-                <div v-else-if="ticketCommentsStore.allComments.length === 0" class="text-center p-4 text-500">No hay comentarios para este ticket.</div>
-                <div v-else class="comments-list">
-                    <div v-for="comment in ticketCommentsStore.allComments" :key="comment.id" class="comment-item mb-3 p-3 border-round surface-card shadow-1">
-                        <div class="flex align-items-center mb-2">
-                            <Avatar :image="comment.user?.url_photo_profile" :label="getInitials(comment.user?.name)" :style="{ backgroundColor: getAvatarColor(comment.user?.name), color: '#ffffff' }" shape="circle" class="mr-2" />
-                            <div class="font-bold">{{ comment.user?.name || 'Usuario Desconocido' }}</div>
-                            <div class="text-sm text-500 ml-auto">{{ new Date(comment.created_at).toLocaleString() }}</div>
+            <TabPanel header="💬 Comentarios" :disabled="!isEditing">
+                <div class="chat-wrapper">
+                    <div class="chat-container">
+                        <div v-if="ticketCommentsStore.state.isLoading" class="text-center p-4"><i class="pi pi-spin pi-spinner text-xl"></i> Cargando comentarios...</div>
+                        <div v-else-if="ticketCommentsStore.allComments.length === 0" class="text-center p-4 text-500">
+                            <i class="pi pi-comment text-4xl text-300 mb-3"></i>
+                            <div>No hay comentarios para este ticket.</div>
+                            <div class="text-sm mt-2">Los comentarios y actualizaciones del equipo aparecerán aquí.</div>
                         </div>
-                        <div class="comment-content text-700">{{ comment.content }}</div>
+                        <div v-else class="comments-list">
+                            <div v-for="comment in ticketCommentsStore.allComments" :key="comment.id" class="comment-row" :class="{ 'is-own': isOwnComment(comment) }">
+                                <div class="comment-bubble">
+                                    <div class="comment-header font-bold">{{ isOwnComment(comment) ? 'Tú' : comment.user?.name || 'Usuario Desconocido' }}</div>
+                                    <div class="comment-content text-700">{{ comment.content }}</div>
+                                    <div class="comment-footer text-xs text-500 mt-1">{{ formatCommentDate(comment.created_at) }}</div>
+                                </div>
+                            </div>
+                        </div>
                     </div>
-                </div>
 
-                <div v-if="isEditing" class="new-comment-form mt-4 p-fluid">
-                    <Textarea v-model="newCommentContent" rows="3" placeholder="Añadir un nuevo comentario..." />
-                    <Button label="Añadir Comentario" icon="pi pi-comment" class="mt-2" @click="addComment" :loading="ticketCommentsStore.state.isAdding" />
+                    <div v-if="isEditing" class="new-comment-form p-fluid">
+                        <Textarea v-model="newCommentContent" rows="3" placeholder="Añadir comentario, actualización de progreso o nota..." @keydown.enter.prevent="addComment" fluid />
+                        <Button label="Añadir Comentario" icon="pi pi-send" class="mt-2" @click="addComment" :loading="ticketCommentsStore.state.isAdding" fluid />
+                    </div>
                 </div>
             </TabPanel>
 
-            <TabPanel header="Adjuntos" :disabled="!isEditing">
+            <TabPanel header="📎 Adjuntos" :disabled="!isEditing">
                 <TicketAttachments v-if="isEditing" :ticket-id="props.ticket?.id" />
                 <div v-else class="p-message p-message-warn mt-3">
                     <div class="p-message-wrapper">
                         <span class="p-message-icon pi pi-exclamation-triangle"></span>
-                        <div class="p-message-text">Los adjuntos se pueden gestionar una vez que el ticket ha sido creado.</div>
+                        <div class="p-message-text">Los archivos adjuntos (capturas de pantalla, documentos, etc.) se pueden agregar una vez que el ticket ha sido creado.</div>
                     </div>
                 </div>
             </TabPanel>
@@ -611,8 +658,8 @@ const getAvatarColor = (name) => {
             <div class="flex justify-content-between align-items-center">
                 <div class="text-500 text-sm">* Campos obligatorios</div>
                 <div class="flex gap-2">
-                    <Button label="Cancelar" icon="pi pi-times" class="p-button-text" @click="closeDialog" :disabled="saving" />
-                    <Button :label="isEditing ? 'Actualizar' : 'Crear Ticket'" :icon="isEditing ? 'pi pi-check' : 'pi pi-plus'" @click="saveTicket" :loading="saving" :disabled="!isFormValid" />
+                    <Button label="Cancelar" icon="pi pi-times" class="p-button-outlined" @click="closeDialog" :disabled="saving" />
+                    <Button :label="isEditing ? 'Actualizar Ticket' : 'Crear Ticket'" :icon="isEditing ? 'pi pi-check' : 'pi pi-plus'" @click="saveTicket" :loading="saving" :disabled="!isFormValid" class="p-button-success" />
                 </div>
             </div>
         </template>
@@ -620,6 +667,84 @@ const getAvatarColor = (name) => {
 </template>
 
 <style scoped>
+/* CHAT STYLES */
+.chat-wrapper {
+    display: flex;
+    flex-direction: column;
+    height: 55vh; /* Adjust height as needed */
+}
+
+.chat-container {
+    flex-grow: 1; /* Takes up all available space */
+    overflow-y: auto;
+    padding: 1rem;
+    background-color: var(--surface-ground);
+    border-radius: 6px;
+}
+
+.comments-list {
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+}
+
+.comment-row {
+    display: flex;
+    max-width: 80%;
+}
+
+.comment-row.is-own {
+    align-self: flex-end;
+}
+
+.comment-row:not(.is-own) {
+    align-self: flex-start;
+}
+
+.comment-bubble {
+    padding: 0.75rem 1rem;
+    border-radius: 18px;
+    word-wrap: break-word;
+    white-space: pre-wrap;
+    line-height: 1.4;
+}
+
+.comment-row.is-own .comment-bubble {
+    background-color: var(--primary-color);
+    color: var(--primary-color-text);
+    border-bottom-right-radius: 4px;
+}
+
+.comment-row:not(.is-own) .comment-bubble {
+    background-color: var(--surface-card);
+    border: 1px solid var(--surface-border);
+    color: var(--text-color);
+    border-bottom-left-radius: 4px;
+}
+
+.comment-header {
+    font-size: 0.8rem;
+    margin-bottom: 0.25rem;
+    color: var(--text-color-secondary);
+}
+
+.comment-row.is-own .comment-header {
+    color: var(--primary-color-text);
+    opacity: 0.8;
+}
+
+.comment-footer {
+    text-align: right;
+    opacity: 0.7;
+}
+
+.new-comment-form {
+    flex-shrink: 0; /* Prevents the form from shrinking */
+    padding: 1rem;
+    background-color: var(--surface-section);
+    border-top: 1px solid var(--surface-border);
+}
+
 /* Layout compacto principal */
 .ticket-dialog {
     max-width: 92vw;
@@ -720,12 +845,21 @@ const getAvatarColor = (name) => {
 }
 
 /* Textos de ayuda compactos */
-small.text-500 {
-    font-size: 0.7rem;
+small.text-500,
+.field-help {
+    font-size: 0.75rem;
     color: var(--text-color-secondary);
-    margin-top: 0.15rem;
+    margin-top: 0.25rem;
     display: block;
-    line-height: 1.2;
+    line-height: 1.3;
+    font-style: italic;
+}
+
+.field-help {
+    background: var(--surface-100);
+    padding: 0.25rem 0.5rem;
+    border-radius: 4px;
+    border-left: 2px solid var(--primary-200);
 }
 
 /* Estados inválidos */
@@ -740,9 +874,54 @@ small.text-500 {
 /* Header compacto */
 :deep(.p-dialog-header) {
     padding: 1rem 1.25rem;
-    background: linear-gradient(135deg, var(--primary-50) 0%, var(--surface-0) 100%);
-    border-bottom: 1px solid var(--surface-200);
+    background: linear-gradient(135deg, var(--blue-50) 0%, var(--surface-0) 100%);
+    border-bottom: 2px solid var(--blue-100);
     border-radius: 8px 8px 0 0;
+}
+
+/* Priority badge styles */
+.priority-badge {
+    padding: 0.25rem 0.75rem;
+    border-radius: 12px;
+    font-size: 0.75rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.priority-badge.priority-baja {
+    background: #dcfce7;
+    color: #166534;
+    border: 1px solid #bbf7d0;
+}
+
+.priority-badge.priority-media {
+    background: #fef3c7;
+    color: #92400e;
+    border: 1px solid #fde68a;
+}
+
+.priority-badge.priority-alta {
+    background: #fee2e2;
+    color: #991b1b;
+    border: 1px solid #fecaca;
+}
+
+.priority-badge.priority-urgente {
+    background: #fee2e2;
+    color: #7f1d1d;
+    border: 1px solid #fecaca;
+    animation: pulse 2s infinite;
+}
+
+@keyframes pulse {
+    0%,
+    100% {
+        opacity: 1;
+    }
+    50% {
+        opacity: 0.7;
+    }
 }
 
 :deep(.p-dialog-header .p-dialog-title) {
@@ -752,35 +931,106 @@ small.text-500 {
 
 /* Footer compacto */
 :deep(.p-dialog-footer) {
-    padding: 0.75rem 1.25rem;
-    background: var(--surface-50);
-    border-top: 1px solid var(--surface-200);
+    padding: 1rem 1.25rem;
+    background: linear-gradient(135deg, var(--surface-50) 0%, var(--surface-100) 100%);
+    border-top: 2px solid var(--blue-100);
     border-radius: 0 0 8px 8px;
 }
 
-:deep(.p-button) {
-    border-radius: 6px;
+/* Medical theme improvements */
+:deep(.p-tabview .p-tabview-nav li .p-tabview-nav-link) {
+    padding: 0.75rem 1rem;
     font-weight: 600;
-    padding: 0.5rem 1rem;
+    border-radius: 8px 8px 0 0;
+    transition: all 0.2s ease;
+}
+
+:deep(.p-tabview .p-tabview-nav li.p-highlight .p-tabview-nav-link) {
+    background: linear-gradient(135deg, var(--blue-500), var(--blue-600));
+    color: white;
+    box-shadow: 0 2px 8px rgba(59, 130, 246, 0.3);
+}
+
+/* Loading state improvements */
+:deep(.p-button .p-button-loading-icon) {
+    animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+    from {
+        transform: rotate(0deg);
+    }
+    to {
+        transform: rotate(360deg);
+    }
+}
+
+:deep(.p-button) {
+    border-radius: 8px;
+    font-weight: 600;
+    padding: 0.6rem 1.2rem;
     font-size: 0.9rem;
-    transition: all 0.15s ease;
+    transition: all 0.2s ease;
+    border: 2px solid transparent;
 }
 
 :deep(.p-button:hover) {
-    transform: translateY(-1px);
-    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+}
+
+:deep(.p-button-success) {
+    background: linear-gradient(45deg, #10b981, #059669);
+    border-color: #10b981;
+}
+
+:deep(.p-button-success:hover) {
+    background: linear-gradient(45deg, #059669, #047857);
+    box-shadow: 0 4px 12px rgba(16, 185, 129, 0.3);
+}
+
+:deep(.p-button-outlined) {
+    border-color: var(--surface-400);
+    color: var(--text-color-secondary);
+}
+
+:deep(.p-button-outlined:hover) {
+    background: var(--surface-100);
+    border-color: var(--surface-500);
 }
 
 /* Select panel compacto */
 :deep(.p-dropdown-panel) {
-    border-radius: 6px;
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.12);
+    border-radius: 8px;
+    box-shadow: 0 6px 20px rgba(0, 0, 0, 0.15);
     border: 1px solid var(--surface-200);
+    max-height: 300px;
+    overflow-y: auto;
 }
 
 :deep(.p-dropdown-item) {
-    padding: 0.5rem 0.75rem;
+    padding: 0.75rem;
     font-size: 0.9rem;
+    transition: all 0.2s ease;
+}
+
+:deep(.p-dropdown-item:hover) {
+    background: var(--primary-50);
+    transform: translateX(2px);
+}
+
+/* Custom option styles */
+.priority-option,
+.status-option {
+    padding: 0.5rem;
+    border-radius: 4px;
+    transition: all 0.2s ease;
+}
+
+.priority-option:hover,
+.status-option:hover {
+    background: var(--surface-100);
+    transform: translateX(2px);
 }
 
 /* Calendar panel compacto */
