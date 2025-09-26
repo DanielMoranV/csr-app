@@ -12,11 +12,26 @@ const broadcaster = import.meta.env.VITE_BROADCAST_DRIVER;
 let echoConfig;
 
 const getAuthHeaders = () => {
-    const authStore = useAuthStore();
-    const token = authStore.getToken;
-    return {
-        Authorization: `Bearer ${token}`
-    };
+    try {
+        const authStore = useAuthStore();
+        const token = authStore.getToken;
+        
+        if (!token) {
+            console.warn('[Echo] No token available for authentication');
+            return {};
+        }
+        
+        const headers = {
+            Authorization: `Bearer ${token}`,
+            'Content-Type': 'application/json',
+            'Accept': 'application/json'
+        };
+        
+        return headers;
+    } catch (error) {
+        console.error('[Echo] Error getting auth headers:', error);
+        return {};
+    }
 };
 
 if (broadcaster === 'reverb') {
@@ -42,8 +57,35 @@ if (broadcaster === 'reverb') {
         cluster: import.meta.env.VITE_PUSHER_APP_CLUSTER,
         authEndpoint: `${api_url}/broadcasting/auth`,
         forceTLS: true,
-        auth: {
-            headers: getAuthHeaders
+        authorizer: (channel, options) => {
+            return {
+                authorize: (socketId, callback) => {
+                    const headers = getAuthHeaders();
+                    
+                    // Use fetch instead of XMLHttpRequest for better control
+                    fetch(`${api_url}/broadcasting/auth`, {
+                        method: 'POST',
+                        headers: {
+                            ...headers,
+                            'Content-Type': 'application/x-www-form-urlencoded',
+                        },
+                        body: `socket_id=${socketId}&channel_name=${channel.name}`
+                    })
+                    .then(response => {
+                        if (response.ok) {
+                            return response.json();
+                        }
+                        throw new Error(`HTTP ${response.status}`);
+                    })
+                    .then(data => {
+                        callback(null, data);
+                    })
+                    .catch(error => {
+                        console.error('[Echo] Authorization failed:', error);
+                        callback(error, null);
+                    });
+                }
+            };
         }
     };
 }

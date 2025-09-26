@@ -2,6 +2,7 @@ import { defineStore } from 'pinia';
 import { reactive, computed } from 'vue';
 import { TicketCommentService } from '@/api/ticketComments';
 import { apiUtils } from '@/api/axios';
+import { useTicketsStore } from './ticketsStore';
 
 export const useTicketCommentsStore = defineStore('ticketComments', () => {
     // State
@@ -9,7 +10,8 @@ export const useTicketCommentsStore = defineStore('ticketComments', () => {
         comments: [],
         isLoading: false,
         isAdding: false,
-        error: null
+        error: null,
+        currentTicketId: null
     });
 
     // Getters
@@ -19,6 +21,7 @@ export const useTicketCommentsStore = defineStore('ticketComments', () => {
     const fetchComments = async (ticketId) => {
         state.isLoading = true;
         state.error = null;
+        state.currentTicketId = ticketId;
         try {
             const response = await TicketCommentService.getComments(ticketId);
             if (apiUtils.isSuccess(response)) {
@@ -55,6 +58,29 @@ export const useTicketCommentsStore = defineStore('ticketComments', () => {
         }
     };
 
+    // Real-time event handlers
+    const handleCommentCreated = (comment, ticketId) => {
+        // Only add comment if we're currently viewing this ticket
+        if (state.currentTicketId === ticketId) {
+            const exists = state.comments.some(c => c.id === comment.id);
+            if (!exists) {
+                state.comments.push(comment);
+                console.log(`[TicketCommentsStore] Comment added for ticket ${ticketId}:`, comment);
+            }
+        }
+    };
+
+    const handleCommentUpdated = (comment, ticketId) => {
+        // Only update comment if we're currently viewing this ticket
+        if (state.currentTicketId === ticketId) {
+            const index = state.comments.findIndex(c => c.id === comment.id);
+            if (index !== -1) {
+                state.comments[index] = comment;
+                console.log(`[TicketCommentsStore] Comment updated for ticket ${ticketId}:`, comment);
+            }
+        }
+    };
+
     return {
         // State
         state,
@@ -62,6 +88,9 @@ export const useTicketCommentsStore = defineStore('ticketComments', () => {
         allComments,
         // Actions
         fetchComments,
-        addComment
+        addComment,
+        // Real-time handlers
+        handleCommentCreated,
+        handleCommentUpdated
     };
 });

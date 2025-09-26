@@ -3,6 +3,7 @@ import { positions, users } from '@/api';
 import { apiUtils } from '@/api/axios';
 import { useAuthStore } from '@/store/authStore';
 import { useTicketCommentsStore } from '@/store/ticketCommentsStore';
+import { useTicketsStore } from '@/store/ticketsStore';
 import Avatar from 'primevue/avatar';
 import Button from 'primevue/button';
 import Calendar from 'primevue/calendar';
@@ -35,6 +36,7 @@ const emit = defineEmits(['update:visible', 'save-ticket', 'close']);
 
 const authStore = useAuthStore();
 const ticketCommentsStore = useTicketCommentsStore();
+const ticketsStore = useTicketsStore();
 
 // Reactive variables for search results
 const clientSearchResults = ref([]);
@@ -49,6 +51,15 @@ const dialogVisible = computed({
 });
 
 const isEditing = computed(() => !!props.ticket?.id);
+
+// Computed para obtener el ticket actualizado del store
+const currentTicket = computed(() => {
+    if (!props.ticket?.id) return props.ticket;
+    
+    // Buscar el ticket actualizado en el store
+    const updatedTicket = ticketsStore.tickets.find(t => t.id === props.ticket.id);
+    return updatedTicket || props.ticket;
+});
 
 const dialogTitle = computed(() => {
     return isEditing.value ? 'Editar Ticket' : 'Nuevo Ticket';
@@ -93,10 +104,10 @@ const filteredStatusOptions = computed(() => {
         return statusOptions.value.filter((opt) => opt.value === 'pendiente');
     }
 
-    const currentUser = authStore.authUser;
-    const isCreator = currentUser && currentUser.id === props.ticket?.creator_user_id;
-    const isAssignee = currentUser && currentUser.id === props.ticket?.assignee_user_id;
-    const currentStatus = props.ticket?.status;
+    const currentUser = authStore.getUser;
+    const isCreator = currentUser && currentUser.id === currentTicket.value?.creator_user_id;
+    const isAssignee = currentUser && currentUser.id === currentTicket.value?.assignee_user_id;
+    const currentStatus = currentTicket.value?.status;
 
     if (isCreator) {
         if (currentStatus === 'pendiente') {
@@ -124,6 +135,22 @@ watch(
         }
     },
     { immediate: true, deep: true }
+);
+
+// Watcher para el ticket actualizado del store
+watch(
+    currentTicket,
+    (newTicket) => {
+        if (newTicket && props.visible && isEditing.value) {
+            // Solo actualizar los campos si el ticket ha cambiado
+            const hasChanged = JSON.stringify(newTicket) !== JSON.stringify(props.ticket);
+            if (hasChanged) {
+                console.log('[TicketDialog] Ticket updated from store, reloading data');
+                loadTicketData(newTicket);
+            }
+        }
+    },
+    { deep: true }
 );
 
 watch(

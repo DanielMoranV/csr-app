@@ -10,7 +10,8 @@ export const useTicketAttachmentsStore = defineStore('ticketAttachments', () => 
         isLoading: false,
         isUploading: false,
         isDeleting: false,
-        error: null
+        error: null,
+        currentTicketId: null
     });
 
     // Getters
@@ -20,6 +21,7 @@ export const useTicketAttachmentsStore = defineStore('ticketAttachments', () => 
     const fetchAttachments = async (ticketId) => {
         state.isLoading = true;
         state.error = null;
+        state.currentTicketId = ticketId;
         try {
             const response = await TicketAttachmentService.getAttachments(ticketId);
             if (apiUtils.isSuccess(response)) {
@@ -102,6 +104,29 @@ export const useTicketAttachmentsStore = defineStore('ticketAttachments', () => 
         }
     };
 
+    // Real-time event handlers
+    const handleAttachmentCreated = (attachment, ticketId) => {
+        // Only add attachment if we're currently viewing this ticket
+        if (state.currentTicketId === ticketId) {
+            const exists = state.attachments.some(a => a.id === attachment.id);
+            if (!exists) {
+                state.attachments.push(attachment);
+                console.log(`[TicketAttachmentsStore] Attachment added for ticket ${ticketId}:`, attachment);
+            }
+        }
+    };
+
+    const handleAttachmentDeleted = (attachmentId, ticketId) => {
+        // Only remove attachment if we're currently viewing this ticket
+        if (state.currentTicketId === ticketId) {
+            const index = state.attachments.findIndex(a => a.id === attachmentId);
+            if (index !== -1) {
+                state.attachments.splice(index, 1);
+                console.log(`[TicketAttachmentsStore] Attachment removed for ticket ${ticketId}:`, attachmentId);
+            }
+        }
+    };
+
     return {
         // State
         state,
@@ -111,6 +136,9 @@ export const useTicketAttachmentsStore = defineStore('ticketAttachments', () => 
         fetchAttachments,
         uploadAttachment,
         downloadAttachment,
-        deleteAttachment
+        deleteAttachment,
+        // Real-time handlers
+        handleAttachmentCreated,
+        handleAttachmentDeleted
     };
 });

@@ -36,5 +36,8 @@ export const hospitalAttentions = {
     updateDetails: (id, data) => axios.put(`/details-attention/${id}`, data),
     deleteDetails: (id) => axios.delete(`/details-attention/${id}`),
     searchDetails: (params) => axios.get('/details-attention/search', { params }),
-    getDetailsStats: () => axios.get('/details-attention/stats')
+    getDetailsStats: () => axios.get('/details-attention/stats'),
+    
+    // Task stats
+    getTaskStats: () => axios.get('/tasks/stats')
 };

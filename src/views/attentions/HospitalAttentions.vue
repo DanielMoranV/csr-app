@@ -1,10 +1,11 @@
 <script setup>
+import { useRealtimeEvents } from '@/composables/useRealtimeEvents';
 import { useHospitalAttentionsStore } from '@/store/hospitalAttentionsStore';
-import useEcho from '@/websocket/echo';
 import { FilterMatchMode } from '@primevue/core/api';
 import { computed, onMounted, onUnmounted, ref, watch } from 'vue';
 
 const hospitalAttentionsStore = useHospitalAttentionsStore();
+const { startListening, stopListening } = useRealtimeEvents();
 
 const attentions = computed(() => hospitalAttentionsStore.allAttentions);
 const isLoading = computed(() => hospitalAttentionsStore.isLoading);
@@ -14,36 +15,6 @@ const isTasksSidebarVisible = ref(false);
 const selectedAttention = ref(null);
 const selectedAttentionForTasks = ref(null);
 
-const listenerRegistered = ref(false);
-const echoChannel = ref(null);
-
-const listenForMedicalRecordEvents = () => {
-    if (listenerRegistered.value) return; // Evitar múltiples registros
-    listenerRegistered.value = true;
-
-    echoChannel.value = useEcho
-        .channel('hospitalizations')
-        .listen('.hospitalization.created', (e) => {
-            console.log('Evento hospitalization.created en canal hospitalizations:', e);
-            // Aquí puedes añadir lógica para actualizar el store o la UI
-        })
-        .listen('.hospitalization.updated', (e) => {
-            console.log('Evento hospitalization.updated en canal hospitalizations:', e);
-            // Aquí puedes añadir lógica para actualizar el store o la UI
-        });
-
-    useEcho
-        .channel('hospital-dashboard')
-        .listen('.hospitalization.created', (e) => {
-            console.log('Evento hospitalization.created en canal hospital-dashboard:', e);
-            // Aquí puedes añadir lógica para actualizar el store o la UI
-        })
-        .listen('.hospitalization.updated', (e) => {
-            console.log('Evento hospitalization.updated en canal hospital-dashboard:', e);
-            // Aquí puedes añadir lógica para actualizar el store o la UI
-        });
-};
-
 const filters = ref({
     global: { value: null, matchMode: FilterMatchMode.CONTAINS },
     'patient.name': { value: null, matchMode: FilterMatchMode.CONTAINS },
@@ -52,20 +23,18 @@ const filters = ref({
     is_active: { value: null, matchMode: FilterMatchMode.EQUALS }
 });
 
-onMounted(() => {
-    hospitalAttentionsStore.fetchAttentions();
-    listenForMedicalRecordEvents();
+onMounted(async () => {
+    await hospitalAttentionsStore.fetchAttentions();
+
+    // Start listening for real-time events
+    startListening();
+    console.log('[HospitalAttentions] Started listening for real-time events');
 });
-const cleanupWebSocketListeners = () => {
-    if (echoChannel.value) {
-        useEcho.leave('hospitalizations');
-        useEcho.leave('hospital-dashboard');
-        echoChannel.value = null;
-        listenerRegistered.value = false;
-    }
-};
+
 onUnmounted(() => {
-    cleanupWebSocketListeners();
+    // Stop listening for real-time events
+    stopListening();
+    console.log('[HospitalAttentions] Stopped listening for real-time events');
 });
 
 const openDetailsSidebar = (attention) => {

@@ -138,13 +138,36 @@ function processBackendError(error) {
  * Crea respuesta de error en formato estandarizado
  */
 function createErrorResponse(status, message, originalError) {
+    // Determinar el tipo de error más específico
+    let errorType = 'NetworkError';
+    let isConnectionError = false;
+
+    if (originalError) {
+        if (originalError.code === 'ECONNREFUSED' || originalError.message?.includes('ERR_CONNECTION_REFUSED')) {
+            errorType = 'ConnectionRefused';
+            isConnectionError = true;
+        } else if (originalError.code === 'ENOTFOUND') {
+            errorType = 'DnsError';
+            isConnectionError = true;
+        } else if (originalError.code === 'ECONNRESET') {
+            errorType = 'ConnectionReset';
+            isConnectionError = true;
+        } else if (originalError.code === 'ETIMEDOUT' || originalError.code === 'ECONNABORTED') {
+            errorType = 'TimeoutError';
+        } else if (originalError.name) {
+            errorType = originalError.name;
+        }
+    }
+
     const errorResponse = {
         success: false,
         message: message,
         data: null,
         errors: {
-            type: originalError?.name || 'NetworkError',
-            original_message: originalError?.message || 'Unknown error'
+            type: errorType,
+            original_message: originalError?.message || 'Unknown error',
+            is_connection_error: isConnectionError,
+            code: originalError?.code || null
         },
         status: status,
         statusText: originalError?.response?.statusText || 'Network Error'
@@ -167,10 +190,24 @@ function createErrorResponse(status, message, originalError) {
  */
 function getErrorMessage(error) {
     if (!error.response) {
+        // Errores de conexión específicos
         if (error.code === 'ECONNABORTED') {
             return 'La solicitud tardó demasiado tiempo. Intente nuevamente.';
         }
-        return 'Error de conexión. Verifique su conexión a internet.';
+        if (error.code === 'ECONNREFUSED' || error.message?.includes('ERR_CONNECTION_REFUSED')) {
+            return 'No se puede conectar al servidor. Verifique que el backend esté funcionando.';
+        }
+        if (error.code === 'ENOTFOUND' || error.message?.includes('ENOTFOUND')) {
+            return 'No se puede resolver la dirección del servidor. Verifique la configuración de red.';
+        }
+        if (error.code === 'ECONNRESET' || error.message?.includes('ECONNRESET')) {
+            return 'La conexión se perdió durante la solicitud. Intente nuevamente.';
+        }
+        if (error.code === 'ETIMEDOUT' || error.message?.includes('timeout')) {
+            return 'La conexión tardó demasiado tiempo. Verifique su conexión a internet.';
+        }
+        // Error genérico de red
+        return 'Error de conexión. Verifique su conexión a internet o que el servidor esté disponible.';
     }
 
     const status = error.response.status;
@@ -268,6 +305,21 @@ export const apiUtils = {
      */
     isRateLimited: (errorResponse) => {
         return errorResponse?.status === 429 || (errorResponse?.errors && typeof errorResponse.errors === 'object' && Object.keys(errorResponse.errors).some((key) => key.includes('rate_limit')));
+    },
+
+    /**
+     * Verifica si un error es de conexión al servidor
+     */
+    isConnectionError: (errorResponse) => {
+        if (!errorResponse || !errorResponse.errors) return false;
+        return errorResponse.errors.is_connection_error === true || errorResponse.errors.type === 'ConnectionRefused' || errorResponse.errors.type === 'DnsError' || errorResponse.errors.type === 'ConnectionReset' || errorResponse.status === 0;
+    },
+
+    /**
+     * Verifica si el servidor está disponible basado en el error
+     */
+    isServerUnavailable: (errorResponse) => {
+        return apiUtils.isConnectionError(errorResponse) || errorResponse?.status === 503 || errorResponse?.status === 502 || errorResponse?.status === 504;
     }
 };
 

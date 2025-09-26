@@ -1,4 +1,4 @@
-import { getStatus } from '@/api/hospitalization';
+import { hospitalization } from '@/api/hospitalization';
 import { defineStore } from 'pinia';
 import { computed, reactive } from 'vue';
 
@@ -19,7 +19,9 @@ export const useHospitalizationStore = defineStore('hospitalization', () => {
         state.isLoading = true;
         state.error = null;
         try {
-            const response = await getStatus();
+            const response = await hospitalization.getStatus();
+
+            console.log(response);
             // Assuming getStatus returns the full axios response
             // and you have a utility to check for success and get data.
             // If not, you might need to adjust this part.
@@ -40,9 +42,64 @@ export const useHospitalizationStore = defineStore('hospitalization', () => {
         }
     };
 
+    // Real-time event handlers
+    const handleHospitalizationCreated = (eventData) => {
+        console.log('[HospitalizationStore] Handling hospitalization created:', eventData);
+
+        // Refresh the hospitalization status to get updated room/bed information
+        fetchHospitalizationStatus();
+    };
+
+    const handleHospitalizationUpdated = (eventData) => {
+        console.log('[HospitalizationStore] Handling hospitalization updated:', eventData);
+
+        const updatedHospitalization = eventData.data;
+
+        if (updatedHospitalization && state.status) {
+            // Find and update the specific bed/room that was affected
+            const bedId = updatedHospitalization.id_beds;
+
+            if (bedId) {
+                // Look for the bed in all rooms
+                let found = false;
+                state.status.forEach((room) => {
+                    if (room.beds) {
+                        room.beds.forEach((bed) => {
+                            if (bed.id === bedId) {
+                                // Update the bed's attention information
+                                bed.attention = updatedHospitalization;
+                                bed.status = updatedHospitalization.exit_at ? 'free' : 'occupied';
+                                found = true;
+                            }
+                        });
+                    }
+                });
+
+                if (!found) {
+                    // If the bed wasn't found, refresh all data
+                    fetchHospitalizationStatus();
+                }
+            } else {
+                // If no bed ID is provided, refresh all data
+                fetchHospitalizationStatus();
+            }
+        }
+    };
+
+    const handleHospitalizationDeleted = (eventData) => {
+        console.log('[HospitalizationStore] Handling hospitalization deleted:', eventData);
+
+        // Refresh the hospitalization status to reflect the deletion
+        fetchHospitalizationStatus();
+    };
+
     return {
         state,
         hospitalizationStatus,
-        fetchHospitalizationStatus
+        fetchHospitalizationStatus,
+        // Real-time event handlers
+        handleHospitalizationCreated,
+        handleHospitalizationUpdated,
+        handleHospitalizationDeleted
     };
 });

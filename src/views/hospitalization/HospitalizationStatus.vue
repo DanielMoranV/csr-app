@@ -1,15 +1,23 @@
 <script setup>
 import RoomCard from '@/components/hospitalization/RoomCard.vue';
+import { useRealtimeEvents } from '@/composables/useRealtimeEvents';
 import { useHospitalizationStore } from '@/store/hospitalizationStore';
 import { storeToRefs } from 'pinia';
 import Badge from 'primevue/badge';
 import Button from 'primevue/button';
 import Card from 'primevue/card';
 import Tag from 'primevue/tag';
-import { computed, onMounted, ref } from 'vue';
+import { computed, onMounted, onUnmounted, ref } from 'vue';
 
 const store = useHospitalizationStore();
 const { state } = storeToRefs(store);
+
+// Real-time events - only update hospitalization and dashboard (not attentions)
+const { startListening, stopListening, isListening } = useRealtimeEvents({
+    updateAttentions: false, // Don't update attentions store from this component
+    updateDashboard: false, // Don't update dashboard from this component
+    updateHospitalization: true // Only update hospitalization status
+});
 
 // Filtros
 const selectedRoom = ref(null);
@@ -124,8 +132,18 @@ const refreshData = () => {
     store.fetchHospitalizationStatus();
 };
 
-onMounted(() => {
-    store.fetchHospitalizationStatus();
+onMounted(async () => {
+    await store.fetchHospitalizationStatus();
+
+    // Start listening for real-time events
+    startListening();
+    console.log('[HospitalizationStatus] Started listening for real-time events');
+});
+
+onUnmounted(() => {
+    // Stop listening for real-time events
+    stopListening();
+    console.log('[HospitalizationStatus] Stopped listening for real-time events');
 });
 </script>
 
@@ -145,7 +163,14 @@ onMounted(() => {
                 </div>
 
                 <div class="header-actions">
-                    <Button icon="pi pi-refresh" :loading="state.isLoading" @click="refreshData" severity="secondary" outlined v-tooltip.bottom="'Actualizar datos'" />
+                    <!-- Real-time status indicator -->
+                    <div class="realtime-status">
+                        <i v-if="isListening" class="pi pi-circle-fill text-green-500 realtime-indicator" v-tooltip.bottom="'Actualizaciones en tiempo real activas'"></i>
+                        <i v-else class="pi pi-circle text-gray-400 realtime-indicator" v-tooltip.bottom="'Actualizaciones en tiempo real inactivas'"></i>
+                        <span class="realtime-text">Tiempo Real</span>
+                    </div>
+
+                    <Button icon="pi pi-refresh" :loading="state.isLoading" @click="refreshData" severity="secondary" outlined v-tooltip.bottom="'Actualizar datos manualmente'" />
                     <Button :icon="showStats ? 'pi pi-eye-slash' : 'pi pi-eye'" @click="showStats = !showStats" severity="secondary" outlined :label="showStats ? 'Ocultar estadísticas' : 'Mostrar estadísticas'" />
                 </div>
             </div>
@@ -370,6 +395,39 @@ onMounted(() => {
     align-items: center;
 }
 
+/* Real-time status indicator */
+.realtime-status {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.5rem 0.75rem;
+    background: var(--surface-card);
+    border: 1px solid var(--surface-border);
+    border-radius: 6px;
+    font-size: 0.875rem;
+    color: var(--text-color-secondary);
+}
+
+.realtime-indicator {
+    font-size: 0.75rem;
+    animation: pulse 2s infinite;
+}
+
+.realtime-text {
+    font-weight: 500;
+    white-space: nowrap;
+}
+
+@keyframes pulse {
+    0%,
+    100% {
+        opacity: 1;
+    }
+    50% {
+        opacity: 0.5;
+    }
+}
+
 /* Statistics Overview */
 .stats-overview {
     margin-bottom: 1.5rem;
@@ -561,6 +619,14 @@ onMounted(() => {
 
     .header-actions {
         justify-content: center;
+        flex-wrap: wrap;
+    }
+
+    .realtime-status {
+        order: -1;
+        width: 100%;
+        justify-content: center;
+        margin-bottom: 0.5rem;
     }
 
     .header-title {

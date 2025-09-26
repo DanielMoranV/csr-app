@@ -1,7 +1,7 @@
 <script setup>
 import { useTicketsStore } from '@/store/ticketsStore.js';
 import { useToast } from 'primevue/usetoast';
-import { onMounted, reactive, ref } from 'vue';
+import { onMounted, onUnmounted, reactive, ref } from 'vue';
 
 // Componentes modulares
 import ConfirmDialog from '@/components/tickets/ConfirmDialog.vue';
@@ -36,6 +36,16 @@ onMounted(() => {
     if (!ticketsStore.tickets || ticketsStore.tickets.length === 0) {
         ticketsStore.fetchTickets();
     }
+
+    // Inicializar listeners de eventos en tiempo real
+    ticketsStore.initEchoListeners();
+    console.log('[Tickets] Started listening for real-time events');
+});
+
+onUnmounted(() => {
+    // Limpiar listeners de eventos en tiempo real
+    ticketsStore.leaveEchoChannels();
+    console.log('[Tickets] Stopped listening for real-time events');
 });
 
 // Métodos de gestión de tickets

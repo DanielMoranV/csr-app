@@ -9,7 +9,7 @@ import Password from 'primevue/password';
 import ProgressSpinner from 'primevue/progressspinner';
 import Toast from 'primevue/toast';
 import { useToast } from 'primevue/usetoast';
-import { computed, onMounted, ref } from 'vue';
+import { computed, onMounted, onUnmounted, ref } from 'vue';
 
 // Composables
 const { login, isLoading } = useAuth();
@@ -25,6 +25,10 @@ const formData = ref({
 // Estado de validación
 const errors = ref({});
 const isSubmitting = ref(false);
+
+// Estado de conexión
+const connectionStatus = ref('unknown'); // 'online', 'offline', 'unknown'
+const isCheckingConnection = ref(false);
 
 // Computadas
 const isFormValid = computed(() => {
@@ -81,6 +85,19 @@ const handleSubmit = async () => {
     isSubmitting.value = true;
 
     try {
+        // Verificar conexión antes de intentar login
+        if (connectionStatus.value === 'offline') {
+            await checkServerConnection();
+            if (connectionStatus.value === 'offline') {
+                throw {
+                    success: false,
+                    message: 'No se puede conectar al servidor. Verifique que el backend esté funcionando.',
+                    errors: { connection_type: 'backend_unavailable' },
+                    status: 0
+                };
+            }
+        }
+
         const result = await login(formData.value.dni, formData.value.password, {
             redirect: true,
             redirectTo: '/dashboard'
@@ -96,6 +113,11 @@ const handleSubmit = async () => {
         }
     } catch (error) {
         console.error('Error en login:', error);
+
+        // Actualizar estado de conexión si es un error de conexión
+        if (apiUtils.isConnectionError(error)) {
+            connectionStatus.value = 'offline';
+        }
 
         // Manejar errores de validación del backend
         if (error.errors && typeof error.errors === 'object') {
@@ -120,11 +142,28 @@ const handleSubmit = async () => {
 
         // Mostrar mensaje de error general si no hay errores específicos de campo
         const errorMessage = apiUtils.getMessage(error) || 'Error al iniciar sesión';
+        
+        // Determinar el tipo de error para mostrar un resumen más específico
+        let errorSummary = 'Error de Autenticación';
+        let severity = 'error';
+        
+        if (apiUtils.isConnectionError(error)) {
+            errorSummary = 'Error de Conexión';
+            severity = 'warn';
+        } else if (apiUtils.isServerUnavailable(error)) {
+            errorSummary = 'Servidor No Disponible';
+            severity = 'warn';
+        } else if (error.status === 401) {
+            errorSummary = 'Credenciales Incorrectas';
+        } else if (error.status === 422) {
+            errorSummary = 'Datos Inválidos';
+        }
+        
         toast.add({
-            severity: 'error',
-            summary: 'Error de Autenticación',
+            severity: severity,
+            summary: errorSummary,
             detail: errorMessage,
-            life: 5000
+            life: apiUtils.isConnectionError(error) ? 8000 : 5000 // Más tiempo para errores de conexión
         });
 
         // Limpiar contraseña en caso de error
@@ -150,9 +189,44 @@ const formatDNI = (event) => {
     clearFieldError('dni');
 };
 
+// Función para verificar la conexión al servidor
+const checkServerConnection = async () => {
+    if (isCheckingConnection.value) return;
+    
+    isCheckingConnection.value = true;
+    try {
+        // Hacer una petición simple para verificar conectividad
+        const response = await fetch(import.meta.env.VITE_API_URL + '/health', { 
+            method: 'GET',
+            timeout: 5000 
+        });
+        connectionStatus.value = response.ok ? 'online' : 'offline';
+    } catch (error) {
+        connectionStatus.value = 'offline';
+        console.log('[Connection Check] Server appears to be offline:', error.message);
+    } finally {
+        isCheckingConnection.value = false;
+    }
+};
+
 onMounted(() => {
     // Focus en el campo DNI al cargar
     document.getElementById('dni')?.focus();
+    
+    // Verificar conexión inicial
+    checkServerConnection();
+    
+    // Verificar conexión cada 30 segundos si está offline
+    const connectionInterval = setInterval(() => {
+        if (connectionStatus.value === 'offline') {
+            checkServerConnection();
+        }
+    }, 30000);
+    
+    // Limpiar interval al desmontar
+    onUnmounted(() => {
+        clearInterval(connectionInterval);
+    });
 });
 </script>
 
@@ -196,6 +270,25 @@ onMounted(() => {
                     <div class="form-header">
                         <h2>Iniciar Sesión</h2>
                         <p>Accede al sistema de gestión de atenciones</p>
+                        
+                        <!-- Indicador de estado de conexión -->
+                        <div v-if="connectionStatus !== 'unknown'" class="connection-status" :class="connectionStatus">
+                            <div class="status-indicator">
+                                <i :class="connectionStatus === 'online' ? 'pi pi-check-circle' : 'pi pi-exclamation-triangle'"></i>
+                                <span v-if="connectionStatus === 'online'">Servidor conectado</span>
+                                <span v-else>Servidor no disponible</span>
+                                <ProgressSpinner v-if="isCheckingConnection" class="connection-spinner" />
+                            </div>
+                            <button 
+                                v-if="connectionStatus === 'offline'" 
+                                @click="checkServerConnection"
+                                class="retry-connection"
+                                :disabled="isCheckingConnection"
+                            >
+                                <i class="pi pi-refresh"></i>
+                                Reintentar
+                            </button>
+                        </div>
                     </div>
 
                     <form @submit.prevent="handleSubmit" class="login-form">
@@ -624,6 +717,70 @@ onMounted(() => {
 .button-spinner {
     width: 20px;
     height: 20px;
+}
+
+/* Indicador de estado de conexión */
+.connection-status {
+    margin-top: 1.5rem;
+    padding: 0.75rem 1rem;
+    border-radius: 8px;
+    font-size: 0.875rem;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.75rem;
+    transition: all 0.3s ease;
+}
+
+.connection-status.online {
+    background: rgba(16, 185, 129, 0.1);
+    border: 1px solid rgba(16, 185, 129, 0.2);
+    color: #059669;
+}
+
+.connection-status.offline {
+    background: rgba(239, 68, 68, 0.1);
+    border: 1px solid rgba(239, 68, 68, 0.2);
+    color: #dc2626;
+}
+
+.status-indicator {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.status-indicator i {
+    font-size: 1rem;
+}
+
+.connection-spinner {
+    width: 16px;
+    height: 16px;
+}
+
+.retry-connection {
+    display: flex;
+    align-items: center;
+    gap: 0.25rem;
+    background: none;
+    border: 1px solid currentColor;
+    color: inherit;
+    padding: 0.5rem 0.75rem;
+    border-radius: 6px;
+    font-size: 0.8rem;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.retry-connection:hover:not(:disabled) {
+    background: currentColor;
+    color: white;
+}
+
+.retry-connection:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
 }
 
 /* Footer */

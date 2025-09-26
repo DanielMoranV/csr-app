@@ -2,12 +2,20 @@
 import Card from 'primevue/card';
 import Timeline from 'primevue/timeline';
 import { computed } from 'vue';
+import { useTicketsStore } from '@/store/ticketsStore';
 
 const props = defineProps({
     ticket: {
         type: Object,
         required: true
     }
+});
+
+const ticketsStore = useTicketsStore();
+
+// Get current ticket from store for real-time updates
+const currentTicket = computed(() => {
+    return ticketsStore.tickets.find(t => t.id === props.ticket?.id) || props.ticket;
 });
 
 const getStatusDetails = (status) => {
@@ -41,10 +49,10 @@ const formatDateTime = (dateString) => {
 };
 
 const historyEvents = computed(() => {
-    if (!props.ticket || !props.ticket.status_histories) {
+    if (!currentTicket.value || !currentTicket.value.status_histories) {
         return [];
     }
-    return props.ticket.status_histories
+    return currentTicket.value.status_histories
         .map((history) => {
             const details = getStatusDetails(history.new_status);
             return {

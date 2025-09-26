@@ -2,13 +2,14 @@
 import axios, { api_url } from '@/api/axios.js'; // Import the pre-configured axios instance and api_url
 import { useAuthStore } from '@/store/authStore';
 import { useTicketAttachmentsStore } from '@/store/ticketAttachmentsStore';
+import { useTicketsStore } from '@/store/ticketsStore';
 import Button from 'primevue/button';
 import Card from 'primevue/card';
 import FileUpload from 'primevue/fileupload';
 import ProgressBar from 'primevue/progressbar'; // New import for ProgressBar
 import Tag from 'primevue/tag';
 import { useToast } from 'primevue/usetoast';
-import { ref, watch } from 'vue';
+import { ref, watch, computed } from 'vue';
 //import ConfirmDialog from '../ConfirmDialog.vue'; // Assuming ConfirmDialog is in the same directory
 
 const props = defineProps({
@@ -19,11 +20,17 @@ const props = defineProps({
 });
 
 const attachmentsStore = useTicketAttachmentsStore();
+const ticketsStore = useTicketsStore();
 const authStore = useAuthStore();
 const toast = useToast();
 
 const confirmDeleteDialogVisible = ref(false);
 const selectedAttachment = ref(null);
+
+// Get current ticket from store for real-time updates
+const currentTicket = computed(() => {
+    return ticketsStore.tickets.find(ticket => ticket.id === props.ticketId) || null;
+});
 
 // Refs for custom upload
 const fileUploadRef = ref(null);
@@ -164,10 +171,10 @@ const deleteAttachment = async () => {
 };
 
 const canDeleteAttachment = (attachment) => {
-    const currentUser = authStore.authUser;
+    const currentUser = authStore.getUser;
     if (!currentUser) return false;
     // User who uploaded the file OR the ticket creator can delete
-    return currentUser.id === attachment.user_id || currentUser.id === attachmentsStore.ticketCreatorId; // Assuming attachmentsStore can get ticketCreatorId
+    return currentUser.id === attachment.user_id || (currentTicket.value && currentUser.id === currentTicket.value.creator_user_id);
 };
 
 const formatBytes = (bytes, decimals = 2) => {

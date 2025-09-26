@@ -1,4 +1,4 @@
-import api from '@/api/axios.js';
+import api, { apiUtils } from '@/api/axios.js';
 import cache from '@/utils/cache.js';
 import { defineStore } from 'pinia';
 import { computed, reactive } from 'vue';
@@ -247,6 +247,28 @@ export const useAuthStore = defineStore('auth', () => {
             }
         } catch (error) {
             clearAuthData();
+            
+            // Mejorar el mensaje de error según el tipo
+            if (apiUtils.isConnectionError(error)) {
+                throw {
+                    ...error,
+                    message: 'No se puede conectar al servidor. Verifique que el backend esté disponible.',
+                    errors: {
+                        ...error.errors,
+                        connection_type: 'backend_unavailable'
+                    }
+                };
+            } else if (apiUtils.isServerUnavailable(error)) {
+                throw {
+                    ...error,
+                    message: 'El servidor no está disponible temporalmente. Intente más tarde.',
+                    errors: {
+                        ...error.errors,
+                        connection_type: 'server_maintenance'
+                    }
+                };
+            }
+            
             throw error;
         } finally {
             state.isLoading = false;

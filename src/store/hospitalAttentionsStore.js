@@ -138,6 +138,50 @@ export const useHospitalAttentionsStore = defineStore('hospitalAttentions', () =
         }
     }
 
+    // Real-time event handlers
+    function handleHospitalizationCreated(eventData) {
+        console.log('Handling hospitalization created:', eventData);
+        // Add new attention to the list
+        const newAttention = eventData.data;
+        if (newAttention && !attentions.value.find(att => att.id === newAttention.id)) {
+            attentions.value.unshift(newAttention);
+        }
+        // Refresh stats
+        fetchStats();
+    }
+
+    function handleHospitalizationUpdated(eventData) {
+        console.log('Handling hospitalization updated:', eventData);
+        const updatedAttention = eventData.data;
+        
+        if (updatedAttention) {
+            const index = attentions.value.findIndex(att => att.id === updatedAttention.id);
+            if (index !== -1) {
+                // Update existing attention
+                attentions.value[index] = updatedAttention;
+            } else {
+                // Add if not found (might be a new record)
+                attentions.value.unshift(updatedAttention);
+            }
+        }
+        // Refresh stats
+        fetchStats();
+    }
+
+    function handleHospitalizationDeleted(eventData) {
+        console.log('Handling hospitalization deleted:', eventData);
+        const deletedId = eventData.data?.id || eventData.id;
+        
+        if (deletedId) {
+            const index = attentions.value.findIndex(att => att.id === deletedId);
+            if (index !== -1) {
+                attentions.value.splice(index, 1);
+            }
+        }
+        // Refresh stats
+        fetchStats();
+    }
+
     return {
         // State
         attentions,
@@ -158,6 +202,10 @@ export const useHospitalAttentionsStore = defineStore('hospitalAttentions', () =
         deleteTask,
         createDetails,
         updateDetails,
-        deleteDetails
+        deleteDetails,
+        // Real-time event handlers
+        handleHospitalizationCreated,
+        handleHospitalizationUpdated,
+        handleHospitalizationDeleted
     };
 });

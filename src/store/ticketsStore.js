@@ -51,7 +51,12 @@ export const useTicketsStore = defineStore('tickets', () => {
         if (!exists) {
             state.tickets.unshift(ticket);
             state.pagination.total++;
-            toast.add({ severity: 'info', summary: 'Nuevo Ticket', detail: `Ticket #${ticket.id}: ${ticket.title}`, life: 5000 });
+            toast.add({
+                severity: 'info',
+                summary: 'Nuevo Ticket',
+                detail: `Ticket #${ticket.id}: ${ticket.title}`,
+                life: 5000
+            });
         }
     };
 
@@ -60,52 +65,251 @@ export const useTicketsStore = defineStore('tickets', () => {
         const index = state.tickets.findIndex((t) => t.id === ticket.id);
         if (index !== -1) {
             state.tickets[index] = ticket;
-            toast.add({ severity: 'success', summary: 'Ticket Actualizado', detail: `Ticket #${ticket.id}: ${ticket.title} (${ticket.status})`, life: 5000 });
+            toast.add({
+                severity: 'success',
+                summary: 'Ticket Actualizado',
+                detail: `Ticket #${ticket.id}: ${ticket.title} (${ticket.status})`,
+                life: 5000
+            });
         }
         if (state.currentTicket && state.currentTicket.id === ticket.id) {
             state.currentTicket = ticket;
         }
     };
 
+    const handleTicketAssigned = (e) => {
+        const ticket = e.ticket;
+        const previousAssigneeId = e.previous_assignee_id;
+        const previousPosition = e.previous_position;
+        const currentUserId = authStore.getUser?.id;
+
+        // Actualizar ticket en la lista
+        const index = state.tickets.findIndex((t) => t.id === ticket.id);
+        if (index !== -1) {
+            state.tickets[index] = ticket;
+        }
+
+        // Actualizar ticket actual si está seleccionado
+        if (state.currentTicket && state.currentTicket.id === ticket.id) {
+            state.currentTicket = ticket;
+        }
+
+        // Mostrar notificación personalizada según el contexto
+        let notificationMessage = '';
+        let severity = 'info';
+
+        if (ticket.assignee_user_id === currentUserId) {
+            notificationMessage = `Te han asignado el ticket: ${ticket.title}`;
+            severity = 'success';
+        } else if (previousAssigneeId === currentUserId) {
+            notificationMessage = `El ticket "${ticket.title}" ha sido reasignado`;
+            severity = 'warning';
+        } else {
+            notificationMessage = `Cambio de asignación en ticket: ${ticket.title}`;
+        }
+
+        toast.add({
+            severity,
+            summary: 'Asignación de Ticket',
+            detail: notificationMessage,
+            life: 5000
+        });
+    };
+
+    const handleTicketStatusChanged = (e) => {
+        const ticket = e.ticket;
+        const oldStatus = e.old_status;
+        const newStatus = e.new_status;
+
+        // Actualizar ticket en la lista
+        const index = state.tickets.findIndex((t) => t.id === ticket.id);
+        if (index !== -1) {
+            state.tickets[index] = ticket;
+        }
+
+        // Actualizar ticket actual si está seleccionado
+        if (state.currentTicket && state.currentTicket.id === ticket.id) {
+            state.currentTicket = ticket;
+        }
+
+        // Determinar severity basado en el nuevo estado
+        let severity = 'info';
+        if (newStatus === 'concluido') severity = 'success';
+        else if (newStatus === 'rechazado' || newStatus === 'anulado') severity = 'error';
+        else if (newStatus === 'en proceso') severity = 'warning';
+
+        toast.add({
+            severity,
+            summary: 'Estado del Ticket Cambiado',
+            detail: `Ticket "${ticket.title}" cambió de ${oldStatus} a ${newStatus}`,
+            life: 5000
+        });
+    };
+
+    const handleTicketCommentCreated = (e) => {
+        const comment = e.comment;
+        const ticketId = e.ticket_id;
+
+        // Si el ticket está en la lista, refrescarlo para obtener los comentarios actualizados
+        const ticket = state.tickets.find((t) => t.id === ticketId);
+        if (ticket) {
+            // Notify comments store about the new comment
+            try {
+                const { useTicketCommentsStore } = require('./ticketCommentsStore');
+                const commentsStore = useTicketCommentsStore();
+                commentsStore.handleCommentCreated(comment, ticketId);
+            } catch (error) {
+                console.warn('[TicketsStore] Could not notify comments store:', error);
+            }
+
+            toast.add({
+                severity: 'info',
+                summary: 'Nuevo Comentario',
+                detail: `Nuevo comentario en: ${ticket.title}`,
+                life: 4000
+            });
+        }
+    };
+
+    const handleTicketCommentUpdated = (e) => {
+        const comment = e.comment;
+        const ticketId = e.ticket_id;
+
+        // Similar al comentario creado, actualizar si es necesario
+        const ticket = state.tickets.find((t) => t.id === ticketId);
+        if (ticket) {
+            // Notify comments store about the updated comment
+            try {
+                const { useTicketCommentsStore } = require('./ticketCommentsStore');
+                const commentsStore = useTicketCommentsStore();
+                commentsStore.handleCommentUpdated(comment, ticketId);
+            } catch (error) {
+                console.warn('[TicketsStore] Could not notify comments store:', error);
+            }
+
+            toast.add({
+                severity: 'info',
+                summary: 'Comentario Actualizado',
+                detail: `Comentario actualizado en: ${ticket.title}`,
+                life: 4000
+            });
+        }
+    };
+
+    const handleTicketDeleted = (e) => {
+        const ticketId = e.ticket_id;
+        const index = state.tickets.findIndex((t) => t.id === ticketId);
+        if (index !== -1) {
+            const deletedTicket = state.tickets[index];
+            state.tickets.splice(index, 1);
+            state.pagination.total--;
+
+            toast.add({
+                severity: 'warn',
+                summary: 'Ticket Eliminado',
+                detail: `El ticket "${deletedTicket.title}" ha sido eliminado`,
+                life: 5000
+            });
+        }
+
+        // Si el ticket eliminado era el actual, limpiarlo
+        if (state.currentTicket && state.currentTicket.id === ticketId) {
+            state.currentTicket = null;
+        }
+    };
+
     const initEchoListeners = () => {
-        const userId = authStore.authUser?.id;
-        const userPosition = authStore.authUser?.position;
+        const user = authStore.getUser;
+        const userId = user?.id;
+        const userPosition = user?.position;
+        const token = authStore.getToken;
+        
+        console.log('[TicketsStore] Initializing real-time events for user:', userId);
+        
+        if (!authStore.isLoggedIn) {
+            console.warn('[TicketsStore] User not logged in, skipping Echo initialization');
+            return;
+        }
+        
+        if (!token) {
+            console.warn('[TicketsStore] No token available, skipping Echo initialization');
+            return;
+        }
 
         if (userId) {
-            useEcho.private(`App.Models.User.${userId}`).listen('.ticket.created', handleTicketCreated).listen('.ticket.updated', handleTicketUpdated);
-            console.log(`Listening to private user channel: App.Models.User.${userId}`);
+            console.log(`[TicketsStore] Attempting to subscribe to private channel: App.Models.User.${userId}`);
+            
+            const privateChannel = useEcho.private(`App.Models.User.${userId}`);
+            
+            // Agregar manejadores de eventos del canal
+            privateChannel
+                .subscribed(() => {
+                    console.log(`[TicketsStore] Successfully subscribed to private channel: App.Models.User.${userId}`);
+                })
+                .error((error) => {
+                    console.error(`[TicketsStore] Error subscribing to private channel: App.Models.User.${userId}`, error);
+                })
+                .listen('.ticket.created', handleTicketCreated)
+                .listen('.ticket.updated', handleTicketUpdated)
+                .listen('.ticket.assigned', handleTicketAssigned)
+                .listen('.ticket.status.changed', handleTicketStatusChanged)
+                .listen('.ticket.comment.created', handleTicketCommentCreated)
+                .listen('.ticket.comment.updated', handleTicketCommentUpdated)
+                .listen('.ticket.deleted', handleTicketDeleted);
+                
+            console.log(`[TicketsStore] Listening to private user channel: App.Models.User.${userId}`);
+        } else {
+            console.warn('[TicketsStore] No userId found, cannot subscribe to private channel');
         }
 
         if (userPosition) {
-            useEcho
-                .join(`tickets.position.${userPosition}`)
+            console.log(`[TicketsStore] Attempting to join presence channel: tickets.position.${userPosition}`);
+            
+            const presenceChannel = useEcho.join(`tickets.position.${userPosition}`);
+            
+            presenceChannel
+                .subscribed(() => {
+                    console.log(`[TicketsStore] Successfully joined presence channel: tickets.position.${userPosition}`);
+                })
+                .error((error) => {
+                    console.error(`[TicketsStore] Error joining presence channel: tickets.position.${userPosition}`, error);
+                })
                 .here((users) => {
-                    console.log(`Users in position channel ${userPosition}:`, users);
+                    console.log(`[TicketsStore] Users in position channel ${userPosition}:`, users);
                 })
                 .joining((user) => {
-                    console.log(`${user.name} joined position channel ${userPosition}.`);
+                    console.log(`[TicketsStore] ${user.name} joined position channel ${userPosition}.`);
                 })
                 .leaving((user) => {
-                    console.log(`${user.name} left position channel ${userPosition}.`);
+                    console.log(`[TicketsStore] ${user.name} left position channel ${userPosition}.`);
                 })
                 .listen('.ticket.created', handleTicketCreated)
-                .listen('.ticket.updated', handleTicketUpdated);
-            console.log(`Listening to presence position channel: tickets.position.${userPosition}`);
+                .listen('.ticket.updated', handleTicketUpdated)
+                .listen('.ticket.assigned', handleTicketAssigned)
+                .listen('.ticket.status.changed', handleTicketStatusChanged)
+                .listen('.ticket.comment.created', handleTicketCommentCreated)
+                .listen('.ticket.comment.updated', handleTicketCommentUpdated)
+                .listen('.ticket.deleted', handleTicketDeleted);
+                
+            console.log(`[TicketsStore] Listening to presence position channel: tickets.position.${userPosition}`);
+        } else {
+            console.warn('[TicketsStore] No userPosition found, cannot subscribe to presence channel');
         }
     };
 
     const leaveEchoChannels = () => {
-        const userId = authStore.authUser?.id;
-        const userPosition = authStore.authUser?.position;
+        const user = authStore.getUser;
+        const userId = user?.id;
+        const userPosition = user?.position;
 
         if (userId) {
             useEcho.leave(`App.Models.User.${userId}`);
-            console.log(`Left private user channel: App.Models.User.${userId}`);
+            console.log(`[TicketsStore] Left private user channel: App.Models.User.${userId}`);
         }
 
         if (userPosition) {
             useEcho.leave(`tickets.position.${userPosition}`);
-            console.log(`Left presence position channel: tickets.position.${userPosition}`);
+            console.log(`[TicketsStore] Left presence position channel: tickets.position.${userPosition}`);
         }
     };
 
@@ -114,6 +318,7 @@ export const useTicketsStore = defineStore('tickets', () => {
         state.isLoading = true;
         try {
             const response = await TicketService.getTickets(state.filters);
+            console.log('API Response for tickets:', response);
             const responseData = response.data;
 
             // Handle response wrapped in a 'data' object, or as a direct array
@@ -144,6 +349,7 @@ export const useTicketsStore = defineStore('tickets', () => {
     const createTicket = async (ticketData) => {
         state.isSaving = true;
         try {
+            console.log('Creating ticket with data:', ticketData);
             const response = await TicketService.createTicket(ticketData);
             toast.add({ severity: 'success', summary: 'Ticket Creado', detail: `Ticket #${response.id} creado correctamente.`, life: 3000 });
             return response;
@@ -223,6 +429,11 @@ export const useTicketsStore = defineStore('tickets', () => {
         // Real-time handlers
         handleTicketCreated,
         handleTicketUpdated,
+        handleTicketAssigned,
+        handleTicketStatusChanged,
+        handleTicketCommentCreated,
+        handleTicketCommentUpdated,
+        handleTicketDeleted,
         initEchoListeners,
         leaveEchoChannels,
 
