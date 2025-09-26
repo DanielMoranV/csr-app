@@ -12,7 +12,7 @@ import Select from 'primevue/select';
 import TabPanel from 'primevue/tabpanel';
 import TabView from 'primevue/tabview';
 import Textarea from 'primevue/textarea';
-import { computed, reactive, ref, watch } from 'vue';
+import { computed, nextTick, reactive, ref, watch } from 'vue';
 import TicketAttachments from './TicketAttachments.vue';
 import TicketStatusHistory from './TicketStatusHistory.vue';
 
@@ -54,7 +54,6 @@ const isEditing = computed(() => !!props.ticket?.id);
 // Computed para obtener el ticket actualizado del store
 const currentTicket = computed(() => {
     if (!props.ticket?.id) return props.ticket;
-
     // Buscar el ticket actualizado en el store
     const updatedTicket = ticketsStore.tickets.find((t) => t.id === props.ticket.id);
     return updatedTicket || props.ticket;
@@ -117,8 +116,19 @@ const filteredStatusOptions = computed(() => {
     } else if (isAssignee) {
         return statusOptions.value.filter((opt) => opt.value === currentStatus || opt.value === 'en proceso' || opt.value === 'concluido' || opt.value === 'rechazado');
     }
+
     return statusOptions.value.filter((opt) => opt.value === currentStatus);
 });
+
+// Referencias para el scroll
+const chatContainer = ref(null);
+
+// Método para hacer scroll hacia abajo
+const scrollToBottom = () => {
+    if (chatContainer.value) {
+        chatContainer.value.scrollTop = chatContainer.value.scrollHeight;
+    }
+};
 
 // Watchers
 watch(
@@ -134,6 +144,18 @@ watch(
         }
     },
     { immediate: true, deep: true }
+);
+
+// Watcher para hacer scroll cuando cambien los comentarios
+watch(
+    () => ticketCommentsStore.allComments,
+    () => {
+        // Usar nextTick para asegurar que el DOM se actualice antes del scroll
+        nextTick(() => {
+            scrollToBottom();
+        });
+    },
+    { deep: true }
 );
 
 // Watcher para el ticket actualizado del store
@@ -163,6 +185,7 @@ watch(
                     initialClientList.value = apiUtils.getData(usersResponse);
                     clientSearchResults.value = initialClientList.value;
                 }
+
                 if (apiUtils.isSuccess(positionsResponse)) {
                     initialPositionList.value = apiUtils.getData(positionsResponse).map((p) => ({ name: p, id: p }));
                     positionSearchResults.value = initialPositionList.value;
@@ -181,12 +204,26 @@ watch(
             if (props.ticket?.assignee && !clientSearchResults.value.some((u) => u.id === props.ticket.assignee.id)) {
                 clientSearchResults.value.unshift(props.ticket.assignee);
             }
+
             if (props.ticket?.assignee_position && !positionSearchResults.value.some((p) => p.id === props.ticket.assignee_position)) {
                 positionSearchResults.value.unshift({ name: props.ticket.assignee_position, id: props.ticket.assignee_position });
             }
         } else {
             resetValidation();
             ticketCommentsStore.state.comments = []; // Clear comments when dialog closes
+        }
+    }
+);
+
+// Watcher para hacer scroll cuando el diálogo se abra
+watch(
+    () => props.visible,
+    (visible) => {
+        if (visible && props.ticket?.id) {
+            // Hacer scroll después de que se carguen los comentarios
+            setTimeout(() => {
+                scrollToBottom();
+            }, 500);
         }
     }
 );
@@ -202,16 +239,19 @@ const loadTicketData = (ticket) => {
         priority: ticket.priority || null,
         status: ticket.status || null
     });
+
     if (ticket.assignee && ticket.assignee.id) {
         clientSearchResults.value = [ticket.assignee];
     } else {
         clientSearchResults.value = initialClientList.value;
     }
+
     if (ticket.assignee_position) {
         positionSearchResults.value = [{ name: ticket.assignee_position, id: ticket.assignee_position }];
     } else {
         positionSearchResults.value = initialPositionList.value;
     }
+
     resetValidation();
 };
 
@@ -225,6 +265,7 @@ const resetForm = () => {
         priority: null,
         status: 'pendiente'
     });
+
     newCommentContent.value = '';
     clientSearchResults.value = initialClientList.value;
     positionSearchResults.value = initialPositionList.value;
@@ -306,6 +347,7 @@ const validateField = (fieldName) => {
                 delete validationErrors.value.due_date;
             }
             break;
+
         case 'priority':
             if (!ticketForm.priority) {
                 validationErrors.value.priority = 'La prioridad es obligatoria';
@@ -313,6 +355,7 @@ const validateField = (fieldName) => {
                 delete validationErrors.value.priority;
             }
             break;
+
         case 'status':
             if (!ticketForm.status) {
                 validationErrors.value.status = 'El estado es obligatorio';
@@ -325,7 +368,6 @@ const validateField = (fieldName) => {
 
 const validateAllFields = () => {
     const fieldsToValidate = ['title', 'description', 'priority', 'status'];
-
     fieldsToValidate.forEach((field) => {
         validateField(field);
     });
@@ -347,7 +389,6 @@ const getFieldError = (fieldName) => {
 const isFormValid = computed(() => {
     const hasErrors = Object.keys(validationErrors.value).length > 0;
     const hasRequiredFields = ticketForm.title && ticketForm.description && ticketForm.priority && ticketForm.status;
-
     return hasRequiredFields && !hasErrors;
 });
 
@@ -358,7 +399,6 @@ const saveTicket = () => {
     }
 
     const ticketData = { ...ticketForm };
-
     if (ticketData.due_date) {
         ticketData.due_date = ticketData.due_date.toISOString();
     }
@@ -381,6 +421,11 @@ const addComment = async () => {
     try {
         await ticketCommentsStore.addComment(props.ticket.id, { content: newCommentContent.value });
         newCommentContent.value = ''; // Clear input
+
+        // Hacer scroll hacia abajo después de agregar el comentario
+        nextTick(() => {
+            scrollToBottom();
+        });
     } catch (error) {
         console.error('Error adding comment:', error);
     }
@@ -490,6 +535,7 @@ const formatCommentDate = (dateString) => {
                                 <small class="p-error" v-if="getFieldError('priority')">{{ getFieldError('priority') }}</small>
                             </div>
                         </div>
+
                         <div class="col-12 md:col-6">
                             <div class="field">
                                 <label for="status" class="compact-label">
@@ -549,6 +595,7 @@ const formatCommentDate = (dateString) => {
                                 <small class="p-error" v-if="getFieldError('assignee')">{{ getFieldError('assignee') }}</small>
                             </div>
                         </div>
+
                         <div class="col-12 md:col-6">
                             <div class="field">
                                 <label for="assignee_position" class="compact-label">
@@ -618,7 +665,7 @@ const formatCommentDate = (dateString) => {
 
             <TabPanel header="💬 Comentarios" :disabled="!isEditing">
                 <div class="chat-wrapper">
-                    <div class="chat-container">
+                    <div ref="chatContainer" class="chat-container">
                         <div v-if="ticketCommentsStore.state.isLoading" class="text-center p-4"><i class="pi pi-spin pi-spinner text-xl"></i> Cargando comentarios...</div>
                         <div v-else-if="ticketCommentsStore.allComments.length === 0" class="text-center p-4 text-500">
                             <i class="pi pi-comment text-4xl text-300 mb-3"></i>
@@ -671,15 +718,34 @@ const formatCommentDate = (dateString) => {
 .chat-wrapper {
     display: flex;
     flex-direction: column;
-    height: 55vh; /* Adjust height as needed */
+    height: 55vh;
 }
 
 .chat-container {
-    flex-grow: 1; /* Takes up all available space */
+    flex-grow: 1;
     overflow-y: auto;
     padding: 1rem;
     background-color: var(--surface-ground);
     border-radius: 6px;
+    scroll-behavior: smooth;
+}
+
+.chat-container::-webkit-scrollbar {
+    width: 6px;
+}
+
+.chat-container::-webkit-scrollbar-track {
+    background: var(--surface-100);
+    border-radius: 3px;
+}
+
+.chat-container::-webkit-scrollbar-thumb {
+    background: var(--primary-300);
+    border-radius: 3px;
+}
+
+.chat-container::-webkit-scrollbar-thumb:hover {
+    background: var(--primary-400);
 }
 
 .comments-list {
@@ -739,7 +805,7 @@ const formatCommentDate = (dateString) => {
 }
 
 .new-comment-form {
-    flex-shrink: 0; /* Prevents the form from shrinking */
+    flex-shrink: 0;
     padding: 1rem;
     background-color: var(--surface-section);
     border-top: 1px solid var(--surface-border);
@@ -787,21 +853,6 @@ const formatCommentDate = (dateString) => {
     height: 2.5rem !important;
 }
 
-.compact-input:hover,
-:deep(.compact-input:hover),
-:deep(.compact-input:hover input) {
-    border-color: var(--primary-300) !important;
-}
-
-.compact-input:focus,
-:deep(.compact-input:focus),
-:deep(.compact-input:focus input),
-:deep(.compact-input.p-focus) {
-    border-color: var(--primary-color) !important;
-    box-shadow: 0 0 0 2px var(--primary-100) !important;
-}
-
-/* Campos de entrada específicos */
 :deep(.p-inputtext.compact-input) {
     padding: 0.5rem 0.75rem;
     height: 2.5rem;
@@ -823,7 +874,7 @@ const formatCommentDate = (dateString) => {
 
 :deep(.p-textarea.compact-input) {
     padding: 0.5rem 0.75rem !important;
-    min-height: 6rem; /* Adjust height for textarea */
+    min-height: 6rem;
     height: auto !important;
 }
 
@@ -845,7 +896,6 @@ const formatCommentDate = (dateString) => {
 }
 
 /* Textos de ayuda compactos */
-small.text-500,
 .field-help {
     font-size: 0.75rem;
     color: var(--text-color-secondary);
@@ -853,9 +903,6 @@ small.text-500,
     display: block;
     line-height: 1.3;
     font-style: italic;
-}
-
-.field-help {
     background: var(--surface-100);
     padding: 0.25rem 0.5rem;
     border-radius: 4px;
@@ -924,11 +971,6 @@ small.text-500,
     }
 }
 
-:deep(.p-dialog-header .p-dialog-title) {
-    font-weight: 700;
-    font-size: 1.1rem;
-}
-
 /* Footer compacto */
 :deep(.p-dialog-footer) {
     padding: 1rem 1.25rem;
@@ -937,34 +979,7 @@ small.text-500,
     border-radius: 0 0 8px 8px;
 }
 
-/* Medical theme improvements */
-:deep(.p-tabview .p-tabview-nav li .p-tabview-nav-link) {
-    padding: 0.75rem 1rem;
-    font-weight: 600;
-    border-radius: 8px 8px 0 0;
-    transition: all 0.2s ease;
-}
-
-:deep(.p-tabview .p-tabview-nav li.p-highlight .p-tabview-nav-link) {
-    background: linear-gradient(135deg, var(--blue-500), var(--blue-600));
-    color: white;
-    box-shadow: 0 2px 8px rgba(59, 130, 246, 0.3);
-}
-
-/* Loading state improvements */
-:deep(.p-button .p-button-loading-icon) {
-    animation: spin 1s linear infinite;
-}
-
-@keyframes spin {
-    from {
-        transform: rotate(0deg);
-    }
-    to {
-        transform: rotate(360deg);
-    }
-}
-
+/* Botones mejorados */
 :deep(.p-button) {
     border-radius: 8px;
     font-weight: 600;
@@ -974,49 +989,14 @@ small.text-500,
     border: 2px solid transparent;
 }
 
-:deep(.p-button:hover) {
-    transform: translateY(-2px);
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
-}
-
 :deep(.p-button-success) {
     background: linear-gradient(45deg, #10b981, #059669);
     border-color: #10b981;
 }
 
-:deep(.p-button-success:hover) {
-    background: linear-gradient(45deg, #059669, #047857);
-    box-shadow: 0 4px 12px rgba(16, 185, 129, 0.3);
-}
-
 :deep(.p-button-outlined) {
     border-color: var(--surface-400);
     color: var(--text-color-secondary);
-}
-
-:deep(.p-button-outlined:hover) {
-    background: var(--surface-100);
-    border-color: var(--surface-500);
-}
-
-/* Select panel compacto */
-:deep(.p-dropdown-panel) {
-    border-radius: 8px;
-    box-shadow: 0 6px 20px rgba(0, 0, 0, 0.15);
-    border: 1px solid var(--surface-200);
-    max-height: 300px;
-    overflow-y: auto;
-}
-
-:deep(.p-dropdown-item) {
-    padding: 0.75rem;
-    font-size: 0.9rem;
-    transition: all 0.2s ease;
-}
-
-:deep(.p-dropdown-item:hover) {
-    background: var(--primary-50);
-    transform: translateX(2px);
 }
 
 /* Custom option styles */
@@ -1027,25 +1007,11 @@ small.text-500,
     transition: all 0.2s ease;
 }
 
-.priority-option:hover,
-.status-option:hover {
-    background: var(--surface-100);
-    transform: translateX(2px);
-}
-
-/* Calendar panel compacto */
-:deep(.p-datepicker) {
-    border-radius: 6px;
-    box-shadow: 0 44px 12px rgba(0, 0, 0, 0.12);
-    border: 1px solid var(--surface-200);
-}
-
 /* Responsive ultra compacto */
 @media (max-width: 968px) {
     .ticket-dialog {
         max-width: 95vw;
     }
-
     .compact-form .col-12.md\:col-6 {
         flex: 0 0 auto;
         width: 50%;
@@ -1058,21 +1024,17 @@ small.text-500,
         max-width: calc(100vw - 1rem);
         max-height: 90vh;
     }
-
     :deep(.p-dialog-content) {
         padding: 0.5rem;
         max-height: calc(90vh - 100px);
     }
-
     .compact-form .col-12.md\:col-6 {
         width: 100%;
         margin-bottom: 0.5rem;
     }
-
     .field {
         margin-bottom: 0.6rem;
     }
-
     :deep(.p-dialog-header),
     :deep(.p-dialog-footer) {
         padding: 0.75rem 1rem;
@@ -1085,61 +1047,26 @@ small.text-500,
         max-width: calc(100vw - 0.5rem);
         max-height: 95vh;
     }
-
     :deep(.p-dialog-content) {
         max-height: calc(95vh - 80px);
     }
-
     .compact-label {
         font-size: 0.8rem;
         margin-bottom: 0.2rem;
     }
-
     .field {
         margin-bottom: 0.5rem;
     }
-
     :deep(.p-dialog-header),
     :deep(.p-dialog-footer) {
         padding: 0.5rem 0.75rem;
     }
-
     :deep(.p-button) {
         padding: 0.4rem 0.8rem;
         font-size: 0.85rem;
     }
-
     .flex.gap-2 {
         gap: 0.5rem;
     }
-}
-
-/* Modo oscuro */
-@media (prefers-color-scheme: dark) {
-    :deep(.p-dialog-footer) {
-        background: var(--surface-900);
-    }
-
-    :deep(.p-dialog-header) {
-        background: linear-gradient(135deg, var(--surface-800) 0%, var(--surface-900) 100%);
-    }
-}
-
-/* Scrollbar personalizada */
-:deep(.p-dialog-content)::-webkit-scrollbar {
-    width: 4px;
-}
-
-:deep(.p-dialog-content)::-webkit-scrollbar-track {
-    background: var(--surface-100);
-}
-
-:deep(.p-dialog-content)::-webkit-scrollbar-thumb {
-    background: var(--primary-300);
-    border-radius: 2px;
-}
-
-:deep(.p-dialog-content)::-webkit-scrollbar-thumb:hover {
-    background: var(--primary-400);
 }
 </style>
