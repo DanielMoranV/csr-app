@@ -91,14 +91,12 @@ const getSeverity = (isActive) => {
 };
 
 const formatAge = (ageString) => {
-    if (!ageString || !ageString.includes('años')) return ageString || 'N/A';
-    try {
-        const yearPart = ageString.split('.')[0];
-        const rest = ageString.substring(ageString.indexOf('años'));
-        return `${yearPart} ${rest}`;
-    } catch (e) {
-        return ageString; // return original string if something goes wrong
+    if (!ageString) return 'N/A';
+    // Si ya está en el formato correcto, devolverlo tal como está
+    if (typeof ageString === 'string' && ageString.includes('años')) {
+        return ageString;
     }
+    return ageString || 'N/A';
 };
 
 const getBedTagClass = (bedName, roomNumber) => {
@@ -206,9 +204,9 @@ const currentSelectedAttentionForTasks = computed(() => {
             <Column field="patient.name" header="Paciente" sortable filterField="patient.name" :showFilterMatchModes="false" style="min-width: 20rem">
                 <template #body="{ data }">
                     <div>
-                        <div class="font-bold">HC: {{ data.patient.cod_patient }} - {{ data.patient.name }}</div>
-                        <div class="text-sm text-gray-500">{{ data.patient.document_type }}: {{ data.patient.number_document }}</div>
-                        <div class="text-sm">Edad: {{ formatAge(data.patient.age_formatted) }}</div>
+                        <div class="font-bold">HC: {{ data.patient?.cod_patient }} - {{ data.patient?.name }}</div>
+                        <div class="text-sm text-gray-500">{{ data.patient?.document_type }}: {{ data.patient?.number_document }}</div>
+                        <div class="text-sm">Edad: {{ formatAge(data.patient?.age_formatted) }}</div>
                     </div>
                 </template>
                 <template #filter="{ filterModel }">

@@ -22,6 +22,8 @@ export const useHospitalAttentionsStore = defineStore('hospitalAttentions', () =
             const response = await hospitalAttentionsApi.list(); // Cargar todo, sin paginar
             // Asumimos una estructura de respuesta { success: true, data: { data: [...] } }
 
+            console.log(response);
+
             attentions.value = response.data?.data || [];
         } catch (err) {
             // El interceptor de axios rechaza la promesa con un objeto de error estandarizado.
@@ -143,7 +145,7 @@ export const useHospitalAttentionsStore = defineStore('hospitalAttentions', () =
         console.log('Handling hospitalization created:', eventData);
         // Add new attention to the list
         const newAttention = eventData.data;
-        if (newAttention && !attentions.value.find(att => att.id === newAttention.id)) {
+        if (newAttention && !attentions.value.find((att) => att.id === newAttention.id)) {
             attentions.value.unshift(newAttention);
         }
         // Refresh stats
@@ -153,9 +155,9 @@ export const useHospitalAttentionsStore = defineStore('hospitalAttentions', () =
     function handleHospitalizationUpdated(eventData) {
         console.log('Handling hospitalization updated:', eventData);
         const updatedAttention = eventData.data;
-        
+
         if (updatedAttention) {
-            const index = attentions.value.findIndex(att => att.id === updatedAttention.id);
+            const index = attentions.value.findIndex((att) => att.id === updatedAttention.id);
             if (index !== -1) {
                 // Update existing attention
                 attentions.value[index] = updatedAttention;
@@ -171,9 +173,9 @@ export const useHospitalAttentionsStore = defineStore('hospitalAttentions', () =
     function handleHospitalizationDeleted(eventData) {
         console.log('Handling hospitalization deleted:', eventData);
         const deletedId = eventData.data?.id || eventData.id;
-        
+
         if (deletedId) {
-            const index = attentions.value.findIndex(att => att.id === deletedId);
+            const index = attentions.value.findIndex((att) => att.id === deletedId);
             if (index !== -1) {
                 attentions.value.splice(index, 1);
             }

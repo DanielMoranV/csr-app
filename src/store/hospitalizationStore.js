@@ -46,18 +46,11 @@ export const useHospitalizationStore = defineStore('hospitalization', () => {
     const handleHospitalizationCreated = (eventData) => {
         console.log('[HospitalizationStore] Handling hospitalization created:', eventData);
 
-        // Refresh the hospitalization status to get updated room/bed information
-        fetchHospitalizationStatus();
-    };
+        const newHospitalization = eventData.data;
 
-    const handleHospitalizationUpdated = (eventData) => {
-        console.log('[HospitalizationStore] Handling hospitalization updated:', eventData);
-
-        const updatedHospitalization = eventData.data;
-
-        if (updatedHospitalization && state.status) {
+        if (newHospitalization && state.status) {
             // Find and update the specific bed/room that was affected
-            const bedId = updatedHospitalization.id_beds;
+            const bedId = newHospitalization.id_beds;
 
             if (bedId) {
                 // Look for the bed in all rooms
@@ -66,10 +59,117 @@ export const useHospitalizationStore = defineStore('hospitalization', () => {
                     if (room.beds) {
                         room.beds.forEach((bed) => {
                             if (bed.id === bedId) {
-                                // Update the bed's attention information
-                                bed.attention = updatedHospitalization;
-                                bed.status = updatedHospitalization.exit_at ? 'free' : 'occupied';
+                                // Transform the hospitalization data to match the expected format
+                                const transformedAttention = {
+                                    hospital_attention_id: newHospitalization.id,
+                                    entry_date: newHospitalization.entry_at,
+                                    exit_date: newHospitalization.exit_at,
+                                    discharge_date: newHospitalization.exit_at,
+                                    patient: {
+                                        id: newHospitalization.patient.id,
+                                        name: newHospitalization.patient.name,
+                                        document_number: newHospitalization.patient.number_document,
+                                        document_type: newHospitalization.patient.document_type,
+                                        age_formatted: newHospitalization.patient.age_formatted
+                                    },
+                                    doctor: newHospitalization.doctor,
+                                    insurance: newHospitalization.insurance,
+                                    type_attention: newHospitalization.type_attention,
+                                    details: newHospitalization.details_attention,
+                                    tasks: newHospitalization.tasks || []
+                                };
+
+                                // Update the bed's attention information and status
+                                if (newHospitalization.is_active && !newHospitalization.exit_at) {
+                                    bed.attention = transformedAttention;
+                                    bed.status = 'occupied';
+                                } else {
+                                    bed.attention = null;
+                                    bed.status = 'free';
+                                }
                                 found = true;
+                            }
+                        });
+                    }
+                });
+
+                if (!found) {
+                    // If the bed wasn't found, refresh all data
+                    fetchHospitalizationStatus();
+                }
+            } else {
+                // If no bed ID is provided, refresh all data
+                fetchHospitalizationStatus();
+            }
+        } else {
+            // Fallback: refresh the hospitalization status to get updated room/bed information
+            fetchHospitalizationStatus();
+        }
+    };
+
+    const handleHospitalizationUpdated = (eventData) => {
+        console.log('[HospitalizationStore] Handling hospitalization updated:', eventData);
+
+        const updatedHospitalization = eventData.data;
+
+        if (updatedHospitalization && state.status) {
+            const currentBedId = updatedHospitalization.id_beds;
+            const hospitalizationId = updatedHospitalization.id;
+
+            // First, find any existing bed with the same hospitalization ID and clear it
+            // This handles the case where a patient moves from one bed to another
+            state.status.forEach((room) => {
+                if (room.beds) {
+                    room.beds.forEach((bed) => {
+                        if (bed.attention && 
+                            bed.attention.hospital_attention_id === hospitalizationId && 
+                            bed.id !== currentBedId) {
+                            // Clear the old bed since the patient moved
+                            bed.attention = null;
+                            bed.status = 'free';
+                            console.log(`[HospitalizationStore] Cleared previous bed ${bed.id} for hospitalization ${hospitalizationId}`);
+                        }
+                    });
+                }
+            });
+
+            if (currentBedId) {
+                // Now update the current bed
+                let found = false;
+                state.status.forEach((room) => {
+                    if (room.beds) {
+                        room.beds.forEach((bed) => {
+                            if (bed.id === currentBedId) {
+                                // Transform the hospitalization data to match the expected format
+                                const transformedAttention = {
+                                    hospital_attention_id: updatedHospitalization.id,
+                                    entry_date: updatedHospitalization.entry_at,
+                                    exit_date: updatedHospitalization.exit_at,
+                                    discharge_date: updatedHospitalization.exit_at,
+                                    patient: {
+                                        id: updatedHospitalization.patient.id,
+                                        name: updatedHospitalization.patient.name,
+                                        document_number: updatedHospitalization.patient.number_document,
+                                        document_type: updatedHospitalization.patient.document_type,
+                                        age_formatted: updatedHospitalization.patient.age_formatted
+                                    },
+                                    doctor: updatedHospitalization.doctor,
+                                    insurance: updatedHospitalization.insurance,
+                                    type_attention: updatedHospitalization.type_attention,
+                                    details: updatedHospitalization.details_attention,
+                                    tasks: updatedHospitalization.tasks || []
+                                };
+
+                                // Update the bed's attention information and status
+                                if (updatedHospitalization.is_active && !updatedHospitalization.exit_at) {
+                                    bed.attention = transformedAttention;
+                                    bed.status = 'occupied';
+                                } else {
+                                    bed.attention = null;
+                                    bed.status = 'free';
+                                }
+                                found = true;
+                                console.log(`[HospitalizationStore] Updated bed ${bed.id} for hospitalization ${hospitalizationId}`);
                             }
                         });
                     }
@@ -89,8 +189,40 @@ export const useHospitalizationStore = defineStore('hospitalization', () => {
     const handleHospitalizationDeleted = (eventData) => {
         console.log('[HospitalizationStore] Handling hospitalization deleted:', eventData);
 
-        // Refresh the hospitalization status to reflect the deletion
-        fetchHospitalizationStatus();
+        const deletedHospitalization = eventData.data;
+
+        if (deletedHospitalization && state.status) {
+            // Find and update the specific bed/room that was affected
+            const bedId = deletedHospitalization.id_beds || deletedHospitalization.id;
+
+            if (bedId) {
+                // Look for the bed in all rooms and clear its attention
+                let found = false;
+                state.status.forEach((room) => {
+                    if (room.beds) {
+                        room.beds.forEach((bed) => {
+                            if (bed.id === bedId || (bed.attention && bed.attention.hospital_attention_id === deletedHospitalization.id)) {
+                                // Clear the bed's attention information
+                                bed.attention = null;
+                                bed.status = 'free';
+                                found = true;
+                            }
+                        });
+                    }
+                });
+
+                if (!found) {
+                    // If the bed wasn't found, refresh all data
+                    fetchHospitalizationStatus();
+                }
+            } else {
+                // If no bed ID is provided, refresh all data
+                fetchHospitalizationStatus();
+            }
+        } else {
+            // Fallback: refresh the hospitalization status to reflect the deletion
+            fetchHospitalizationStatus();
+        }
     };
 
     return {
