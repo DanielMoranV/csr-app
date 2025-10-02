@@ -21,7 +21,7 @@ export const useHospitalizationStore = defineStore('hospitalization', () => {
         try {
             const response = await hospitalization.getStatus();
 
-            console.log(response);
+            console.log('[HospitalizationStore] Fetched hospitalization STATUS:', response);
             // Assuming getStatus returns the full axios response
             // and you have a utility to check for success and get data.
             // If not, you might need to adjust this part.
@@ -121,9 +121,7 @@ export const useHospitalizationStore = defineStore('hospitalization', () => {
             state.status.forEach((room) => {
                 if (room.beds) {
                     room.beds.forEach((bed) => {
-                        if (bed.attention && 
-                            bed.attention.hospital_attention_id === hospitalizationId && 
-                            bed.id !== currentBedId) {
+                        if (bed.attention && bed.attention.hospital_attention_id === hospitalizationId && bed.id !== currentBedId) {
                             // Clear the old bed since the patient moved
                             bed.attention = null;
                             bed.status = 'free';

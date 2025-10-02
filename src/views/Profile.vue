@@ -2,7 +2,7 @@
 import { profile } from '@/api';
 import { useAuth } from '@/composables/useAuth';
 import { useToast } from 'primevue/usetoast';
-import { computed, onMounted, ref } from 'vue';
+import { computed, onMounted, ref, watch } from 'vue';
 
 const { user } = useAuth();
 const toast = useToast();
@@ -31,6 +31,8 @@ const passwordData = ref({
 
 const profileErrors = ref({});
 const passwordErrors = ref({});
+const showAvatarDialog = ref(false);
+const avatarFile = ref(null);
 
 const isPasswordFormValid = computed(() => {
     return passwordData.value.current && passwordData.value.new && passwordData.value.confirm && passwordData.value.new === passwordData.value.confirm && passwordData.value.new.length >= 8;
@@ -61,6 +63,48 @@ const validateProfile = () => {
     profileErrors.value = errors;
     return Object.keys(errors).length === 0;
 };
+
+// Validación en tiempo real
+watch(
+    () => userProfile.value.name,
+    (newVal) => {
+        if (editMode.value && newVal) {
+            if (!newVal.trim()) profileErrors.value.name = 'El nombre es obligatorio';
+            else delete profileErrors.value.name;
+        }
+    }
+);
+
+watch(
+    () => userProfile.value.email,
+    (newVal) => {
+        if (editMode.value && newVal) {
+            if (!newVal.trim()) profileErrors.value.email = 'El email es obligatorio';
+            else if (!validateEmail(newVal)) profileErrors.value.email = 'El formato del email no es válido';
+            else delete profileErrors.value.email;
+        }
+    }
+);
+
+watch(
+    () => userProfile.value.phone,
+    (newVal) => {
+        if (editMode.value && newVal) {
+            if (newVal && !validatePhone(newVal)) profileErrors.value.phone = 'El teléfono debe tener 9 dígitos';
+            else delete profileErrors.value.phone;
+        }
+    }
+);
+
+watch(
+    () => userProfile.value.nick,
+    (newVal) => {
+        if (editMode.value && newVal) {
+            if (!newVal.trim()) profileErrors.value.nick = 'El nick es obligatorio';
+            else delete profileErrors.value.nick;
+        }
+    }
+);
 
 const validatePasswordForm = () => {
     const errors = {};
@@ -129,6 +173,25 @@ const showToast = (severity, summary, detail = '', life = 3000) => {
 
 const formatDate = (date) => new Intl.DateTimeFormat('es-PE', { year: 'numeric', month: 'long', day: 'numeric', hour: '2-digit', minute: '2-digit' }).format(new Date(date));
 
+const onAvatarSelect = (event) => {
+    const file = event.files[0];
+    if (file) {
+        avatarFile.value = file;
+        const reader = new FileReader();
+        reader.onload = (e) => {
+            userProfile.value.avatar = e.target.result;
+        };
+        reader.readAsDataURL(file);
+        showAvatarDialog.value = false;
+    }
+};
+
+const removeAvatar = () => {
+    userProfile.value.avatar = '';
+    avatarFile.value = null;
+    showAvatarDialog.value = false;
+};
+
 onMounted(loadUserProfile);
 </script>
 
@@ -140,14 +203,15 @@ onMounted(loadUserProfile);
                 <div class="avatar-container">
                     <Avatar v-if="userProfile.avatar" :image="userProfile.avatar" shape="circle" class="user-avatar" />
                     <Avatar v-else :label="userInitials" shape="circle" class="user-avatar" />
+                    <Button icon="pi pi-camera" rounded severity="secondary" class="avatar-edit-btn" @click="showAvatarDialog = true" />
                 </div>
                 <div class="user-info">
                     <h2 class="user-name">{{ userProfile.name || 'Nombre de Usuario' }}</h2>
                     <p class="user-position">{{ userProfile.position || 'Sin cargo asignado' }}</p>
-                    <!-- <div class="user-meta">
+                    <div class="user-meta">
                         <span v-if="userProfile.nick"><i class="pi pi-at"></i> {{ userProfile.nick }}</span>
                         <span v-if="userProfile.email"><i class="pi pi-envelope"></i> {{ userProfile.email }}</span>
-                    </div> -->
+                    </div>
                 </div>
             </div>
             <div class="header-status">
@@ -155,16 +219,28 @@ onMounted(loadUserProfile);
             </div>
         </div>
 
+        <!-- Avatar Dialog -->
+        <Dialog v-model:visible="showAvatarDialog" header="Cambiar Foto de Perfil" :modal="true" :style="{ width: '450px' }">
+            <div class="avatar-dialog-content">
+                <div class="current-avatar">
+                    <Avatar v-if="userProfile.avatar" :image="userProfile.avatar" shape="circle" size="xlarge" />
+                    <Avatar v-else :label="userInitials" shape="circle" size="xlarge" />
+                </div>
+                <FileUpload mode="basic" accept="image/*" :maxFileSize="2000000" @select="onAvatarSelect" chooseLabel="Seleccionar Imagen" class="w-full mt-3" />
+                <Button label="Eliminar Foto" icon="pi pi-trash" severity="danger" text class="w-full mt-2" @click="removeAvatar" :disabled="!userProfile.avatar" />
+            </div>
+        </Dialog>
+
         <!-- TabView for Profile Details -->
         <Tabs class="profile-tabview" value="1">
             <TabList>
-                <Tab key="general" value="1">
-                    <i class="pi pi-user mr-2" />
+                <Tab key="info" value="1">
+                    <i class="pi pi-info-circle mr-2" />
                     <span>Información General</span>
                 </Tab>
-                <Tab key="personal" value="2">
+                <Tab key="edit" value="2">
                     <i class="pi pi-user-edit mr-2" />
-                    <span>Datos Personales y de Contacto</span>
+                    <span>Editar Perfil</span>
                 </Tab>
                 <Tab key="password" value="3">
                     <i class="pi pi-lock mr-2" />
@@ -172,13 +248,70 @@ onMounted(loadUserProfile);
                 </Tab>
             </TabList>
             <TabPanels>
-                <TabPanel key="general" value="1">
+                <!-- Tab 1: Información General (Read-only) -->
+                <TabPanel key="info" value="1">
+                    <Card class="form-card">
+                        <template #title>
+                            <div class="flex align-items-center">
+                                <i class="pi pi-info-circle mr-2 text-xl text-primary"></i>
+                                <span>Detalles de la Cuenta</span>
+                            </div>
+                        </template>
+                        <template #content>
+                            <ul class="info-list">
+                                <li>
+                                    <i class="pi pi-user"></i>
+                                    <strong>Nombre completo:</strong>
+                                    <span>{{ userProfile.name || 'No asignado' }}</span>
+                                </li>
+                                <li>
+                                    <i class="pi pi-id-card"></i>
+                                    <strong>DNI:</strong>
+                                    <span>{{ userProfile.dni || 'No disponible' }}</span>
+                                </li>
+                                <li>
+                                    <i class="pi pi-at"></i>
+                                    <strong>Usuario del sistema:</strong>
+                                    <span>{{ userProfile.nick || 'No asignado' }}</span>
+                                </li>
+                                <li>
+                                    <i class="pi pi-envelope"></i>
+                                    <strong>Correo electrónico:</strong>
+                                    <span>{{ userProfile.email || 'No disponible' }}</span>
+                                </li>
+                                <li>
+                                    <i class="pi pi-phone"></i>
+                                    <strong>Teléfono:</strong>
+                                    <span>{{ userProfile.phone || 'No registrado' }}</span>
+                                </li>
+                                <li>
+                                    <i class="pi pi-briefcase"></i>
+                                    <strong>Cargo / Especialidad:</strong>
+                                    <span>{{ userProfile.position || 'No asignado' }}</span>
+                                </li>
+                                <li>
+                                    <i class="pi pi-clock"></i>
+                                    <strong>Último acceso:</strong>
+                                    <span>{{ formatDate(new Date()) }}</span>
+                                </li>
+                                <li>
+                                    <i class="pi pi-shield-check"></i>
+                                    <strong>Estado de la cuenta:</strong>
+                                    <Tag value="Activa" severity="success" />
+                                </li>
+                            </ul>
+                        </template>
+                    </Card>
+                </TabPanel>
+
+                <!-- Tab 2: Editar Perfil -->
+                <TabPanel key="edit" value="2">
                     <Card class="form-card">
                         <template #title>
                             <div class="card-title-container">
                                 <div class="flex align-items-center">
                                     <i class="pi pi-user-edit mr-2 text-xl text-primary"></i>
-                                    <span>Datos Personales y de Contacto</span>
+                                    <span>Editar Datos Personales</span>
                                 </div>
                                 <div class="card-actions">
                                     <Button v-if="!editMode" label="Editar" icon="pi pi-pencil" @click="enableEdit" text />
@@ -193,11 +326,12 @@ onMounted(loadUserProfile);
                             <div class="form-panel">
                                 <div class="formgrid grid">
                                     <div class="field col-12 md:col-6">
-                                        <label>Nombre completo</label>
+                                        <label>Nombre completo <span class="required">*</span></label>
                                         <IconField iconPosition="left">
                                             <InputIcon class="pi pi-user" />
-                                            <InputText v-model="userProfile.name" :readonly="!editMode" :class="{ 'p-invalid': profileErrors.name }" class="w-full" />
+                                            <InputText v-model="userProfile.name" :readonly="!editMode" :class="{ 'p-invalid': profileErrors.name }" class="w-full" placeholder="Ingrese su nombre completo" />
                                         </IconField>
+                                        <small v-if="profileErrors.name" class="p-error">{{ profileErrors.name }}</small>
                                     </div>
                                     <div class="field col-12 md:col-6">
                                         <label>Documento (DNI)</label>
@@ -205,20 +339,24 @@ onMounted(loadUserProfile);
                                             <InputIcon class="pi pi-id-card" />
                                             <InputText v-model="userProfile.dni" readonly class="w-full" />
                                         </IconField>
+                                        <small class="p-hint">Este campo no es editable</small>
                                     </div>
                                     <div class="field col-12 md:col-6">
-                                        <label>Correo Electrónico</label>
+                                        <label>Correo Electrónico <span class="required">*</span></label>
                                         <IconField iconPosition="left">
                                             <InputIcon class="pi pi-envelope" />
-                                            <InputText v-model="userProfile.email" :readonly="!editMode" :class="{ 'p-invalid': profileErrors.email }" class="w-full" />
+                                            <InputText v-model="userProfile.email" :readonly="!editMode" :class="{ 'p-invalid': profileErrors.email }" class="w-full" placeholder="ejemplo@correo.com" />
                                         </IconField>
+                                        <small v-if="profileErrors.email" class="p-error">{{ profileErrors.email }}</small>
                                     </div>
                                     <div class="field col-12 md:col-6">
                                         <label>Teléfono</label>
                                         <IconField iconPosition="left">
                                             <InputIcon class="pi pi-phone" />
-                                            <InputText v-model="userProfile.phone" :readonly="!editMode" :class="{ 'p-invalid': profileErrors.phone }" class="w-full" />
+                                            <InputText v-model="userProfile.phone" :readonly="!editMode" :class="{ 'p-invalid': profileErrors.phone }" class="w-full" placeholder="999999999" maxlength="9" />
                                         </IconField>
+                                        <small v-if="profileErrors.phone" class="p-error">{{ profileErrors.phone }}</small>
+                                        <small v-else class="p-hint">Formato: 9 dígitos</small>
                                     </div>
                                     <div class="field col-12 md:col-6">
                                         <label>Cargo / Especialidad</label>
@@ -226,13 +364,15 @@ onMounted(loadUserProfile);
                                             <InputIcon class="pi pi-briefcase" />
                                             <InputText v-model="userProfile.position" readonly class="w-full" />
                                         </IconField>
+                                        <small class="p-hint">Este campo no es editable</small>
                                     </div>
                                     <div class="field col-12 md:col-6">
-                                        <label>Nombre de usuario</label>
+                                        <label>Nombre de usuario <span class="required">*</span></label>
                                         <IconField iconPosition="left">
                                             <InputIcon class="pi pi-at" />
-                                            <InputText v-model="userProfile.nick" :readonly="!editMode" :class="{ 'p-invalid': profileErrors.nick }" class="w-full" />
+                                            <InputText v-model="userProfile.nick" :readonly="!editMode" :class="{ 'p-invalid': profileErrors.nick }" class="w-full" placeholder="nombre_usuario" />
                                         </IconField>
+                                        <small v-if="profileErrors.nick" class="p-error">{{ profileErrors.nick }}</small>
                                     </div>
                                 </div>
                             </div>
@@ -240,11 +380,8 @@ onMounted(loadUserProfile);
                     </Card>
                 </TabPanel>
 
+                <!-- Tab 3: Cambiar Contraseña -->
                 <TabPanel key="password" value="3">
-                    <template #header>
-                        <i class="pi pi-shield mr-2" />
-                        <span>Seguridad</span>
-                    </template>
                     <Card class="form-card">
                         <template #title>
                             <div class="flex align-items-center">
@@ -254,64 +391,27 @@ onMounted(loadUserProfile);
                         </template>
                         <template #content>
                             <div class="form-panel security-panel">
+                                <Message severity="info" :closable="false" class="mb-4">
+                                    <span class="text-sm">Por seguridad, necesitarás tu contraseña actual para establecer una nueva.</span>
+                                </Message>
                                 <div class="field">
-                                    <label>Contraseña actual</label>
+                                    <label>Contraseña actual <span class="required">*</span></label>
                                     <Password v-model="passwordData.current" :feedback="false" toggleMask :class="{ 'p-invalid': passwordErrors.current }" placeholder="&#9679;&#9679;&#9679;&#9679;&#9679;&#9679;&#9679;&#9679;" fluid />
+                                    <small v-if="passwordErrors.current" class="p-error">{{ passwordErrors.current }}</small>
                                 </div>
                                 <div class="field">
-                                    <label>Nueva contraseña</label>
-                                    <Password v-model="passwordData.new" :feedback="false" toggleMask :class="{ 'p-invalid': passwordErrors.new }" placeholder="Mínimo 8 caracteres" fluid />
+                                    <label>Nueva contraseña <span class="required">*</span></label>
+                                    <Password v-model="passwordData.new" :feedback="true" toggleMask :class="{ 'p-invalid': passwordErrors.new }" placeholder="Mínimo 8 caracteres" fluid />
+                                    <small v-if="passwordErrors.new" class="p-error">{{ passwordErrors.new }}</small>
+                                    <small v-else class="p-hint">Debe contener al menos 8 caracteres</small>
                                 </div>
                                 <div class="field">
-                                    <label>Confirmar contraseña</label>
+                                    <label>Confirmar contraseña <span class="required">*</span></label>
                                     <Password v-model="passwordData.confirm" :feedback="false" toggleMask :class="{ 'p-invalid': passwordErrors.confirm }" placeholder="Repita la nueva contraseña" fluid />
+                                    <small v-if="passwordErrors.confirm" class="p-error">{{ passwordErrors.confirm }}</small>
                                 </div>
                                 <Button label="Actualizar Contraseña" icon="pi pi-key" class="w-full mt-3" :loading="changingPassword" :disabled="!isPasswordFormValid" @click="changePassword" fluid />
                             </div>
-                        </template>
-                    </Card>
-                </TabPanel>
-
-                <TabPanel key="personal" value="2">
-                    <template #header>
-                        <i class="pi pi-info-circle mr-2" />
-                        <span>Información de Sistema</span>
-                    </template>
-                    <Card class="form-card">
-                        <template #title>
-                            <div class="flex align-items-center">
-                                <i class="pi pi-cog mr-2 text-xl text-primary"></i>
-                                <span>Detalles de la Cuenta</span>
-                            </div>
-                        </template>
-                        <template #content>
-                            <ul class="info-list">
-                                <li>
-                                    <i class="pi pi-user"></i>
-                                    <strong>Usuario del sistema:</strong>
-                                    <span>{{ userProfile.nick || 'No asignado' }}</span>
-                                </li>
-                                <li>
-                                    <i class="pi pi-clock"></i>
-                                    <strong>Último acceso:</strong>
-                                    <span>{{ formatDate(new Date()) }}</span>
-                                </li>
-                                <li>
-                                    <i class="pi pi-shield-check"></i>
-                                    <strong>Estado de la cuenta:</strong>
-                                    <Tag value="Activa" severity="success" />
-                                </li>
-                                <li>
-                                    <i class="pi pi-briefcase"></i>
-                                    <strong>Rol / Cargo:</strong>
-                                    <span>{{ userProfile.position || 'No asignado' }}</span>
-                                </li>
-                                <li>
-                                    <i class="pi pi-envelope"></i>
-                                    <strong>Email de recuperación:</strong>
-                                    <span>{{ userProfile.email || 'No disponible' }}</span>
-                                </li>
-                            </ul>
                         </template>
                     </Card>
                 </TabPanel>
@@ -329,7 +429,7 @@ onMounted(loadUserProfile);
 .profile-header-card {
     background: var(--surface-card);
     border-radius: 12px;
-    padding: 1rem;
+    padding: 1.5rem;
     margin-bottom: 1.5rem;
     box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
     display: flex;
@@ -345,11 +445,35 @@ onMounted(loadUserProfile);
     gap: 1.5rem;
 }
 
+.avatar-container {
+    position: relative;
+}
+
 .avatar-container .user-avatar {
-    width: 80px;
-    height: 80px;
+    width: 90px;
+    height: 90px;
     font-size: 2.5rem;
     border: 3px solid var(--primary-500);
+}
+
+.avatar-edit-btn {
+    position: absolute;
+    bottom: 0;
+    right: 0;
+    width: 35px;
+    height: 35px;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+}
+
+.avatar-dialog-content {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 1rem;
+}
+
+.current-avatar {
+    margin-bottom: 1rem;
 }
 
 .user-info .user-name {
@@ -436,13 +560,30 @@ onMounted(loadUserProfile);
     font-size: 0.9rem;
 }
 
+.form-panel label .required {
+    color: var(--red-500);
+    margin-left: 0.25rem;
+}
+
 .form-panel .p-inputtext,
 .form-panel .p-password {
     width: 100%;
 }
 
+.form-panel small.p-error {
+    color: var(--red-500);
+    font-size: 0.875rem;
+    margin-top: 0.25rem;
+}
+
+.form-panel small.p-hint {
+    color: var(--text-color-secondary);
+    font-size: 0.875rem;
+    margin-top: 0.25rem;
+}
+
 .security-panel {
-    max-width: 450px;
+    max-width: 500px;
     margin: 0 auto;
 }
 
@@ -485,17 +626,84 @@ onMounted(loadUserProfile);
     .user-profile-page {
         padding: 1rem;
     }
+
     .profile-header-card {
         flex-direction: column;
         align-items: flex-start;
+        padding: 1rem;
     }
+
+    .header-main-content {
+        flex-direction: column;
+        align-items: center;
+        text-align: center;
+        width: 100%;
+    }
+
     .user-info .user-name {
-        font-size: 1.75rem;
+        font-size: 1.5rem;
     }
+
+    .user-info .user-position {
+        font-size: 1rem;
+    }
+
+    .user-meta {
+        flex-direction: column;
+        gap: 0.5rem !important;
+        align-items: center;
+    }
+
     .card-title-container {
         flex-direction: column;
         align-items: flex-start;
         gap: 1rem;
+    }
+
+    .card-actions {
+        width: 100%;
+        display: flex;
+        justify-content: flex-start;
+    }
+
+    .security-panel {
+        max-width: 100%;
+    }
+
+    .info-list li {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 0.5rem;
+    }
+
+    .info-list span {
+        margin-left: 0;
+    }
+
+    :deep(.p-tab-header a) {
+        font-size: 0.875rem;
+        padding: 0.5rem 0.75rem !important;
+    }
+}
+
+@media (max-width: 480px) {
+    .avatar-container .user-avatar {
+        width: 70px;
+        height: 70px;
+        font-size: 2rem;
+    }
+
+    .avatar-edit-btn {
+        width: 30px;
+        height: 30px;
+    }
+
+    .user-info .user-name {
+        font-size: 1.25rem;
+    }
+
+    .form-panel .field {
+        margin-bottom: 1rem;
     }
 }
 </style>

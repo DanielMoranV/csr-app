@@ -81,6 +81,9 @@ export const sisclin = {
 // Hospital Attentions Management
 export { hospitalAttentions } from './hospitalAttentions';
 
+// Hospital Statistics Management
+export { hospitalStatistics } from './hospitalStatistics';
+
 // Tickets Management
 export { TicketService } from './tickets';
 

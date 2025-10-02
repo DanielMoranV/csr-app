@@ -302,28 +302,43 @@ onUnmounted(() => {
         </div>
 
         <!-- Loading State -->
-        <div v-if="state.isLoading" class="flex justify-content-center align-items-center" style="min-height: 400px">
-            <div class="text-center">
-                <i class="pi pi-spin pi-spinner text-primary" style="font-size: 4rem"></i>
-                <p class="mt-3 text-xl text-600">Cargando estado de hospitalización...</p>
+        <div v-if="state.isLoading" class="loading-state">
+            <div class="loading-content">
+                <div class="loading-spinner">
+                    <i class="pi pi-spin pi-spinner"></i>
+                </div>
+                <div class="loading-text">
+                    <h3>Cargando estado de hospitalización</h3>
+                    <p>Obteniendo información actualizada...</p>
+                </div>
             </div>
         </div>
 
         <!-- Error State -->
-        <div v-else-if="state.error" class="flex justify-content-center align-items-center" style="min-height: 400px">
-            <div class="text-center">
-                <i class="pi pi-exclamation-triangle text-red-500" style="font-size: 4rem"></i>
-                <h3 class="mt-3 text-red-600">Error al cargar datos</h3>
-                <p class="text-600">{{ state.error }}</p>
+        <div v-else-if="state.error" class="error-state">
+            <div class="error-content">
+                <div class="error-icon">
+                    <i class="pi pi-exclamation-triangle"></i>
+                </div>
+                <div class="error-text">
+                    <h3>Error al cargar datos</h3>
+                    <p>{{ state.error }}</p>
+                    <Button label="Reintentar" icon="pi pi-refresh" @click="refreshData" severity="secondary" outlined size="small" class="mt-2" />
+                </div>
             </div>
         </div>
 
         <!-- Empty State -->
-        <div v-else-if="!state.status || state.status.length === 0" class="flex justify-content-center align-items-center" style="min-height: 400px">
-            <div class="text-center">
-                <i class="pi pi-home text-gray-400" style="font-size: 4rem"></i>
-                <h3 class="mt-3 text-gray-600">No hay habitaciones disponibles</h3>
-                <p class="text-600">No se encontraron datos de hospitalización para mostrar.</p>
+        <div v-else-if="!state.status || state.status.length === 0" class="empty-state">
+            <div class="empty-content">
+                <div class="empty-icon">
+                    <i class="pi pi-home"></i>
+                </div>
+                <div class="empty-text">
+                    <h3>No hay habitaciones disponibles</h3>
+                    <p>No se encontraron datos de hospitalización para mostrar.</p>
+                    <Button label="Actualizar" icon="pi pi-refresh" @click="refreshData" severity="secondary" outlined size="small" class="mt-2" />
+                </div>
             </div>
         </div>
 
@@ -335,12 +350,16 @@ onUnmounted(() => {
         </div>
 
         <!-- No Results Message -->
-        <div v-if="selectedRoom && filteredRooms.length === 0" class="flex justify-content-center align-items-center" style="min-height: 300px">
-            <div class="text-center">
-                <i class="pi pi-search text-gray-400" style="font-size: 3rem"></i>
-                <h3 class="mt-3 text-gray-600">No se encontró la habitación</h3>
-                <p class="text-600">La habitación seleccionada no existe o no está disponible.</p>
-                <Button label="Limpiar filtro" icon="pi pi-times" @click="clearFilter" severity="secondary" outlined class="mt-3" />
+        <div v-if="selectedRoom && filteredRooms.length === 0" class="no-results-state">
+            <div class="no-results-content">
+                <div class="no-results-icon">
+                    <i class="pi pi-search"></i>
+                </div>
+                <div class="no-results-text">
+                    <h3>No se encontró la habitación</h3>
+                    <p>La habitación seleccionada no existe o no está disponible.</p>
+                    <Button label="Limpiar filtro" icon="pi pi-times" @click="clearFilter" severity="secondary" outlined size="small" class="mt-2" />
+                </div>
             </div>
         </div>
     </div>
@@ -348,45 +367,45 @@ onUnmounted(() => {
 
 <style scoped>
 .hospitalization-status-container {
-    padding: 1.5rem;
+    padding: 1rem;
     background-color: var(--surface-ground);
-    min-height: calc(100vh - 10rem);
+    min-height: calc(100vh - 8rem);
 }
 
 /* Header Styles */
 .header-section {
-    margin-bottom: 2rem;
+    margin-bottom: 1rem;
 }
 
 .header-top {
     display: flex;
     justify-content: space-between;
-    align-items: flex-start;
-    margin-bottom: 1.5rem;
-    padding-bottom: 1rem;
+    align-items: center;
+    margin-bottom: 1rem;
+    padding-bottom: 0.75rem;
     border-bottom: 1px solid var(--surface-border);
 }
 
 .header-icon {
     background: linear-gradient(135deg, var(--primary-color), var(--primary-400));
-    border-radius: 12px;
-    padding: 1rem;
+    border-radius: 8px;
+    padding: 0.75rem;
     color: white;
-    font-size: 1.5rem;
-    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+    font-size: 1.25rem;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
 }
 
 .header-title {
-    font-size: 2rem;
+    font-size: 1.5rem;
     font-weight: 700;
     margin: 0;
     color: var(--text-color);
 }
 
 .header-subtitle {
-    margin: 0.25rem 0 0 0;
+    margin: 0.125rem 0 0 0;
     color: var(--text-color-secondary);
-    font-size: 0.95rem;
+    font-size: 0.875rem;
 }
 
 .header-actions {
@@ -430,26 +449,26 @@ onUnmounted(() => {
 
 /* Statistics Overview */
 .stats-overview {
-    margin-bottom: 1.5rem;
+    margin-bottom: 1rem;
 }
 
 .stats-grid {
     display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-    gap: 1rem;
-    margin-bottom: 1rem;
+    grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+    gap: 0.75rem;
+    margin-bottom: 0.75rem;
 }
 
 .stat-card {
-    border-radius: 12px;
+    border-radius: 8px;
     overflow: hidden;
-    transition: all 0.3s ease;
+    transition: all 0.2s ease;
     border: 1px solid var(--surface-border);
 }
 
 .stat-card:hover {
-    transform: translateY(-2px);
-    box-shadow: 0 8px 16px rgba(0, 0, 0, 0.1);
+    transform: translateY(-1px);
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
 }
 
 .stat-card--primary {
@@ -479,13 +498,13 @@ onUnmounted(() => {
 .stat-content {
     display: flex;
     align-items: center;
-    gap: 1rem;
-    padding: 0.5rem;
+    gap: 0.75rem;
+    padding: 0.75rem;
 }
 
 .stat-icon {
     flex-shrink: 0;
-    font-size: 1.5rem;
+    font-size: 1.25rem;
     color: var(--text-color-secondary);
     display: flex;
     align-items: center;
@@ -496,18 +515,18 @@ onUnmounted(() => {
 }
 
 .stat-value {
-    font-size: 1.75rem;
+    font-size: 1.5rem;
     font-weight: 700;
     line-height: 1;
-    margin-bottom: 0.25rem;
+    margin-bottom: 0.125rem;
     color: var(--text-color);
 }
 
 .stat-label {
-    font-size: 0.8rem;
+    font-size: 0.75rem;
     color: var(--text-color-secondary);
     text-transform: uppercase;
-    letter-spacing: 0.5px;
+    letter-spacing: 0.25px;
     font-weight: 600;
 }
 
@@ -517,7 +536,11 @@ onUnmounted(() => {
 
 /* Filters Section */
 .filters-section {
-    margin-bottom: 1.5rem;
+    margin-bottom: 1rem;
+}
+
+.filters-content {
+    padding: 0.875rem;
 }
 
 .filters-content {
@@ -589,9 +612,9 @@ onUnmounted(() => {
 
 .rooms-grid {
     display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(450px, 1fr));
-    gap: 1.5rem;
-    margin-top: 1rem;
+    grid-template-columns: repeat(auto-fit, minmax(400px, 1fr));
+    gap: 1rem;
+    margin-top: 0.75rem;
     width: 100%;
 }
 
@@ -603,53 +626,66 @@ onUnmounted(() => {
 /* Responsive adjustments */
 @media (max-width: 768px) {
     .hospitalization-status-container {
-        padding: 1rem;
+        padding: 0.75rem;
     }
 
     .rooms-grid {
         grid-template-columns: 1fr;
-        gap: 1rem;
+        gap: 0.75rem;
     }
 
     .header-top {
         flex-direction: column;
         align-items: stretch;
-        gap: 1rem;
+        gap: 0.75rem;
     }
 
     .header-actions {
         justify-content: center;
         flex-wrap: wrap;
+        gap: 0.5rem;
     }
 
     .realtime-status {
         order: -1;
         width: 100%;
         justify-content: center;
-        margin-bottom: 0.5rem;
+        margin-bottom: 0.25rem;
+        padding: 0.375rem 0.5rem;
     }
 
     .header-title {
-        font-size: 1.5rem;
+        font-size: 1.25rem;
+    }
+
+    .header-subtitle {
+        font-size: 0.8rem;
     }
 
     .stats-grid {
-        grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+        grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+        gap: 0.5rem;
     }
 
     .stat-value {
-        font-size: 1.5rem;
+        font-size: 1.25rem;
+    }
+
+    .stat-content {
+        padding: 0.5rem;
+        gap: 0.5rem;
     }
 
     .filters-content {
         flex-direction: column;
         align-items: stretch;
+        gap: 0.75rem;
     }
 
     .filter-group {
         flex-direction: column;
         align-items: stretch;
-        gap: 0.5rem;
+        gap: 0.375rem;
     }
 
     .filter-controls {
@@ -659,23 +695,29 @@ onUnmounted(() => {
 
 @media (min-width: 769px) and (max-width: 1200px) {
     .rooms-grid {
-        grid-template-columns: repeat(auto-fit, minmax(350px, 1fr));
+        grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+        gap: 0.875rem;
+    }
+
+    .stats-grid {
+        grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
     }
 }
 
 @media (min-width: 1201px) and (max-width: 1600px) {
     .rooms-grid {
-        grid-template-columns: repeat(auto-fit, minmax(450px, 1fr));
+        grid-template-columns: repeat(auto-fit, minmax(400px, 1fr));
+        gap: 1rem;
     }
 }
 
 @media (min-width: 769px) and (max-width: 1024px) {
     .header-title {
-        font-size: 1.75rem;
+        font-size: 1.375rem;
     }
 
     .stats-grid {
-        grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+        grid-template-columns: repeat(auto-fit, minmax(155px, 1fr));
     }
 
     .filters-content {
@@ -683,17 +725,151 @@ onUnmounted(() => {
     }
 
     .filter-dropdown {
-        min-width: 180px;
+        min-width: 160px;
     }
 }
 
 @media (min-width: 1601px) {
     .rooms-grid {
-        grid-template-columns: repeat(auto-fit, minmax(450px, 1fr));
+        grid-template-columns: repeat(auto-fit, minmax(400px, 1fr));
+        gap: 1.25rem;
     }
 
     .stats-grid {
-        grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+        grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+    }
+}
+
+/* Enhanced State Styles */
+.loading-state,
+.error-state,
+.empty-state,
+.no-results-state {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    min-height: 200px;
+    margin: 2rem 0;
+}
+
+.loading-content,
+.error-content,
+.empty-content,
+.no-results-content {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    padding: 1.5rem;
+    background: var(--surface-card);
+    border: 1px solid var(--surface-border);
+    border-radius: 12px;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+    max-width: 400px;
+    width: 100%;
+}
+
+.loading-spinner,
+.error-icon,
+.empty-icon,
+.no-results-icon {
+    flex-shrink: 0;
+    width: 48px;
+    height: 48px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 50%;
+    font-size: 1.5rem;
+}
+
+.loading-spinner {
+    background: linear-gradient(135deg, var(--primary-color), var(--primary-400));
+    color: white;
+}
+
+.error-icon {
+    background: linear-gradient(135deg, var(--red-500), var(--red-400));
+    color: white;
+}
+
+.empty-icon {
+    background: linear-gradient(135deg, var(--gray-400), var(--gray-300));
+    color: white;
+}
+
+.no-results-icon {
+    background: linear-gradient(135deg, var(--blue-500), var(--blue-400));
+    color: white;
+}
+
+.loading-text,
+.error-text,
+.empty-text,
+.no-results-text {
+    flex: 1;
+}
+
+.loading-text h3,
+.error-text h3,
+.empty-text h3,
+.no-results-text h3 {
+    margin: 0 0 0.25rem 0;
+    font-size: 1rem;
+    font-weight: 600;
+    color: var(--text-color);
+}
+
+.loading-text p,
+.error-text p,
+.empty-text p,
+.no-results-text p {
+    margin: 0;
+    font-size: 0.875rem;
+    color: var(--text-color-secondary);
+    line-height: 1.4;
+}
+
+/* Mobile optimizations for states */
+@media (max-width: 768px) {
+    .loading-state,
+    .error-state,
+    .empty-state,
+    .no-results-state {
+        min-height: 160px;
+        margin: 1rem 0;
+    }
+
+    .loading-content,
+    .error-content,
+    .empty-content,
+    .no-results-content {
+        flex-direction: column;
+        text-align: center;
+        gap: 0.75rem;
+        padding: 1rem;
+    }
+
+    .loading-spinner,
+    .error-icon,
+    .empty-icon,
+    .no-results-icon {
+        width: 40px;
+        height: 40px;
+        font-size: 1.25rem;
+    }
+
+    .loading-text h3,
+    .error-text h3,
+    .empty-text h3,
+    .no-results-text h3 {
+        font-size: 0.9rem;
+    }
+
+    .loading-text p,
+    .error-text p,
+    .empty-text p,
+    .no-results-text p {
+        font-size: 0.8rem;
     }
 }
 </style>

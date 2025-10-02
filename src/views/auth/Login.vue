@@ -100,7 +100,7 @@ const handleSubmit = async () => {
 
         const result = await login(formData.value.dni, formData.value.password, {
             redirect: true,
-            redirectTo: '/dashboard'
+            redirectTo: '/profile'
         });
 
         if (result.success) {
@@ -142,11 +142,11 @@ const handleSubmit = async () => {
 
         // Mostrar mensaje de error general si no hay errores específicos de campo
         const errorMessage = apiUtils.getMessage(error) || 'Error al iniciar sesión';
-        
+
         // Determinar el tipo de error para mostrar un resumen más específico
         let errorSummary = 'Error de Autenticación';
         let severity = 'error';
-        
+
         if (apiUtils.isConnectionError(error)) {
             errorSummary = 'Error de Conexión';
             severity = 'warn';
@@ -158,7 +158,7 @@ const handleSubmit = async () => {
         } else if (error.status === 422) {
             errorSummary = 'Datos Inválidos';
         }
-        
+
         toast.add({
             severity: severity,
             summary: errorSummary,
@@ -192,13 +192,13 @@ const formatDNI = (event) => {
 // Función para verificar la conexión al servidor
 const checkServerConnection = async () => {
     if (isCheckingConnection.value) return;
-    
+
     isCheckingConnection.value = true;
     try {
         // Hacer una petición simple para verificar conectividad
-        const response = await fetch(import.meta.env.VITE_API_URL + '/health', { 
+        const response = await fetch(import.meta.env.VITE_API_URL + '/health', {
             method: 'GET',
-            timeout: 5000 
+            timeout: 5000
         });
         connectionStatus.value = response.ok ? 'online' : 'offline';
     } catch (error) {
@@ -212,17 +212,17 @@ const checkServerConnection = async () => {
 onMounted(() => {
     // Focus en el campo DNI al cargar
     document.getElementById('dni')?.focus();
-    
+
     // Verificar conexión inicial
     checkServerConnection();
-    
+
     // Verificar conexión cada 30 segundos si está offline
     const connectionInterval = setInterval(() => {
         if (connectionStatus.value === 'offline') {
             checkServerConnection();
         }
     }, 30000);
-    
+
     // Limpiar interval al desmontar
     onUnmounted(() => {
         clearInterval(connectionInterval);
@@ -270,7 +270,7 @@ onMounted(() => {
                     <div class="form-header">
                         <h2>Iniciar Sesión</h2>
                         <p>Accede al sistema de gestión de atenciones</p>
-                        
+
                         <!-- Indicador de estado de conexión -->
                         <div v-if="connectionStatus !== 'unknown'" class="connection-status" :class="connectionStatus">
                             <div class="status-indicator">
@@ -279,12 +279,7 @@ onMounted(() => {
                                 <span v-else>Servidor no disponible</span>
                                 <ProgressSpinner v-if="isCheckingConnection" class="connection-spinner" />
                             </div>
-                            <button 
-                                v-if="connectionStatus === 'offline'" 
-                                @click="checkServerConnection"
-                                class="retry-connection"
-                                :disabled="isCheckingConnection"
-                            >
+                            <button v-if="connectionStatus === 'offline'" @click="checkServerConnection" class="retry-connection" :disabled="isCheckingConnection">
                                 <i class="pi pi-refresh"></i>
                                 Reintentar
                             </button>

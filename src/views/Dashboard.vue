@@ -1,426 +1,838 @@
 <script setup>
-import { ref, onMounted, onBeforeUnmount, computed, watch, nextTick } from 'vue';
-import { useDashboardStore } from '@/store/dashboardStore';
+import BedOccupancyAnalysis from '@/components/dashboard/BedOccupancyAnalysis.vue';
+import DiagnosesChart from '@/components/dashboard/DiagnosesChart.vue';
+import DoctorsTable from '@/components/dashboard/DoctorsTable.vue';
+import KPICard from '@/components/dashboard/KPICard.vue';
+import { useHospitalStatistics } from '@/composables/useHospitalStatistics';
 import { useRealtimeEvents } from '@/composables/useRealtimeEvents';
-import Chart from 'primevue/chart';
+import { useDashboardStore } from '@/store/dashboardStore';
+import Button from 'primevue/button';
+import Calendar from 'primevue/calendar';
 import Card from 'primevue/card';
-import Badge from 'primevue/badge';
+import Chart from 'primevue/chart';
+import Message from 'primevue/message';
+import ProgressSpinner from 'primevue/progressspinner';
+import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue';
 
 const dashboardStore = useDashboardStore();
-const { startListening, stopListening, isListening } = useRealtimeEvents();
+const { startListening, stopListening } = useRealtimeEvents();
 
-const hospitalStats = computed(() => dashboardStore.hospitalData);
-const userStats = computed(() => dashboardStore.userData);
-const patientStats = computed(() => dashboardStore.patientData);
-const taskStats = computed(() => dashboardStore.taskData);
-const detailsStats = computed(() => dashboardStore.detailsData);
-const recentTickets = computed(() => dashboardStore.ticketsData);
-const hospitalizationStatus = computed(() => dashboardStore.hospitalizationData);
+// Hospital Statistics
+const { loading: statsLoading, dashboard: hospitalDashboard, fetchDashboard, getDefaultDateRange, occupancyRate, currentlyActive, averageStayDays, totalAdmissions } = useHospitalStatistics();
+
 const isLoading = computed(() => dashboardStore.isLoading);
 
-const doctorChartData = ref(null);
-const insuranceChartData = ref(null);
-const userPositionChartData = ref(null);
-const patientGenderChartData = ref(null);
-const taskStatusChartData = ref(null);
+// Date range filter
+const dateRange = ref(null);
+const showAdvancedStats = ref(true);
 
-// Chart refs for proper cleanup
-const doctorChart = ref(null);
-const insuranceChart = ref(null);
-const userPositionChart = ref(null);
-const patientGenderChart = ref(null);
-const taskStatusChart = ref(null);
+// Helper function to format numbers
+const formatNumber = (value, decimals = 2) => {
+    const num = parseFloat(value);
+    return isNaN(num) ? 0 : num.toFixed(decimals);
+};
 
-// Chart instances
-const chartInstances = ref([]);
+// Initialize date range
+const initializeDateRange = () => {
+    const defaultRange = getDefaultDateRange();
+    dateRange.value = [new Date(defaultRange.start_date), new Date(defaultRange.end_date)];
+};
 
-const chartOptions = ref({
-    plugins: {
-        legend: {
-            labels: {
-                color: '#495057'
-            }
+// Handle date range change
+const onDateRangeChange = async () => {
+    if (dateRange.value && dateRange.value.length === 2) {
+        const [start, end] = dateRange.value;
+
+        // Validar que ambas fechas estén seleccionadas
+        if (!start || !end) {
+            return;
         }
-    },
-    scales: {
-        r: {
-            grid: {
-                color: '#ebedef'
-            }
+
+        try {
+            await fetchDashboard({
+                start_date: start.toISOString().split('T')[0],
+                end_date: end.toISOString().split('T')[0]
+            });
+        } catch (err) {
+            console.error('Error al cambiar el rango de fechas:', err);
         }
-    }
-});
-
-const pieChartOptions = ref({
-    plugins: {
-        legend: {
-            labels: {
-                color: '#495057'
-            }
-        }
-    }
-});
-
-const setChartData = async () => {
-    // Clear existing chart data first
-    doctorChartData.value = null;
-    insuranceChartData.value = null;
-    userPositionChartData.value = null;
-    patientGenderChartData.value = null;
-    taskStatusChartData.value = null;
-
-    await nextTick();
-
-    // Hospital attentions charts
-    if (hospitalStats.value?.attentions_by_doctor && Object.keys(hospitalStats.value.attentions_by_doctor).length > 0) {
-        const labels = Object.keys(hospitalStats.value.attentions_by_doctor);
-        const data = Object.values(hospitalStats.value.attentions_by_doctor);
-        doctorChartData.value = {
-            labels: labels,
-            datasets: [
-                {
-                    label: 'Atenciones por Médico',
-                    backgroundColor: '#42A5F5',
-                    data: data
-                }
-            ]
-        };
-    }
-
-    if (hospitalStats.value?.attentions_by_insurance && Object.keys(hospitalStats.value.attentions_by_insurance).length > 0) {
-        const labels = Object.keys(hospitalStats.value.attentions_by_insurance);
-        const data = Object.values(hospitalStats.value.attentions_by_insurance);
-        insuranceChartData.value = {
-            labels: labels,
-            datasets: [
-                {
-                    label: 'Atenciones por Aseguradora',
-                    backgroundColor: ['#FF6384', '#36A2EB', '#FFCE56', '#4BC0C0', '#9966FF'],
-                    data: data
-                }
-            ]
-        };
-    }
-
-    // User position chart
-    if (userStats.value?.users_by_position && Object.keys(userStats.value.users_by_position).length > 0) {
-        const labels = Object.keys(userStats.value.users_by_position);
-        const data = Object.values(userStats.value.users_by_position);
-        userPositionChartData.value = {
-            labels: labels,
-            datasets: [
-                {
-                    label: 'Usuarios por Posición',
-                    backgroundColor: ['#FF6384', '#36A2EB', '#FFCE56', '#4BC0C0'],
-                    data: data
-                }
-            ]
-        };
-    }
-
-    // Patient gender chart
-    if (patientStats.value?.patients_by_gender && Object.keys(patientStats.value.patients_by_gender).length > 0) {
-        const labels = Object.keys(patientStats.value.patients_by_gender).map(key => key === 'M' ? 'Masculino' : 'Femenino');
-        const data = Object.values(patientStats.value.patients_by_gender);
-        patientGenderChartData.value = {
-            labels: labels,
-            datasets: [
-                {
-                    label: 'Pacientes por Género',
-                    backgroundColor: ['#36A2EB', '#FF6384'],
-                    data: data
-                }
-            ]
-        };
-    }
-
-    // Task status chart
-    if (taskStats.value?.tasks_by_status && Object.keys(taskStats.value.tasks_by_status).length > 0) {
-        const labels = Object.keys(taskStats.value.tasks_by_status);
-        const data = Object.values(taskStats.value.tasks_by_status);
-        taskStatusChartData.value = {
-            labels: labels,
-            datasets: [
-                {
-                    label: 'Tareas por Estado',
-                    backgroundColor: ['#FFA726', '#42A5F5', '#66BB6A'],
-                    data: data
-                }
-            ]
-        };
     }
 };
 
+const pieChartOptions = ref({
+    responsive: true,
+    maintainAspectRatio: false,
+    plugins: {
+        legend: {
+            position: 'bottom',
+            labels: {
+                color: '#495057',
+                padding: 10,
+                font: {
+                    size: 12
+                },
+                usePointStyle: true
+            }
+        }
+    }
+});
+
 onMounted(async () => {
-    await dashboardStore.fetchAllStats();
-    await setChartData();
-    
+    initializeDateRange();
+
+    // Cargar estadísticas del dashboard con filtro de fechas
+    try {
+        await fetchDashboard();
+    } catch (err) {
+        console.error('Error loading dashboard data:', err);
+    }
+
     // Start listening for real-time events
     startListening();
-    console.log('[Dashboard] Started listening for real-time events');
 });
 
 onBeforeUnmount(() => {
-    // Clean up chart instances
-    chartInstances.value.forEach(instance => {
-        if (instance && typeof instance.destroy === 'function') {
-            instance.destroy();
-        }
-    });
-    chartInstances.value = [];
-    
     // Stop listening for real-time events
     stopListening();
-    console.log('[Dashboard] Stopped listening for real-time events');
 });
-
-watch([hospitalStats, userStats, patientStats, taskStats], async () => {
-    await setChartData();
-}, { deep: true });
 </script>
 
 <template>
-    <div v-if="isLoading" class="text-center">
-        <p>Cargando estadísticas...</p>
-    </div>
-    <div v-else class="grid grid-cols-12 gap-4">
-        <!-- Hospital Statistics Cards -->
-        <div class="col-span-12">
-            <h2 class="text-2xl font-bold text-gray-800 mb-4">Estadísticas Hospitalarias</h2>
-        </div>
-        <div class="col-span-12 md:col-span-6 lg:col-span-3">
-            <div class="p-4 bg-white rounded-lg shadow-md">
-                <h3 class="text-lg font-medium text-gray-500">Atenciones Totales</h3>
-                <p class="text-3xl font-bold text-gray-800">{{ hospitalStats.total_attentions || 0 }}</p>
+    <div class="dashboard-container">
+        <!-- Header con filtros -->
+        <div class="dashboard-header">
+            <div class="header-content">
+                <h1 class="dashboard-title">Dashboard Administrativo</h1>
+                <p class="dashboard-subtitle">Vista general de las estadísticas hospitalarias</p>
             </div>
-        </div>
-        <div class="col-span-12 md:col-span-6 lg:col-span-3">
-            <div class="p-4 bg-white rounded-lg shadow-md">
-                <h3 class="text-lg font-medium text-gray-500">Atenciones Activas</h3>
-                <p class="text-3xl font-bold text-green-600">{{ hospitalStats.active_attentions || 0 }}</p>
-            </div>
-        </div>
-        <div class="col-span-12 md:col-span-6 lg:col-span-3">
-            <div class="p-4 bg-white rounded-lg shadow-md">
-                <h3 class="text-lg font-medium text-gray-500">Ocupación</h3>
-                <p class="text-3xl font-bold text-blue-600">{{ hospitalStats.occupancy_rate || 0 }}%</p>
-            </div>
-        </div>
-        <div class="col-span-12 md:col-span-6 lg:col-span-3">
-            <div class="p-4 bg-white rounded-lg shadow-md">
-                <h3 class="text-lg font-medium text-gray-500">Estancia Promedio</h3>
-                <p class="text-3xl font-bold text-purple-600">{{ hospitalStats.average_stay_days || 0 }} días</p>
+            <div class="header-actions">
+                <Calendar v-model="dateRange" selectionMode="range" :manualInput="false" dateFormat="dd/mm/yy" placeholder="Seleccionar período" showIcon iconDisplay="input" @date-select="onDateRangeChange" class="date-range-picker" />
+                <Button icon="pi pi-refresh" label="Actualizar" @click="fetchDashboard" :loading="statsLoading" severity="secondary" />
             </div>
         </div>
 
-        <!-- User Statistics Cards -->
-        <div class="col-span-12">
-            <h2 class="text-2xl font-bold text-gray-800 mb-4 mt-6">Estadísticas de Personal</h2>
-        </div>
-        <div class="col-span-12 md:col-span-6 lg:col-span-3">
-            <div class="p-4 bg-white rounded-lg shadow-md">
-                <h3 class="text-lg font-medium text-gray-500">Total Usuarios</h3>
-                <p class="text-3xl font-bold text-gray-800">{{ userStats.total_users || 0 }}</p>
-            </div>
-        </div>
-        <div class="col-span-12 md:col-span-6 lg:col-span-3">
-            <div class="p-4 bg-white rounded-lg shadow-md">
-                <h3 class="text-lg font-medium text-gray-500">Usuarios Activos</h3>
-                <p class="text-3xl font-bold text-green-600">{{ userStats.active_users || 0 }}</p>
-            </div>
-        </div>
-        <div class="col-span-12 md:col-span-6 lg:col-span-3">
-            <div class="p-4 bg-white rounded-lg shadow-md">
-                <h3 class="text-lg font-medium text-gray-500">Registros (7 días)</h3>
-                <p class="text-3xl font-bold text-blue-600">{{ userStats.recent_registrations?.last_7_days || 0 }}</p>
-            </div>
-        </div>
-        <div class="col-span-12 md:col-span-6 lg:col-span-3">
-            <div class="p-4 bg-white rounded-lg shadow-md">
-                <h3 class="text-lg font-medium text-gray-500">Registros (30 días)</h3>
-                <p class="text-3xl font-bold text-purple-600">{{ userStats.recent_registrations?.last_30_days || 0 }}</p>
-            </div>
+        <!-- Loading State -->
+        <div v-if="isLoading || statsLoading" class="loading-state">
+            <ProgressSpinner />
+            <p>Cargando estadísticas...</p>
         </div>
 
-        <!-- Patient Statistics Cards -->
-        <div class="col-span-12">
-            <h2 class="text-2xl font-bold text-gray-800 mb-4 mt-6">Estadísticas de Pacientes</h2>
-        </div>
-        <div class="col-span-12 md:col-span-6 lg:col-span-3">
-            <div class="p-4 bg-white rounded-lg shadow-md">
-                <h3 class="text-lg font-medium text-gray-500">Total Pacientes</h3>
-                <p class="text-3xl font-bold text-gray-800">{{ patientStats.total_patients || 0 }}</p>
-            </div>
-        </div>
-        <div class="col-span-12 md:col-span-6 lg:col-span-3">
-            <div class="p-4 bg-white rounded-lg shadow-md">
-                <h3 class="text-lg font-medium text-gray-500">Atenciones Activas</h3>
-                <p class="text-3xl font-bold text-green-600">{{ patientStats.active_attentions || 0 }}</p>
-            </div>
-        </div>
-        <div class="col-span-12 md:col-span-6 lg:col-span-3">
-            <div class="p-4 bg-white rounded-lg shadow-md">
-                <h3 class="text-lg font-medium text-gray-500">Ingresos Este Mes</h3>
-                <p class="text-3xl font-bold text-blue-600">{{ patientStats.monthly_admissions?.current_month || 0 }}</p>
-            </div>
-        </div>
-        <div class="col-span-12 md:col-span-6 lg:col-span-3">
-            <div class="p-4 bg-white rounded-lg shadow-md">
-                <h3 class="text-lg font-medium text-gray-500">Ingresos Mes Anterior</h3>
-                <p class="text-3xl font-bold text-purple-600">{{ patientStats.monthly_admissions?.previous_month || 0 }}</p>
-            </div>
-        </div>
+        <!-- Dashboard Content -->
+        <div v-else class="dashboard-content">
+            <!-- Mensaje si el API no está disponible -->
+            <Message v-if="!hospitalDashboard && !statsLoading && showAdvancedStats" severity="info" :closable="false" class="mb-4">
+                <div class="flex items-center gap-2">
+                    <i class="pi pi-info-circle"></i>
+                    <span>Las estadísticas avanzadas no están disponibles en este momento. Mostrando estadísticas básicas.</span>
+                </div>
+            </Message>
 
-        <!-- Task Statistics Cards -->
-        <div class="col-span-12">
-            <h2 class="text-2xl font-bold text-gray-800 mb-4 mt-6">Estadísticas de Tareas</h2>
-        </div>
-        <div class="col-span-12 md:col-span-6 lg:col-span-3">
-            <div class="p-4 bg-white rounded-lg shadow-md">
-                <h3 class="text-lg font-medium text-gray-500">Total Tareas</h3>
-                <p class="text-3xl font-bold text-gray-800">{{ taskStats.total_tasks || 0 }}</p>
-            </div>
-        </div>
-        <div class="col-span-12 md:col-span-6 lg:col-span-3">
-            <div class="p-4 bg-white rounded-lg shadow-md">
-                <h3 class="text-lg font-medium text-gray-500">Tareas Pendientes</h3>
-                <p class="text-3xl font-bold text-yellow-600">{{ taskStats.tasks_by_status?.PENDIENTE || 0 }}</p>
-            </div>
-        </div>
-        <div class="col-span-12 md:col-span-6 lg:col-span-3">
-            <div class="p-4 bg-white rounded-lg shadow-md">
-                <h3 class="text-lg font-medium text-gray-500">Tareas Vencidas</h3>
-                <p class="text-3xl font-bold text-red-600">{{ taskStats.overdue_tasks || 0 }}</p>
-            </div>
-        </div>
-        <div class="col-span-12 md:col-span-6 lg:col-span-3">
-            <div class="p-4 bg-white rounded-lg shadow-md">
-                <h3 class="text-lg font-medium text-gray-500">Completadas Hoy</h3>
-                <p class="text-3xl font-bold text-green-600">{{ taskStats.completed_today || 0 }}</p>
-            </div>
-        </div>
+            <!-- Estadísticas Hospitalarias Avanzadas (Nueva Sección) -->
+            <div v-if="hospitalDashboard && showAdvancedStats" class="stats-section">
+                <div class="section-header">
+                    <h2 class="section-title">
+                        <i class="pi pi-chart-line mr-2"></i>
+                        Estadísticas Avanzadas
+                    </h2>
+                    <Button icon="pi pi-eye-slash" text rounded severity="secondary" @click="showAdvancedStats = false" v-tooltip="'Ocultar estadísticas avanzadas'" />
+                </div>
 
-        <!-- Charts Section -->
-        <div class="col-span-12">
-            <h2 class="text-2xl font-bold text-gray-800 mb-4 mt-6">Gráficos y Análisis</h2>
-        </div>
-        
-        <!-- Hospital Charts -->
-        <div class="col-span-12 lg:col-span-6">
-            <div class="p-4 bg-white rounded-lg shadow-md">
-                <h4 class="text-xl font-semibold mb-4">Atenciones por Médico</h4>
-                <Chart v-if="doctorChartData" type="bar" :data="doctorChartData" :options="chartOptions" key="doctor-chart" />
-                <div v-else class="text-center text-gray-500 py-8">No hay datos disponibles</div>
-            </div>
-        </div>
-        <div class="col-span-12 lg:col-span-6">
-            <div class="p-4 bg-white rounded-lg shadow-md">
-                <h4 class="text-xl font-semibold mb-4">Distribución por Aseguradora</h4>
-                <Chart v-if="insuranceChartData" type="pie" :data="insuranceChartData" :options="pieChartOptions" key="insurance-chart" />
-                <div v-else class="text-center text-gray-500 py-8">No hay datos disponibles</div>
-            </div>
-        </div>
-        
-        <!-- User and Patient Charts -->
-        <div class="col-span-12 lg:col-span-6">
-            <div class="p-4 bg-white rounded-lg shadow-md">
-                <h4 class="text-xl font-semibold mb-4">Personal por Posición</h4>
-                <Chart v-if="userPositionChartData" type="doughnut" :data="userPositionChartData" :options="pieChartOptions" key="user-position-chart" />
-                <div v-else class="text-center text-gray-500 py-8">No hay datos disponibles</div>
-            </div>
-        </div>
-        <div class="col-span-12 lg:col-span-6">
-            <div class="p-4 bg-white rounded-lg shadow-md">
-                <h4 class="text-xl font-semibold mb-4">Pacientes por Género</h4>
-                <Chart v-if="patientGenderChartData" type="pie" :data="patientGenderChartData" :options="pieChartOptions" key="patient-gender-chart" />
-                <div v-else class="text-center text-gray-500 py-8">No hay datos disponibles</div>
-            </div>
-        </div>
-        
-        <!-- Task Status Chart -->
-        <div class="col-span-12 lg:col-span-6">
-            <div class="p-4 bg-white rounded-lg shadow-md">
-                <h4 class="text-xl font-semibold mb-4">Estado de Tareas</h4>
-                <Chart v-if="taskStatusChartData" type="bar" :data="taskStatusChartData" :options="chartOptions" key="task-status-chart" />
-                <div v-else class="text-center text-gray-500 py-8">No hay datos disponibles</div>
-            </div>
-        </div>
-        
-        <!-- Recent Tickets -->
-        <div class="col-span-12 lg:col-span-6">
-            <div class="p-4 bg-white rounded-lg shadow-md">
-                <h4 class="text-xl font-semibold mb-4">Tickets Recientes</h4>
-                <div v-if="recentTickets.length > 0" class="space-y-3">
-                    <div v-for="ticket in recentTickets" :key="ticket.id" class="p-3 border border-gray-200 rounded-lg">
-                        <div class="flex justify-between items-start">
-                            <div class="flex-1">
-                                <h5 class="font-medium text-gray-900">{{ ticket.title }}</h5>
-                                <p class="text-sm text-gray-600 mt-1">{{ ticket.description?.substring(0, 100) }}...</p>
-                                <div class="flex items-center mt-2 space-x-4">
-                                    <span class="text-xs text-gray-500">{{ ticket.creator?.name }}</span>
-                                    <span class="text-xs text-gray-500">{{ new Date(ticket.created_at).toLocaleDateString() }}</span>
-                                </div>
-                            </div>
-                            <div class="flex flex-col items-end">
-                                <Badge 
-                                    :value="ticket.status" 
-                                    :severity="ticket.status === 'ABIERTO' ? 'warning' : ticket.status === 'CERRADO' ? 'success' : 'info'"
-                                    class="mb-1"
-                                />
-                                <Badge 
-                                    :value="ticket.priority" 
-                                    :severity="ticket.priority === 'ALTA' ? 'danger' : ticket.priority === 'MEDIA' ? 'warning' : 'info'"
+                <!-- KPIs Principales -->
+                <div class="kpi-grid">
+                    <KPICard
+                        title="Tasa de Ocupación"
+                        :value="`${formatNumber(occupancyRate)}%`"
+                        :subtitle="`${hospitalDashboard.occupancy?.summary?.total_bed_days_occupied || 0}/${hospitalDashboard.occupancy?.summary?.total_bed_days_available || 0} días-cama`"
+                        icon="pi-chart-bar"
+                        color="blue"
+                        :loading="statsLoading"
+                    />
+
+                    <KPICard title="Hospitalizaciones Activas" :value="currentlyActive" :subtitle="`${hospitalDashboard.hospitalizations?.total_hospitalizations || 0} total del período`" icon="pi-building" color="green" :loading="statsLoading" />
+
+                    <KPICard
+                        title="Estancia Promedio"
+                        :value="`${formatNumber(averageStayDays)} días`"
+                        :subtitle="`Mediana: ${formatNumber(hospitalDashboard.hospitalizations?.median_stay_days)} días`"
+                        icon="pi-clock"
+                        color="purple"
+                        :loading="statsLoading"
+                    />
+
+                    <KPICard title="Admisiones" :value="totalAdmissions" :subtitle="`${hospitalDashboard.occupancy?.summary?.total_discharges || 0} altas`" icon="pi-arrow-up-right" color="teal" :loading="statsLoading" />
+
+                    <KPICard title="Casos Complejos" :value="hospitalDashboard.hospitalizations?.complex_cases || 0" subtitle="Múltiples diagnósticos" icon="pi-exclamation-triangle" color="orange" :loading="statsLoading" />
+
+                    <KPICard title="Promedio Diario" :value="formatNumber(hospitalDashboard.occupancy?.summary?.average_daily_active)" subtitle="Pacientes activos" icon="pi-users" color="red" :loading="statsLoading" />
+                </div>
+
+                <!-- Análisis Completo de Ocupación de Camas -->
+                <Card class="chart-card">
+                    <template #title>
+                        <div class="flex items-center justify-between">
+                            <span>
+                                <i class="pi pi-bed mr-2 text-primary"></i>
+                                Análisis de Ocupación: Días-Cama Utilizados vs Disponibles
+                            </span>
+                        </div>
+                    </template>
+                    <template #content>
+                        <BedOccupancyAnalysis :occupancyData="hospitalDashboard.occupancy" :loading="statsLoading" />
+                    </template>
+                </Card>
+
+                <!-- Grid de Análisis -->
+                <div class="analysis-grid">
+                    <!-- Top Doctores -->
+                    <Card class="analysis-card">
+                        <template #title>
+                            <i class="pi pi-users mr-2 text-primary"></i>
+                            Top Doctores por Atenciones
+                        </template>
+                        <template #content>
+                            <DoctorsTable :doctors="hospitalDashboard.top_doctors || []" :loading="statsLoading" />
+                        </template>
+                    </Card>
+
+                    <!-- Distribución por Aseguradora -->
+                    <Card class="analysis-card">
+                        <template #title>
+                            <i class="pi pi-shield mr-2 text-primary"></i>
+                            Distribución por Aseguradora
+                        </template>
+                        <template #content>
+                            <div v-if="hospitalDashboard.top_insurances && hospitalDashboard.top_insurances.length > 0" class="chart-container">
+                                <Chart
+                                    type="pie"
+                                    :data="{
+                                        labels: hospitalDashboard.top_insurances.map((i) => i.insurance),
+                                        datasets: [
+                                            {
+                                                data: hospitalDashboard.top_insurances.map((i) => i.total_attentions),
+                                                backgroundColor: ['#3B82F6', '#10B981', '#F59E0B', '#EF4444', '#8B5CF6', '#EC4899', '#14B8A6']
+                                            }
+                                        ]
+                                    }"
+                                    :options="pieChartOptions"
                                 />
                             </div>
-                        </div>
-                    </div>
-                </div>
-                <div v-else class="text-gray-500 text-center py-4">
-                    No hay tickets recientes
+                            <div v-else class="text-center text-gray-500 py-8">No hay datos disponibles</div>
+                        </template>
+                    </Card>
+
+                    <!-- Tipos de Atención -->
+                    <Card class="analysis-card">
+                        <template #title>
+                            <i class="pi pi-list mr-2 text-primary"></i>
+                            Tipos de Atención
+                        </template>
+                        <template #content>
+                            <div v-if="hospitalDashboard.hospitalizations?.by_type_attention" class="chart-container">
+                                <Chart
+                                    type="doughnut"
+                                    :data="{
+                                        labels: Object.keys(hospitalDashboard.hospitalizations.by_type_attention),
+                                        datasets: [
+                                            {
+                                                data: Object.values(hospitalDashboard.hospitalizations.by_type_attention),
+                                                backgroundColor: ['#EF4444', '#3B82F6', '#10B981']
+                                            }
+                                        ]
+                                    }"
+                                    :options="pieChartOptions"
+                                />
+                            </div>
+                            <div v-else class="text-center text-gray-500 py-8">No hay datos disponibles</div>
+                        </template>
+                    </Card>
+
+                    <!-- Top Diagnósticos CIE-10 -->
+                    <Card class="analysis-card">
+                        <template #title>
+                            <i class="pi pi-book mr-2 text-primary"></i>
+                            Diagnósticos Más Frecuentes (CIE-10)
+                        </template>
+                        <template #content>
+                            <DiagnosesChart :diagnoses="hospitalDashboard.top_diagnoses || {}" :loading="statsLoading" />
+                        </template>
+                    </Card>
                 </div>
             </div>
-        </div>
-        
-        <!-- Hospitalization Status -->
-        <div class="col-span-12">
-            <div class="p-4 bg-white rounded-lg shadow-md">
-                <h4 class="text-xl font-semibold mb-4">Estado de Hospitalización</h4>
-                <div v-if="hospitalizationStatus.overview" class="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
-                    <div class="text-center">
-                        <p class="text-2xl font-bold text-gray-800">{{ hospitalizationStatus.overview.total_beds || 0 }}</p>
-                        <p class="text-sm text-gray-600">Camas Totales</p>
-                    </div>
-                    <div class="text-center">
-                        <p class="text-2xl font-bold text-red-600">{{ hospitalizationStatus.overview.occupied_beds || 0 }}</p>
-                        <p class="text-sm text-gray-600">Camas Ocupadas</p>
-                    </div>
-                    <div class="text-center">
-                        <p class="text-2xl font-bold text-green-600">{{ hospitalizationStatus.overview.available_beds || 0 }}</p>
-                        <p class="text-sm text-gray-600">Camas Disponibles</p>
-                    </div>
-                    <div class="text-center">
-                        <p class="text-2xl font-bold text-blue-600">{{ hospitalizationStatus.overview.occupancy_percentage || 0 }}%</p>
-                        <p class="text-sm text-gray-600">Ocupación</p>
-                    </div>
-                </div>
-                
-                <!-- Recent Admissions -->
-                <div v-if="hospitalizationStatus.recent_admissions && hospitalizationStatus.recent_admissions.length > 0">
-                    <h5 class="text-lg font-medium mb-3">Ingresos Recientes</h5>
-                    <div class="space-y-2">
-                        <div v-for="admission in hospitalizationStatus.recent_admissions" :key="admission.patient_name" class="flex justify-between items-center p-2 bg-gray-50 rounded">
-                            <div>
-                                <span class="font-medium">{{ admission.patient_name }}</span>
-                                <span class="text-sm text-gray-600 ml-2">- {{ admission.room }}</span>
-                            </div>
-                            <div class="text-right">
-                                <p class="text-sm text-gray-600">{{ admission.attending_physician }}</p>
-                                <p class="text-xs text-gray-500">{{ new Date(admission.admission_date).toLocaleDateString() }}</p>
-                            </div>
-                        </div>
-                    </div>
-                </div>
+
+            <!-- Botón para mostrar estadísticas avanzadas si están ocultas -->
+            <div v-else-if="!showAdvancedStats" class="show-stats-section">
+                <Button icon="pi pi-eye" label="Mostrar Estadísticas Avanzadas" @click="showAdvancedStats = true" severity="info" size="large" />
             </div>
         </div>
     </div>
 </template>
+
+<style scoped>
+.dashboard-container {
+    min-height: 100vh;
+    background: var(--surface-ground);
+    padding: 1.5rem;
+}
+
+.dashboard-header {
+    background: var(--surface-card);
+    border-radius: 12px;
+    padding: 1.5rem;
+    margin-bottom: 2rem;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 1.5rem;
+    flex-wrap: wrap;
+}
+
+.header-content {
+    flex: 1;
+    min-width: 250px;
+}
+
+.dashboard-title {
+    font-size: 2rem;
+    font-weight: 700;
+    color: var(--text-color);
+    margin: 0 0 0.5rem 0;
+}
+
+.dashboard-subtitle {
+    font-size: 1rem;
+    color: var(--text-color-secondary);
+    margin: 0;
+}
+
+.header-actions {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    flex-wrap: wrap;
+}
+
+.date-range-picker {
+    min-width: 280px;
+}
+
+.loading-state {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    min-height: 400px;
+    gap: 1rem;
+}
+
+.dashboard-content {
+    display: flex;
+    flex-direction: column;
+    gap: 2rem;
+}
+
+.stats-section {
+    display: flex;
+    flex-direction: column;
+    gap: 1.5rem;
+}
+
+.section-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding-bottom: 1rem;
+    border-bottom: 2px solid var(--surface-border);
+}
+
+.section-title {
+    font-size: 1.5rem;
+    font-weight: 700;
+    color: var(--text-color);
+    margin: 0;
+    display: flex;
+    align-items: center;
+}
+
+.kpi-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+    gap: 1.5rem;
+}
+
+.chart-card {
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+}
+
+.analysis-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(500px, 1fr));
+    gap: 1.5rem;
+}
+
+.analysis-card {
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+    height: 100%;
+}
+
+.chart-container {
+    width: 100%;
+    min-height: 400px;
+    max-height: 450px;
+    position: relative;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 1rem 2rem;
+}
+
+.chart-container > * {
+    width: 100% !important;
+    height: 100% !important;
+    min-height: 350px;
+}
+
+.show-stats-section {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 3rem;
+    background: var(--surface-card);
+    border-radius: 12px;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+}
+
+/* Vista General - KPIs Básicos */
+.basic-kpi-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+    gap: 1.5rem;
+    margin-bottom: 2rem;
+}
+
+.kpi-card {
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+    transition:
+        transform 0.2s ease,
+        box-shadow 0.2s ease;
+}
+
+.kpi-card:hover {
+    transform: translateY(-4px);
+    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.12);
+}
+
+.kpi-content {
+    display: flex;
+    align-items: center;
+    gap: 1.25rem;
+    padding: 0.5rem;
+}
+
+.kpi-icon-wrapper {
+    width: 60px;
+    height: 60px;
+    border-radius: 12px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.75rem;
+    color: white;
+    flex-shrink: 0;
+}
+
+.kpi-icon-wrapper.blue {
+    background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%);
+}
+
+.kpi-icon-wrapper.green {
+    background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+}
+
+.kpi-icon-wrapper.orange {
+    background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%);
+}
+
+.kpi-icon-wrapper.purple {
+    background: linear-gradient(135deg, #8b5cf6 0%, #7c3aed 100%);
+}
+
+.kpi-details {
+    display: flex;
+    flex-direction: column;
+    gap: 0.25rem;
+}
+
+.kpi-label {
+    font-size: 0.875rem;
+    font-weight: 600;
+    color: var(--text-color-secondary);
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.kpi-value {
+    font-size: 1.875rem;
+    font-weight: 700;
+    color: var(--text-color);
+}
+
+/* Overview Card */
+.overview-card {
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+    margin-bottom: 2rem;
+}
+
+.empty-state {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 3rem 1rem;
+    color: var(--text-color-secondary);
+}
+
+.hospitalization-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 1.5rem;
+    margin-bottom: 2rem;
+}
+
+.stat-item {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    padding: 1rem;
+    background: var(--surface-50);
+    border-radius: 10px;
+    border: 1px solid var(--surface-border);
+}
+
+.stat-icon {
+    width: 50px;
+    height: 50px;
+    border-radius: 10px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.5rem;
+    color: white;
+}
+
+.stat-icon.total {
+    background: #3b82f6;
+}
+
+.stat-icon.occupied {
+    background: #ef4444;
+}
+
+.stat-icon.available {
+    background: #10b981;
+}
+
+.stat-icon.rate {
+    background: #f59e0b;
+}
+
+.stat-info {
+    display: flex;
+    flex-direction: column;
+    gap: 0.25rem;
+}
+
+.stat-value {
+    font-size: 1.5rem;
+    font-weight: 700;
+    color: var(--text-color);
+}
+
+.stat-label {
+    font-size: 0.875rem;
+    color: var(--text-color-secondary);
+}
+
+/* Recent Admissions */
+.recent-admissions-section {
+    margin-top: 1.5rem;
+    padding-top: 1.5rem;
+    border-top: 1px solid var(--surface-border);
+}
+
+.subsection-title {
+    font-size: 1.125rem;
+    font-weight: 600;
+    color: var(--text-color);
+    margin-bottom: 1rem;
+    display: flex;
+    align-items: center;
+}
+
+.admissions-list {
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+}
+
+.admission-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 0.875rem;
+    background: var(--surface-50);
+    border-radius: 8px;
+    border: 1px solid var(--surface-border);
+}
+
+.admission-patient {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.patient-name {
+    font-weight: 600;
+    color: var(--text-color);
+}
+
+.room-badge {
+    padding: 0.25rem 0.75rem;
+    background: var(--primary-color);
+    color: white;
+    border-radius: 12px;
+    font-size: 0.75rem;
+    font-weight: 600;
+}
+
+.admission-details {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-end;
+    gap: 0.25rem;
+}
+
+.physician {
+    font-size: 0.875rem;
+    color: var(--text-color-secondary);
+}
+
+.date {
+    font-size: 0.75rem;
+    color: var(--text-color-secondary);
+}
+
+/* Charts Grid */
+.charts-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(400px, 1fr));
+    gap: 1.5rem;
+}
+
+.charts-grid-two {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 1.5rem;
+}
+
+.chart-card-overview {
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+}
+
+.chart-wrapper-overview {
+    min-height: 350px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.empty-chart {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    min-height: 300px;
+    color: var(--text-color-secondary);
+}
+
+/* Tickets List */
+.tickets-list {
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+    max-height: 400px;
+    overflow-y: auto;
+}
+
+.ticket-item {
+    padding: 1rem;
+    background: var(--surface-50);
+    border-radius: 8px;
+    border: 1px solid var(--surface-border);
+    transition: all 0.2s ease;
+}
+
+.ticket-item:hover {
+    background: var(--surface-100);
+    border-color: var(--primary-color);
+}
+
+.ticket-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    margin-bottom: 0.5rem;
+}
+
+.ticket-title {
+    font-size: 0.9375rem;
+    font-weight: 600;
+    color: var(--text-color);
+    margin: 0;
+    flex: 1;
+}
+
+.ticket-badges {
+    display: flex;
+    gap: 0.5rem;
+    flex-shrink: 0;
+}
+
+.ticket-description {
+    font-size: 0.875rem;
+    color: var(--text-color-secondary);
+    margin: 0.5rem 0;
+    line-height: 1.5;
+}
+
+.ticket-footer {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-top: 0.75rem;
+    padding-top: 0.75rem;
+    border-top: 1px solid var(--surface-border);
+}
+
+.ticket-creator {
+    font-size: 0.8125rem;
+    color: var(--text-color-secondary);
+    display: flex;
+    align-items: center;
+}
+
+.ticket-date {
+    font-size: 0.75rem;
+    color: var(--text-color-secondary);
+}
+
+/* Responsive */
+@media (max-width: 1400px) {
+    .analysis-grid {
+        grid-template-columns: 1fr;
+    }
+
+    .charts-grid {
+        grid-template-columns: 1fr;
+    }
+
+    .charts-grid-two {
+        grid-template-columns: 1fr;
+    }
+}
+
+@media (max-width: 768px) {
+    .dashboard-container {
+        padding: 1rem;
+    }
+
+    .dashboard-header {
+        flex-direction: column;
+        align-items: flex-start;
+        padding: 1rem;
+    }
+
+    .dashboard-title {
+        font-size: 1.5rem;
+    }
+
+    .header-actions {
+        width: 100%;
+        flex-direction: column;
+    }
+
+    .date-range-picker {
+        width: 100%;
+    }
+
+    .kpi-grid {
+        grid-template-columns: 1fr;
+    }
+
+    .basic-kpi-grid {
+        grid-template-columns: 1fr;
+    }
+
+    .analysis-grid {
+        grid-template-columns: 1fr;
+    }
+
+    .charts-grid {
+        grid-template-columns: 1fr;
+    }
+
+    .charts-grid-two {
+        grid-template-columns: 1fr;
+    }
+
+    .hospitalization-grid {
+        grid-template-columns: repeat(2, 1fr);
+    }
+
+    .admission-item {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 0.75rem;
+    }
+
+    .admission-details {
+        align-items: flex-start;
+    }
+
+    .section-title {
+        font-size: 1.25rem;
+    }
+
+    .chart-container {
+        min-height: 300px;
+        max-height: 350px;
+        padding: 0.5rem 1rem;
+    }
+
+    .chart-container > * {
+        min-height: 280px;
+    }
+
+    .chart-wrapper-overview {
+        min-height: 300px;
+    }
+
+    .kpi-value {
+        font-size: 1.5rem;
+    }
+
+    .stat-value {
+        font-size: 1.25rem;
+    }
+}
+
+@media (max-width: 480px) {
+    .dashboard-title {
+        font-size: 1.25rem;
+    }
+
+    .dashboard-subtitle {
+        font-size: 0.875rem;
+    }
+}
+</style>

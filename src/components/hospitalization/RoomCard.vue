@@ -116,27 +116,18 @@ const totalPendingTasks = computed(() => {
             </div>
 
             <div class="flex justify-content-between align-items-center">
-                <Tag :value="`${roomStats.occupancyRate}% ocupación`" :severity="getRoomStatusSeverity" class="font-semibold" />
+                <div class="occupancy-info">
+                    <span class="occupancy-details">{{ roomStats.occupiedBeds }} ocupada{{ roomStats.occupiedBeds === 1 ? '' : 's' }}, {{ roomStats.freeBeds }} libre{{ roomStats.freeBeds === 1 ? '' : 's' }}</span>
+                    <Tag :value="`${roomStats.occupancyRate}% ocupación`" :severity="getRoomStatusSeverity" class="font-semibold ml-2" />
+                </div>
                 <span class="text-sm text-600"> {{ roomStats.totalBeds }} {{ roomStats.totalBeds === 1 ? 'cama' : 'camas' }} </span>
             </div>
         </div>
 
-        <!-- Room Stats -->
-        <div class="room-card__stats">
-            <div class="stat-item stat-item--occupied">
-                <div class="stat-value">{{ roomStats.occupiedBeds }}</div>
-                <div class="stat-label">Ocupadas</div>
-            </div>
-            <div class="stat-divider"></div>
-            <div class="stat-item stat-item--free">
-                <div class="stat-value">{{ roomStats.freeBeds }}</div>
-                <div class="stat-label">Libres</div>
-            </div>
-            <div class="stat-divider"></div>
-            <div class="stat-item stat-item--tasks" v-if="totalPendingTasks > 0">
-                <div class="stat-value">{{ totalPendingTasks }}</div>
-                <div class="stat-label">Tareas</div>
-            </div>
+        <!-- Tasks indicator (if any) -->
+        <div v-if="totalPendingTasks > 0" class="tasks-indicator">
+            <i class="pi pi-exclamation-triangle text-orange-600"></i>
+            <span class="tasks-count">{{ totalPendingTasks }} tarea{{ totalPendingTasks === 1 ? '' : 's' }} pendiente{{ totalPendingTasks === 1 ? '' : 's' }}</span>
         </div>
 
         <!-- Quick Bed Status -->
@@ -214,14 +205,14 @@ const totalPendingTasks = computed(() => {
 <style scoped>
 .room-card {
     background: linear-gradient(135deg, var(--surface-card) 0%, var(--surface-50) 100%);
-    border-radius: 16px;
+    border-radius: 12px;
     border: 1px solid var(--surface-border);
-    padding: 1.5rem;
+    padding: 1rem;
     height: 100%;
     width: 100%;
     display: flex;
     flex-direction: column;
-    gap: 1.25rem;
+    gap: 0.75rem;
     transition: all 0.3s ease;
     box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
     position: relative;
@@ -229,8 +220,8 @@ const totalPendingTasks = computed(() => {
 }
 
 .room-card:hover {
-    transform: translateY(-2px);
-    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.12);
+    transform: translateY(-1px);
+    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.1);
     border-color: var(--primary-color);
 }
 
@@ -253,79 +244,60 @@ const totalPendingTasks = computed(() => {
     flex-shrink: 0;
 }
 
-.room-card__stats {
+/* Occupancy Info */
+.occupancy-info {
     display: flex;
     align-items: center;
-    justify-content: center;
-    gap: 1rem;
-    padding: 1rem;
-    background: var(--surface-50);
-    border-radius: 12px;
-    border: 1px solid var(--surface-200);
+    flex-wrap: wrap;
+    gap: 0.5rem;
 }
 
-.stat-item {
-    text-align: center;
-    flex: 1;
-}
-
-.stat-value {
-    font-size: 1.75rem;
-    font-weight: 700;
-    line-height: 1;
-    margin-bottom: 0.25rem;
-}
-
-.stat-label {
-    font-size: 0.75rem;
-    text-transform: uppercase;
-    letter-spacing: 0.5px;
-    font-weight: 600;
+.occupancy-details {
+    font-size: 0.8rem;
     color: var(--text-color-secondary);
+    font-weight: 500;
 }
 
-.stat-item--occupied .stat-value {
-    color: var(--red-600);
+/* Tasks Indicator */
+.tasks-indicator {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.5rem 0.75rem;
+    background: var(--orange-50);
+    border: 1px solid var(--orange-200);
+    border-radius: 8px;
+    font-size: 0.8rem;
+    color: var(--orange-700);
 }
 
-.stat-item--free .stat-value {
-    color: var(--green-600);
-}
-
-.stat-item--tasks .stat-value {
-    color: var(--orange-600);
-}
-
-.stat-divider {
-    width: 1px;
-    height: 2rem;
-    background: var(--surface-300);
-    flex-shrink: 0;
+.tasks-count {
+    font-weight: 600;
 }
 
 .room-card__beds {
     flex: 1;
     display: flex;
     flex-direction: column;
-    gap: 0.75rem;
+    gap: 0.5rem;
 }
 
 .bed-indicators {
     display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
-    gap: 1rem;
+    grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+    gap: 0.75rem;
     align-items: start;
     justify-content: start;
 }
 
 .bed-indicator {
-    border-radius: 16px;
+    border-radius: 10px;
     position: relative;
-    transition: all 0.3s ease;
+    transition: all 0.2s ease;
     cursor: pointer;
     border: 2px solid;
     overflow: hidden;
-    min-height: 160px;
+    min-height: 120px;
     display: flex;
     flex-direction: column;
 }
@@ -372,11 +344,11 @@ const totalPendingTasks = computed(() => {
 
 /* Bed Content Styles */
 .bed-content {
-    padding: 1rem;
+    padding: 0.75rem;
     height: 100%;
     display: flex;
     flex-direction: column;
-    gap: 0.5rem;
+    gap: 0.375rem;
 }
 
 .bed-content--occupied {
@@ -397,12 +369,12 @@ const totalPendingTasks = computed(() => {
     display: flex;
     justify-content: space-between;
     align-items: center;
-    margin-bottom: 0.5rem;
+    margin-bottom: 0.375rem;
 }
 
 .bed-header-simple {
     text-align: center;
-    margin-bottom: 0.5rem;
+    margin-bottom: 0.375rem;
 }
 
 .bed-number {
@@ -438,8 +410,8 @@ const totalPendingTasks = computed(() => {
     flex: 1;
     display: flex;
     flex-direction: column;
-    gap: 0.25rem;
-    margin-bottom: 0.5rem;
+    gap: 0.2rem;
+    margin-bottom: 0.375rem;
 }
 
 .patient-name {
@@ -465,8 +437,8 @@ const totalPendingTasks = computed(() => {
 .medical-indicators {
     display: flex;
     flex-wrap: wrap;
-    gap: 0.25rem;
-    margin-bottom: 0.5rem;
+    gap: 0.2rem;
+    margin-bottom: 0.375rem;
 }
 
 .indicator-tag {
@@ -498,12 +470,12 @@ const totalPendingTasks = computed(() => {
     display: flex;
     flex-direction: column;
     align-items: center;
-    gap: 0.5rem;
+    gap: 0.375rem;
     color: var(--green-700);
 }
 
 .free-indicator i {
-    font-size: 2rem;
+    font-size: 1.5rem;
     color: var(--green-600);
 }
 
@@ -516,26 +488,39 @@ const totalPendingTasks = computed(() => {
 @media (max-width: 900px) {
     .room-card {
         min-width: 100%;
+        padding: 0.875rem;
+        gap: 0.625rem;
     }
 
     .bed-indicators {
-        grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
-        gap: 0.75rem;
+        grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+        gap: 0.625rem;
     }
 
     .bed-indicator {
-        min-height: 140px;
+        min-height: 110px;
     }
 
     .medical-indicators {
         justify-content: center;
     }
+
+    .occupancy-info {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 0.25rem;
+    }
+
+    .tasks-indicator {
+        padding: 0.375rem 0.5rem;
+        font-size: 0.75rem;
+    }
 }
 
 @media (max-width: 480px) {
     .room-card {
-        padding: 1rem;
-        gap: 1rem;
+        padding: 0.75rem;
+        gap: 0.625rem;
     }
 
     .bed-indicators {
@@ -544,11 +529,12 @@ const totalPendingTasks = computed(() => {
     }
 
     .bed-indicator {
-        min-height: 120px;
+        min-height: 100px;
     }
 
     .bed-content {
-        padding: 0.75rem;
+        padding: 0.625rem;
+        gap: 0.3rem;
     }
 
     .patient-name {
@@ -559,22 +545,39 @@ const totalPendingTasks = computed(() => {
         font-size: 0.6rem !important;
     }
 
-    .stat-value {
-        font-size: 1.5rem;
+    .occupancy-details {
+        font-size: 0.75rem;
+    }
+
+    .tasks-indicator {
+        padding: 0.375rem 0.5rem;
+        font-size: 0.7rem;
+    }
+
+    .free-indicator i {
+        font-size: 1.25rem;
     }
 }
 
 @media (min-width: 901px) and (max-width: 1400px) {
     .bed-indicators {
-        grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
-        gap: 0.75rem;
+        grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+        gap: 0.625rem;
+    }
+
+    .bed-indicator {
+        min-height: 115px;
     }
 }
 
 @media (min-width: 1401px) {
     .bed-indicators {
-        grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
-        gap: 1rem;
+        grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+        gap: 0.75rem;
+    }
+
+    .bed-indicator {
+        min-height: 120px;
     }
 }
 

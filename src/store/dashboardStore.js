@@ -1,11 +1,10 @@
-import { defineStore } from 'pinia';
-import { ref, computed } from 'vue';
 import { hospitalAttentions } from '@/api/hospitalAttentions';
-import { users } from '@/api/users';
-import { patients } from '@/api/patients';
-import { tasks } from '@/api/tasks';
-import { TicketService } from '@/api/tickets';
 import { hospitalization } from '@/api/hospitalization';
+import { patients } from '@/api/patients';
+import { TicketService } from '@/api/tickets';
+import { users } from '@/api/users';
+import { defineStore } from 'pinia';
+import { computed, ref } from 'vue';
 
 export const useDashboardStore = defineStore('dashboard', () => {
     // State
@@ -40,17 +39,9 @@ export const useDashboardStore = defineStore('dashboard', () => {
     async function fetchAllStats() {
         isLoading.value = true;
         error.value = null;
-        
+
         try {
-            const [
-                hospitalResponse,
-                userResponse,
-                patientResponse,
-                taskResponse,
-                detailsResponse,
-                ticketsResponse,
-                hospitalizationResponse
-            ] = await Promise.all([
+            const [hospitalResponse, userResponse, patientResponse, taskResponse, detailsResponse, ticketsResponse, hospitalizationResponse] = await Promise.all([
                 hospitalAttentions.getStats(),
                 users.getStats(),
                 patients.getStats(),
@@ -131,8 +122,6 @@ export const useDashboardStore = defineStore('dashboard', () => {
 
     // Real-time event handlers for dashboard updates
     function handleDashboardHospitalizationEvent(eventData) {
-        console.log('Dashboard: Handling hospitalization event:', eventData);
-        
         // Update relevant statistics based on the event
         switch (eventData.action) {
             case 'created':
@@ -146,15 +135,11 @@ export const useDashboardStore = defineStore('dashboard', () => {
     }
 
     function handleDashboardTaskEvent(eventData) {
-        console.log('Dashboard: Handling task event:', eventData);
-        
         // Refresh task statistics
         fetchTaskStats();
     }
 
     function handleDashboardPatientEvent(eventData) {
-        console.log('Dashboard: Handling patient event:', eventData);
-        
         // Refresh patient statistics
         fetchPatientStats();
     }
@@ -170,7 +155,7 @@ export const useDashboardStore = defineStore('dashboard', () => {
         hospitalizationStatus,
         isLoading,
         error,
-        
+
         // Getters
         allStats,
         hospitalData,
@@ -180,7 +165,7 @@ export const useDashboardStore = defineStore('dashboard', () => {
         detailsData,
         ticketsData,
         hospitalizationData,
-        
+
         // Actions
         fetchAllStats,
         fetchHospitalStats,
@@ -189,7 +174,7 @@ export const useDashboardStore = defineStore('dashboard', () => {
         fetchTaskStats,
         fetchRecentTickets,
         fetchHospitalizationStatus,
-        
+
         // Real-time event handlers
         handleDashboardHospitalizationEvent,
         handleDashboardTaskEvent,

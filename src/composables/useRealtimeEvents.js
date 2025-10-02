@@ -24,8 +24,6 @@ export function useRealtimeEvents(options = {}) {
 
         hospitalizationsChannel
             .listen('.hospitalization.created', (e) => {
-                console.log('[RealtimeEvents] hospitalization.created:', e);
-
                 if (updateAttentions) {
                     hospitalAttentionsStore.handleHospitalizationCreated(e);
                 }
@@ -35,8 +33,6 @@ export function useRealtimeEvents(options = {}) {
                 }
             })
             .listen('.hospitalization.updated', (e) => {
-                console.log('[RealtimeEvents] hospitalization.updated:', e);
-
                 if (updateAttentions) {
                     hospitalAttentionsStore.handleHospitalizationUpdated(e);
                 }
@@ -46,8 +42,6 @@ export function useRealtimeEvents(options = {}) {
                 }
             })
             .listen('.hospitalization.deleted', (e) => {
-                console.log('[RealtimeEvents] hospitalization.deleted:', e);
-
                 if (updateAttentions) {
                     hospitalAttentionsStore.handleHospitalizationDeleted(e);
                 }
@@ -63,35 +57,27 @@ export function useRealtimeEvents(options = {}) {
         if (updateDashboard) {
             dashboardChannel
                 .listen('.hospitalization.created', (e) => {
-                    console.log('[RealtimeEvents] Dashboard hospitalization.created:', e);
                     dashboardStore.handleDashboardHospitalizationEvent(e);
                 })
                 .listen('.hospitalization.updated', (e) => {
-                    console.log('[RealtimeEvents] Dashboard hospitalization.updated:', e);
                     dashboardStore.handleDashboardHospitalizationEvent(e);
                 })
                 .listen('.hospitalization.deleted', (e) => {
-                    console.log('[RealtimeEvents] Dashboard hospitalization.deleted:', e);
                     dashboardStore.handleDashboardHospitalizationEvent(e);
                 })
                 .listen('.task.created', (e) => {
-                    console.log('[RealtimeEvents] Dashboard task.created:', e);
                     dashboardStore.handleDashboardTaskEvent(e);
                 })
                 .listen('.task.updated', (e) => {
-                    console.log('[RealtimeEvents] Dashboard task.updated:', e);
                     dashboardStore.handleDashboardTaskEvent(e);
                 })
                 .listen('.task.deleted', (e) => {
-                    console.log('[RealtimeEvents] Dashboard task.deleted:', e);
                     dashboardStore.handleDashboardTaskEvent(e);
                 })
                 .listen('.patient.created', (e) => {
-                    console.log('[RealtimeEvents] Dashboard patient.created:', e);
                     dashboardStore.handleDashboardPatientEvent(e);
                 })
                 .listen('.patient.updated', (e) => {
-                    console.log('[RealtimeEvents] Dashboard patient.updated:', e);
                     dashboardStore.handleDashboardPatientEvent(e);
                 });
         }
@@ -105,7 +91,6 @@ export function useRealtimeEvents(options = {}) {
         channels.value.forEach((channelName) => {
             try {
                 useEcho.leave(channelName);
-                console.log(`[RealtimeEvents] Left channel: ${channelName}`);
             } catch (error) {
                 console.warn(`[RealtimeEvents] Error leaving channel ${channelName}:`, error);
             }
