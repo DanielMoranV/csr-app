@@ -108,22 +108,22 @@ export function usePermissions() {
     const filterMenuItems = (items) => {
         if (!Array.isArray(items)) return [];
 
-        return items.filter((item) => {
-            // Si no tiene restricciones de posición, mostrar
-            if (!item.positions) return true;
+        return items
+            .map((item) => ({ ...item })) // Clonar para evitar mutaciones
+            .filter((item) => {
+                // Si tiene items hijos, filtrarlos recursivamente primero
+                if (item.items && Array.isArray(item.items)) {
+                    item.items = filterMenuItems(item.items);
+                    // Solo mostrar la sección si tiene items después del filtro
+                    return item.items.length > 0;
+                }
 
-            // Verificar si el usuario tiene acceso
-            const hasAccess = hasAnyPosition(item.positions);
+                // Para items sin hijos, verificar permisos
+                if (!item.positions) return true;
 
-            // Si tiene items hijos, filtrarlos recursivamente
-            if (item.items) {
-                item.items = filterMenuItems(item.items);
-                // Solo mostrar el item padre si tiene hijos después del filtro
-                return hasAccess && item.items.length > 0;
-            }
-
-            return hasAccess;
-        });
+                // Verificar si el usuario tiene acceso
+                return hasAnyPosition(item.positions);
+            });
     };
 
     // Verificar permisos para rutas
