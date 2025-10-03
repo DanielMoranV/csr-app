@@ -1,4 +1,5 @@
 import AppLayout from '@/layout/AppLayout.vue';
+import { MODULE_PERMISSIONS } from '@/config/permissions';
 import { useAuthStore } from '@/store/authStore';
 import { createRouter, createWebHistory } from 'vue-router';
 
@@ -11,58 +12,58 @@ const router = createRouter({
             meta: { requiresAuth: true },
             children: [
                 {
-                    path: '/dashboard',
-                    name: 'dashboard',
+                    path: MODULE_PERMISSIONS.dashboard.path,
+                    name: MODULE_PERMISSIONS.dashboard.name,
                     component: () => import('@/views/Dashboard.vue'),
-                    meta: { requiresAuth: true, positions: ['*'] }
+                    meta: { requiresAuth: true, positions: MODULE_PERMISSIONS.dashboard.positions }
                 },
                 {
-                    path: '/profile',
-                    name: 'profile',
+                    path: MODULE_PERMISSIONS.profile.path,
+                    name: MODULE_PERMISSIONS.profile.name,
                     component: () => import('@/views/Profile.vue'),
-                    meta: { requiresAuth: true, positions: ['*'] }
+                    meta: { requiresAuth: true, positions: MODULE_PERMISSIONS.profile.positions }
                 },
                 {
-                    path: '/usuarios',
-                    name: 'usuarios',
+                    path: MODULE_PERMISSIONS.usuarios.path,
+                    name: MODULE_PERMISSIONS.usuarios.name,
                     component: () => import('@/views/users/Users.vue'),
-                    meta: { requiresAuth: true, positions: ['SISTEMAS', 'RRHH', 'ADMINISTRACION'] }
+                    meta: { requiresAuth: true, positions: MODULE_PERMISSIONS.usuarios.positions }
                 },
                 {
-                    path: '/sisclin/import',
-                    name: 'sisclin-import',
+                    path: MODULE_PERMISSIONS.sisclinImport.path,
+                    name: MODULE_PERMISSIONS.sisclinImport.name,
                     component: () => import('@/views/sisclin/SisclinImport.vue'),
-                    meta: { requiresAuth: true, positions: ['SISTEMAS', 'ADMINISTRACION', 'DIRECTOR MEDICO', 'HOSPITALIZACION'] }
+                    meta: { requiresAuth: true, positions: MODULE_PERMISSIONS.sisclinImport.positions }
                 },
                 {
-                    path: '/hospital-attentions',
-                    name: 'hospital-attentions',
+                    path: MODULE_PERMISSIONS.hospitalAttentions.path,
+                    name: MODULE_PERMISSIONS.hospitalAttentions.name,
                     component: () => import('@/views/attentions/HospitalAttentions.vue'),
-                    meta: { requiresAuth: true, positions: ['*'] }
+                    meta: { requiresAuth: true, positions: MODULE_PERMISSIONS.hospitalAttentions.positions }
                 },
                 {
-                    path: '/habitaciones',
-                    name: 'habitaciones',
+                    path: MODULE_PERMISSIONS.habitaciones.path,
+                    name: MODULE_PERMISSIONS.habitaciones.name,
                     component: () => import('@/views/rooms/Rooms.vue'),
-                    meta: { requiresAuth: true, positions: ['SISTEMAS', 'RRHH', 'ADMINISTRACION', 'HOSPITALIZACION'] }
+                    meta: { requiresAuth: true, positions: MODULE_PERMISSIONS.habitaciones.positions }
                 },
                 {
-                    path: '/hospitalizacion',
-                    name: 'hospitalizacion',
+                    path: MODULE_PERMISSIONS.hospitalizacion.path,
+                    name: MODULE_PERMISSIONS.hospitalizacion.name,
                     component: () => import('@/views/hospitalization/HospitalizationStatus.vue'),
-                    meta: { requiresAuth: true, positions: ['*'] }
+                    meta: { requiresAuth: true, positions: MODULE_PERMISSIONS.hospitalizacion.positions }
                 },
                 {
-                    path: '/tickets',
-                    name: 'tickets',
+                    path: MODULE_PERMISSIONS.tickets.path,
+                    name: MODULE_PERMISSIONS.tickets.name,
                     component: () => import('@/views/tickets/Tickets.vue'),
-                    meta: { requiresAuth: true, positions: ['*'] }
+                    meta: { requiresAuth: true, positions: MODULE_PERMISSIONS.tickets.positions }
                 },
                 {
-                    path: '/tickets/recurrence-rules',
-                    name: 'ticket-recurrence-rules',
+                    path: MODULE_PERMISSIONS.ticketRecurrenceRules.path,
+                    name: MODULE_PERMISSIONS.ticketRecurrenceRules.name,
                     component: () => import('@/views/tickets/RecurrenceRules.vue'),
-                    meta: { requiresAuth: true, positions: ['SISTEMAS', 'ADMINISTRACION'] }
+                    meta: { requiresAuth: true, positions: MODULE_PERMISSIONS.ticketRecurrenceRules.positions }
                 }
             ]
         },

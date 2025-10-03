@@ -1,97 +1,19 @@
 <script setup>
+import { generateMenuStructure } from '@/config/permissions';
 import { usePermissions } from '@/composables/usePermissions';
-import { computed, ref } from 'vue';
+import { computed } from 'vue';
 
 import AppMenuItem from './AppMenuItem.vue';
 
 const { filterMenuItems } = usePermissions();
 
+// Generar menú desde la configuración centralizada
+const menuModel = generateMenuStructure();
+
 // Menú filtrado basado en permisos del usuario
 const filteredMenu = computed(() => {
-    return filterMenuItems(model.value);
+    return filterMenuItems(menuModel);
 });
-
-const model = ref([
-    {
-        label: 'Principal',
-        items: [
-            {
-                label: 'Dashboard',
-                icon: 'pi pi-fw pi-home',
-                to: '/dashboard',
-                positions: ['*'] // Acceso para todas las posiciones
-            }
-        ]
-    },
-    {
-        label: 'Mi Cuenta',
-        items: [
-            {
-                label: 'Perfil',
-                icon: 'pi pi-fw pi-user',
-                to: '/profile',
-                positions: ['*'] // Acceso público para todas las posiciones
-            }
-        ]
-    },
-    {
-        label: 'Administración',
-        items: [
-            {
-                label: 'Usuarios',
-                icon: 'pi pi-fw pi-users',
-                to: '/usuarios',
-                positions: ['SISTEMAS', 'RRHH', 'ADMINISTRACION'] // Solo estas 3 posiciones
-            }
-        ]
-    },
-
-    {
-        label: 'Hospitalización',
-        items: [
-            {
-                label: 'Estado Actual',
-                icon: 'pi pi-fw pi-th-large',
-                to: '/hospitalizacion',
-                positions: ['*']
-            },
-            {
-                label: 'Atenciones',
-                icon: 'pi pi-fw pi-clipboard',
-                to: '/hospital-attentions',
-                positions: ['*'] // Acceso para todas las posiciones
-            },
-            {
-                label: 'Habitaciones',
-                icon: 'pi pi-fw pi-building',
-                to: '/habitaciones',
-                positions: ['SISTEMAS', 'ADMINISTRACION', 'DIRECTOR MEDICO', 'HOSPITALIZACION', 'RRHH']
-            }
-        ]
-    },
-    {
-        label: 'SISCLIN',
-        items: [
-            {
-                label: 'Import. Hosp.',
-                icon: 'pi pi-fw pi-database',
-                to: '/sisclin/import',
-                positions: ['SISTEMAS', 'ADMINISTRACION', 'DIRECTOR MEDICO', 'HOSPITALIZACION']
-            }
-        ]
-    },
-    {
-        label: 'Soporte Técnico',
-        items: [
-            {
-                label: 'Gestión de Tickets',
-                icon: 'pi pi-fw pi-ticket',
-                to: '/tickets',
-                positions: ['*']
-            }
-        ]
-    }
-]);
 </script>
 
 <template>
