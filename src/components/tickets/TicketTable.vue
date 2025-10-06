@@ -288,31 +288,42 @@ const getActionItems = (ticketData) => {
             </template>
 
             <!-- Id del Ticket -->
-            <Column field="id" header="ID" :sortable="true" style="min-width: 100px">
+            <Column field="id" header="ID" :sortable="true" style="min-width: 80px" class="column-id">
                 <template #body="{ data }">
-                    <span class="ticket-id">{{ data.id }}</span>
+                    <span class="ticket-id">#{{ data.id }}</span>
                 </template>
             </Column>
 
             <!-- Título del Ticket -->
-            <Column field="title" header="Título" :sortable="true" style="min-width: 250px">
+            <Column field="title" header="Título" :sortable="true" style="min-width: 200px" class="column-title">
                 <template #body="{ data }">
                     <div class="ticket-title-cell">
                         <i class="pi pi-tag title-icon"></i>
-                        <span class="ticket-title">{{ data.title }}</span>
+                        <div class="ticket-title-content">
+                            <span class="ticket-title">{{ data.title }}</span>
+                            <!-- Info compacta para móvil -->
+                            <div class="mobile-ticket-info">
+                                <Tag :severity="getPrioritySeverity(data.priority)" class="mobile-priority-tag" rounded>
+                                    <i :class="getPriorityIcon(data.priority)"></i>
+                                </Tag>
+                                <Tag :severity="getStatusSeverity(data.status)" class="mobile-status-tag" rounded>
+                                    <i :class="getStatusIcon(data.status)"></i>
+                                </Tag>
+                            </div>
+                        </div>
                     </div>
                 </template>
             </Column>
 
-            <!-- Descripción (truncada) -->
-            <Column field="description" header="Descripción" style="min-width: 300px">
+            <!-- Descripción (truncada) - Oculta en móvil -->
+            <Column field="description" header="Descripción" style="min-width: 250px" class="column-description">
                 <template #body="{ data }">
                     <span class="ticket-description">{{ data.description.substring(0, 100) + (data.description.length > 100 ? '...' : '') }}</span>
                 </template>
             </Column>
 
-            <!-- Prioridad -->
-            <Column field="priority" header="Prioridad" :sortable="true" style="min-width: 120px; text-align: center">
+            <!-- Prioridad - Oculta en móvil (se muestra en título) -->
+            <Column field="priority" header="Prioridad" :sortable="true" style="min-width: 100px; text-align: center" class="column-priority">
                 <template #body="{ data }">
                     <Tag v-tooltip.top="data.priority" :severity="getPrioritySeverity(data.priority)" class="ticket-priority-tag" rounded>
                         <i :class="getPriorityIcon(data.priority)"></i>
@@ -320,8 +331,8 @@ const getActionItems = (ticketData) => {
                 </template>
             </Column>
 
-            <!-- Estado -->
-            <Column field="status" header="Estado" :sortable="true" style="min-width: 120px; text-align: center">
+            <!-- Estado - Oculta en móvil (se muestra en título) -->
+            <Column field="status" header="Estado" :sortable="true" style="min-width: 100px; text-align: center" class="column-status">
                 <template #body="{ data }">
                     <Tag v-tooltip.top="data.status" :severity="getStatusSeverity(data.status)" class="ticket-status-tag" rounded>
                         <i :class="getStatusIcon(data.status)"></i>
@@ -329,8 +340,8 @@ const getActionItems = (ticketData) => {
                 </template>
             </Column>
 
-            <!-- Creador -->
-            <Column field="creator.name" header="Creador" :sortable="true" style="min-width: 180px">
+            <!-- Creador - Oculta en móvil -->
+            <Column field="creator.name" header="Creador" :sortable="true" style="min-width: 150px" class="column-creator">
                 <template #body="{ data }">
                     <div class="ticket-user-cell">
                         <div class="ticket-avatar-container">
@@ -345,7 +356,7 @@ const getActionItems = (ticketData) => {
             </Column>
 
             <!-- Asignado -->
-            <Column field="assignee.name" header="Asignado A" :sortable="true" style="min-width: 180px">
+            <Column field="assignee.name" header="Asignado" :sortable="true" style="min-width: 150px" class="column-assignee">
                 <template #body="{ data }">
                     <div v-if="data.assignee || data.assignee_position" class="ticket-user-cell">
                         <div class="ticket-avatar-container" v-if="data.assignee">
@@ -368,8 +379,8 @@ const getActionItems = (ticketData) => {
                 </template>
             </Column>
 
-            <!-- Fecha Límite -->
-            <Column field="due_date" header="Fecha Límite" :sortable="true" style="min-width: 150px">
+            <!-- Fecha Límite - Oculta en móvil -->
+            <Column field="due_date" header="Fecha Límite" :sortable="true" style="min-width: 140px" class="column-due-date">
                 <template #body="{ data }">
                     <div v-if="data.due_date" class="ticket-date-cell">
                         <div class="date-main">
@@ -380,13 +391,13 @@ const getActionItems = (ticketData) => {
                     </div>
                     <div v-else class="ticket-date-cell no-due-date">
                         <i class="pi pi-ban"></i>
-                        <span>Sin fecha límite</span>
+                        <span>Sin fecha</span>
                     </div>
                 </template>
             </Column>
 
-            <!-- Fecha de Creación -->
-            <Column field="created_at" header="Creado" :sortable="true" style="min-width: 150px">
+            <!-- Fecha de Creación - Oculta en móvil -->
+            <Column field="created_at" header="Creado" :sortable="true" style="min-width: 140px" class="column-created">
                 <template #body="{ data }">
                     <div class="ticket-date-cell">
                         <div class="date-main">
@@ -399,7 +410,7 @@ const getActionItems = (ticketData) => {
             </Column>
 
             <!-- Acciones -->
-            <Column header="Acciones" :exportable="false" style="min-width: 100px">
+            <Column header="Acciones" :exportable="false" style="min-width: 90px" class="column-actions">
                 <template #body="{ data }">
                     <div class="ticket-actions-compact" role="group" :aria-label="`Acciones para ticket ${data.title}`">
                         <SplitButton :label="''" icon="pi pi-ellipsis-v" @click="handleViewTicket(data)" :model="getActionItems(data)" class="ticket-split-button" size="small" severity="secondary" v-tooltip.top="'Ver acciones'" />
@@ -962,6 +973,39 @@ const getActionItems = (ticketData) => {
     color: var(--surface-0);
 }
 
+/* Estilos para columna de título con info móvil */
+.ticket-title-content {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+    flex: 1;
+}
+
+.mobile-ticket-info {
+    display: none;
+    gap: 0.5rem;
+    margin-top: 0.25rem;
+}
+
+.mobile-priority-tag,
+.mobile-status-tag {
+    width: 2rem;
+    height: 2rem;
+    display: inline-flex;
+    justify-content: center;
+    align-items: center;
+    font-size: 0.9rem;
+}
+
+/* Responsive para tablets */
+@media (max-width: 1024px) {
+    /* Ocultar columnas menos importantes en tablets */
+    :deep(.column-description),
+    :deep(.column-created) {
+        display: none !important;
+    }
+}
+
 /* Responsive para dispositivos móviles */
 @media (max-width: 768px) {
     .ticket-table-header {
@@ -996,47 +1040,63 @@ const getActionItems = (ticketData) => {
         font-size: 0.9rem;
     }
 
+    /* Ocultar columnas en móvil */
+    :deep(.column-description),
+    :deep(.column-priority),
+    :deep(.column-status),
+    :deep(.column-creator),
+    :deep(.column-due-date),
+    :deep(.column-created) {
+        display: none !important;
+    }
+
+    /* Mostrar info móvil en columna de título */
+    .mobile-ticket-info {
+        display: flex;
+    }
+
+    /* Ajustar estilos de tabla para móvil */
     :deep(.ticket-datatable .p-datatable-thead > tr > th),
     :deep(.ticket-datatable .p-datatable-tbody > tr > td) {
         padding: 0.75rem 0.5rem;
         font-size: 0.875rem;
     }
 
+    .ticket-title-cell {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 0.5rem;
+    }
+
+    .title-icon {
+        display: none;
+    }
+
     .ticket-user-cell {
-        gap: 0.75rem;
+        gap: 0.5rem;
     }
 
     .ticket-avatar,
     .ticket-avatar-fallback {
         width: 2rem;
         height: 2rem;
+        font-size: 0.75rem;
     }
 
+    .ticket-user-name {
+        font-size: 0.85rem;
+    }
+
+    /* Acciones más táctiles en móvil */
     .ticket-actions-compact {
-        flex-direction: column;
-        gap: 0.5rem;
-        width: 100%;
-    }
-
-    .ticket-split-button {
-        width: 100%;
-        order: 1;
-    }
-
-    .ticket-split-button :deep(.p-splitbutton) {
-        width: 100%;
-    }
-
-    .ticket-split-button :deep(.p-splitbutton-defaultbutton) {
-        flex: 1;
         justify-content: center;
-        min-width: auto;
-        padding: 0.625rem 1rem;
     }
 
+    .ticket-split-button :deep(.p-splitbutton-defaultbutton),
     .ticket-split-button :deep(.p-splitbutton-menubutton) {
-        min-width: auto;
-        padding: 0.625rem;
+        min-width: 44px;
+        min-height: 44px;
+        padding: 0.75rem;
     }
 }
 
@@ -1061,31 +1121,47 @@ const getActionItems = (ticketData) => {
         font-size: 0.9rem;
     }
 
-    .ticket-actions-compact {
+    /* ID de ticket más compacto */
+    .ticket-id {
+        font-size: 0.8rem;
+    }
+
+    /* Título y badges más compactos */
+    .ticket-title {
+        font-size: 0.85rem;
+        line-height: 1.3;
+    }
+
+    .mobile-priority-tag,
+    .mobile-status-tag {
+        width: 1.75rem;
+        height: 1.75rem;
+        font-size: 0.8rem;
+    }
+
+    /* Asignado más compacto */
+    .ticket-user-cell {
         flex-direction: column;
-        gap: 0.5rem;
-        width: 100%;
+        align-items: center;
+        text-align: center;
     }
 
-    .ticket-split-button {
-        width: 100%;
-        order: 1;
+    .ticket-avatar,
+    .ticket-avatar-fallback {
+        width: 1.75rem;
+        height: 1.75rem;
+        font-size: 0.7rem;
     }
 
-    .ticket-split-button :deep(.p-splitbutton) {
-        width: 100%;
+    .ticket-user-name {
+        font-size: 0.75rem;
     }
 
-    .ticket-split-button :deep(.p-splitbutton-defaultbutton) {
-        flex: 1;
-        justify-content: center;
-        min-width: auto;
-        padding: 0.625rem 1rem;
-    }
-
+    /* Botones de acción aún más táctiles */
+    .ticket-split-button :deep(.p-splitbutton-defaultbutton),
     .ticket-split-button :deep(.p-splitbutton-menubutton) {
-        min-width: auto;
-        padding: 0.625rem;
+        min-width: 48px;
+        min-height: 48px;
     }
 }
 

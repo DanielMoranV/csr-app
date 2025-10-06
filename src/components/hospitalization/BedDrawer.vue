@@ -1,17 +1,18 @@
 <script setup>
-import { computed, ref, watch } from 'vue';
-import Drawer from 'primevue/drawer';
-import Button from 'primevue/button';
-import Tag from 'primevue/tag';
-import Badge from 'primevue/badge';
-import Tabs from 'primevue/tabs';
-import TabList from 'primevue/tablist';
-import Tab from 'primevue/tab';
-import TabPanels from 'primevue/tabpanels';
-import TabPanel from 'primevue/tabpanel';
 import AttentionDetails from '@/components/attentions/AttentionDetails.vue';
 import AttentionTasks from '@/components/attentions/AttentionTasks.vue';
+import { usePermissions, USER_POSITIONS } from '@/composables/usePermissions';
 import { useHospitalAttentionsStore } from '@/store/hospitalAttentionsStore';
+import Badge from 'primevue/badge';
+import Button from 'primevue/button';
+import Drawer from 'primevue/drawer';
+import Tab from 'primevue/tab';
+import TabList from 'primevue/tablist';
+import TabPanel from 'primevue/tabpanel';
+import TabPanels from 'primevue/tabpanels';
+import Tabs from 'primevue/tabs';
+import Tag from 'primevue/tag';
+import { computed, ref, watch } from 'vue';
 
 const props = defineProps({
     visible: {
@@ -27,6 +28,17 @@ const props = defineProps({
 const emit = defineEmits(['update:visible']);
 
 const hospitalAttentionsStore = useHospitalAttentionsStore();
+const { hasPosition } = usePermissions();
+
+// Verificar si el usuario puede editar (solo HOSPITALIZACION y atención activa)
+const canEdit = computed(() => {
+    // Debe tener el permiso de HOSPITALIZACION
+    if (!hasPosition(USER_POSITIONS.HOSPITALIZACION)) return false;
+
+    // La atención debe estar activa
+    if (!attention.value) return false;
+    return attention.value.is_active === true;
+});
 
 const drawerVisible = computed({
     get: () => props.visible,
@@ -149,52 +161,44 @@ watch(
 <template>
     <Drawer v-model:visible="drawerVisible" position="right" class="!w-full md:!w-[48rem] lg:!w-[56rem] xl:!w-[64rem]">
         <template #header>
-            <div v-if="bed && attention" class="flex flex-col gap-3 w-full">
-                <!-- Título principal -->
-                <h3 class="text-xl font-bold flex items-center gap-2 m-0">
-                    <i class="pi pi-bed text-primary"></i>
-                    Gestión de Cama {{ bed.bed_number }}
-                </h3>
-
-                <!-- Estado de la cama -->
-                <div class="flex items-center gap-2">
-                    <Tag :value="bed.status === 'occupied' ? 'OCUPADA' : 'LIBRE'" :severity="getBedStatusSeverity(bed.status)" />
-                    <span v-if="bed.status === 'occupied'" class="text-sm text-600"> Atención #{{ attention.hospital_attention_id }} </span>
+            <div v-if="bed && attention" class="flex flex-col gap-2 w-full">
+                <!-- Título y estado en una línea -->
+                <div class="flex items-center justify-between gap-2">
+                    <div class="flex items-center gap-2">
+                        <i class="pi pi-bed text-primary text-lg"></i>
+                        <h3 class="text-lg font-bold m-0">Cama {{ bed.bed_number }}</h3>
+                        <Tag :value="bed.status === 'occupied' ? 'OCUPADA' : 'LIBRE'" :severity="getBedStatusSeverity(bed.status)" class="text-xs" />
+                    </div>
+                    <span v-if="bed.status === 'occupied'" class="text-xs text-500">#{{ attention.hospital_attention_id }}</span>
                 </div>
 
-                <!-- Información del paciente -->
-                <div v-if="bed.status === 'occupied' && attention.patient" class="bg-primary-50 p-3 border-round border-l-4 border-primary-500">
-                    <div class="grid">
-                        <div class="col-12 md:col-6">
-                            <div class="flex items-center gap-2 mb-2">
-                                <i class="pi pi-user text-primary"></i>
-                                <span class="font-semibold">{{ attention.patient.name }}</span>
-                            </div>
-                            <div class="text-sm text-600 flex items-center gap-1">
-                                <i class="pi pi-id-card"></i>
-                                <span>{{ attention.patient.document_number }}</span>
-                            </div>
+                <!-- Información del paciente compacta -->
+                <div v-if="bed.status === 'occupied' && attention.patient" class="bg-primary-50 p-2 border-round border-l-3 border-primary-500">
+                    <div class="flex flex-wrap items-center gap-x-3 gap-y-1 text-sm">
+                        <div class="flex items-center gap-1 font-semibold">
+                            <i class="pi pi-user text-primary text-xs"></i>
+                            <span>{{ attention.patient.name }}</span>
                         </div>
-                        <div class="col-12 md:col-6">
-                            <div class="flex items-center gap-1 text-sm text-600 mb-1">
-                                <i class="pi pi-calendar"></i>
-                                <span>Ingreso: {{ formatDate(attention.entry_date) }}</span>
-                            </div>
-                            <div v-if="attention.tasks && attention.tasks.length > 0" class="flex items-center gap-1 text-sm">
-                                <i class="pi pi-list-check text-orange-500"></i>
-                                <span class="text-600">{{ attention.tasks.length }} tareas</span>
-                                <Tag v-if="attention.tasks.some((t) => t.status === 'pendiente')" value="Pendientes" severity="warning" class="text-xs" />
-                            </div>
+                        <div class="flex items-center gap-1 text-600">
+                            <i class="pi pi-id-card text-xs"></i>
+                            <span>{{ attention.patient.document_number }}</span>
+                        </div>
+                        <div class="flex items-center gap-1 text-600">
+                            <i class="pi pi-calendar text-xs"></i>
+                            <span>{{ formatDate(attention.entry_date) }}</span>
+                        </div>
+                        <div v-if="attention.tasks && attention.tasks.length > 0" class="flex items-center gap-1">
+                            <i class="pi pi-list-check text-orange-500 text-xs"></i>
+                            <span class="text-600">{{ attention.tasks.length }}</span>
+                            <Tag v-if="attention.tasks.some((t) => t.status === 'pendiente')" value="Pend." severity="warning" class="text-xs py-0" />
                         </div>
                     </div>
                 </div>
 
                 <!-- Estado cuando la cama está libre -->
-                <div v-else class="bg-green-50 p-3 border-round border-l-4 border-green-500">
-                    <div class="flex items-center gap-2">
-                        <i class="pi pi-check-circle text-green-600"></i>
-                        <span class="text-green-800">Cama disponible para nueva atención</span>
-                    </div>
+                <div v-else class="bg-green-50 p-2 border-round border-l-3 border-green-500 flex items-center gap-2">
+                    <i class="pi pi-check-circle text-green-600 text-sm"></i>
+                    <span class="text-green-800 text-sm">Cama disponible</span>
                 </div>
             </div>
         </template>
@@ -218,11 +222,18 @@ watch(
 
                     <TabPanels class="flex-1">
                         <TabPanel value="0" class="h-full">
-                            <AttentionDetails :details="attention.details_attention" :attention-id="attention.hospital_attention_id" @create-details="handleCreateDetails" @update-details="handleUpdateDetails" @delete-details="handleDeleteDetails" />
+                            <AttentionDetails
+                                :details="attention.details_attention"
+                                :attention-id="attention.hospital_attention_id"
+                                :read-only="!canEdit"
+                                @create-details="handleCreateDetails"
+                                @update-details="handleUpdateDetails"
+                                @delete-details="handleDeleteDetails"
+                            />
                         </TabPanel>
 
                         <TabPanel value="1" class="h-full">
-                            <AttentionTasks :tasks="attention.tasks || []" :attention-id="attention.hospital_attention_id" @create-task="handleCreateTask" @update-task="handleUpdateTask" @delete-task="handleDeleteTask" />
+                            <AttentionTasks :tasks="attention.tasks || []" :attention-id="attention.hospital_attention_id" :read-only="!canEdit" @create-task="handleCreateTask" @update-task="handleUpdateTask" @delete-task="handleDeleteTask" />
                         </TabPanel>
                     </TabPanels>
                 </Tabs>

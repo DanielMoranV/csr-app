@@ -76,6 +76,18 @@ const ticketForm = reactive({
 
 const newCommentContent = ref('');
 
+// Computed para ancho responsivo del diálogo
+const dialogWidth = computed(() => {
+    if (typeof window !== 'undefined') {
+        const width = window.innerWidth;
+        if (width <= 480) return '98vw';
+        if (width <= 768) return '95vw';
+        if (width <= 1024) return '85vw';
+        return '700px';
+    }
+    return '700px';
+});
+
 // Estado de validación
 const validationErrors = ref({});
 const touchedFields = ref({});
@@ -443,7 +455,7 @@ const formatCommentDate = (dateString) => {
 </script>
 
 <template>
-    <Dialog v-model:visible="dialogVisible" :header="dialogTitle" :modal="true" class="p-fluid ticket-dialog" :style="{ width: '700px', maxHeight: '90vh' }" :closable="!saving" :closeOnEscape="!saving" @hide="onDialogHide">
+    <Dialog v-model:visible="dialogVisible" :header="dialogTitle" :modal="true" class="p-fluid ticket-dialog" :style="{ width: dialogWidth, maxHeight: '90vh' }" :closable="!saving" :closeOnEscape="!saving" @hide="onDialogHide">
         <template #header>
             <div class="flex align-items-center gap-2">
                 <i :class="isEditing ? 'pi pi-ticket text-blue-600' : 'pi pi-plus-circle text-green-600'" class="text-xl"></i>
@@ -718,7 +730,8 @@ const formatCommentDate = (dateString) => {
 .chat-wrapper {
     display: flex;
     flex-direction: column;
-    height: 55vh;
+    height: 50vh;
+    max-height: 500px;
 }
 
 .chat-container {
@@ -728,6 +741,24 @@ const formatCommentDate = (dateString) => {
     background-color: var(--surface-ground);
     border-radius: 6px;
     scroll-behavior: smooth;
+}
+
+@media (max-width: 768px) {
+    .chat-wrapper {
+        height: 40vh;
+        max-height: 400px;
+    }
+}
+
+@media (max-width: 480px) {
+    .chat-wrapper {
+        height: 35vh;
+        max-height: 300px;
+    }
+
+    .chat-container {
+        padding: 0.75rem;
+    }
 }
 
 .chat-container::-webkit-scrollbar {
@@ -1039,6 +1070,48 @@ const formatCommentDate = (dateString) => {
     :deep(.p-dialog-footer) {
         padding: 0.75rem 1rem;
     }
+
+    /* Botones más táctiles en tablet */
+    :deep(.p-button) {
+        min-height: 44px;
+        padding: 0.6rem 1rem;
+    }
+
+    /* Campos de entrada más grandes para mejor interacción */
+    .compact-input,
+    :deep(.compact-input) {
+        min-height: 44px !important;
+        height: auto !important;
+    }
+
+    .compact-input-select,
+    :deep(.compact-input-select) {
+        min-height: 44px !important;
+    }
+
+    :deep(.p-inputtext.compact-input) {
+        min-height: 44px;
+    }
+
+    :deep(.p-dropdown.compact-input-select) {
+        min-height: 44px;
+    }
+
+    :deep(.p-calendar.compact-input-select .p-inputtext) {
+        min-height: 44px !important;
+    }
+
+    /* Ajustar tabs para móvil */
+    :deep(.p-tabview-nav) {
+        flex-wrap: nowrap;
+        overflow-x: auto;
+    }
+
+    :deep(.p-tabview-nav-link) {
+        padding: 0.75rem 1rem;
+        white-space: nowrap;
+        font-size: 0.85rem;
+    }
 }
 
 @media (max-width: 480px) {
@@ -1049,6 +1122,7 @@ const formatCommentDate = (dateString) => {
     }
     :deep(.p-dialog-content) {
         max-height: calc(95vh - 80px);
+        padding: 0.25rem;
     }
     .compact-label {
         font-size: 0.8rem;
@@ -1062,11 +1136,88 @@ const formatCommentDate = (dateString) => {
         padding: 0.5rem 0.75rem;
     }
     :deep(.p-button) {
-        padding: 0.4rem 0.8rem;
+        min-height: 48px;
+        padding: 0.5rem 1rem;
         font-size: 0.85rem;
     }
     .flex.gap-2 {
         gap: 0.5rem;
+    }
+
+    /* Header compacto en móvil */
+    :deep(.p-dialog-header .flex) {
+        flex-wrap: wrap;
+    }
+
+    :deep(.p-dialog-header .text-xl) {
+        font-size: 1rem;
+    }
+
+    :deep(.p-dialog-header .font-semibold) {
+        font-size: 0.95rem;
+    }
+
+    /* Footer en columna para móviles pequeños */
+    :deep(.p-dialog-footer > div) {
+        flex-direction: column;
+        gap: 0.75rem;
+    }
+
+    :deep(.p-dialog-footer .flex.gap-2) {
+        width: 100%;
+        flex-direction: column;
+    }
+
+    :deep(.p-dialog-footer .p-button) {
+        width: 100%;
+    }
+
+    /* Inputs aún más táctiles */
+    .compact-input,
+    :deep(.compact-input) {
+        min-height: 48px !important;
+        font-size: 1rem !important;
+    }
+
+    .compact-input-select,
+    :deep(.compact-input-select) {
+        min-height: 48px !important;
+    }
+
+    /* Tabs scrollables horizontalmente */
+    :deep(.p-tabview-nav) {
+        -webkit-overflow-scrolling: touch;
+    }
+
+    :deep(.p-tabview-nav-link) {
+        padding: 0.5rem 0.75rem;
+        font-size: 0.75rem;
+    }
+
+    /* Comentarios más compactos */
+    .comment-bubble {
+        padding: 0.5rem 0.75rem;
+        font-size: 0.85rem;
+    }
+
+    .new-comment-form {
+        padding: 0.75rem;
+    }
+
+    .new-comment-form :deep(.p-textarea) {
+        font-size: 0.9rem;
+    }
+
+    /* Field help más compacto */
+    .field-help {
+        font-size: 0.7rem;
+        padding: 0.2rem 0.4rem;
+    }
+
+    /* Priority badge más pequeño */
+    .priority-badge {
+        padding: 0.2rem 0.5rem;
+        font-size: 0.65rem;
     }
 }
 </style>

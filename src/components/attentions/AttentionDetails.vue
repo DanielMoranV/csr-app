@@ -16,6 +16,10 @@ const props = defineProps({
     loading: {
         type: Boolean,
         default: false
+    },
+    readOnly: {
+        type: Boolean,
+        default: false
     }
 });
 
@@ -303,8 +307,8 @@ const getScoreValue = (score) => {
         <div class="mb-4">
             <i class="pi pi-file-plus text-6xl text-gray-400 mb-3 block"></i>
             <h3 class="text-xl font-medium text-gray-700 mb-2">Sin Detalles Médicos Registrados</h3>
-            <p class="text-gray-500 mb-4">Aún no se han registrado detalles médicos para esta atención.</p>
-            <Button label="Agregar Detalles Médicos" icon="pi pi-plus" class="p-button-lg" @click="startEditing" :disabled="isLoading" />
+            <p class="text-gray-500 mb-4">{{ readOnly ? 'No hay detalles médicos registrados para esta atención.' : 'Aún no se han registrado detalles médicos para esta atención.' }}</p>
+            <Button v-if="!readOnly" label="Agregar Detalles Médicos" icon="pi pi-plus" class="p-button-lg" @click="startEditing" :disabled="isLoading" />
         </div>
     </div>
 
@@ -364,7 +368,7 @@ const getScoreValue = (score) => {
                         <div v-else class="empty-scores">
                             <i class="pi pi-chart-bar"></i>
                             <span>No hay evaluaciones de riesgo</span>
-                            <Button label="Añadir" icon="pi pi-plus" size="small" severity="secondary" outlined @click="startEditing" />
+                            <Button v-if="!readOnly" label="Añadir" icon="pi pi-plus" size="small" severity="secondary" outlined @click="startEditing" />
                         </div>
                     </TabPanel>
 
@@ -387,7 +391,7 @@ const getScoreValue = (score) => {
                         <div v-else class="empty-clinical">
                             <i class="pi pi-file-edit"></i>
                             <span>No hay información clínica</span>
-                            <Button label="Añadir" icon="pi pi-plus" size="small" severity="secondary" outlined @click="startEditing" />
+                            <Button v-if="!readOnly" label="Añadir" icon="pi pi-plus" size="small" severity="secondary" outlined @click="startEditing" />
                         </div>
                     </TabPanel>
                 </TabPanels>
@@ -450,11 +454,11 @@ const getScoreValue = (score) => {
                     <span v-else>Campos opcionales</span>
                 </div>
                 <div class="footer-actions">
-                    <template v-if="!isEditing && details">
+                    <template v-if="!isEditing && details && !readOnly">
                         <Button label="Editar" icon="pi pi-pencil" severity="info" size="small" :disabled="isLoading" @click="startEditing" />
                         <Button label="Eliminar" icon="pi pi-trash" severity="danger" outlined size="small" :disabled="isLoading" @click="handleDelete" />
                     </template>
-                    <template v-else>
+                    <template v-else-if="!readOnly">
                         <Button v-if="details" label="Cancelar" icon="pi pi-times" severity="secondary" outlined size="small" :disabled="isLoading" @click="cancelEditing" />
                         <Button :label="details ? 'Actualizar' : 'Guardar'" icon="pi pi-check" size="small" :disabled="!isFormValid || isLoading" :loading="isLoading" @click="handleSave" />
                     </template>

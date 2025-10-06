@@ -9,6 +9,10 @@ const props = defineProps({
     attentionId: {
         type: Number,
         required: true
+    },
+    readOnly: {
+        type: Boolean,
+        default: false
     }
 });
 
@@ -166,7 +170,7 @@ watch(
 <template>
     <div class="p-4">
         <!-- New Task Input -->
-        <div class="flex gap-2 mb-4">
+        <div v-if="!readOnly" class="flex gap-2 mb-4">
             <InputText v-model="newTaskDescription" placeholder="Nueva tarea..." class="flex-grow" @keyup.enter="createTask" />
             <Button icon="pi pi-plus" @click="createTask" :disabled="!newTaskDescription.trim()" />
         </div>
@@ -211,7 +215,7 @@ watch(
                     </div>
 
                     <!-- Actions -->
-                    <div class="flex items-center gap-1 ml-2">
+                    <div v-if="!readOnly" class="flex items-center gap-1 ml-2">
                         <Button v-if="task.status === 'pendiente'" icon="pi pi-check" class="p-button-rounded p-button-success p-button-text p-button-sm" @click="updateTaskStatus(task, 'realizado')" v-tooltip.top="'Marcar como realizado'" />
                         <Button v-if="task.status === 'pendiente'" icon="pi pi-ban" class="p-button-rounded p-button-warning p-button-text p-button-sm" @click="updateTaskStatus(task, 'anulado')" v-tooltip.top="'Anular tarea'" />
                         <Button icon="pi pi-trash" class="p-button-rounded p-button-danger p-button-text p-button-sm" @click="deleteTask(task)" v-tooltip.top="'Eliminar tarea'" />

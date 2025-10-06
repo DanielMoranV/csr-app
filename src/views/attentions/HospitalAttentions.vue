@@ -1,14 +1,33 @@
 <script setup>
 import { useRealtimeEvents } from '@/composables/useRealtimeEvents';
 import { useHospitalAttentionsStore } from '@/store/hospitalAttentionsStore';
+import { usePermissions, USER_POSITIONS } from '@/composables/usePermissions';
 import { FilterMatchMode } from '@primevue/core/api';
 import { computed, onMounted, onUnmounted, ref, watch } from 'vue';
 
 const hospitalAttentionsStore = useHospitalAttentionsStore();
 const { startListening, stopListening } = useRealtimeEvents();
+const { hasPosition } = usePermissions();
 
 const attentions = computed(() => hospitalAttentionsStore.allAttentions);
 const isLoading = computed(() => hospitalAttentionsStore.isLoading);
+
+// Verificar si el usuario puede editar (solo HOSPITALIZACION y atención activa)
+const canEdit = computed(() => hasPosition(USER_POSITIONS.HOSPITALIZACION));
+
+// Verificar si se puede editar la atención de detalles (debe estar activa)
+const canEditDetails = computed(() => {
+    if (!canEdit.value) return false;
+    if (!currentSelectedAttention.value) return false;
+    return currentSelectedAttention.value.is_active === true;
+});
+
+// Verificar si se puede editar las tareas (debe estar activa)
+const canEditTasks = computed(() => {
+    if (!canEdit.value) return false;
+    if (!currentSelectedAttentionForTasks.value) return false;
+    return currentSelectedAttentionForTasks.value.is_active === true;
+});
 
 const isDetailsSidebarVisible = ref(false);
 const isTasksSidebarVisible = ref(false);
@@ -337,7 +356,7 @@ const currentSelectedAttentionForTasks = computed(() => {
                 </div>
             </template>
             <div v-if="currentSelectedAttention">
-                <AttentionDetails :details="currentSelectedAttention.details_attention" :attention-id="currentSelectedAttention.id" @create-details="handleCreateDetails" @update-details="handleUpdateDetails" @delete-details="handleDeleteDetails" />
+                <AttentionDetails :details="currentSelectedAttention.details_attention" :attention-id="currentSelectedAttention.id" :read-only="!canEditDetails" @create-details="handleCreateDetails" @update-details="handleUpdateDetails" @delete-details="handleDeleteDetails" />
             </div>
         </Drawer>
 
@@ -384,7 +403,7 @@ const currentSelectedAttentionForTasks = computed(() => {
                 </div>
             </template>
             <div v-if="currentSelectedAttentionForTasks">
-                <AttentionTasks :tasks="currentSelectedAttentionForTasks.tasks" :attention-id="currentSelectedAttentionForTasks.id" @create-task="handleCreateTask" @update-task="handleUpdateTask" @delete-task="handleDeleteTask" />
+                <AttentionTasks :tasks="currentSelectedAttentionForTasks.tasks" :attention-id="currentSelectedAttentionForTasks.id" :read-only="!canEditTasks" @create-task="handleCreateTask" @update-task="handleUpdateTask" @delete-task="handleDeleteTask" />
             </div>
         </Drawer>
     </div>

@@ -581,11 +581,18 @@ const getPrioritySeverity = (priority) => {
     .quick-actions {
         justify-content: space-between;
         width: 100%;
+        flex-wrap: wrap;
+    }
+
+    .action-btn {
+        min-width: 44px;
+        min-height: 44px;
     }
 
     .primary-action-btn {
         flex: 1;
-        margin-left: 1rem;
+        min-width: 200px;
+        min-height: 44px;
     }
 
     .main-content {
@@ -596,10 +603,41 @@ const getPrioritySeverity = (priority) => {
 @media (max-width: 576px) {
     .header-section {
         margin-bottom: 1rem;
+        border-radius: 8px;
+    }
+
+    .header-content {
+        padding: 0.75rem;
+    }
+
+    .title-wrapper {
+        flex-direction: column;
+        align-items: center;
+        text-align: center;
+    }
+
+    .icon-container {
+        width: 40px;
+        height: 40px;
+        border-radius: 12px;
+    }
+
+    .icon-container i {
+        font-size: 1.1rem;
+    }
+
+    .title-text h1 {
+        font-size: 1.5rem;
+    }
+
+    .title-text p {
+        font-size: 0.9rem;
     }
 
     .breadcrumb-section {
         flex-wrap: wrap;
+        justify-content: center;
+        font-size: 0.8rem;
     }
 
     .quick-actions {
@@ -610,16 +648,25 @@ const getPrioritySeverity = (priority) => {
 
     .action-btn {
         width: 100%;
-        height: 2.5rem;
+        min-height: 48px;
+        height: auto;
     }
 
     .primary-action-btn {
         margin-left: 0;
         width: 100%;
+        min-height: 48px;
+        justify-content: center;
     }
 
     .main-content {
         gap: 1rem;
+    }
+
+    /* Ajustar padding general */
+    .filters-section,
+    .table-section {
+        padding: 0;
     }
 }
 

@@ -253,12 +253,110 @@ onMounted(() => {
     .search-item {
         grid-column: 1 / -1;
     }
+
+    .clear-item {
+        grid-column: 1 / -1;
+    }
 }
 
 @media (max-width: 768px) {
     .filter-grid {
         grid-template-columns: 1fr;
         gap: 1rem;
+    }
+
+    .filter-card {
+        border-radius: 8px;
+        margin-bottom: 1rem;
+    }
+
+    .filter-header {
+        padding: 0.75rem 1rem;
+    }
+
+    .filter-title {
+        font-size: 1rem;
+    }
+
+    .filter-grid {
+        padding: 1rem;
+    }
+
+    /* Inputs más grandes para móvil */
+    .search-input,
+    :deep(.p-inputtext) {
+        min-height: 44px;
+        font-size: 1rem;
+    }
+
+    .search-button {
+        min-height: 44px;
+        min-width: 44px;
+    }
+
+    :deep(.p-select),
+    :deep(.p-dropdown) {
+        min-height: 44px;
+    }
+
+    :deep(.p-select .p-select-label),
+    :deep(.p-dropdown .p-dropdown-label) {
+        padding: 0.75rem;
+        font-size: 1rem;
+    }
+
+    .clear-button {
+        min-height: 44px;
+        width: 100%;
+        font-size: 0.95rem;
+    }
+}
+
+@media (max-width: 576px) {
+    .filter-header {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 0.5rem;
+        padding: 0.75rem;
+    }
+
+    .filter-title {
+        font-size: 0.95rem;
+    }
+
+    .filter-status {
+        font-size: 0.8rem;
+        padding: 0.2rem 0.5rem;
+    }
+
+    .filter-grid {
+        padding: 0.75rem;
+        gap: 0.75rem;
+    }
+
+    .filter-label {
+        font-size: 0.85rem;
+    }
+
+    /* Botones más táctiles en móviles pequeños */
+    .search-button {
+        min-height: 48px;
+        min-width: 48px;
+    }
+
+    .clear-button {
+        min-height: 48px;
+    }
+
+    :deep(.p-inputtext),
+    .search-input {
+        min-height: 48px;
+        font-size: 1rem;
+    }
+
+    :deep(.p-select),
+    :deep(.p-dropdown) {
+        min-height: 48px;
     }
 }
 
