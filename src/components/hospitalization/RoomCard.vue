@@ -163,6 +163,7 @@ const totalPendingTasks = computed(() => {
                             </div>
                             <div class="patient-details">
                                 <span class="patient-doc">{{ bed.attention.patient.document_number }}</span>
+                                <Tag :value="bed.attention.number" severity="contrast" class="ml-2" />
                             </div>
                         </div>
 

@@ -198,7 +198,7 @@ const currentSelectedAttentionForTasks = computed(() => {
             :rowsPerPageOptions="[10, 20, 50]"
             v-model:filters="filters"
             filterDisplay="menu"
-            :globalFilterFields="['number', 'patient.cod_patient', 'patient.name', 'patient.number_document', 'doctor', 'insurance', 'bed.name', 'bed.room.number', 'cie10']"
+            :globalFilterFields="['number', 'patient.cod_patient', 'patient.name', 'patient.number_document', 'doctor', 'insurance', 'bed.name', 'bed.room.number', 'cie10_names']"
             removableSort
             sortMode="multiple"
             class="p-datatable-customers"
@@ -277,6 +277,15 @@ const currentSelectedAttentionForTasks = computed(() => {
                             <span>Solicitado: {{ formatDate(data.request_at) }}</span>
                         </div>
                     </div>
+                </template>
+            </Column>
+
+            <Column header="Diagnósticos CIE-10" field="cie10_names" sortable style="min-width: 20rem">
+                <template #body="{ data }">
+                    <div v-if="data.cie10_names && data.cie10_names.length" class="flex flex-wrap gap-1">
+                        <Tag v-for="name in data.cie10_names" :key="name" :value="name" severity="warning" class="text-xs" />
+                    </div>
+                    <div v-else class="text-xs text-gray-500">Sin diagnósticos</div>
                 </template>
             </Column>
 
