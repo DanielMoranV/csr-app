@@ -139,6 +139,19 @@ const hasPendingTasks = (tasks) => {
     return tasks.some((task) => task.status === 'pendiente');
 };
 
+const parseCie10Names = (names) => {
+    if (typeof names === 'string') {
+        try {
+            const parsed = JSON.parse(names);
+            return Array.isArray(parsed) ? parsed : [];
+        } catch (e) {
+            console.error('Error parsing cie10_names:', e);
+            return [];
+        }
+    }
+    return Array.isArray(names) ? names : [];
+};
+
 // Watch para mantener selectedAttention sincronizada con los datos actualizados
 watch(
     attentions,
@@ -282,8 +295,8 @@ const currentSelectedAttentionForTasks = computed(() => {
 
             <Column header="Diagnósticos CIE-10" field="cie10_names" sortable style="min-width: 20rem">
                 <template #body="{ data }">
-                    <div v-if="data.cie10_names && data.cie10_names.length" class="flex flex-wrap gap-1">
-                        <Tag v-for="name in data.cie10_names" :key="name" :value="name" severity="warning" class="text-xs" />
+                    <div v-if="data.cie10_names && parseCie10Names(data.cie10_names).length > 0" class="flex flex-wrap gap-1">
+                        <Tag v-for="name in parseCie10Names(data.cie10_names)" :key="name" :value="name" severity="warning" class="text-xs" />
                     </div>
                     <div v-else class="text-xs text-gray-500">Sin diagnósticos</div>
                 </template>
