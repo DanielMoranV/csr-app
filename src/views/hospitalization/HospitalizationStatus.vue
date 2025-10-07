@@ -6,6 +6,7 @@ import { storeToRefs } from 'pinia';
 import Badge from 'primevue/badge';
 import Button from 'primevue/button';
 import Card from 'primevue/card';
+import Select from 'primevue/select';
 import Tag from 'primevue/tag';
 import { computed, onMounted, onUnmounted, ref } from 'vue';
 
@@ -165,13 +166,15 @@ onUnmounted(() => {
                 <div class="header-actions">
                     <!-- Real-time status indicator -->
                     <div class="realtime-status">
-                        <i v-if="isListening" class="pi pi-circle-fill text-green-500 realtime-indicator" v-tooltip.bottom="'Actualizaciones en tiempo real activas'"></i>
-                        <i v-else class="pi pi-circle text-gray-400 realtime-indicator" v-tooltip.bottom="'Actualizaciones en tiempo real inactivas'"></i>
+                        <i v-if="isListening" class="pi pi-circle-fill realtime-indicator realtime-indicator--active" v-tooltip.bottom="'Actualizaciones en tiempo real activas'"></i>
+                        <i v-else class="pi pi-circle realtime-indicator realtime-indicator--inactive" v-tooltip.bottom="'Actualizaciones en tiempo real inactivas'"></i>
                         <span class="realtime-text">Tiempo Real</span>
                     </div>
 
                     <Button icon="pi pi-refresh" :loading="state.isLoading" @click="refreshData" severity="secondary" outlined v-tooltip.bottom="'Actualizar datos manualmente'" />
-                    <Button :icon="showStats ? 'pi pi-eye-slash' : 'pi pi-eye'" @click="showStats = !showStats" severity="secondary" outlined :label="showStats ? 'Ocultar estadísticas' : 'Mostrar estadísticas'" />
+                    <Button :icon="showStats ? 'pi pi-eye-slash' : 'pi pi-eye'" @click="showStats = !showStats" severity="secondary" outlined :label="showStats ? 'Ocultar estadísticas' : 'Mostrar estadísticas'">
+                        <template #loadingicon="slotProps"></template>
+                    </Button>
                 </div>
             </div>
 
@@ -435,6 +438,16 @@ onUnmounted(() => {
 .realtime-text {
     font-weight: 500;
     white-space: nowrap;
+}
+
+.realtime-indicator--active {
+    color: #22c55e;
+    filter: brightness(1.3) saturate(1.5);
+    text-shadow: 0 0 8px rgba(34, 197, 94, 0.5);
+}
+
+.realtime-indicator--inactive {
+    color: var(--surface-400);
 }
 
 @keyframes pulse {

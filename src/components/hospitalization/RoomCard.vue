@@ -126,7 +126,7 @@ const totalPendingTasks = computed(() => {
 
         <!-- Tasks indicator (if any) -->
         <div v-if="totalPendingTasks > 0" class="tasks-indicator">
-            <i class="pi pi-exclamation-triangle text-orange-600"></i>
+            <i class="pi pi-exclamation-triangle text-orange"></i>
             <span class="tasks-count">{{ totalPendingTasks }} tarea{{ totalPendingTasks === 1 ? '' : 's' }} pendiente{{ totalPendingTasks === 1 ? '' : 's' }}</span>
         </div>
 
@@ -296,38 +296,44 @@ const totalPendingTasks = computed(() => {
     position: relative;
     transition: all 0.2s ease;
     cursor: pointer;
-    border: 2px solid;
+    border: 2px solid #cbd5e1;
     overflow: hidden;
     min-height: 120px;
     display: flex;
     flex-direction: column;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+}
+
+.bed-indicator:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
 }
 
 .bed-indicator--occupied {
-    background: var(--blue-50) !important;
-    border-color: var(--blue-300) !important;
-    color: var(--blue-700) !important;
+    background-color: #ecfeff;
+    border: 2px solid #67e8f9;
+    color: #0e7490;
 }
 
 .bed-indicator--occupied:hover {
-    background: var(--blue-100) !important;
-    border-color: var(--blue-400) !important;
+    background-color: #cffafe;
+    border-color: #22d3ee;
 }
 
 .bed-indicator--free {
-    background: var(--green-50) !important;
-    border-color: var(--green-300) !important;
-    color: var(--green-700) !important;
+    background-color: #f0fdf4;
+    border: 2px solid #86efac;
+    color: #15803d;
 }
 
 .bed-indicator--free:hover {
-    background: var(--green-100) !important;
-    border-color: var(--green-400) !important;
+    background-color: #dcfce7;
+    border-color: #4ade80;
 }
 
 .bed-indicator--alert {
     background: var(--orange-50);
-    border-color: var(--orange-400);
+    border-color: var(--orange-400) !important;
     animation: pulse-alert 2s infinite;
 }
 
@@ -353,11 +359,10 @@ const totalPendingTasks = computed(() => {
 }
 
 .bed-content--occupied {
-    background: linear-gradient(135deg, var(--blue-50) 0%, var(--blue-25) 100%) !important;
+    /* The background is now inherited from .bed-indicator--occupied */
 }
 
 .bed-content--free {
-    background: linear-gradient(135deg, var(--green-50) 0%, var(--green-25) 100%) !important;
     display: flex;
     flex-direction: column;
     align-items: center;
@@ -399,11 +404,15 @@ const totalPendingTasks = computed(() => {
 }
 
 .text-warning {
-    color: var(--yellow-600);
+    color: var(--yellow-600) !important;
 }
 
 .text-danger {
-    color: var(--red-600);
+    color: var(--red-600) !important;
+}
+
+.text-orange {
+    color: var(--orange-600) !important;
 }
 
 /* Patient Information */
@@ -582,34 +591,4 @@ const totalPendingTasks = computed(() => {
     }
 }
 
-/* Estilos adicionales con mayor especificidad para forzar colores */
-.room-card .bed-indicator.bed-indicator--occupied {
-    background-color: #eff6ff !important; /* blue-50 */
-    border-color: #93c5fd !important; /* blue-300 */
-    color: #1d4ed8 !important; /* blue-700 */
-}
-
-.room-card .bed-indicator.bed-indicator--occupied:hover {
-    background-color: #dbeafe !important; /* blue-100 */
-    border-color: #60a5fa !important; /* blue-400 */
-}
-
-.room-card .bed-indicator.bed-indicator--free {
-    background-color: #f0fdf4 !important; /* green-50 */
-    border-color: #86efac !important; /* green-300 */
-    color: #15803d !important; /* green-700 */
-}
-
-.room-card .bed-indicator.bed-indicator--free:hover {
-    background-color: #dcfce7 !important; /* green-100 */
-    border-color: #4ade80 !important; /* green-400 */
-}
-
-.room-card .bed-content.bed-content--occupied {
-    background: linear-gradient(135deg, #eff6ff 0%, #f8fafc 100%) !important;
-}
-
-.room-card .bed-content.bed-content--free {
-    background: linear-gradient(135deg, #f0fdf4 0%, #f8fafc 100%) !important;
-}
 </style>
