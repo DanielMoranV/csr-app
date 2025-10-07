@@ -103,6 +103,16 @@ export const MODULE_PERMISSIONS = {
         menuSection: 'Administración'
     },
 
+    // Estado de hospitalización
+    hospitalizacion: {
+        name: 'hospitalizacion',
+        path: '/hospitalizacion',
+        positions: PERMISSION_GROUPS.HOSPITALIZATION_STAFF,
+        label: 'Estado Actual',
+        icon: 'pi pi-fw pi-th-large',
+        menuSection: 'Hospitalización'
+    },
+
     // Atenciones hospitalarias
     hospitalAttentions: {
         name: 'hospital-attentions',
@@ -120,16 +130,6 @@ export const MODULE_PERMISSIONS = {
         positions: [POSITIONS.SISTEMAS, POSITIONS.ADMINISTRACION, POSITIONS.HOSPITALIZACION],
         label: 'Habitaciones',
         icon: 'pi pi-fw pi-building',
-        menuSection: 'Hospitalización'
-    },
-
-    // Estado de hospitalización
-    hospitalizacion: {
-        name: 'hospitalizacion',
-        path: '/hospitalizacion',
-        positions: PERMISSION_GROUPS.HOSPITALIZATION_STAFF,
-        label: 'Estado Actual',
-        icon: 'pi pi-fw pi-th-large',
         menuSection: 'Hospitalización'
     },
 
