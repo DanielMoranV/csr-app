@@ -152,6 +152,8 @@ const parseCie10Names = (names) => {
     return Array.isArray(names) ? names : [];
 };
 
+const cie10Severities = ['success', 'info', 'warning', 'danger', 'secondary', 'contrast'];
+
 // Watch para mantener selectedAttention sincronizada con los datos actualizados
 watch(
     attentions,
@@ -296,7 +298,7 @@ const currentSelectedAttentionForTasks = computed(() => {
             <Column header="Diagnósticos CIE-10" field="cie10_names" sortable style="min-width: 20rem">
                 <template #body="{ data }">
                     <div v-if="data.cie10_names && parseCie10Names(data.cie10_names).length > 0" class="flex flex-wrap gap-1">
-                        <Tag v-for="name in parseCie10Names(data.cie10_names)" :key="name" :value="name" severity="warning" class="text-xs" />
+                        <Tag v-for="(name, index) in parseCie10Names(data.cie10_names)" :key="name" :value="name" :severity="cie10Severities[index % cie10Severities.length]" class="text-xs" />
                     </div>
                     <div v-else class="text-xs text-gray-500">Sin diagnósticos</div>
                 </template>
@@ -308,10 +310,6 @@ const currentSelectedAttentionForTasks = computed(() => {
                         <Tag :value="data.is_active ? 'Activa' : 'Cerrada'" :severity="getSeverity(data.is_active)" />
                         <div v-if="!data.is_active && data.medical_discharge_type" class="text-xs text-gray-600">
                             {{ data.medical_discharge_type }}
-                        </div>
-                        <div v-if="data.cie10_count" class="text-xs flex items-center text-blue-600">
-                            <i class="pi pi-list mr-1"></i>
-                            CIE10: {{ data.cie10_count }}
                         </div>
                     </div>
                 </template>
