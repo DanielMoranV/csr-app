@@ -13,6 +13,27 @@ const instance = axios.create({
     }
 });
 
+// Variables para manejar refresh de token con patrón de cola de suscriptores
+let isRefreshing = false;
+let refreshSubscribers = [];
+
+/**
+ * Agregar callback a la cola de suscriptores
+ * @param {Function} callback - Función que recibe el nuevo token
+ */
+function subscribeTokenRefresh(callback) {
+    refreshSubscribers.push(callback);
+}
+
+/**
+ * Notificar a todos los suscriptores con el nuevo token
+ * @param {string} token - Nuevo token de acceso
+ */
+function onRefreshed(token) {
+    refreshSubscribers.forEach((callback) => callback(token));
+    refreshSubscribers = [];
+}
+
 // Request interceptor - Agregar token automáticamente
 instance.interceptors.request.use(
     (config) => {
@@ -69,7 +90,18 @@ instance.interceptors.response.use(
 
         // Auto-refresh en 401 (excepto endpoints de auth)
         if (error.response?.status === 401 && !originalRequest._retry && !originalRequest.url?.includes('/auth/')) {
+            // Si ya hay un refresh en proceso, encolar esta petición
+            if (isRefreshing) {
+                return new Promise((resolve) => {
+                    subscribeTokenRefresh((token) => {
+                        originalRequest.headers.Authorization = `Bearer ${token}`;
+                        resolve(instance(originalRequest));
+                    });
+                });
+            }
+
             originalRequest._retry = true;
+            isRefreshing = true;
 
             try {
                 const authStore = useAuthStore();
@@ -79,11 +111,22 @@ instance.interceptors.response.use(
                 const newToken = authStore.getToken;
 
                 if (newToken) {
-                    originalRequest.headers['Authorization'] = `Bearer ${newToken}`;
-                    console.log('[Auth] Reintentando request con nuevo token');
+                    // Actualizar el header del request original
+                    originalRequest.headers.Authorization = `Bearer ${newToken}`;
+
+                    // Notificar a todos los suscriptores
+                    onRefreshed(newToken);
+
+                    isRefreshing = false;
+
+                    console.log('[Auth] Token renovado, reintentando request');
+                    // Reintentar el request original
                     return instance(originalRequest);
                 }
             } catch (refreshError) {
+                isRefreshing = false;
+                refreshSubscribers = [];
+
                 console.warn('[Auth] Refresh automático falló:', refreshError);
                 const { clearAuthData } = useAuthStore();
                 clearAuthData();

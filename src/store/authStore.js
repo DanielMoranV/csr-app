@@ -138,8 +138,18 @@ export const useAuthStore = defineStore('auth', () => {
             state.user = authData.user || null;
             state.isAuthenticated = true;
 
-            // Calcular tiempo de expiraci�n
-            const expiresInMs = (authData.expires_in || 3600) * 1000; // Default 1 hora
+            // Calcular tiempo de expiraci�n con validaci�n mejorada
+            let expiresInSeconds = authData.expires_in;
+
+            // Validar que expires_in est� presente y sea v�lido
+            if (!expiresInSeconds || typeof expiresInSeconds !== 'number' || expiresInSeconds <= 0) {
+                console.warn('⚠️ [AuthStore] expires_in no proporcionado o inv�lido, usando 3600s (1 hora) por defecto');
+                expiresInSeconds = 3600; // Default: 1 hora
+            } else if (import.meta.env.DEV) {
+                console.log(`[AuthStore] Token expira en ${expiresInSeconds} segundos (${Math.round(expiresInSeconds / 60)} minutos)`);
+            }
+
+            const expiresInMs = expiresInSeconds * 1000;
             state.tokenExpiresAt = Date.now() + expiresInMs;
             state.lastActivity = Date.now();
 
