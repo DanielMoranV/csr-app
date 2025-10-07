@@ -1,7 +1,7 @@
 <script setup>
+import { usePermissions, USER_POSITIONS } from '@/composables/usePermissions';
 import { useRealtimeEvents } from '@/composables/useRealtimeEvents';
 import { useHospitalAttentionsStore } from '@/store/hospitalAttentionsStore';
-import { usePermissions, USER_POSITIONS } from '@/composables/usePermissions';
 import { FilterMatchMode } from '@primevue/core/api';
 import { computed, onMounted, onUnmounted, ref, watch } from 'vue';
 
@@ -233,7 +233,11 @@ const currentSelectedAttentionForTasks = computed(() => {
             <template #empty> No se encontraron atenciones. </template>
             <template #loading> Cargando datos de atenciones... </template>
 
-            <Column field="number" header="Admisión" sortable style="min-width: 6rem"></Column>
+            <Column field="number" header="Admisión" sortable style="min-width: 6rem">
+                <template #body="{ data }">
+                    <span v-tooltip.top="'Número de Admisión'">{{ data.number }}</span>
+                </template>
+            </Column>
 
             <Column field="patient.name" header="Paciente" sortable filterField="patient.name" :showFilterMatchModes="false" style="min-width: 20rem">
                 <template #body="{ data }">
@@ -252,7 +256,7 @@ const currentSelectedAttentionForTasks = computed(() => {
                 <template #body="{ data }">
                     <div>
                         <div class="font-medium">{{ data.doctor }}</div>
-                        <div v-if="data.code_doctor" class="text-xs text-gray-500">Código: {{ data.code_doctor }}</div>
+                        <div v-if="data.code_doctor" class="text-xs text-gray-500" v-tooltip.top="'Código del Médico'">Código: {{ data.code_doctor }}</div>
                     </div>
                 </template>
             </Column>
@@ -271,8 +275,8 @@ const currentSelectedAttentionForTasks = computed(() => {
             <Column header="Habitación" sortable sortField="bed.room.number" style="min-width: 10rem">
                 <template #body="{ data }">
                     <div v-if="data.bed && data.bed.room" class="flex items-center">
-                        <span class="font-bold mr-2">{{ data.bed.room.number }}</span>
-                        <Tag :value="data.bed.name.replace(data.bed.room.number, '')" :class="getBedTagClass(data.bed.name, data.bed.room.number)" />
+                        <span class="font-bold mr-2" v-tooltip.top="'Habitación'">{{ data.bed.room.number }}</span>
+                        <Tag :value="data.bed.name.replace(data.bed.room.number, '')" :class="getBedTagClass(data.bed.name, data.bed.room.number)" v-tooltip.top="'Cama'" />
                     </div>
                     <div v-else>N/A</div>
                 </template>
@@ -307,7 +311,7 @@ const currentSelectedAttentionForTasks = computed(() => {
             <Column field="is_active" header="Estado" sortable dataType="boolean" style="min-width: 12rem">
                 <template #body="{ data }">
                     <div class="space-y-1">
-                        <Tag :value="data.is_active ? 'Activa' : 'Cerrada'" :severity="getSeverity(data.is_active)" />
+                        <Tag :severity="getSeverity(data.is_active)" :icon="data.is_active ? 'pi pi-check-circle' : 'pi pi-times-circle'" v-tooltip.top="data.is_active ? 'Activa' : 'Cerrada'" />
                         <div v-if="!data.is_active && data.medical_discharge_type" class="text-xs text-gray-600">
                             {{ data.medical_discharge_type }}
                         </div>
@@ -376,7 +380,14 @@ const currentSelectedAttentionForTasks = computed(() => {
                 </div>
             </template>
             <div v-if="currentSelectedAttention">
-                <AttentionDetails :details="currentSelectedAttention.details_attention" :attention-id="currentSelectedAttention.id" :read-only="!canEditDetails" @create-details="handleCreateDetails" @update-details="handleUpdateDetails" @delete-details="handleDeleteDetails" />
+                <AttentionDetails
+                    :details="currentSelectedAttention.details_attention"
+                    :attention-id="currentSelectedAttention.id"
+                    :read-only="!canEditDetails"
+                    @create-details="handleCreateDetails"
+                    @update-details="handleUpdateDetails"
+                    @delete-details="handleDeleteDetails"
+                />
             </div>
         </Drawer>
 
@@ -423,7 +434,14 @@ const currentSelectedAttentionForTasks = computed(() => {
                 </div>
             </template>
             <div v-if="currentSelectedAttentionForTasks">
-                <AttentionTasks :tasks="currentSelectedAttentionForTasks.tasks" :attention-id="currentSelectedAttentionForTasks.id" :read-only="!canEditTasks" @create-task="handleCreateTask" @update-task="handleUpdateTask" @delete-task="handleDeleteTask" />
+                <AttentionTasks
+                    :tasks="currentSelectedAttentionForTasks.tasks"
+                    :attention-id="currentSelectedAttentionForTasks.id"
+                    :read-only="!canEditTasks"
+                    @create-task="handleCreateTask"
+                    @update-task="handleUpdateTask"
+                    @delete-task="handleDeleteTask"
+                />
             </div>
         </Drawer>
     </div>
