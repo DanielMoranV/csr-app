@@ -15,6 +15,9 @@ const isLoading = computed(() => hospitalAttentionsStore.isLoading);
 // Verificar si el usuario puede editar (solo HOSPITALIZACION y atención activa)
 const canEdit = computed(() => hasPosition(USER_POSITIONS.HOSPITALIZACION));
 
+// Verificar si el usuario es Director Médico
+const isDirectorMedico = computed(() => hasPosition(USER_POSITIONS.DIRECTOR_MEDICO));
+
 // Verificar si se puede editar la atención de detalles (debe estar activa)
 const canEditDetails = computed(() => {
     if (!canEdit.value) return false;
@@ -33,6 +36,8 @@ const isDetailsSidebarVisible = ref(false);
 const isTasksSidebarVisible = ref(false);
 const selectedAttention = ref(null);
 const selectedAttentionForTasks = ref(null);
+const isApproveDialogVisible = ref(false);
+const attentionToApprove = ref(null);
 
 const filters = ref({
     global: { value: null, matchMode: FilterMatchMode.CONTAINS },
@@ -90,6 +95,32 @@ const handleDeleteDetails = async (detailsId) => {
     await hospitalAttentionsStore.deleteDetails(detailsId);
     // also close the sidebar if the detail is deleted
     isDetailsSidebarVisible.value = false;
+};
+
+const openApproveDialog = (attention) => {
+    attentionToApprove.value = attention;
+    isApproveDialogVisible.value = true;
+};
+
+const handleApproveAttention = async () => {
+    if (!attentionToApprove.value) return;
+
+    try {
+        await hospitalAttentionsStore.approveAttention(attentionToApprove.value.id);
+        isApproveDialogVisible.value = false;
+        attentionToApprove.value = null;
+    } catch (error) {
+        console.error('Error al aprobar la atención:', error);
+        // Aquí podrías mostrar un mensaje de error con toast o similar
+    }
+};
+
+const canApproveAttention = (attention) => {
+    // Solo el director médico puede aprobar
+    if (!isDirectorMedico.value) return false;
+    // No se puede aprobar si ya está aprobada
+    if (attention.is_approved_by_director) return false;
+    return true;
 };
 
 const formatDate = (value) => {
@@ -327,11 +358,51 @@ const currentSelectedAttentionForTasks = computed(() => {
                 </template>
             </Column>
 
-            <Column header="Acciones" style="min-width: 12rem">
+            <Column header="Aprobación Director" sortable sortField="is_approved_by_director" style="min-width: 14rem">
+                <template #body="{ data }">
+                    <div class="space-y-1">
+                        <div class="flex items-center gap-2">
+                            <Tag
+                                v-if="data.is_approved_by_director"
+                                value="Aprobada"
+                                severity="success"
+                                icon="pi pi-check-circle"
+                                class="text-xs"
+                                v-tooltip.top="'Aprobada por Director Médico'"
+                            />
+                            <Tag
+                                v-else
+                                value="Pendiente"
+                                severity="warning"
+                                icon="pi pi-clock"
+                                class="text-xs"
+                                v-tooltip.top="'Pendiente de aprobación'"
+                            />
+                        </div>
+                        <div v-if="data.is_approved_by_director && data.medical_director_approved_by" class="text-xs text-gray-600">
+                            <i class="pi pi-user mr-1"></i>
+                            {{ data.medical_director_approved_by }}
+                        </div>
+                        <div v-if="data.is_approved_by_director && data.medical_director_approved_at" class="text-xs text-gray-600">
+                            <i class="pi pi-calendar mr-1"></i>
+                            {{ formatDate(data.medical_director_approved_at) }}
+                        </div>
+                    </div>
+                </template>
+            </Column>
+
+            <Column header="Acciones" style="min-width: 16rem">
                 <template #body="{ data }">
                     <div class="flex items-center gap-1">
                         <Button icon="pi pi-eye" class="p-button-rounded p-button-info p-button-sm" @click="openDetailsSidebar(data)" v-tooltip.top="'Ver Detalles de Atención'" />
                         <Button icon="pi pi-list-check" class="p-button-rounded p-button-secondary p-button-sm" @click="openTasksSidebar(data)" v-tooltip.top="'Ver Tareas'" />
+                        <Button
+                            v-if="canApproveAttention(data)"
+                            icon="pi pi-check"
+                            class="p-button-rounded p-button-success p-button-sm"
+                            @click="openApproveDialog(data)"
+                            v-tooltip.top="'Aprobar Atención'"
+                        />
                         <div v-if="data.tasks && data.tasks.length > 0" class="flex items-center gap-1 ml-1">
                             <Tag :value="data.tasks.length" :severity="getTasksSeverity(data.tasks)" class="text-xs" v-tooltip.top="'Número de tareas'" />
                             <i v-if="hasPendingTasks(data.tasks)" class="pi pi-exclamation-triangle text-warning" v-tooltip.top="'Tiene tareas pendientes'"></i>
@@ -444,6 +515,46 @@ const currentSelectedAttentionForTasks = computed(() => {
                 />
             </div>
         </Drawer>
+
+        <!-- Dialog de Confirmación de Aprobación -->
+        <Dialog v-model:visible="isApproveDialogVisible" modal header="Confirmar Aprobación de Atención" :style="{ width: '32rem' }" :closable="true">
+            <div v-if="attentionToApprove" class="space-y-4">
+                <div class="flex items-start gap-3">
+                    <i class="pi pi-exclamation-triangle text-warning text-2xl"></i>
+                    <div class="flex-1">
+                        <p class="text-base mb-3">¿Está seguro de que desea aprobar esta atención hospitalaria?</p>
+                        <div class="bg-gray-50 p-3 rounded-lg space-y-2">
+                            <div class="flex items-center gap-2">
+                                <span class="font-semibold text-sm">Admisión:</span>
+                                <span class="text-sm">{{ attentionToApprove.number }}</span>
+                            </div>
+                            <div class="flex items-center gap-2">
+                                <span class="font-semibold text-sm">Paciente:</span>
+                                <span class="text-sm">{{ attentionToApprove.patient?.name }}</span>
+                            </div>
+                            <div class="flex items-center gap-2">
+                                <span class="font-semibold text-sm">Médico:</span>
+                                <span class="text-sm">Dr. {{ attentionToApprove.doctor }}</span>
+                            </div>
+                            <div v-if="attentionToApprove.bed && attentionToApprove.bed.room" class="flex items-center gap-2">
+                                <span class="font-semibold text-sm">Habitación:</span>
+                                <span class="text-sm">{{ attentionToApprove.bed.name }}</span>
+                            </div>
+                        </div>
+                        <div class="mt-3 p-2 bg-yellow-50 border border-yellow-200 rounded text-sm text-yellow-800">
+                            <i class="pi pi-info-circle mr-2"></i>
+                            Esta acción no se puede deshacer. Se registrará automáticamente la fecha, hora y su usuario.
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <template #footer>
+                <div class="flex justify-end gap-2">
+                    <Button label="Cancelar" severity="secondary" @click="isApproveDialogVisible = false" text />
+                    <Button label="Aprobar Atención" severity="success" icon="pi pi-check" @click="handleApproveAttention" />
+                </div>
+            </template>
+        </Dialog>
     </div>
 </template>
 

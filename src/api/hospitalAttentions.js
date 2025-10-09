@@ -39,5 +39,8 @@ export const hospitalAttentions = {
     getDetailsStats: () => axios.get('/details-attention/stats'),
 
     // Task stats
-    getTaskStats: () => axios.get('/tasks/stats')
+    getTaskStats: () => axios.get('/tasks/stats'),
+
+    // Approve attention by Medical Director
+    approve: (id) => axios.patch(`/hospital-attentions/${id}/approve`)
 };

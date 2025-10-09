@@ -140,6 +140,17 @@ export const useHospitalAttentionsStore = defineStore('hospitalAttentions', () =
         }
     }
 
+    async function approveAttention(id) {
+        try {
+            const response = await hospitalAttentionsApi.approve(id);
+            await fetchAttentions(); // Refresh list
+            return response;
+        } catch (e) {
+            console.error('Error approving attention:', e);
+            throw e;
+        }
+    }
+
     // Real-time event handlers
     function handleHospitalizationCreated(eventData) {
         console.log('Handling hospitalization created:', eventData);
@@ -199,6 +210,7 @@ export const useHospitalAttentionsStore = defineStore('hospitalAttentions', () =
         createAttention,
         updateAttention,
         deleteAttention,
+        approveAttention,
         createTask,
         updateTask,
         deleteTask,
