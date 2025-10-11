@@ -223,6 +223,93 @@ export const useHospitalizationStore = defineStore('hospitalization', () => {
         }
     };
 
+    // Task event handlers
+    const handleTaskCreated = (eventData) => {
+        console.log('[HospitalizationStore] Handling task created:', eventData);
+        const task = eventData.task;
+
+        if (!task || !task.hospital_attention) return;
+
+        const attentionId = task.hospital_attention.id;
+
+        // Find the bed with this attention and add the task
+        state.status.forEach((room) => {
+            if (room.beds) {
+                room.beds.forEach((bed) => {
+                    if (bed.attention && bed.attention.hospital_attention_id === attentionId) {
+                        // Initialize tasks array if it doesn't exist
+                        if (!bed.attention.tasks) {
+                            bed.attention.tasks = [];
+                        }
+
+                        // Add the new task if it doesn't already exist
+                        const taskExists = bed.attention.tasks.some((t) => t.id === task.id);
+                        if (!taskExists) {
+                            bed.attention.tasks.push(task);
+                            console.log(`[HospitalizationStore] Added task ${task.id} to bed ${bed.id}`);
+                        }
+                    }
+                });
+            }
+        });
+    };
+
+    const handleTaskUpdated = (eventData) => {
+        console.log('[HospitalizationStore] Handling task updated:', eventData);
+        const task = eventData.task;
+
+        if (!task || !task.hospital_attention) return;
+
+        const attentionId = task.hospital_attention.id;
+
+        // Find the bed with this attention and update the task
+        state.status.forEach((room) => {
+            if (room.beds) {
+                room.beds.forEach((bed) => {
+                    if (bed.attention && bed.attention.hospital_attention_id === attentionId) {
+                        if (bed.attention.tasks) {
+                            const taskIndex = bed.attention.tasks.findIndex((t) => t.id === task.id);
+                            if (taskIndex !== -1) {
+                                // Update the existing task
+                                bed.attention.tasks[taskIndex] = task;
+                                console.log(`[HospitalizationStore] Updated task ${task.id} in bed ${bed.id}`);
+                            } else {
+                                // If task not found, add it (could have been filtered out before)
+                                bed.attention.tasks.push(task);
+                                console.log(`[HospitalizationStore] Added task ${task.id} to bed ${bed.id} (was not found during update)`);
+                            }
+                        }
+                    }
+                });
+            }
+        });
+    };
+
+    const handleTaskDeleted = (eventData) => {
+        console.log('[HospitalizationStore] Handling task deleted:', eventData);
+        const taskId = eventData.task?.id || eventData.id;
+        const attentionId = eventData.task?.hospital_attention?.id || eventData.hospital_attention?.id;
+
+        if (!taskId) return;
+
+        // Find the bed with this attention and remove the task
+        state.status.forEach((room) => {
+            if (room.beds) {
+                room.beds.forEach((bed) => {
+                    if (bed.attention && (!attentionId || bed.attention.hospital_attention_id === attentionId)) {
+                        if (bed.attention.tasks) {
+                            const taskIndex = bed.attention.tasks.findIndex((t) => t.id === taskId);
+                            if (taskIndex !== -1) {
+                                bed.attention.tasks.splice(taskIndex, 1);
+                                console.log(`[HospitalizationStore] Removed task ${taskId} from bed ${bed.id}`);
+                            }
+                        }
+                    }
+                });
+            }
+        });
+    };
+
     return {
         state,
         hospitalizationStatus,
@@ -230,6 +317,9 @@ export const useHospitalizationStore = defineStore('hospitalization', () => {
         // Real-time event handlers
         handleHospitalizationCreated,
         handleHospitalizationUpdated,
-        handleHospitalizationDeleted
+        handleHospitalizationDeleted,
+        handleTaskCreated,
+        handleTaskUpdated,
+        handleTaskDeleted
     };
 });

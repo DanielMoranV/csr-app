@@ -6,8 +6,9 @@ import { computed, defineEmits, defineProps, ref, watch } from 'vue';
 
 const props = defineProps({
     details: {
-        type: Object,
-        default: () => null
+        type: Array, // SIEMPRE un array de registros diarios (nuevo formato)
+        required: true,
+        default: () => []
     },
     attentionId: {
         type: Number,
@@ -20,6 +21,10 @@ const props = defineProps({
     readOnly: {
         type: Boolean,
         default: false
+    },
+    selectedDate: {
+        type: String, // Fecha en formato YYYY-MM-DD
+        default: null
     }
 });
 
@@ -138,9 +143,15 @@ const hasUnsavedChanges = computed(() => {
     return JSON.stringify(localDetails.value) !== JSON.stringify(props.details);
 });
 
+const getTodayDate = () => {
+    const today = new Date();
+    return today.toISOString().split('T')[0];
+};
+
 const resetForm = () => {
     localDetails.value = {
         id_attentions: props.attentionId,
+        attention_date: props.selectedDate || getTodayDate(), // Campo obligatorio nuevo
         ram: '',
         images_exams: '',
         laboratory_exams: '',
@@ -153,12 +164,37 @@ const resetForm = () => {
     };
 };
 
+// Computed para obtener el detalle actual basado en selectedDate o el más reciente
+const currentDetail = computed(() => {
+    if (!props.details) return null;
+
+    // details SIEMPRE debe ser un array (nuevo formato)
+    if (!Array.isArray(props.details)) {
+        console.error('AttentionDetails: details debe ser un array, recibido:', typeof props.details);
+        return null;
+    }
+
+    if (props.details.length === 0) return null;
+
+    // Si hay una fecha seleccionada, buscar ese detalle
+    if (props.selectedDate) {
+        return props.details.find((d) => d.attention_date === props.selectedDate) || null;
+    }
+
+    // Sino, retornar el más reciente (primero del array)
+    return props.details[0];
+});
+
 // Watch para sincronizar props
 watch(
-    () => props.details,
+    () => currentDetail.value,
     (newDetails) => {
         if (newDetails) {
             localDetails.value = { ...newDetails };
+            // Asegurar que tenga attention_date
+            if (!localDetails.value.attention_date) {
+                localDetails.value.attention_date = props.selectedDate || getTodayDate();
+            }
             isEditing.value = false;
         } else {
             resetForm();
@@ -166,6 +202,16 @@ watch(
         }
     },
     { immediate: true }
+);
+
+// Watch para la fecha seleccionada
+watch(
+    () => props.selectedDate,
+    (newDate) => {
+        if (newDate && localDetails.value) {
+            localDetails.value.attention_date = newDate;
+        }
+    }
 );
 
 const handleSave = async () => {
@@ -179,10 +225,15 @@ const handleSave = async () => {
         return;
     }
 
+    // Asegurar que attention_date esté presente
+    if (!localDetails.value.attention_date) {
+        localDetails.value.attention_date = props.selectedDate || getTodayDate();
+    }
+
     try {
         isLoading.value = true;
 
-        if (props.details) {
+        if (currentDetail.value) {
             await emit('update-details', localDetails.value.id, localDetails.value);
             toast.add({
                 severity: 'success',
@@ -247,8 +298,10 @@ const handleDelete = () => {
 };
 
 const startEditing = () => {
-    if (props.details) {
-        localDetails.value = { ...props.details };
+    if (currentDetail.value) {
+        localDetails.value = { ...currentDetail.value };
+    } else {
+        resetForm();
     }
     isEditing.value = true;
 };
@@ -263,8 +316,8 @@ const cancelEditing = () => {
             rejectLabel: 'Continuar Editando',
             acceptLabel: 'Descartar Cambios',
             accept: () => {
-                if (props.details) {
-                    localDetails.value = { ...props.details };
+                if (currentDetail.value) {
+                    localDetails.value = { ...currentDetail.value };
                     isEditing.value = false;
                 } else {
                     resetForm();
@@ -272,8 +325,8 @@ const cancelEditing = () => {
             }
         });
     } else {
-        if (props.details) {
-            localDetails.value = { ...props.details };
+        if (currentDetail.value) {
+            localDetails.value = { ...currentDetail.value };
             isEditing.value = false;
         } else {
             resetForm();
@@ -299,11 +352,26 @@ const getScorePercentage = (score, maxScore) => {
 const getScoreValue = (score) => {
     return score && typeof score === 'number' ? score : 0;
 };
+
+const formatAuditDate = (dateString) => {
+    if (!dateString) return 'N/A';
+    try {
+        const date = new Date(dateString);
+        if (isNaN(date)) return dateString;
+        return date.toLocaleDateString('es-ES', {
+            year: 'numeric',
+            month: '2-digit',
+            day: '2-digit'
+        });
+    } catch (e) {
+        return dateString;
+    }
+};
 </script>
 
 <template>
     <!-- Estado sin datos -->
-    <div v-if="!isEditing && !details" class="empty-state text-center py-6">
+    <div v-if="!isEditing && !currentDetail" class="empty-state text-center py-6">
         <div class="mb-4">
             <i class="pi pi-file-plus text-6xl text-gray-400 mb-3 block"></i>
             <h3 class="text-xl font-medium text-gray-700 mb-2">Sin Detalles Médicos Registrados</h3>
@@ -315,7 +383,7 @@ const getScoreValue = (score) => {
     <!-- Contenido principal con datos -->
     <div v-else class="medical-details-container">
         <!-- Header compacto con información general -->
-        <div v-if="!isEditing && details" class="details-header-compact">
+        <div v-if="!isEditing && currentDetail" class="details-header-compact">
             <div class="header-content">
                 <div class="header-info">
                     <i class="pi pi-file-edit header-icon"></i>
@@ -325,15 +393,16 @@ const getScoreValue = (score) => {
                     </div>
                 </div>
                 <div class="header-badges">
+                    <Tag v-if="currentDetail && currentDetail.attention_date" :value="formatAuditDate(currentDetail.attention_date)" severity="info" size="small" />
                     <Tag v-if="hasContent" value="Con datos" severity="success" size="small" />
                     <Tag v-else value="Sin datos" severity="warn" size="small" />
-                    <Badge v-if="details.id" :value="details.id" severity="info" size="small" />
+                    <Badge v-if="currentDetail && currentDetail.id" :value="currentDetail.id" severity="info" size="small" />
                 </div>
             </div>
         </div>
 
         <!-- Contenido en tabs -->
-        <div v-if="!isEditing && details" class="view-mode">
+        <div v-if="!isEditing && currentDetail" class="view-mode">
             <Tabs value="0" class="custom-tabs">
                 <TabList>
                     <Tab value="0">
@@ -402,11 +471,27 @@ const getScoreValue = (score) => {
         <div v-else class="edit-mode-compact">
             <div class="edit-info">
                 <i class="pi pi-info-circle"></i>
-                <span>{{ details ? 'Editando detalles médicos' : 'Creando nuevos detalles médicos' }}</span>
-                <small>Todos los campos son opcionales</small>
+                <span>{{ currentDetail ? 'Editando detalles médicos' : 'Creando nuevos detalles médicos' }}</span>
+                <small>Fecha: {{ localDetails.attention_date || 'Hoy' }}</small>
             </div>
 
             <div class="edit-content">
+                <!-- Campo de fecha (solo visible al crear) -->
+                <div v-if="!currentDetail" class="edit-section">
+                    <h4 class="edit-section-title">
+                        <i class="pi pi-calendar"></i>
+                        Fecha del Registro
+                    </h4>
+                    <div class="field">
+                        <label for="attention_date" class="field-label">
+                            <i class="pi pi-calendar"></i>
+                            Fecha de Atención *
+                        </label>
+                        <Calendar id="attention_date" v-model="localDetails.attention_date" dateFormat="yy-mm-dd" :showIcon="true" class="w-full" />
+                        <small class="field-help">Seleccione la fecha para este registro diario</small>
+                    </div>
+                </div>
+
                 <!-- Sección de Scores -->
                 <div class="edit-section">
                     <h4 class="edit-section-title">
@@ -450,17 +535,17 @@ const getScoreValue = (score) => {
             <div class="footer-content">
                 <div class="footer-info">
                     <i class="pi pi-info-circle"></i>
-                    <span v-if="!isEditing && details">Actualizado: {{ new Date().toLocaleDateString('es-ES') }}</span>
-                    <span v-else>Campos opcionales</span>
+                    <span v-if="!isEditing && currentDetail">Actualizado: {{ formatAuditDate(currentDetail.updated_at) }}</span>
+                    <span v-else>Campos opcionales - Fecha: {{ localDetails.attention_date }}</span>
                 </div>
                 <div class="footer-actions">
-                    <template v-if="!isEditing && details && !readOnly">
+                    <template v-if="!isEditing && currentDetail && !readOnly">
                         <Button label="Editar" icon="pi pi-pencil" severity="info" size="small" :disabled="isLoading" @click="startEditing" />
                         <Button label="Eliminar" icon="pi pi-trash" severity="danger" outlined size="small" :disabled="isLoading" @click="handleDelete" />
                     </template>
                     <template v-else-if="!readOnly">
-                        <Button v-if="details" label="Cancelar" icon="pi pi-times" severity="secondary" outlined size="small" :disabled="isLoading" @click="cancelEditing" />
-                        <Button :label="details ? 'Actualizar' : 'Guardar'" icon="pi pi-check" size="small" :disabled="!isFormValid || isLoading" :loading="isLoading" @click="handleSave" />
+                        <Button v-if="currentDetail" label="Cancelar" icon="pi pi-times" severity="secondary" outlined size="small" :disabled="isLoading" @click="cancelEditing" />
+                        <Button :label="currentDetail ? 'Actualizar' : 'Guardar'" icon="pi pi-check" size="small" :disabled="!isFormValid || isLoading" :loading="isLoading" @click="handleSave" />
                     </template>
                 </div>
             </div>

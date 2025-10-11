@@ -1,4 +1,8 @@
 <script setup>
+import AttentionDetails from '@/components/attentions/AttentionDetails.vue';
+import AttentionTasks from '@/components/attentions/AttentionTasks.vue';
+import DailyMedicalAudits from '@/components/attentions/DailyMedicalAudits.vue';
+import DetailsTimeline from '@/components/attentions/DetailsTimeline.vue';
 import { usePermissions, USER_POSITIONS } from '@/composables/usePermissions';
 import { useRealtimeEvents } from '@/composables/useRealtimeEvents';
 import { useHospitalAttentionsStore } from '@/store/hospitalAttentionsStore';
@@ -34,8 +38,11 @@ const canEditTasks = computed(() => {
 
 const isDetailsSidebarVisible = ref(false);
 const isTasksSidebarVisible = ref(false);
+const isAuditsSidebarVisible = ref(false);
 const selectedAttention = ref(null);
 const selectedAttentionForTasks = ref(null);
+const selectedAttentionForAudits = ref(null);
+const selectedDate = ref(null); // Para controlar la fecha seleccionada en detalles
 const isApproveDialogVisible = ref(false);
 const attentionToApprove = ref(null);
 
@@ -44,7 +51,54 @@ const filters = ref({
     'patient.name': { value: null, matchMode: FilterMatchMode.CONTAINS },
     'patient.number_document': { value: null, matchMode: FilterMatchMode.CONTAINS },
     doctor: { value: null, matchMode: FilterMatchMode.CONTAINS },
-    is_active: { value: null, matchMode: FilterMatchMode.EQUALS }
+    is_active: { value: null, matchMode: FilterMatchMode.EQUALS },
+    entry_at: { value: null, matchMode: FilterMatchMode.DATE_IS },
+    exit_at: { value: null, matchMode: FilterMatchMode.DATE_IS }
+});
+
+// Filtros de rango de fechas
+const dateRangeFilter = ref({
+    startDate: null,
+    endDate: null
+});
+
+const applyDateRangeFilter = () => {
+    // Este computed filtrará las atenciones por rango de fechas
+    // No se usa el sistema de filtros de PrimeVue para esto
+};
+
+const clearDateRangeFilter = () => {
+    dateRangeFilter.value.startDate = null;
+    dateRangeFilter.value.endDate = null;
+};
+
+// Computed para filtrar atenciones por rango de fechas
+const filteredAttentionsByDate = computed(() => {
+    if (!dateRangeFilter.value.startDate && !dateRangeFilter.value.endDate) {
+        return attentions.value;
+    }
+
+    return attentions.value.filter((attention) => {
+        const entryDate = attention.entry_at ? new Date(attention.entry_at) : null;
+
+        if (!entryDate) return false;
+
+        // Filtrar por fecha de inicio
+        if (dateRangeFilter.value.startDate) {
+            const startDate = new Date(dateRangeFilter.value.startDate);
+            startDate.setHours(0, 0, 0, 0);
+            if (entryDate < startDate) return false;
+        }
+
+        // Filtrar por fecha de fin
+        if (dateRangeFilter.value.endDate) {
+            const endDate = new Date(dateRangeFilter.value.endDate);
+            endDate.setHours(23, 59, 59, 999);
+            if (entryDate > endDate) return false;
+        }
+
+        return true;
+    });
 });
 
 onMounted(async () => {
@@ -63,12 +117,27 @@ onUnmounted(() => {
 
 const openDetailsSidebar = (attention) => {
     selectedAttention.value = attention;
+    selectedDate.value = null; // Reset date selection
     isDetailsSidebarVisible.value = true;
+};
+
+const handleDateSelected = (date) => {
+    selectedDate.value = date;
+};
+
+const handleCreateNewDetail = (date) => {
+    selectedDate.value = date;
+    // El componente AttentionDetails detectará que no hay detalle para esa fecha y mostrará el formulario
 };
 
 const openTasksSidebar = (attention) => {
     selectedAttentionForTasks.value = attention;
     isTasksSidebarVisible.value = true;
+};
+
+const openAuditsSidebar = (attention) => {
+    selectedAttentionForAudits.value = attention;
+    isAuditsSidebarVisible.value = true;
 };
 
 const handleCreateTask = async (taskData) => {
@@ -113,6 +182,22 @@ const handleApproveAttention = async () => {
         console.error('Error al aprobar la atención:', error);
         // Aquí podrías mostrar un mensaje de error con toast o similar
     }
+};
+
+const handleCreateAudit = async (auditData) => {
+    await hospitalAttentionsStore.createAudit(auditData);
+};
+
+const handleUpdateAudit = async (auditId, auditData) => {
+    await hospitalAttentionsStore.updateAudit(auditId, auditData);
+};
+
+const handleDeleteAudit = async (auditId) => {
+    await hospitalAttentionsStore.deleteAudit(auditId);
+};
+
+const handleMarkAuditAsAudited = async (auditId) => {
+    await hospitalAttentionsStore.markAuditAsAudited(auditId);
 };
 
 const canApproveAttention = (attention) => {
@@ -207,6 +292,15 @@ watch(
                     selectedAttentionForTasks.value = updatedAttentionForTasks;
                 }
             }
+
+            // Actualizar selectedAttentionForAudits para auditorías
+            if (selectedAttentionForAudits.value) {
+                const updatedAttentionForAudits = newAttentions.find((attention) => attention.id === selectedAttentionForAudits.value.id);
+
+                if (updatedAttentionForAudits) {
+                    selectedAttentionForAudits.value = updatedAttentionForAudits;
+                }
+            }
         }
     },
     { deep: true }
@@ -231,13 +325,51 @@ const currentSelectedAttentionForTasks = computed(() => {
 
     return updated || selectedAttentionForTasks.value;
 });
+
+// Computed para obtener la atención seleccionada siempre actualizada (para auditorías)
+const currentSelectedAttentionForAudits = computed(() => {
+    if (!selectedAttentionForAudits.value) return null;
+
+    // Buscar en el store la versión más actualizada
+    const updated = attentions.value.find((attention) => attention.id === selectedAttentionForAudits.value.id);
+
+    return updated || selectedAttentionForAudits.value;
+});
+
+// Computed para obtener los detalles como array (siempre array en nuevo formato)
+const currentDetailsArray = computed(() => {
+    if (!currentSelectedAttention.value) return [];
+    const details = currentSelectedAttention.value.details_attention;
+
+    // Validar que sea un array
+    if (!Array.isArray(details)) {
+        console.error('details_attention debe ser un array, recibido:', typeof details);
+        return [];
+    }
+
+    return details;
+});
+
+// Computed para obtener las auditorías como array (siempre array en nuevo formato)
+const currentAuditsArray = computed(() => {
+    if (!currentSelectedAttentionForAudits.value) return [];
+    const audits = currentSelectedAttentionForAudits.value.daily_medical_audits;
+
+    // Validar que sea un array
+    if (!Array.isArray(audits)) {
+        console.error('daily_medical_audits debe ser un array, recibido:', typeof audits);
+        return [];
+    }
+
+    return audits;
+});
 </script>
 <template>
     <div class="card">
         <h2 class="text-2xl font-bold mb-4">Gestión de Atenciones Hospitalarias</h2>
 
         <DataTable
-            :value="attentions"
+            :value="filteredAttentionsByDate"
             :loading="isLoading"
             paginator
             :rows="10"
@@ -253,11 +385,34 @@ const currentSelectedAttentionForTasks = computed(() => {
             scrollHeight="600px"
         >
             <template #header>
-                <div class="flex justify-between items-center">
-                    <IconField>
-                        <InputIcon class="pi pi-search" />
-                        <InputText v-model="filters['global'].value" placeholder="Buscar..." />
-                    </IconField>
+                <div class="flex flex-col gap-3">
+                    <!-- Búsqueda global -->
+                    <div class="flex justify-between items-center">
+                        <IconField>
+                            <InputIcon class="pi pi-search" />
+                            <InputText v-model="filters['global'].value" placeholder="Buscar..." />
+                        </IconField>
+                    </div>
+
+                    <!-- Filtros de rango de fechas -->
+                    <div class="flex items-center gap-3 flex-wrap p-3 bg-surface-50 rounded-lg border border-surface-200">
+                        <div class="flex items-center gap-2">
+                            <i class="pi pi-calendar text-primary"></i>
+                            <span class="font-semibold text-sm">Filtrar por Periodo de Ingreso:</span>
+                        </div>
+                        <div class="flex items-center gap-2">
+                            <label for="start-date" class="text-sm">Desde:</label>
+                            <Calendar id="start-date" v-model="dateRangeFilter.startDate" dateFormat="yy-mm-dd" :showIcon="true" placeholder="Fecha inicio" class="w-auto" />
+                        </div>
+                        <div class="flex items-center gap-2">
+                            <label for="end-date" class="text-sm">Hasta:</label>
+                            <Calendar id="end-date" v-model="dateRangeFilter.endDate" dateFormat="yy-mm-dd" :showIcon="true" placeholder="Fecha fin" class="w-auto" />
+                        </div>
+                        <Button v-if="dateRangeFilter.startDate || dateRangeFilter.endDate" label="Limpiar" icon="pi pi-times" severity="secondary" size="small" text @click="clearDateRangeFilter" />
+                        <div v-if="dateRangeFilter.startDate || dateRangeFilter.endDate" class="ml-auto">
+                            <Tag :value="`${filteredAttentionsByDate.length} registros`" severity="info" />
+                        </div>
+                    </div>
                 </div>
             </template>
 
@@ -391,11 +546,12 @@ const currentSelectedAttentionForTasks = computed(() => {
                 </template>
             </Column>
 
-            <Column header="Acciones" style="min-width: 16rem">
+            <Column header="Acciones" style="min-width: 20rem">
                 <template #body="{ data }">
-                    <div class="flex items-center gap-1">
+                    <div class="flex items-center gap-1 flex-wrap">
                         <Button icon="pi pi-eye" class="p-button-rounded p-button-info p-button-sm" @click="openDetailsSidebar(data)" v-tooltip.top="'Ver Detalles de Atención'" />
                         <Button icon="pi pi-list-check" class="p-button-rounded p-button-secondary p-button-sm" @click="openTasksSidebar(data)" v-tooltip.top="'Ver Tareas'" />
+                        <Button icon="pi pi-check-square" class="p-button-rounded p-button-help p-button-sm" @click="openAuditsSidebar(data)" v-tooltip.top="'Ver Auditorías Médicas'" />
                         <Button
                             v-if="canApproveAttention(data)"
                             icon="pi pi-check"
@@ -450,15 +606,30 @@ const currentSelectedAttentionForTasks = computed(() => {
                     </div>
                 </div>
             </template>
-            <div v-if="currentSelectedAttention">
-                <AttentionDetails
-                    :details="currentSelectedAttention.details_attention"
-                    :attention-id="currentSelectedAttention.id"
-                    :read-only="!canEditDetails"
-                    @create-details="handleCreateDetails"
-                    @update-details="handleUpdateDetails"
-                    @delete-details="handleDeleteDetails"
-                />
+            <div v-if="currentSelectedAttention" class="details-drawer-content">
+                <!-- Timeline de fechas -->
+                <div class="details-sidebar-left">
+                    <DetailsTimeline
+                        :details="currentDetailsArray"
+                        :selected-date="selectedDate"
+                        :attention-active="currentSelectedAttention.is_active"
+                        @date-selected="handleDateSelected"
+                        @create-new="handleCreateNewDetail"
+                    />
+                </div>
+
+                <!-- Detalles del día seleccionado -->
+                <div class="details-sidebar-right">
+                    <AttentionDetails
+                        :details="currentDetailsArray"
+                        :attention-id="currentSelectedAttention.id"
+                        :selected-date="selectedDate"
+                        :read-only="!canEditDetails"
+                        @create-details="handleCreateDetails"
+                        @update-details="handleUpdateDetails"
+                        @delete-details="handleDeleteDetails"
+                    />
+                </div>
             </div>
         </Drawer>
 
@@ -512,6 +683,60 @@ const currentSelectedAttentionForTasks = computed(() => {
                     @create-task="handleCreateTask"
                     @update-task="handleUpdateTask"
                     @delete-task="handleDeleteTask"
+                />
+            </div>
+        </Drawer>
+
+        <!-- Drawer para Auditorías Médicas -->
+        <Drawer v-model:visible="isAuditsSidebarVisible" position="right" class="!w-full md:!w-[48rem] lg:!w-[56rem] xl:!w-[64rem]">
+            <template #header>
+                <div v-if="currentSelectedAttentionForAudits" class="flex flex-col gap-2">
+                    <h3 class="text-xl font-bold flex items-center gap-2">
+                        <i class="pi pi-check-square text-purple-600"></i>
+                        Auditorías Médicas Diarias
+                    </h3>
+                    <div class="text-sm font-medium text-gray-700">{{ currentSelectedAttentionForAudits.patient.name }}</div>
+                    <div class="text-sm text-gray-600 grid grid-cols-2 gap-2">
+                        <div class="flex items-center">
+                            <i class="pi pi-user mr-1"></i>
+                            {{ formatAge(currentSelectedAttentionForAudits.patient.age_formatted) }}
+                        </div>
+                        <div class="flex items-center">
+                            <i class="pi pi-ticket mr-1"></i>
+                            {{ currentSelectedAttentionForAudits.number }}
+                        </div>
+                        <div v-if="currentSelectedAttentionForAudits.bed && currentSelectedAttentionForAudits.bed.room" class="flex items-center">
+                            <i class="pi pi-inbox mr-1"></i>
+                            {{ currentSelectedAttentionForAudits.bed.name }}
+                        </div>
+                        <div class="flex items-center">
+                            <i class="pi pi-shield mr-1"></i>
+                            {{ currentSelectedAttentionForAudits.insurance }}
+                        </div>
+                        <div v-if="currentSelectedAttentionForAudits.doctor" class="flex items-center col-span-2">
+                            <i class="pi pi-user-plus mr-1"></i>
+                            Dr. {{ currentSelectedAttentionForAudits.doctor }}
+                        </div>
+                    </div>
+
+                    <!-- Audits Status Indicators -->
+                    <div class="flex items-center gap-2 mt-2">
+                        <Tag :value="currentSelectedAttentionForAudits.is_active ? 'Activa' : 'Cerrada'" :severity="getSeverity(currentSelectedAttentionForAudits.is_active)" class="text-xs" />
+                        <div v-if="currentAuditsArray.length > 0" class="flex items-center gap-1">
+                            <Tag :value="`${currentAuditsArray.length} auditorías`" severity="info" class="text-xs" />
+                        </div>
+                    </div>
+                </div>
+            </template>
+            <div v-if="currentSelectedAttentionForAudits">
+                <DailyMedicalAudits
+                    :attention-id="currentSelectedAttentionForAudits.id"
+                    :audits="currentAuditsArray"
+                    :read-only="!canEdit"
+                    @audit-created="handleCreateAudit"
+                    @audit-updated="handleUpdateAudit"
+                    @audit-deleted="handleDeleteAudit"
+                    @audit-marked="handleMarkAuditAsAudited"
                 />
             </div>
         </Drawer>
@@ -614,5 +839,43 @@ const currentSelectedAttentionForTasks = computed(() => {
 
 .col-span-2 {
     grid-column: span 2 / span 2;
+}
+
+/* Details drawer layout */
+.details-drawer-content {
+    display: grid;
+    grid-template-columns: 320px 1fr;
+    gap: 1rem;
+    height: 100%;
+}
+
+.details-sidebar-left {
+    border-right: 1px solid var(--surface-border);
+    padding-right: 1rem;
+    overflow-y: auto;
+    max-height: calc(100vh - 200px);
+}
+
+.details-sidebar-right {
+    overflow-y: auto;
+    max-height: calc(100vh - 200px);
+}
+
+@media (max-width: 1024px) {
+    .details-drawer-content {
+        grid-template-columns: 1fr;
+    }
+
+    .details-sidebar-left {
+        border-right: none;
+        border-bottom: 1px solid var(--surface-border);
+        padding-right: 0;
+        padding-bottom: 1rem;
+        max-height: 300px;
+    }
+
+    .details-sidebar-right {
+        max-height: calc(100vh - 500px);
+    }
 }
 </style>

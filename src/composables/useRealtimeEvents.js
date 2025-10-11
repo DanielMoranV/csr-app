@@ -13,7 +13,7 @@ export function useRealtimeEvents(options = {}) {
     const hospitalizationStore = useHospitalizationStore();
 
     // Options to control which stores should be updated
-    const { updateAttentions = true, updateDashboard = true, updateHospitalization = true } = options;
+    const { updateAttentions = true, updateDashboard = true, updateHospitalization = true, updateTasks = true, updateDetails = true, updateAudits = true } = options;
 
     const startListening = () => {
         if (isListening.value) return;
@@ -49,6 +49,63 @@ export function useRealtimeEvents(options = {}) {
                 if (updateHospitalization) {
                     hospitalizationStore.handleHospitalizationDeleted(e);
                 }
+            })
+            .listen('.task.created', (e) => {
+                if (updateTasks && updateAttentions) {
+                    hospitalAttentionsStore.handleTaskCreated(e);
+                }
+
+                if (updateTasks && updateHospitalization) {
+                    hospitalizationStore.handleTaskCreated(e);
+                }
+            })
+            .listen('.task.updated', (e) => {
+                if (updateTasks && updateAttentions) {
+                    hospitalAttentionsStore.handleTaskUpdated(e);
+                }
+
+                if (updateTasks && updateHospitalization) {
+                    hospitalizationStore.handleTaskUpdated(e);
+                }
+            })
+            .listen('.task.deleted', (e) => {
+                if (updateTasks && updateAttentions) {
+                    hospitalAttentionsStore.handleTaskDeleted(e);
+                }
+
+                if (updateTasks && updateHospitalization) {
+                    hospitalizationStore.handleTaskDeleted(e);
+                }
+            })
+            .listen('.detail.created', (e) => {
+                if (updateDetails && updateAttentions) {
+                    hospitalAttentionsStore.handleDetailsCreated(e);
+                }
+            })
+            .listen('.detail.updated', (e) => {
+                if (updateDetails && updateAttentions) {
+                    hospitalAttentionsStore.handleDetailsUpdated(e);
+                }
+            })
+            .listen('.detail.deleted', (e) => {
+                if (updateDetails && updateAttentions) {
+                    hospitalAttentionsStore.handleDetailsDeleted(e);
+                }
+            })
+            .listen('.audit.created', (e) => {
+                if (updateAudits && updateAttentions) {
+                    hospitalAttentionsStore.handleAuditCreated(e);
+                }
+            })
+            .listen('.audit.updated', (e) => {
+                if (updateAudits && updateAttentions) {
+                    hospitalAttentionsStore.handleAuditUpdated(e);
+                }
+            })
+            .listen('.audit.deleted', (e) => {
+                if (updateAudits && updateAttentions) {
+                    hospitalAttentionsStore.handleAuditDeleted(e);
+                }
             });
 
         // Canal hospital-dashboard - para estadísticas del dashboard
@@ -82,7 +139,38 @@ export function useRealtimeEvents(options = {}) {
                 });
         }
 
-        channels.value = ['hospitalizations', 'hospital-dashboard'];
+        // Canal tasks - para actualizaciones de tareas en tiempo real
+        const tasksChannel = useEcho.channel('tasks');
+
+        if (updateTasks) {
+            tasksChannel
+                .listen('.task.created', (e) => {
+                    if (updateAttentions) {
+                        hospitalAttentionsStore.handleTaskCreated(e);
+                    }
+                    if (updateHospitalization) {
+                        hospitalizationStore.handleTaskCreated(e);
+                    }
+                })
+                .listen('.task.updated', (e) => {
+                    if (updateAttentions) {
+                        hospitalAttentionsStore.handleTaskUpdated(e);
+                    }
+                    if (updateHospitalization) {
+                        hospitalizationStore.handleTaskUpdated(e);
+                    }
+                })
+                .listen('.task.deleted', (e) => {
+                    if (updateAttentions) {
+                        hospitalAttentionsStore.handleTaskDeleted(e);
+                    }
+                    if (updateHospitalization) {
+                        hospitalizationStore.handleTaskDeleted(e);
+                    }
+                });
+        }
+
+        channels.value = ['hospitalizations', 'hospital-dashboard', 'tasks'];
     };
 
     const stopListening = () => {

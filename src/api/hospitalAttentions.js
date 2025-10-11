@@ -42,5 +42,20 @@ export const hospitalAttentions = {
     getTaskStats: () => axios.get('/tasks/stats'),
 
     // Approve attention by Medical Director
-    approve: (id) => axios.patch(`/hospital-attentions/${id}/approve`)
+    approve: (id) => axios.patch(`/hospital-attentions/${id}/approve`),
+
+    // Details Attention - Nuevos endpoints por fecha
+    getAttentionDetails: (attentionId, params) => axios.get(`/attentions/${attentionId}/details`, { params }),
+    getAttentionDetailsByDate: (attentionId, date) => axios.get(`/attentions/${attentionId}/details/${date}`),
+
+    // Daily Medical Audits endpoints
+    listAudits: (params) => axios.get('/daily-medical-audits', { params }),
+    getAuditById: (id) => axios.get(`/daily-medical-audits/${id}`),
+    createAudit: (data) => axios.post('/daily-medical-audits', data),
+    updateAudit: (id, data) => axios.put(`/daily-medical-audits/${id}`, data),
+    deleteAudit: (id) => axios.delete(`/daily-medical-audits/${id}`),
+    markAuditAsAudited: (id) => axios.patch(`/daily-medical-audits/${id}/mark-audited`),
+    getAuditStats: () => axios.get('/daily-medical-audits/stats'),
+    getAttentionAudits: (attentionId, params) => axios.get(`/attentions/${attentionId}/audits`, { params }),
+    getAttentionAuditByDate: (attentionId, date) => axios.get(`/attentions/${attentionId}/audits/${date}`)
 };
