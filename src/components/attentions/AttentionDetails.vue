@@ -551,9 +551,6 @@ const formatAuditDate = (dateString) => {
             </div>
         </div>
     </div>
-
-    <ConfirmDialog />
-    <Toast />
 </template>
 
 <style scoped>

@@ -3,7 +3,7 @@ import { useDailyMedicalAudits } from '@/composables/useDailyMedicalAudits';
 import ConfirmDialog from 'primevue/confirmdialog';
 import { useConfirm } from 'primevue/useconfirm';
 import { useToast } from 'primevue/usetoast';
-import { computed, defineEmits, defineProps, onMounted, ref } from 'vue';
+import { computed, defineEmits, defineProps, onMounted, ref, watch } from 'vue';
 
 const props = defineProps({
     attentionId: {
@@ -72,6 +72,14 @@ onMounted(() => {
 });
 
 // Watchers
+watch(
+    () => props.audits,
+    (newAudits) => {
+        localAudits.value = newAudits || [];
+    },
+    { deep: true }
+);
+
 const updateLocalAudits = () => {
     localAudits.value = props.audits || [];
 };
@@ -120,6 +128,24 @@ const handleSave = async () => {
     try {
         isLoading.value = true;
 
+        // Verificar si ya existe una auditoría para esta fecha (solo al crear)
+        if (!isEditing.value) {
+            const existingAudit = localAudits.value.find(
+                (a) => a.audit_date === formData.value.audit_date
+            );
+
+            if (existingAudit) {
+                toast.add({
+                    severity: 'warn',
+                    summary: 'Auditoría Duplicada',
+                    detail: `Ya existe una auditoría para la fecha ${formData.value.audit_date}. Puedes editarla en lugar de crear una nueva.`,
+                    life: 5000
+                });
+                isLoading.value = false;
+                return;
+            }
+        }
+
         if (isEditing.value && selectedAudit.value) {
             await emit('audit-updated', formData.value.id, formData.value);
             toast.add({
@@ -141,11 +167,23 @@ const handleSave = async () => {
         closeDialog();
         updateLocalAudits();
     } catch (error) {
+        console.error('Error en handleSave:', error);
+
+        // Mostrar mensaje específico del backend si está disponible
+        let errorMessage = 'Error al guardar la auditoría';
+
+        if (error?.errors?.id_attentions) {
+            // Error de validación del backend
+            errorMessage = error.errors.id_attentions[0] || errorMessage;
+        } else if (error?.message) {
+            errorMessage = error.message;
+        }
+
         toast.add({
             severity: 'error',
             summary: 'Error',
-            detail: 'Error al guardar la auditoría',
-            life: 3000
+            detail: errorMessage,
+            life: 5000
         });
     } finally {
         isLoading.value = false;
@@ -338,9 +376,6 @@ const isFormValid = computed(() => {
                 <Button :label="isEditing ? 'Actualizar' : 'Crear'" icon="pi pi-check" @click="handleSave" :disabled="!isFormValid || isLoading" :loading="isLoading" />
             </template>
         </Dialog>
-
-        <ConfirmDialog />
-        <Toast />
     </div>
 </template>
 

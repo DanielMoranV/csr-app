@@ -127,6 +127,10 @@ const handleDateSelected = (date) => {
 
 const handleCreateNewDetail = (date) => {
     selectedDate.value = date;
+    // Asegurarse de que el sidebar esté abierto
+    if (!isDetailsSidebarVisible.value) {
+        isDetailsSidebarVisible.value = true;
+    }
     // El componente AttentionDetails detectará que no hay detalle para esa fecha y mostrará el formulario
 };
 
@@ -185,11 +189,21 @@ const handleApproveAttention = async () => {
 };
 
 const handleCreateAudit = async (auditData) => {
-    await hospitalAttentionsStore.createAudit(auditData);
+    try {
+        await hospitalAttentionsStore.createAudit(auditData);
+    } catch (error) {
+        // Re-throw para que el componente hijo lo capture
+        throw error;
+    }
 };
 
 const handleUpdateAudit = async (auditId, auditData) => {
-    await hospitalAttentionsStore.updateAudit(auditId, auditData);
+    try {
+        await hospitalAttentionsStore.updateAudit(auditId, auditData);
+    } catch (error) {
+        // Re-throw para que el componente hijo lo capture
+        throw error;
+    }
 };
 
 const handleDeleteAudit = async (auditId) => {
@@ -353,7 +367,14 @@ const currentDetailsArray = computed(() => {
 // Computed para obtener las auditorías como array (siempre array en nuevo formato)
 const currentAuditsArray = computed(() => {
     if (!currentSelectedAttentionForAudits.value) return [];
+
     const audits = currentSelectedAttentionForAudits.value.daily_medical_audits;
+
+    // Si el backend no envía daily_medical_audits, inicializar array vacío
+    if (!audits) {
+        console.warn('⚠️ El backend no está enviando daily_medical_audits. Verifica que el modelo HospitalAttention incluya esta relación.');
+        return [];
+    }
 
     // Validar que sea un array
     if (!Array.isArray(audits)) {
@@ -517,22 +538,8 @@ const currentAuditsArray = computed(() => {
                 <template #body="{ data }">
                     <div class="space-y-1">
                         <div class="flex items-center gap-2">
-                            <Tag
-                                v-if="data.is_approved_by_director"
-                                value="Aprobada"
-                                severity="success"
-                                icon="pi pi-check-circle"
-                                class="text-xs"
-                                v-tooltip.top="'Aprobada por Director Médico'"
-                            />
-                            <Tag
-                                v-else
-                                value="Pendiente"
-                                severity="warning"
-                                icon="pi pi-clock"
-                                class="text-xs"
-                                v-tooltip.top="'Pendiente de aprobación'"
-                            />
+                            <Tag v-if="data.is_approved_by_director" value="Aprobada" severity="success" icon="pi pi-check-circle" class="text-xs" v-tooltip.top="'Aprobada por Director Médico'" />
+                            <Tag v-else value="Pendiente" severity="warning" icon="pi pi-clock" class="text-xs" v-tooltip.top="'Pendiente de aprobación'" />
                         </div>
                         <div v-if="data.is_approved_by_director && data.medical_director_approved_by" class="text-xs text-gray-600">
                             <i class="pi pi-user mr-1"></i>
@@ -552,13 +559,7 @@ const currentAuditsArray = computed(() => {
                         <Button icon="pi pi-eye" class="p-button-rounded p-button-info p-button-sm" @click="openDetailsSidebar(data)" v-tooltip.top="'Ver Detalles de Atención'" />
                         <Button icon="pi pi-list-check" class="p-button-rounded p-button-secondary p-button-sm" @click="openTasksSidebar(data)" v-tooltip.top="'Ver Tareas'" />
                         <Button icon="pi pi-check-square" class="p-button-rounded p-button-help p-button-sm" @click="openAuditsSidebar(data)" v-tooltip.top="'Ver Auditorías Médicas'" />
-                        <Button
-                            v-if="canApproveAttention(data)"
-                            icon="pi pi-check"
-                            class="p-button-rounded p-button-success p-button-sm"
-                            @click="openApproveDialog(data)"
-                            v-tooltip.top="'Aprobar Atención'"
-                        />
+                        <Button v-if="canApproveAttention(data)" icon="pi pi-check" class="p-button-rounded p-button-success p-button-sm" @click="openApproveDialog(data)" v-tooltip.top="'Aprobar Atención'" />
                         <div v-if="data.tasks && data.tasks.length > 0" class="flex items-center gap-1 ml-1">
                             <Tag :value="data.tasks.length" :severity="getTasksSeverity(data.tasks)" class="text-xs" v-tooltip.top="'Número de tareas'" />
                             <i v-if="hasPendingTasks(data.tasks)" class="pi pi-exclamation-triangle text-warning" v-tooltip.top="'Tiene tareas pendientes'"></i>
@@ -609,13 +610,7 @@ const currentAuditsArray = computed(() => {
             <div v-if="currentSelectedAttention" class="details-drawer-content">
                 <!-- Timeline de fechas -->
                 <div class="details-sidebar-left">
-                    <DetailsTimeline
-                        :details="currentDetailsArray"
-                        :selected-date="selectedDate"
-                        :attention-active="currentSelectedAttention.is_active"
-                        @date-selected="handleDateSelected"
-                        @create-new="handleCreateNewDetail"
-                    />
+                    <DetailsTimeline :details="currentDetailsArray" :selected-date="selectedDate" :attention-active="currentSelectedAttention.is_active" @date-selected="handleDateSelected" @create-new="handleCreateNewDetail" />
                 </div>
 
                 <!-- Detalles del día seleccionado -->

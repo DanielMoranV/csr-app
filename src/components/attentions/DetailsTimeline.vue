@@ -132,14 +132,13 @@ const getItemSeverity = (detail) => {
                 <span>Registros Diarios</span>
                 <Badge :value="sortedDetails.length" severity="info" />
             </div>
-            <Button v-if="attentionActive && !hasTodayDetail" label="Registrar Hoy" icon="pi pi-plus" size="small" @click="createToday" severity="success" />
+            <!--  <Button v-if="attentionActive && !hasTodayDetail" label="Registrar Hoy" icon="pi pi-plus" size="small" @click="createToday" severity="success" /> -->
         </div>
 
         <!-- Empty state -->
         <div v-if="sortedDetails.length === 0" class="timeline-empty">
             <i class="pi pi-calendar"></i>
-            <span>No hay registros diarios</span>
-            <Button v-if="attentionActive" label="Crear Primer Registro" icon="pi pi-plus" size="small" severity="secondary" outlined @click="createToday" />
+            <span>No hay registros diarios. Haz clic en "Registrar Hoy" para crear el primero.</span>
         </div>
 
         <!-- Timeline -->
