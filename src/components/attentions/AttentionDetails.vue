@@ -144,13 +144,23 @@ const hasUnsavedChanges = computed(() => {
 
 const getTodayDate = () => {
     const today = new Date();
-    return today.toISOString().split('T')[0];
+    const year = today.getFullYear();
+    const month = String(today.getMonth() + 1).padStart(2, '0');
+    const day = String(today.getDate()).padStart(2, '0');
+    return `${year}-${month}-${day}`;
+};
+
+const convertStringToDate = (dateString) => {
+    if (!dateString) return new Date();
+    const [year, month, day] = dateString.split('-').map(Number);
+    return new Date(year, month - 1, day);
 };
 
 const resetForm = () => {
+    const dateStr = props.selectedDate || getTodayDate();
     localDetails.value = {
         id_attentions: props.attentionId,
-        attention_date: props.selectedDate || getTodayDate(), // Campo obligatorio nuevo
+        attention_date: convertStringToDate(dateStr), // Convertir a objeto Date para el Calendar
         ram: '',
         images_exams: '',
         laboratory_exams: '',
@@ -190,9 +200,12 @@ watch(
     (newDetails) => {
         if (newDetails) {
             localDetails.value = { ...newDetails };
-            // Asegurar que tenga attention_date
+            // Asegurar que tenga attention_date y convertir a Date si es string
             if (!localDetails.value.attention_date) {
-                localDetails.value.attention_date = props.selectedDate || getTodayDate();
+                const dateStr = props.selectedDate || getTodayDate();
+                localDetails.value.attention_date = convertStringToDate(dateStr);
+            } else if (typeof localDetails.value.attention_date === 'string') {
+                localDetails.value.attention_date = convertStringToDate(localDetails.value.attention_date);
             }
             isEditing.value = false;
         } else {
@@ -208,10 +221,19 @@ watch(
     () => props.selectedDate,
     (newDate) => {
         if (newDate && localDetails.value) {
-            localDetails.value.attention_date = newDate;
+            localDetails.value.attention_date = convertStringToDate(newDate);
         }
     }
 );
+
+const convertDateToString = (date) => {
+    if (!date) return getTodayDate();
+    if (typeof date === 'string') return date;
+    const year = date.getFullYear();
+    const month = String(date.getMonth() + 1).padStart(2, '0');
+    const day = String(date.getDate()).padStart(2, '0');
+    return `${year}-${month}-${day}`;
+};
 
 const handleSave = async () => {
     if (!isFormValid.value) {
@@ -226,14 +248,20 @@ const handleSave = async () => {
 
     // Asegurar que attention_date esté presente
     if (!localDetails.value.attention_date) {
-        localDetails.value.attention_date = props.selectedDate || getTodayDate();
+        localDetails.value.attention_date = convertStringToDate(props.selectedDate || getTodayDate());
     }
 
     try {
         isLoading.value = true;
 
+        // Preparar datos para enviar al backend - convertir Date a string
+        const dataToSend = {
+            ...localDetails.value,
+            attention_date: convertDateToString(localDetails.value.attention_date)
+        };
+
         if (currentDetail.value) {
-            await emit('update-details', localDetails.value.id, localDetails.value);
+            await emit('update-details', dataToSend.id, dataToSend);
             toast.add({
                 severity: 'success',
                 summary: 'Éxito',
@@ -241,7 +269,7 @@ const handleSave = async () => {
                 life: 3000
             });
         } else {
-            await emit('create-details', localDetails.value);
+            await emit('create-details', dataToSend);
             toast.add({
                 severity: 'success',
                 summary: 'Éxito',
@@ -504,7 +532,7 @@ const getUserInfo = (userObj) => {
             <div class="edit-info">
                 <i class="pi pi-info-circle"></i>
                 <span>{{ currentDetail ? 'Editando detalles médicos' : 'Creando nuevos detalles médicos' }}</span>
-                <small>Fecha: {{ localDetails.attention_date || 'Hoy' }}</small>
+                <small>Fecha: {{ convertDateToString(localDetails.attention_date) || 'Hoy' }}</small>
             </div>
 
             <div class="edit-content">
@@ -519,8 +547,8 @@ const getUserInfo = (userObj) => {
                             <i class="pi pi-calendar"></i>
                             Fecha de Atención *
                         </label>
-                        <Calendar id="attention_date" v-model="localDetails.attention_date" dateFormat="yy-mm-dd" :showIcon="true" class="w-full" />
-                        <small class="field-help">Seleccione la fecha para este registro diario</small>
+                        <Calendar id="attention_date" v-model="localDetails.attention_date" dateFormat="yy-mm-dd" :showIcon="true" :showButtonBar="true" class="w-full" />
+                        <small class="field-help">Seleccione la fecha para este registro diario (hoy: {{ getTodayDate() }})</small>
                     </div>
                 </div>
 
@@ -583,7 +611,7 @@ const getUserInfo = (userObj) => {
                     </div>
                     <div v-else class="footer-info">
                         <i class="pi pi-info-circle"></i>
-                        <span>Campos opcionales - Fecha: {{ localDetails.attention_date }}</span>
+                        <span>Campos opcionales - Fecha: {{ convertDateToString(localDetails.attention_date) }}</span>
                     </div>
                 </div>
                 <div class="footer-actions">

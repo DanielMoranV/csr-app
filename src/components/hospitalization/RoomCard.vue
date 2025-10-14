@@ -1,7 +1,7 @@
 <script setup>
 import Badge from 'primevue/badge';
 import Tag from 'primevue/tag';
-import { computed, ref } from 'vue';
+import { computed, defineEmits, ref } from 'vue';
 import BedDrawer from './BedDrawer.vue';
 
 const props = defineProps({
@@ -11,6 +11,8 @@ const props = defineProps({
     }
 });
 
+const emit = defineEmits(['refresh-data']);
+
 // Estado del drawer
 const drawerVisible = ref(false);
 const selectedBed = ref(null);
@@ -19,6 +21,11 @@ const selectedBed = ref(null);
 const openBedDrawer = (bed) => {
     selectedBed.value = bed;
     drawerVisible.value = true;
+};
+
+// Manejar el evento de refresh desde el drawer
+const handleRefreshData = () => {
+    emit('refresh-data');
 };
 
 // Función para obtener cantidad de tareas pendientes
@@ -199,7 +206,7 @@ const totalPendingTasks = computed(() => {
             </div>
         </div>
         <!-- Drawer para gestión de la cama seleccionada -->
-        <BedDrawer v-model:visible="drawerVisible" :bed="selectedBed" />
+        <BedDrawer v-model:visible="drawerVisible" :bed="selectedBed" @refresh-data="handleRefreshData" />
     </div>
 </template>
 

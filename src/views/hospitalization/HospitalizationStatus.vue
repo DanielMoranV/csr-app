@@ -129,8 +129,14 @@ const clearFilter = () => {
 };
 
 // Actualizar datos
-const refreshData = () => {
-    store.fetchHospitalizationStatus();
+const refreshData = async () => {
+    await store.fetchHospitalizationStatus();
+};
+
+// Manejar refresh desde componentes hijos (cuando se crean/actualizan/eliminan detalles o tareas)
+const handleRefreshFromChild = async () => {
+    console.log('[HospitalizationStatus] Refreshing data after child action...');
+    await refreshData();
 };
 
 onMounted(async () => {
@@ -348,7 +354,7 @@ onUnmounted(() => {
         <!-- Rooms Grid -->
         <div v-else class="rooms-grid">
             <div v-for="room in filteredRooms" :key="room.id" class="room-card-container">
-                <RoomCard :room="room" />
+                <RoomCard :room="room" @refresh-data="handleRefreshFromChild" />
             </div>
         </div>
 

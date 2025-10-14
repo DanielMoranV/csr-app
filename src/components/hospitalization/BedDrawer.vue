@@ -1,6 +1,7 @@
 <script setup>
 import AttentionDetails from '@/components/attentions/AttentionDetails.vue';
 import AttentionTasks from '@/components/attentions/AttentionTasks.vue';
+import DetailsTimeline from '@/components/attentions/DetailsTimeline.vue';
 import { usePermissions, USER_POSITIONS } from '@/composables/usePermissions';
 import { useHospitalAttentionsStore } from '@/store/hospitalAttentionsStore';
 import Badge from 'primevue/badge';
@@ -25,17 +26,14 @@ const props = defineProps({
     }
 });
 
-const emit = defineEmits(['update:visible']);
+const emit = defineEmits(['update:visible', 'refresh-data']);
 
 const hospitalAttentionsStore = useHospitalAttentionsStore();
 const { hasPosition } = usePermissions();
 
-// Verificar si el usuario puede editar (solo HOSPITALIZACION y atención activa)
+// PERMISOS DE EDICIÓN: HOSPITALIZACION, DIRECTOR_MEDICO y MEDICOS pueden editar detalles y tareas de atención
 const canEdit = computed(() => {
-    // Debe tener el permiso de HOSPITALIZACION
-    if (!hasPosition(USER_POSITIONS.HOSPITALIZACION)) return false;
-
-    // La atención debe estar activa
+    if (!hasPosition(USER_POSITIONS.HOSPITALIZACION) && !hasPosition(USER_POSITIONS.DIRECTOR_MEDICO) && !hasPosition(USER_POSITIONS.MEDICOS)) return false;
     if (!attention.value) return false;
     return attention.value.is_active === true;
 });
@@ -46,6 +44,7 @@ const drawerVisible = computed({
 });
 
 const activeTab = ref('0');
+const selectedDate = ref(null); // Para controlar la fecha seleccionada en detalles
 
 // Computed para obtener los datos de la atención
 const attention = computed(() => {
@@ -59,7 +58,7 @@ const attention = computed(() => {
         hospital_attention_id: bedAttention.hospital_attention_id,
         patient: bedAttention.patient,
         entry_date: bedAttention.entry_date,
-        details_attention: bedAttention.details,
+        details_attention: bedAttention.details || [],
         tasks: bedAttention.tasks || [],
         // Campos adicionales necesarios para compatibilidad
         is_active: true, // Asumimos que es activa si aparece en el estado de hospitalización
@@ -70,6 +69,20 @@ const attention = computed(() => {
             }
         }
     };
+});
+
+// Computed para obtener los detalles como array (siempre array en nuevo formato)
+const currentDetailsArray = computed(() => {
+    if (!attention.value) return [];
+    const details = attention.value.details_attention;
+
+    // Validar que sea un array
+    if (!Array.isArray(details)) {
+        console.error('details_attention debe ser un array, recibido:', typeof details);
+        return [];
+    }
+
+    return details;
 });
 
 // Función para extraer el número de habitación del nombre de la cama
@@ -103,7 +116,8 @@ const getBedStatusSeverity = (status) => {
 const handleCreateTask = async (taskData) => {
     try {
         await hospitalAttentionsStore.createTask(taskData);
-        // Recargar datos si es necesario
+        // Emitir evento para refrescar datos de hospitalización
+        emit('refresh-data');
     } catch (error) {
         console.error('Error creating task:', error);
     }
@@ -112,6 +126,8 @@ const handleCreateTask = async (taskData) => {
 const handleUpdateTask = async (taskData) => {
     try {
         await hospitalAttentionsStore.updateTask(taskData.id, taskData);
+        // Emitir evento para refrescar datos de hospitalización
+        emit('refresh-data');
     } catch (error) {
         console.error('Error updating task:', error);
     }
@@ -120,6 +136,8 @@ const handleUpdateTask = async (taskData) => {
 const handleDeleteTask = async (taskId) => {
     try {
         await hospitalAttentionsStore.deleteTask(taskId);
+        // Emitir evento para refrescar datos de hospitalización
+        emit('refresh-data');
     } catch (error) {
         console.error('Error deleting task:', error);
     }
@@ -128,6 +146,8 @@ const handleDeleteTask = async (taskId) => {
 const handleCreateDetails = async (detailsData) => {
     try {
         await hospitalAttentionsStore.createDetails(detailsData);
+        // Emitir evento para refrescar datos de hospitalización
+        emit('refresh-data');
     } catch (error) {
         console.error('Error creating details:', error);
     }
@@ -136,6 +156,8 @@ const handleCreateDetails = async (detailsData) => {
 const handleUpdateDetails = async (detailsId, detailsData) => {
     try {
         await hospitalAttentionsStore.updateDetails(detailsId, detailsData);
+        // Emitir evento para refrescar datos de hospitalización
+        emit('refresh-data');
     } catch (error) {
         console.error('Error updating details:', error);
     }
@@ -144,9 +166,19 @@ const handleUpdateDetails = async (detailsId, detailsData) => {
 const handleDeleteDetails = async (detailsId) => {
     try {
         await hospitalAttentionsStore.deleteDetails(detailsId);
+        // Emitir evento para refrescar datos de hospitalización
+        emit('refresh-data');
     } catch (error) {
         console.error('Error deleting details:', error);
     }
+};
+
+const handleDateSelected = (date) => {
+    selectedDate.value = date;
+};
+
+const handleCreateNewDetail = (date) => {
+    selectedDate.value = date;
 };
 
 // Watch para resetear el tab activo cuando se cambia de cama
@@ -154,6 +186,7 @@ watch(
     () => props.bed,
     () => {
         activeTab.value = '0';
+        selectedDate.value = null;
     }
 );
 </script>
@@ -221,15 +254,26 @@ watch(
                     </TabList>
 
                     <TabPanels class="flex-1">
-                        <TabPanel value="0" class="h-full">
-                            <AttentionDetails
-                                :details="attention.details_attention"
-                                :attention-id="attention.hospital_attention_id"
-                                :read-only="!canEdit"
-                                @create-details="handleCreateDetails"
-                                @update-details="handleUpdateDetails"
-                                @delete-details="handleDeleteDetails"
-                            />
+                        <TabPanel value="0" class="h-full p-0">
+                            <div class="details-drawer-content">
+                                <!-- Timeline de fechas -->
+                                <div class="details-sidebar-left">
+                                    <DetailsTimeline :details="currentDetailsArray" :selected-date="selectedDate" :attention-active="attention.is_active" @date-selected="handleDateSelected" @create-new="handleCreateNewDetail" />
+                                </div>
+
+                                <!-- Detalles del día seleccionado -->
+                                <div class="details-sidebar-right">
+                                    <AttentionDetails
+                                        :details="currentDetailsArray"
+                                        :attention-id="attention.hospital_attention_id"
+                                        :selected-date="selectedDate"
+                                        :read-only="!canEdit"
+                                        @create-details="handleCreateDetails"
+                                        @update-details="handleUpdateDetails"
+                                        @delete-details="handleDeleteDetails"
+                                    />
+                                </div>
+                            </div>
                         </TabPanel>
 
                         <TabPanel value="1" class="h-full">
@@ -280,6 +324,26 @@ watch(
     overflow-y: auto;
 }
 
+/* Details drawer layout - similar to HospitalAttentions */
+.details-drawer-content {
+    display: grid;
+    grid-template-columns: 320px 1fr;
+    gap: 1rem;
+    height: calc(100vh - 280px);
+}
+
+.details-sidebar-left {
+    border-right: 1px solid var(--surface-border);
+    padding-right: 1rem;
+    overflow-y: auto;
+    max-height: calc(100vh - 280px);
+}
+
+.details-sidebar-right {
+    overflow-y: auto;
+    max-height: calc(100vh - 280px);
+}
+
 /* Responsive adjustments */
 @media (max-width: 768px) {
     .bed-drawer-tabs :deep(.p-tablist) {
@@ -293,6 +357,25 @@ watch(
 
     .bed-drawer-tabs :deep(.p-tabpanel) {
         height: calc(100vh - 320px);
+    }
+}
+
+@media (max-width: 1024px) {
+    .details-drawer-content {
+        grid-template-columns: 1fr;
+        height: calc(100vh - 320px);
+    }
+
+    .details-sidebar-left {
+        border-right: none;
+        border-bottom: 1px solid var(--surface-border);
+        padding-right: 0;
+        padding-bottom: 1rem;
+        max-height: 300px;
+    }
+
+    .details-sidebar-right {
+        max-height: calc(100vh - 620px);
     }
 }
 </style>

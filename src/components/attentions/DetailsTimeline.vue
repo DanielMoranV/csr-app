@@ -31,7 +31,10 @@ const sortedDetails = computed(() => {
 // Computed para obtener la fecha de hoy
 const today = computed(() => {
     const now = new Date();
-    return now.toISOString().split('T')[0];
+    const year = now.getFullYear();
+    const month = String(now.getMonth() + 1).padStart(2, '0');
+    const day = String(now.getDate()).padStart(2, '0');
+    return `${year}-${month}-${day}`;
 });
 
 // Computed para verificar si existe detalle para hoy
@@ -71,7 +74,8 @@ const formatDisplayDate = (dateString) => {
         // Verificar si es ayer
         const yesterday = new Date();
         yesterday.setDate(yesterday.getDate() - 1);
-        if (dateString === yesterday.toISOString().split('T')[0]) {
+        const yesterdayStr = `${yesterday.getFullYear()}-${String(yesterday.getMonth() + 1).padStart(2, '0')}-${String(yesterday.getDate()).padStart(2, '0')}`;
+        if (dateString === yesterdayStr) {
             return 'Ayer';
         }
 

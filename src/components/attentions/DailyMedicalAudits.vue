@@ -143,9 +143,12 @@ const handleSave = async () => {
         const normalizeDate = (date) => {
             if (!date) return null;
             if (typeof date === 'string') return date;
-            // Si es un objeto Date, convertir a YYYY-MM-DD
+            // Si es un objeto Date, convertir a YYYY-MM-DD en hora local
             const d = new Date(date);
-            return d.toISOString().split('T')[0];
+            const year = d.getFullYear();
+            const month = String(d.getMonth() + 1).padStart(2, '0');
+            const day = String(d.getDate()).padStart(2, '0');
+            return `${year}-${month}-${day}`;
         };
 
         const normalizedFormDate = normalizeDate(formData.value.audit_date);

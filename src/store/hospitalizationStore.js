@@ -62,6 +62,7 @@ export const useHospitalizationStore = defineStore('hospitalization', () => {
                                 // Transform the hospitalization data to match the expected format
                                 const transformedAttention = {
                                     hospital_attention_id: newHospitalization.id,
+                                    number: newHospitalization.number, // Número de admisión
                                     entry_date: newHospitalization.entry_at,
                                     exit_date: newHospitalization.exit_at,
                                     discharge_date: newHospitalization.exit_at,
@@ -141,6 +142,7 @@ export const useHospitalizationStore = defineStore('hospitalization', () => {
                                 // Transform the hospitalization data to match the expected format
                                 const transformedAttention = {
                                     hospital_attention_id: updatedHospitalization.id,
+                                    number: updatedHospitalization.number, // Número de admisión
                                     entry_date: updatedHospitalization.entry_at,
                                     exit_date: updatedHospitalization.exit_at,
                                     discharge_date: updatedHospitalization.exit_at,
@@ -310,6 +312,93 @@ export const useHospitalizationStore = defineStore('hospitalization', () => {
         });
     };
 
+    // Details event handlers
+    const handleDetailsCreated = (eventData) => {
+        console.log('[HospitalizationStore] Handling detail created:', eventData);
+        const detail = eventData.detail || eventData.data;
+
+        if (!detail || !detail.id_attentions) return;
+
+        const attentionId = detail.id_attentions;
+
+        // Find the bed with this attention and add the detail
+        state.status.forEach((room) => {
+            if (room.beds) {
+                room.beds.forEach((bed) => {
+                    if (bed.attention && bed.attention.hospital_attention_id === attentionId) {
+                        // Initialize details array if it doesn't exist
+                        if (!bed.attention.details) {
+                            bed.attention.details = [];
+                        }
+
+                        // Add the new detail if it doesn't already exist
+                        const detailExists = bed.attention.details.some((d) => d.id === detail.id);
+                        if (!detailExists) {
+                            bed.attention.details.push(detail);
+                            console.log(`[HospitalizationStore] Added detail ${detail.id} to bed ${bed.id}`);
+                        }
+                    }
+                });
+            }
+        });
+    };
+
+    const handleDetailsUpdated = (eventData) => {
+        console.log('[HospitalizationStore] Handling detail updated:', eventData);
+        const detail = eventData.detail || eventData.data;
+
+        if (!detail || !detail.id_attentions) return;
+
+        const attentionId = detail.id_attentions;
+
+        // Find the bed with this attention and update the detail
+        state.status.forEach((room) => {
+            if (room.beds) {
+                room.beds.forEach((bed) => {
+                    if (bed.attention && bed.attention.hospital_attention_id === attentionId) {
+                        if (bed.attention.details) {
+                            const detailIndex = bed.attention.details.findIndex((d) => d.id === detail.id);
+                            if (detailIndex !== -1) {
+                                // Update the existing detail
+                                bed.attention.details[detailIndex] = detail;
+                                console.log(`[HospitalizationStore] Updated detail ${detail.id} in bed ${bed.id}`);
+                            } else {
+                                // If detail not found, add it (could have been filtered out before)
+                                bed.attention.details.push(detail);
+                                console.log(`[HospitalizationStore] Added detail ${detail.id} to bed ${bed.id} (was not found during update)`);
+                            }
+                        }
+                    }
+                });
+            }
+        });
+    };
+
+    const handleDetailsDeleted = (eventData) => {
+        console.log('[HospitalizationStore] Handling detail deleted:', eventData);
+        const detailId = eventData.detail?.id || eventData.id;
+        const attentionId = eventData.detail?.id_attentions || eventData.id_attentions;
+
+        if (!detailId) return;
+
+        // Find the bed with this attention and remove the detail
+        state.status.forEach((room) => {
+            if (room.beds) {
+                room.beds.forEach((bed) => {
+                    if (bed.attention && (!attentionId || bed.attention.hospital_attention_id === attentionId)) {
+                        if (bed.attention.details) {
+                            const detailIndex = bed.attention.details.findIndex((d) => d.id === detailId);
+                            if (detailIndex !== -1) {
+                                bed.attention.details.splice(detailIndex, 1);
+                                console.log(`[HospitalizationStore] Removed detail ${detailId} from bed ${bed.id}`);
+                            }
+                        }
+                    }
+                });
+            }
+        });
+    };
+
     return {
         state,
         hospitalizationStatus,
@@ -320,6 +409,9 @@ export const useHospitalizationStore = defineStore('hospitalization', () => {
         handleHospitalizationDeleted,
         handleTaskCreated,
         handleTaskUpdated,
-        handleTaskDeleted
+        handleTaskDeleted,
+        handleDetailsCreated,
+        handleDetailsUpdated,
+        handleDetailsDeleted
     };
 });

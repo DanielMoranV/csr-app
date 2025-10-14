@@ -68,10 +68,10 @@ const dateRangeFilter = ref({
     endDate: null
 });
 
-const applyDateRangeFilter = () => {
-    // Este computed filtrará las atenciones por rango de fechas
-    // No se usa el sistema de filtros de PrimeVue para esto
-};
+// const applyDateRangeFilter = () => {
+//     // Este computed filtrará las atenciones por rango de fechas
+//     // No se usa el sistema de filtros de PrimeVue para esto
+// };
 
 const clearDateRangeFilter = () => {
     dateRangeFilter.value.startDate = null;
@@ -195,21 +195,11 @@ const handleApproveAttention = async () => {
 };
 
 const handleCreateAudit = async (auditData) => {
-    try {
-        await hospitalAttentionsStore.createAudit(auditData);
-    } catch (error) {
-        // Re-throw para que el componente hijo lo capture
-        throw error;
-    }
+    return hospitalAttentionsStore.createAudit(auditData);
 };
 
 const handleUpdateAudit = async (auditId, auditData) => {
-    try {
-        await hospitalAttentionsStore.updateAudit(auditId, auditData);
-    } catch (error) {
-        // Re-throw para que el componente hijo lo capture
-        throw error;
-    }
+    await hospitalAttentionsStore.updateAudit(auditId, auditData);
 };
 
 const handleDeleteAudit = async (auditId) => {
