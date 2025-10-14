@@ -81,15 +81,27 @@ export function useRealtimeEvents(options = {}) {
                 if (updateDetails && updateAttentions) {
                     hospitalAttentionsStore.handleDetailsCreated(e);
                 }
+
+                if (updateDetails && updateHospitalization) {
+                    hospitalizationStore.handleDetailsCreated(e);
+                }
             })
             .listen('.detail.updated', (e) => {
                 if (updateDetails && updateAttentions) {
                     hospitalAttentionsStore.handleDetailsUpdated(e);
                 }
+
+                if (updateDetails && updateHospitalization) {
+                    hospitalizationStore.handleDetailsUpdated(e);
+                }
             })
             .listen('.detail.deleted', (e) => {
                 if (updateDetails && updateAttentions) {
                     hospitalAttentionsStore.handleDetailsDeleted(e);
+                }
+
+                if (updateDetails && updateHospitalization) {
+                    hospitalizationStore.handleDetailsDeleted(e);
                 }
             })
             .listen('.audit.created', (e) => {

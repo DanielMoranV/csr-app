@@ -63,9 +63,12 @@ export const useHospitalizationStore = defineStore('hospitalization', () => {
                                 const transformedAttention = {
                                     hospital_attention_id: newHospitalization.id,
                                     number: newHospitalization.number, // Número de admisión
+                                    is_active: newHospitalization.is_active,
                                     entry_date: newHospitalization.entry_at,
                                     exit_date: newHospitalization.exit_at,
                                     discharge_date: newHospitalization.exit_at,
+                                    request_at: newHospitalization.request_at,
+                                    medical_discharge_type: newHospitalization.medical_discharge_type,
                                     patient: {
                                         id: newHospitalization.patient.id,
                                         name: newHospitalization.patient.name,
@@ -76,7 +79,7 @@ export const useHospitalizationStore = defineStore('hospitalization', () => {
                                     doctor: newHospitalization.doctor,
                                     insurance: newHospitalization.insurance,
                                     type_attention: newHospitalization.type_attention,
-                                    details: newHospitalization.details_attention,
+                                    details: newHospitalization.details_attention || [],
                                     tasks: newHospitalization.tasks || []
                                 };
 
@@ -143,9 +146,12 @@ export const useHospitalizationStore = defineStore('hospitalization', () => {
                                 const transformedAttention = {
                                     hospital_attention_id: updatedHospitalization.id,
                                     number: updatedHospitalization.number, // Número de admisión
+                                    is_active: updatedHospitalization.is_active,
                                     entry_date: updatedHospitalization.entry_at,
                                     exit_date: updatedHospitalization.exit_at,
                                     discharge_date: updatedHospitalization.exit_at,
+                                    request_at: updatedHospitalization.request_at,
+                                    medical_discharge_type: updatedHospitalization.medical_discharge_type,
                                     patient: {
                                         id: updatedHospitalization.patient.id,
                                         name: updatedHospitalization.patient.name,
@@ -156,7 +162,7 @@ export const useHospitalizationStore = defineStore('hospitalization', () => {
                                     doctor: updatedHospitalization.doctor,
                                     insurance: updatedHospitalization.insurance,
                                     type_attention: updatedHospitalization.type_attention,
-                                    details: updatedHospitalization.details_attention,
+                                    details: updatedHospitalization.details_attention || [],
                                     tasks: updatedHospitalization.tasks || []
                                 };
 

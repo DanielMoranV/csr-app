@@ -34,6 +34,34 @@ const getPendingTasksCount = (tasks) => {
     return tasks.filter((task) => task.status === 'pendiente').length;
 };
 
+// Función para obtener el detalle más reciente (o combinado)
+const getLatestDetails = (details) => {
+    if (!details) return null;
+
+    // Si es un array (nuevo formato), buscar el más reciente o combinar todos
+    if (Array.isArray(details)) {
+        if (details.length === 0) return null;
+
+        // Ordenar por fecha descendente y tomar el primero
+        const sorted = [...details].sort((a, b) => {
+            const dateA = new Date(a.attention_date || a.created_at || 0);
+            const dateB = new Date(b.attention_date || b.created_at || 0);
+            return dateB - dateA;
+        });
+
+        return sorted[0];
+    }
+
+    // Si es un objeto (formato antiguo), retornarlo tal cual
+    return details;
+};
+
+// Función para verificar si tiene un campo específico en los detalles
+const hasDetailField = (details, field) => {
+    const latestDetail = getLatestDetails(details);
+    return latestDetail && latestDetail[field];
+};
+
 // Función para truncar nombre del paciente
 const truncateName = (name) => {
     if (!name) return '---';
@@ -157,7 +185,7 @@ const totalPendingTasks = computed(() => {
                         <div class="bed-header">
                             <span class="bed-number">{{ bed.bed_number }}</span>
                             <div class="bed-alerts">
-                                <i v-if="bed.attention.details?.ram" class="pi pi-exclamation-circle text-warning" title="Tiene RAM registradas"></i>
+                                <i v-if="hasDetailField(bed.attention.details, 'ram')" class="pi pi-exclamation-circle text-warning" title="Tiene RAM registradas"></i>
                                 <i v-if="!bed.attention.discharge_date && !bed.attention.exit_date" class="pi pi-exclamation-triangle text-danger" title="Sin alta/salida registrada"></i>
                                 <Badge v-if="getPendingTasksCount(bed.attention.tasks)" :value="getPendingTasksCount(bed.attention.tasks)" severity="warning" size="small" title="Tareas pendientes" />
                             </div>
@@ -176,11 +204,11 @@ const totalPendingTasks = computed(() => {
 
                         <!-- Indicadores médicos importantes -->
                         <div class="medical-indicators">
-                            <Tag v-if="bed.attention.details?.ram" value="RAM" severity="warn" class="indicator-tag" title="Reacciones Alérgicas a Medicamentos" />
-                            <Tag v-if="bed.attention.details?.medical_order" value="Órdenes" severity="info" class="indicator-tag" />
-                            <Tag v-if="bed.attention.details?.interconsultation" value="Interconsulta" severity="secondary" class="indicator-tag" />
-                            <Tag v-if="bed.attention.details?.laboratory_exams" value="Lab" severity="success" class="indicator-tag" />
-                            <Tag v-if="bed.attention.details?.images_exams" value="Imágenes" severity="info" class="indicator-tag" />
+                            <Tag v-if="hasDetailField(bed.attention.details, 'ram')" value="RAM" severity="warn" class="indicator-tag" title="Reacciones Alérgicas a Medicamentos" />
+                            <Tag v-if="hasDetailField(bed.attention.details, 'medical_order')" value="Órdenes" severity="info" class="indicator-tag" />
+                            <Tag v-if="hasDetailField(bed.attention.details, 'interconsultation')" value="Interconsulta" severity="secondary" class="indicator-tag" />
+                            <Tag v-if="hasDetailField(bed.attention.details, 'laboratory_exams')" value="Lab" severity="success" class="indicator-tag" />
+                            <Tag v-if="hasDetailField(bed.attention.details, 'images_exams')" value="Imágenes" severity="info" class="indicator-tag" />
                         </div>
 
                         <!-- Footer con tiempo de estancia -->

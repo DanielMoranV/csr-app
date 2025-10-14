@@ -202,7 +202,7 @@ watch(
                         <h3 class="text-lg font-bold m-0">Cama {{ bed.bed_number }}</h3>
                         <Tag :value="bed.status === 'occupied' ? 'OCUPADA' : 'LIBRE'" :severity="getBedStatusSeverity(bed.status)" class="text-xs" />
                     </div>
-                    <span v-if="bed.status === 'occupied'" class="text-xs text-500">#{{ attention.hospital_attention_id }}</span>
+                    <span v-if="bed.status === 'occupied' && attention.number" class="text-xs text-500">Admisión: {{ attention.number }}</span>
                 </div>
 
                 <!-- Información del paciente compacta -->
