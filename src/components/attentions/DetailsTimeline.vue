@@ -50,13 +50,19 @@ const createToday = () => {
     emit('create-new', today.value);
 };
 
+// Parsear fecha local desde string YYYY-MM-DD
+const parseLocalDate = (dateString) => {
+    if (!dateString || typeof dateString !== 'string') return null;
+    const match = dateString.match(/^(\d{4})-(\d{2})-(\d{2})/);
+    if (!match) return null;
+    const [, year, month, day] = match;
+    return new Date(parseInt(year), parseInt(month) - 1, parseInt(day));
+};
+
 // Formatear fecha para mostrar
 const formatDisplayDate = (dateString) => {
     if (!dateString) return 'N/A';
     try {
-        const date = new Date(dateString);
-        if (isNaN(date)) return dateString;
-
         // Verificar si es hoy
         if (dateString === today.value) {
             return 'Hoy';
@@ -68,6 +74,9 @@ const formatDisplayDate = (dateString) => {
         if (dateString === yesterday.toISOString().split('T')[0]) {
             return 'Ayer';
         }
+
+        const date = parseLocalDate(dateString);
+        if (!date || isNaN(date)) return dateString;
 
         return date.toLocaleDateString('es-ES', {
             weekday: 'short',
@@ -83,7 +92,10 @@ const formatDisplayDate = (dateString) => {
 // Obtener el número de día relativo (hace cuántos días)
 const getDaysAgo = (dateString) => {
     if (!dateString) return null;
-    const date = new Date(dateString);
+
+    const date = parseLocalDate(dateString);
+    if (!date || isNaN(date)) return null;
+
     const now = new Date();
     now.setHours(0, 0, 0, 0);
     date.setHours(0, 0, 0, 0);
@@ -132,7 +144,7 @@ const getItemSeverity = (detail) => {
                 <span>Registros Diarios</span>
                 <Badge :value="sortedDetails.length" severity="info" />
             </div>
-            <!--  <Button v-if="attentionActive && !hasTodayDetail" label="Registrar Hoy" icon="pi pi-plus" size="small" @click="createToday" severity="success" /> -->
+            <Button v-if="attentionActive && !hasTodayDetail" label="Registrar Hoy" icon="pi pi-plus" size="small" @click="createToday" severity="success" />
         </div>
 
         <!-- Empty state -->
@@ -181,10 +193,20 @@ const getItemSeverity = (detail) => {
                         </div>
                     </div>
 
-                    <!-- Timestamp de actualización -->
-                    <div v-if="detail.updated_at" class="timeline-timestamp">
-                        <i class="pi pi-clock"></i>
-                        <span>Actualizado: {{ new Date(detail.updated_at).toLocaleString('es-ES') }}</span>
+                    <!-- Información de auditoría -->
+                    <div class="timeline-audit">
+                        <div v-if="detail.created_by" class="audit-info-mini audit-created">
+                            <i class="pi pi-user-plus"></i>
+                            <span class="audit-action">Creado:</span>
+                            <span class="audit-user">{{ detail.created_by.nick }}</span>
+                            <span class="timestamp">{{ new Date(detail.created_at).toLocaleString('es-ES') }}</span>
+                        </div>
+                        <div v-if="detail.updated_by && detail.updated_by.id !== detail.created_by?.id" class="audit-info-mini audit-updated">
+                            <i class="pi pi-user-edit"></i>
+                            <span class="audit-action">Actualizado:</span>
+                            <span class="audit-user">{{ detail.updated_by.nick }}</span>
+                            <span class="timestamp">{{ new Date(detail.updated_at).toLocaleString('es-ES') }}</span>
+                        </div>
                     </div>
                 </div>
             </div>
@@ -382,6 +404,65 @@ const getItemSeverity = (detail) => {
     font-size: 0.65rem;
 }
 
+.timeline-audit {
+    margin-top: 0.5rem;
+    display: flex;
+    flex-direction: column;
+    gap: 0.375rem;
+}
+
+.audit-info-mini {
+    display: flex;
+    align-items: center;
+    gap: 0.375rem;
+    font-size: 0.7rem;
+    padding: 0.25rem 0.5rem;
+    background: var(--surface-50);
+    border-radius: 4px;
+    border: 1px solid var(--surface-200);
+}
+
+.audit-info-mini i {
+    font-size: 0.7rem;
+}
+
+.audit-created {
+    background: var(--blue-50);
+    border-color: var(--blue-200);
+}
+
+.audit-created i {
+    color: var(--blue-600);
+}
+
+.audit-updated {
+    background: var(--green-50);
+    border-color: var(--green-200);
+}
+
+.audit-updated i {
+    color: var(--green-600);
+}
+
+.audit-info-mini .audit-action {
+    font-weight: 500;
+    font-size: 0.65rem;
+    color: var(--text-color-secondary);
+    text-transform: uppercase;
+    letter-spacing: 0.3px;
+}
+
+.audit-info-mini .audit-user {
+    font-weight: 600;
+    color: var(--text-color);
+}
+
+.audit-info-mini .timestamp {
+    color: var(--text-color-secondary);
+    margin-left: auto;
+    font-size: 0.65rem;
+}
+
 /* Responsive */
 @media (max-width: 768px) {
     .details-timeline {
@@ -396,10 +477,63 @@ const getItemSeverity = (detail) => {
 
     .timeline-item {
         padding: 0.5rem;
+        gap: 0.75rem;
     }
 
     .meta-scores {
         flex-wrap: wrap;
+    }
+
+    .audit-info-mini {
+        flex-wrap: wrap;
+        gap: 0.25rem;
+        padding: 0.375rem 0.5rem;
+    }
+
+    .audit-info-mini .audit-action {
+        font-size: 0.6rem;
+    }
+
+    .audit-info-mini .audit-user {
+        font-size: 0.7rem;
+    }
+
+    .audit-info-mini .timestamp {
+        width: 100%;
+        margin-left: 1.25rem;
+        margin-top: 0.125rem;
+        font-size: 0.6rem;
+    }
+}
+
+@media (max-width: 480px) {
+    .details-timeline {
+        padding: 0.5rem;
+    }
+
+    .timeline-item {
+        padding: 0.375rem;
+    }
+
+    .timeline-date {
+        gap: 0.25rem;
+    }
+
+    .date-main {
+        font-size: 0.85rem;
+    }
+
+    .date-secondary {
+        font-size: 0.7rem;
+    }
+
+    .audit-info-mini {
+        padding: 0.25rem 0.375rem;
+        font-size: 0.65rem;
+    }
+
+    .audit-info-mini i {
+        font-size: 0.65rem;
     }
 }
 </style>

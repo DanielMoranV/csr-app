@@ -60,13 +60,27 @@ const activeAttentions = computed(() => {
 // Función para formatear fecha
 const formatDate = (dateString) => {
     if (!dateString) return 'No especificada';
-    return new Date(dateString).toLocaleString('es-ES', {
-        year: 'numeric',
-        month: '2-digit',
-        day: '2-digit',
-        hour: '2-digit',
-        minute: '2-digit'
-    });
+    try {
+        let date;
+        // Si la fecha es solo YYYY-MM-DD sin hora, parsear como fecha local
+        if (typeof dateString === 'string' && dateString.match(/^\d{4}-\d{2}-\d{2}$/)) {
+            const [year, month, day] = dateString.split('-').map(Number);
+            date = new Date(year, month - 1, day);
+        } else {
+            date = new Date(dateString);
+        }
+
+        if (isNaN(date)) return dateString;
+        return date.toLocaleString('es-ES', {
+            year: 'numeric',
+            month: '2-digit',
+            day: '2-digit',
+            hour: '2-digit',
+            minute: '2-digit'
+        });
+    } catch (e) {
+        return dateString;
+    }
 };
 
 // Función para obtener tareas pendientes

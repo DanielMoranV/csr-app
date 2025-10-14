@@ -47,10 +47,21 @@ const formData = ref({
     requires_attention: false
 });
 
+// Helper para parsear fechas locales
+const parseLocalDate = (dateString) => {
+    if (!dateString || typeof dateString !== 'string') return null;
+    const match = dateString.match(/^(\d{4})-(\d{2})-(\d{2})/);
+    if (!match) return new Date(dateString);
+    const [, year, month, day] = match;
+    return new Date(parseInt(year), parseInt(month) - 1, parseInt(day));
+};
+
 // Computed
 const sortedAudits = computed(() => {
     return [...localAudits.value].sort((a, b) => {
-        return new Date(b.audit_date) - new Date(a.audit_date);
+        const dateA = parseLocalDate(a.audit_date);
+        const dateB = parseLocalDate(b.audit_date);
+        return dateB - dateA;
     });
 });
 
@@ -128,23 +139,37 @@ const handleSave = async () => {
     try {
         isLoading.value = true;
 
+        // Normalizar la fecha del formulario a formato YYYY-MM-DD
+        const normalizeDate = (date) => {
+            if (!date) return null;
+            if (typeof date === 'string') return date;
+            // Si es un objeto Date, convertir a YYYY-MM-DD
+            const d = new Date(date);
+            return d.toISOString().split('T')[0];
+        };
+
+        const normalizedFormDate = normalizeDate(formData.value.audit_date);
+
         // Verificar si ya existe una auditoría para esta fecha (solo al crear)
         if (!isEditing.value) {
             const existingAudit = localAudits.value.find(
-                (a) => a.audit_date === formData.value.audit_date
+                (a) => normalizeDate(a.audit_date) === normalizedFormDate
             );
 
             if (existingAudit) {
                 toast.add({
                     severity: 'warn',
                     summary: 'Auditoría Duplicada',
-                    detail: `Ya existe una auditoría para la fecha ${formData.value.audit_date}. Puedes editarla en lugar de crear una nueva.`,
+                    detail: `Ya existe una auditoría para la fecha ${formatAuditDate(normalizedFormDate)}. Puedes editarla en lugar de crear una nueva.`,
                     life: 5000
                 });
                 isLoading.value = false;
                 return;
             }
         }
+
+        // Asegurar que la fecha se envíe en formato correcto al backend
+        formData.value.audit_date = normalizedFormDate;
 
         if (isEditing.value && selectedAudit.value) {
             await emit('audit-updated', formData.value.id, formData.value);
@@ -244,6 +269,17 @@ const handleDelete = (audit) => {
 const isFormValid = computed(() => {
     return formData.value.audit_date && formData.value.id_attentions;
 });
+
+// Estado para cards expandidas
+const expandedCards = ref(new Set());
+
+const toggleCard = (auditId) => {
+    if (expandedCards.value.has(auditId)) {
+        expandedCards.value.delete(auditId);
+    } else {
+        expandedCards.value.add(auditId);
+    }
+};
 </script>
 
 <template>
@@ -271,61 +307,78 @@ const isFormValid = computed(() => {
             <Button v-if="!readOnly" label="Crear Auditoría" icon="pi pi-plus" size="small" severity="secondary" outlined @click="openCreateDialog" />
         </div>
 
-        <!-- Audits List -->
-        <div v-else class="audits-list">
-            <div v-for="audit in sortedAudits" :key="audit.id" class="audit-card" :class="`audit-card--${getAuditSeverity(audit)}`">
-                <!-- Card Header -->
-                <div class="audit-card-header">
-                    <div class="audit-card-info">
-                        <div class="audit-card-date">
+        <!-- Audits Grid -->
+        <div v-else class="audits-grid">
+            <div v-for="audit in sortedAudits" :key="audit.id" class="audit-card-compact" :class="{ expanded: expandedCards.has(audit.id) }">
+                <!-- Card Header - Siempre visible -->
+                <div class="card-header" @click="toggleCard(audit.id)">
+                    <div class="header-left">
+                        <div class="date-info">
                             <i class="pi pi-calendar"></i>
-                            {{ formatAuditDate(audit.audit_date) }}
+                            <span class="date-text">{{ formatAuditDate(audit.audit_date) }}</span>
                         </div>
-                        <div class="audit-card-badges">
-                            <Tag :value="audit.is_audited ? 'Auditada' : 'Pendiente'" :severity="audit.is_audited ? 'success' : 'warning'" size="small" />
-                            <Tag v-if="audit.requires_attention" value="Requiere atención" severity="danger" size="small" />
+                        <div class="status-badges">
+                            <Tag :value="audit.is_audited ? 'Auditada' : 'Pendiente'" :severity="audit.is_audited ? 'success' : 'warning'" class="badge-sm" />
+                            <Tag v-if="audit.requires_attention" icon="pi pi-exclamation-triangle" severity="danger" class="badge-sm" />
                         </div>
                     </div>
-                    <div v-if="!readOnly" class="audit-card-actions">
-                        <Button v-if="!audit.is_audited" icon="pi pi-check" v-tooltip.top="'Marcar como auditada'" severity="success" text rounded size="small" @click="handleMarkAsAudited(audit)" />
-                        <Button icon="pi pi-pencil" v-tooltip.top="'Editar'" severity="info" text rounded size="small" @click="openEditDialog(audit)" />
-                        <Button icon="pi pi-trash" v-tooltip.top="'Eliminar'" severity="danger" text rounded size="small" @click="handleDelete(audit)" />
-                    </div>
-                </div>
-
-                <!-- Card Body -->
-                <div class="audit-card-body">
-                    <!-- Compliance Score -->
-                    <div v-if="audit.compliance_score !== null && audit.compliance_score !== undefined" class="audit-score">
-                        <div class="score-label">
-                            <i class="pi pi-chart-bar"></i>
-                            Puntaje de Cumplimiento
+                    <div class="header-right">
+                        <!-- Score Badge -->
+                        <div v-if="audit.compliance_score !== null && audit.compliance_score !== undefined" class="score-badge" :class="`score-badge--${getComplianceScoreSeverity(audit.compliance_score)}`">
+                            <span class="score-number">{{ audit.compliance_score }}</span>
+                            <i
+                                class="pi score-icon"
+                                :class="{
+                                    'pi-check-circle': audit.compliance_score >= 90,
+                                    'pi-info-circle': audit.compliance_score >= 70 && audit.compliance_score < 90,
+                                    'pi-exclamation-circle': audit.compliance_score >= 50 && audit.compliance_score < 70,
+                                    'pi-times-circle': audit.compliance_score < 50
+                                }"
+                            ></i>
                         </div>
-                        <div class="score-value" :class="`score-value--${getComplianceScoreSeverity(audit.compliance_score)}`">{{ audit.compliance_score }}/100</div>
-                        <ProgressBar :value="audit.compliance_score" :severity="getComplianceScoreSeverity(audit.compliance_score)" class="score-progress" />
-                    </div>
-
-                    <!-- Observations -->
-                    <div v-if="audit.observations" class="audit-observations">
-                        <div class="observations-label">
-                            <i class="pi pi-file-edit"></i>
-                            Observaciones
-                        </div>
-                        <div class="observations-text">{{ audit.observations }}</div>
-                    </div>
-
-                    <!-- Auditor Info -->
-                    <div v-if="audit.is_audited && audit.auditor" class="audit-footer">
-                        <div class="auditor-info">
-                            <i class="pi pi-user"></i>
-                            <span>Auditado por: {{ audit.auditor.name }}</span>
-                        </div>
-                        <div class="audit-date">
-                            <i class="pi pi-clock"></i>
-                            <span>{{ formatAuditDateTime(audit.audited_at) }}</span>
-                        </div>
+                        <i class="pi toggle-icon" :class="expandedCards.has(audit.id) ? 'pi-chevron-up' : 'pi-chevron-down'"></i>
                     </div>
                 </div>
+
+                <!-- Card Body - Expandible -->
+                <Transition name="expand">
+                    <div v-if="expandedCards.has(audit.id)" class="card-body">
+                        <!-- Progress bar si hay puntaje -->
+                        <div v-if="audit.compliance_score !== null && audit.compliance_score !== undefined" class="body-section">
+                            <ProgressBar :value="audit.compliance_score" :severity="getComplianceScoreSeverity(audit.compliance_score)" :showValue="false" class="compact-progress" />
+                        </div>
+
+                        <!-- Observaciones -->
+                        <div v-if="audit.observations" class="body-section">
+                            <div class="section-label">
+                                <i class="pi pi-file-edit"></i>
+                                <span>Observaciones</span>
+                            </div>
+                            <p class="observation-text">{{ audit.observations }}</p>
+                        </div>
+
+                        <!-- Info del auditor -->
+                        <div v-if="audit.is_audited && audit.auditor" class="body-section">
+                            <div class="auditor-info">
+                                <div class="info-item">
+                                    <i class="pi pi-user"></i>
+                                    <span>{{ audit.auditor.name }}</span>
+                                </div>
+                                <div class="info-item">
+                                    <i class="pi pi-clock"></i>
+                                    <span>{{ formatAuditDateTime(audit.audited_at) }}</span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Acciones -->
+                        <div v-if="!readOnly" class="body-section actions-section">
+                            <Button v-if="!audit.is_audited" label="Marcar Auditada" icon="pi pi-check" severity="success" size="small" text @click="handleMarkAsAudited(audit)" />
+                            <Button label="Editar" icon="pi pi-pencil" severity="info" size="small" text @click="openEditDialog(audit)" />
+                            <Button label="Eliminar" icon="pi pi-trash" severity="danger" size="small" text @click="handleDelete(audit)" />
+                        </div>
+                    </div>
+                </Transition>
             </div>
         </div>
 
@@ -392,8 +445,8 @@ const isFormValid = computed(() => {
     display: flex;
     justify-content: space-between;
     align-items: center;
-    margin-bottom: 1.5rem;
-    padding-bottom: 1rem;
+    margin-bottom: 1rem;
+    padding-bottom: 0.75rem;
     border-bottom: 1px solid var(--surface-border);
 }
 
@@ -408,7 +461,7 @@ const isFormValid = computed(() => {
     align-items: center;
     gap: 0.5rem;
     margin: 0;
-    font-size: 1.25rem;
+    font-size: 1.1rem;
     font-weight: 600;
     color: var(--text-color);
 }
@@ -429,181 +482,240 @@ const isFormValid = computed(() => {
     flex-direction: column;
     align-items: center;
     gap: 1rem;
-    padding: 3rem 1rem;
+    padding: 2rem 1rem;
     text-align: center;
     color: var(--text-color-secondary);
 }
 
 .empty-audits i {
-    font-size: 3rem;
+    font-size: 2.5rem;
     color: var(--surface-400);
 }
 
-/* Audits List */
-.audits-list {
-    display: flex;
-    flex-direction: column;
-    gap: 1rem;
+/* Audits Grid */
+.audits-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+    gap: 0.75rem;
+    max-height: 550px;
+    overflow-y: auto;
+    padding: 0.25rem;
 }
 
-/* Audit Card */
-.audit-card {
+/* Compact Audit Card */
+.audit-card-compact {
     background: var(--surface-50);
-    border: 2px solid var(--surface-200);
+    border: 1px solid var(--surface-border);
     border-radius: 8px;
-    padding: 1rem;
+    overflow: hidden;
     transition: all 0.2s ease;
 }
 
-.audit-card:hover {
-    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+.audit-card-compact:hover {
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+    transform: translateY(-2px);
 }
 
-.audit-card--success {
-    border-left: 4px solid var(--green-500);
+.audit-card-compact.expanded {
+    border-color: var(--primary-color);
 }
 
-.audit-card--warning {
-    border-left: 4px solid var(--orange-500);
-}
-
-.audit-card--danger {
-    border-left: 4px solid var(--red-500);
-}
-
-.audit-card-header {
+/* Card Header */
+.card-header {
     display: flex;
     justify-content: space-between;
-    align-items: flex-start;
-    margin-bottom: 1rem;
+    align-items: center;
+    padding: 0.75rem;
+    cursor: pointer;
+    user-select: none;
+    background: var(--surface-card);
 }
 
-.audit-card-info {
+.card-header:hover {
+    background: var(--surface-hover);
+}
+
+.header-left {
+    flex: 1;
     display: flex;
     flex-direction: column;
     gap: 0.5rem;
 }
 
-.audit-card-date {
+.date-info {
     display: flex;
     align-items: center;
     gap: 0.5rem;
-    font-size: 1rem;
+}
+
+.date-info i {
+    color: var(--primary-color);
+    font-size: 0.9rem;
+}
+
+.date-text {
     font-weight: 600;
+    font-size: 0.9rem;
     color: var(--text-color);
 }
 
-.audit-card-date i {
-    color: var(--primary-color);
-}
-
-.audit-card-badges {
+.status-badges {
     display: flex;
-    gap: 0.5rem;
+    gap: 0.375rem;
     flex-wrap: wrap;
 }
 
-.audit-card-actions {
-    display: flex;
-    gap: 0.25rem;
+.badge-sm {
+    font-size: 0.7rem;
+    padding: 0.2rem 0.5rem;
 }
 
-/* Card Body */
-.audit-card-body {
-    display: flex;
-    flex-direction: column;
-    gap: 1rem;
-}
-
-.audit-score {
-    display: flex;
-    flex-direction: column;
-    gap: 0.5rem;
-    padding: 0.75rem;
-    background: var(--surface-card);
-    border-radius: 6px;
-    border: 1px solid var(--surface-200);
-}
-
-.score-label {
+.header-right {
     display: flex;
     align-items: center;
-    gap: 0.5rem;
-    font-size: 0.875rem;
-    font-weight: 500;
-    color: var(--text-color-secondary);
+    gap: 0.75rem;
+    margin-left: 0.75rem;
 }
 
-.score-value {
-    font-size: 1.5rem;
+/* Score Badge */
+.score-badge {
+    display: flex;
+    align-items: center;
+    gap: 0.375rem;
+    padding: 0.375rem 0.625rem;
+    border-radius: 6px;
     font-weight: 700;
-    text-align: center;
 }
 
-.score-value--success {
+.score-badge--success {
+    background: rgba(34, 197, 94, 0.1);
     color: var(--green-600);
 }
 
-.score-value--info {
+.score-badge--info {
+    background: rgba(59, 130, 246, 0.1);
     color: var(--blue-600);
 }
 
-.score-value--warning {
+.score-badge--warning {
+    background: rgba(251, 146, 60, 0.1);
     color: var(--orange-600);
 }
 
-.score-value--danger {
+.score-badge--danger {
+    background: rgba(239, 68, 68, 0.1);
     color: var(--red-600);
 }
 
-.score-progress {
-    height: 12px;
+.score-number {
+    font-size: 1rem;
+    line-height: 1;
 }
 
-.audit-observations {
-    display: flex;
-    flex-direction: column;
-    gap: 0.5rem;
+.score-icon {
+    font-size: 0.9rem;
 }
 
-.observations-label {
+.toggle-icon {
+    color: var(--text-color-secondary);
+    font-size: 0.875rem;
+    transition: transform 0.2s ease;
+}
+
+/* Card Body */
+.card-body {
+    padding: 0.75rem;
+    border-top: 1px solid var(--surface-border);
+    background: var(--surface-ground);
+}
+
+.body-section {
+    margin-bottom: 0.75rem;
+}
+
+.body-section:last-child {
+    margin-bottom: 0;
+}
+
+.section-label {
     display: flex;
     align-items: center;
-    gap: 0.5rem;
-    font-size: 0.875rem;
-    font-weight: 500;
+    gap: 0.375rem;
+    font-size: 0.8rem;
+    font-weight: 600;
     color: var(--text-color-secondary);
+    margin-bottom: 0.5rem;
 }
 
-.observations-text {
-    font-size: 0.9rem;
+.section-label i {
+    font-size: 0.75rem;
+}
+
+.observation-text {
+    font-size: 0.85rem;
     line-height: 1.5;
     color: var(--text-color);
+    margin: 0;
+    padding: 0.5rem;
+    background: var(--surface-card);
+    border-radius: 4px;
     white-space: pre-wrap;
 }
 
-.audit-footer {
+.compact-progress {
+    height: 8px;
+}
+
+.auditor-info {
     display: flex;
-    justify-content: space-between;
+    flex-direction: column;
+    gap: 0.375rem;
+    padding: 0.5rem;
+    background: var(--surface-card);
+    border-radius: 4px;
+}
+
+.info-item {
+    display: flex;
     align-items: center;
-    padding-top: 0.75rem;
-    border-top: 1px solid var(--surface-200);
+    gap: 0.5rem;
     font-size: 0.8rem;
     color: var(--text-color-secondary);
 }
 
-.auditor-info,
-.audit-date {
+.info-item i {
+    font-size: 0.75rem;
+    color: var(--primary-color);
+}
+
+.actions-section {
     display: flex;
-    align-items: center;
-    gap: 0.25rem;
+    gap: 0.5rem;
+    flex-wrap: wrap;
+    padding-top: 0.5rem;
+    border-top: 1px solid var(--surface-border);
+}
+
+/* Expand Transition */
+.expand-enter-active,
+.expand-leave-active {
+    transition: all 0.3s ease;
+    max-height: 500px;
+}
+
+.expand-enter-from,
+.expand-leave-to {
+    max-height: 0;
+    opacity: 0;
+    padding-top: 0;
+    padding-bottom: 0;
 }
 
 /* Form */
 .audit-form {
     display: flex;
     flex-direction: column;
-    gap: 1.25rem;
+    gap: 1rem;
     padding: 0.5rem 0;
 }
 
@@ -627,26 +739,76 @@ const isFormValid = computed(() => {
 }
 
 /* Responsive */
+@media (max-width: 1200px) {
+    .audits-grid {
+        grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+    }
+}
+
 @media (max-width: 768px) {
+    .daily-medical-audits {
+        padding: 0.75rem;
+    }
+
     .audits-header {
         flex-direction: column;
         align-items: flex-start;
-        gap: 1rem;
-    }
-
-    .audit-card-header {
-        flex-direction: column;
         gap: 0.75rem;
     }
 
-    .audit-card-actions {
-        align-self: flex-end;
+    .header-title {
+        font-size: 1rem;
     }
 
-    .audit-footer {
-        flex-direction: column;
-        align-items: flex-start;
+    .audits-grid {
+        grid-template-columns: 1fr;
+        gap: 0.625rem;
+        max-height: 500px;
+    }
+
+    .card-header {
+        padding: 0.625rem;
+    }
+
+    .card-body {
+        padding: 0.625rem;
+    }
+
+    .header-right {
         gap: 0.5rem;
+        margin-left: 0.5rem;
+    }
+
+    .score-badge {
+        padding: 0.3rem 0.5rem;
+    }
+
+    .score-number {
+        font-size: 0.9rem;
+    }
+
+    .actions-section {
+        flex-direction: column;
+    }
+
+    .actions-section :deep(.p-button) {
+        width: 100%;
+        justify-content: center;
+    }
+}
+
+@media (max-width: 480px) {
+    .audits-grid {
+        max-height: 450px;
+    }
+
+    .date-text {
+        font-size: 0.85rem;
+    }
+
+    .badge-sm {
+        font-size: 0.65rem;
+        padding: 0.15rem 0.4rem;
     }
 }
 </style>

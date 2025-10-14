@@ -1,5 +1,4 @@
 <script setup>
-import ConfirmDialog from 'primevue/confirmdialog';
 import { useConfirm } from 'primevue/useconfirm';
 import { useToast } from 'primevue/usetoast';
 import { computed, defineEmits, defineProps, ref, watch } from 'vue';
@@ -356,7 +355,15 @@ const getScoreValue = (score) => {
 const formatAuditDate = (dateString) => {
     if (!dateString) return 'N/A';
     try {
-        const date = new Date(dateString);
+        let date;
+        // Si la fecha es solo YYYY-MM-DD, parsear como fecha local
+        if (typeof dateString === 'string' && dateString.match(/^\d{4}-\d{2}-\d{2}$/)) {
+            const [year, month, day] = dateString.split('-').map(Number);
+            date = new Date(year, month - 1, day);
+        } else {
+            date = new Date(dateString);
+        }
+
         if (isNaN(date)) return dateString;
         return date.toLocaleDateString('es-ES', {
             year: 'numeric',
@@ -366,6 +373,31 @@ const formatAuditDate = (dateString) => {
     } catch (e) {
         return dateString;
     }
+};
+
+const formatDateTime = (dateString) => {
+    if (!dateString) return 'N/A';
+    try {
+        const date = new Date(dateString);
+        if (isNaN(date)) return dateString;
+        return date.toLocaleString('es-ES', {
+            year: 'numeric',
+            month: '2-digit',
+            day: '2-digit',
+            hour: '2-digit',
+            minute: '2-digit'
+        });
+    } catch (e) {
+        return dateString;
+    }
+};
+
+const getUserInfo = (userObj) => {
+    if (!userObj) return null;
+    return {
+        id: userObj.id,
+        nick: userObj.nick || 'Usuario'
+    };
 };
 </script>
 
@@ -533,10 +565,26 @@ const formatAuditDate = (dateString) => {
         <!-- Footer compacto con acciones -->
         <div class="details-footer-compact">
             <div class="footer-content">
-                <div class="footer-info">
-                    <i class="pi pi-info-circle"></i>
-                    <span v-if="!isEditing && currentDetail">Actualizado: {{ formatAuditDate(currentDetail.updated_at) }}</span>
-                    <span v-else>Campos opcionales - Fecha: {{ localDetails.attention_date }}</span>
+                <div class="footer-info-wrapper">
+                    <!-- Información de auditoría -->
+                    <div v-if="!isEditing && currentDetail" class="audit-info">
+                        <div v-if="getUserInfo(currentDetail.created_by)" class="audit-item audit-item--created">
+                            <i class="pi pi-user-plus"></i>
+                            <span class="audit-label">Creado por:</span>
+                            <Tag :value="getUserInfo(currentDetail.created_by).nick" severity="info" size="small" />
+                            <span class="audit-date">{{ formatDateTime(currentDetail.created_at) }}</span>
+                        </div>
+                        <div v-if="getUserInfo(currentDetail.updated_by) && currentDetail.updated_by?.id !== currentDetail.created_by?.id" class="audit-item audit-item--updated">
+                            <i class="pi pi-user-edit"></i>
+                            <span class="audit-label">Actualizado por:</span>
+                            <Tag :value="getUserInfo(currentDetail.updated_by).nick" severity="success" size="small" />
+                            <span class="audit-date">{{ formatDateTime(currentDetail.updated_at) }}</span>
+                        </div>
+                    </div>
+                    <div v-else class="footer-info">
+                        <i class="pi pi-info-circle"></i>
+                        <span>Campos opcionales - Fecha: {{ localDetails.attention_date }}</span>
+                    </div>
                 </div>
                 <div class="footer-actions">
                     <template v-if="!isEditing && currentDetail && !readOnly">
@@ -1138,6 +1186,63 @@ const formatAuditDate = (dateString) => {
     font-size: 0.75rem;
 }
 
+.footer-info-wrapper {
+    flex: 1;
+}
+
+.audit-info {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+}
+
+.audit-item {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    font-size: 0.75rem;
+    padding: 0.375rem 0.625rem;
+    border-radius: 6px;
+    transition: all 0.2s ease;
+}
+
+.audit-item--created {
+    background: var(--blue-50);
+    border-left: 3px solid var(--blue-500);
+}
+
+.audit-item--created i {
+    color: var(--blue-600);
+}
+
+.audit-item--updated {
+    background: var(--green-50);
+    border-left: 3px solid var(--green-500);
+}
+
+.audit-item--updated i {
+    color: var(--green-600);
+}
+
+.audit-item i {
+    font-size: 0.875rem;
+}
+
+.audit-label {
+    font-weight: 600;
+    color: var(--text-color);
+    font-size: 0.7rem;
+    text-transform: uppercase;
+    letter-spacing: 0.3px;
+}
+
+.audit-date {
+    font-size: 0.7rem;
+    color: var(--text-color-secondary);
+    margin-left: auto;
+    font-weight: 500;
+}
+
 .footer-actions {
     display: flex;
     gap: 0.5rem;
@@ -1176,6 +1281,23 @@ const formatAuditDate = (dateString) => {
         align-items: stretch;
     }
 
+    .audit-item {
+        flex-wrap: wrap;
+        padding: 0.5rem;
+    }
+
+    .audit-label {
+        font-size: 0.65rem;
+    }
+
+    .audit-date {
+        margin-left: 0;
+        width: 100%;
+        margin-top: 0.25rem;
+        padding-left: 1.5rem;
+        font-size: 0.65rem;
+    }
+
     .footer-actions {
         justify-content: center;
     }
@@ -1195,11 +1317,28 @@ const formatAuditDate = (dateString) => {
 @media (max-width: 480px) {
     .footer-actions {
         flex-direction: column;
+        width: 100%;
+    }
+
+    .footer-actions button {
+        width: 100%;
     }
 
     .scores-edit-grid,
     .clinical-edit-grid {
         grid-template-columns: 1fr;
+    }
+
+    .audit-info {
+        gap: 0.375rem;
+    }
+
+    .audit-item {
+        font-size: 0.7rem;
+    }
+
+    .audit-item i {
+        font-size: 0.75rem;
     }
 }
 

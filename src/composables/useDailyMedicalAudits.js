@@ -199,7 +199,15 @@ export function useDailyMedicalAudits() {
     function formatAuditDate(dateString) {
         if (!dateString) return 'N/A';
         try {
-            const date = new Date(dateString);
+            // Para fechas en formato YYYY-MM-DD, parsear como fecha local
+            let date;
+            if (typeof dateString === 'string' && dateString.match(/^\d{4}-\d{2}-\d{2}$/)) {
+                const [year, month, day] = dateString.split('-').map(Number);
+                date = new Date(year, month - 1, day);
+            } else {
+                date = new Date(dateString);
+            }
+
             if (isNaN(date)) return dateString;
             return date.toLocaleDateString('es-ES', {
                 year: 'numeric',
@@ -214,6 +222,7 @@ export function useDailyMedicalAudits() {
     function formatAuditDateTime(dateString) {
         if (!dateString) return 'N/A';
         try {
+            // Para fechas con hora, usar Date normal
             const date = new Date(dateString);
             if (isNaN(date)) return dateString;
             return date.toLocaleString('es-ES', {

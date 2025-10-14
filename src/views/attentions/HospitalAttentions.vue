@@ -16,10 +16,16 @@ const { hasPosition } = usePermissions();
 const attentions = computed(() => hospitalAttentionsStore.allAttentions);
 const isLoading = computed(() => hospitalAttentionsStore.isLoading);
 
-// Verificar si el usuario puede editar (solo HOSPITALIZACION y atención activa)
-const canEdit = computed(() => hasPosition(USER_POSITIONS.HOSPITALIZACION));
+// ============================================================================
+// CONFIGURACIÓN DE PERMISOS POR FUNCIONALIDAD
+// ============================================================================
+// PERMISOS DE EDICIÓN: HOSPITALIZACION, DIRECTOR_MEDICO y MEDICOS pueden editar detalles y tareas de atención
+const canEdit = computed(() => hasPosition(USER_POSITIONS.HOSPITALIZACION) || hasPosition(USER_POSITIONS.DIRECTOR_MEDICO) || hasPosition(USER_POSITIONS.MEDICOS));
 
-// Verificar si el usuario es Director Médico
+// PERMISOS DE AUDITORÍA: Solo DIRECTOR_MEDICO puede registrar/editar auditorías médicas diarias
+const canEditAudits = computed(() => hasPosition(USER_POSITIONS.DIRECTOR_MEDICO));
+
+// PERMISOS DE APROBACIÓN: Solo DIRECTOR_MEDICO puede aprobar alta de atención
 const isDirectorMedico = computed(() => hasPosition(USER_POSITIONS.DIRECTOR_MEDICO));
 
 // Verificar si se puede editar la atención de detalles (debe estar activa)
@@ -224,15 +230,27 @@ const canApproveAttention = (attention) => {
 
 const formatDate = (value) => {
     if (!value) return 'N/A';
-    const date = new Date(value);
-    if (isNaN(date)) return value; // Return original if invalid
-    return date.toLocaleString('es-ES', {
-        year: 'numeric',
-        month: '2-digit',
-        day: '2-digit',
-        hour: '2-digit',
-        minute: '2-digit'
-    });
+    try {
+        let date;
+        // Si la fecha es solo YYYY-MM-DD sin hora, parsear como fecha local
+        if (typeof value === 'string' && value.match(/^\d{4}-\d{2}-\d{2}$/)) {
+            const [year, month, day] = value.split('-').map(Number);
+            date = new Date(year, month - 1, day);
+        } else {
+            date = new Date(value);
+        }
+
+        if (isNaN(date)) return value; // Return original if invalid
+        return date.toLocaleString('es-ES', {
+            year: 'numeric',
+            month: '2-digit',
+            day: '2-digit',
+            hour: '2-digit',
+            minute: '2-digit'
+        });
+    } catch (e) {
+        return value;
+    }
 };
 
 const getSeverity = (isActive) => {
@@ -280,6 +298,19 @@ const parseCie10Names = (names) => {
         }
     }
     return Array.isArray(names) ? names : [];
+};
+
+const calculateDurationDays = (attention) => {
+    if (!attention.entry_at) return null;
+
+    const entryDate = new Date(attention.entry_at);
+    const endDate = attention.exit_at ? new Date(attention.exit_at) : new Date();
+
+    // Calcular diferencia en milisegundos y convertir a días
+    const diffTime = Math.abs(endDate - entryDate);
+    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+
+    return diffDays;
 };
 
 const cie10Severities = ['success', 'info', 'warning', 'danger', 'secondary', 'contrast'];
@@ -494,9 +525,10 @@ const currentAuditsArray = computed(() => {
                     <div class="text-xs">
                         <div><span class="font-semibold">Ingreso:</span> {{ formatDate(data.entry_at) }}</div>
                         <div><span class="font-semibold">Salida:</span> {{ formatDate(data.exit_at) }}</div>
-                        <div v-if="data.duration_days" class="text-gray-600 mt-1">
+                        <div v-if="calculateDurationDays(data)" class="text-gray-600 mt-1">
                             <i class="pi pi-calendar mr-1"></i>
-                            <span>Duración: {{ Math.ceil(data.duration_days) }} días</span>
+                            <span>Duración: {{ calculateDurationDays(data) }} {{ calculateDurationDays(data) === 1 ? 'día' : 'días' }}</span>
+                            <span v-if="!data.exit_at" class="ml-1 text-blue-600 font-medium">(en curso)</span>
                         </div>
                         <div v-if="data.request_at" class="text-gray-600">
                             <i class="pi pi-send mr-1"></i>
@@ -559,7 +591,7 @@ const currentAuditsArray = computed(() => {
                         <Button icon="pi pi-eye" class="p-button-rounded p-button-info p-button-sm" @click="openDetailsSidebar(data)" v-tooltip.top="'Ver Detalles de Atención'" />
                         <Button icon="pi pi-list-check" class="p-button-rounded p-button-secondary p-button-sm" @click="openTasksSidebar(data)" v-tooltip.top="'Ver Tareas'" />
                         <Button icon="pi pi-check-square" class="p-button-rounded p-button-help p-button-sm" @click="openAuditsSidebar(data)" v-tooltip.top="'Ver Auditorías Médicas'" />
-                        <Button v-if="canApproveAttention(data)" icon="pi pi-check" class="p-button-rounded p-button-success p-button-sm" @click="openApproveDialog(data)" v-tooltip.top="'Aprobar Atención'" />
+                        <Button v-if="canApproveAttention(data)" icon="pi pi-check" class="p-button-rounded p-button-success p-button-sm" @click="openApproveDialog(data)" v-tooltip.top="'Aprobar alta de atención'" />
                         <div v-if="data.tasks && data.tasks.length > 0" class="flex items-center gap-1 ml-1">
                             <Tag :value="data.tasks.length" :severity="getTasksSeverity(data.tasks)" class="text-xs" v-tooltip.top="'Número de tareas'" />
                             <i v-if="hasPendingTasks(data.tasks)" class="pi pi-exclamation-triangle text-warning" v-tooltip.top="'Tiene tareas pendientes'"></i>
@@ -727,7 +759,7 @@ const currentAuditsArray = computed(() => {
                 <DailyMedicalAudits
                     :attention-id="currentSelectedAttentionForAudits.id"
                     :audits="currentAuditsArray"
-                    :read-only="!canEdit"
+                    :read-only="!canEditAudits"
                     @audit-created="handleCreateAudit"
                     @audit-updated="handleUpdateAudit"
                     @audit-deleted="handleDeleteAudit"

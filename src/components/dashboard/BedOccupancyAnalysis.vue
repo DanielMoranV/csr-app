@@ -17,6 +17,15 @@ const props = defineProps({
     }
 });
 
+// Helper para parsear fechas locales
+const parseLocalDate = (dateString) => {
+    if (!dateString || typeof dateString !== 'string') return new Date();
+    const match = dateString.match(/^(\d{4})-(\d{2})-(\d{2})/);
+    if (!match) return new Date(dateString);
+    const [, year, month, day] = match;
+    return new Date(parseInt(year), parseInt(month) - 1, parseInt(day));
+};
+
 // Datos para la tabla diaria
 const dailyTableData = computed(() => {
     if (!props.occupancyData?.daily_data) return [];
@@ -30,7 +39,7 @@ const dailyTableData = computed(() => {
 
         return {
             date: day.date,
-            dateFormatted: new Date(day.date).toLocaleDateString('es-ES', {
+            dateFormatted: parseLocalDate(day.date).toLocaleDateString('es-ES', {
                 day: '2-digit',
                 month: 'short',
                 year: 'numeric'

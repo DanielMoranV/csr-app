@@ -53,15 +53,27 @@ const getStatusSeverity = (status) => {
 
 const formatDateTime = (dateString) => {
     if (!dateString) return 'N/A';
-    const date = new Date(dateString);
-    if (isNaN(date)) return dateString;
-    return date.toLocaleString('es-ES', {
-        year: 'numeric',
-        month: '2-digit',
-        day: '2-digit',
-        hour: '2-digit',
-        minute: '2-digit'
-    });
+    try {
+        let date;
+        // Si la fecha es solo YYYY-MM-DD sin hora, parsear como fecha local
+        if (typeof dateString === 'string' && dateString.match(/^\d{4}-\d{2}-\d{2}$/)) {
+            const [year, month, day] = dateString.split('-').map(Number);
+            date = new Date(year, month - 1, day);
+        } else {
+            date = new Date(dateString);
+        }
+
+        if (isNaN(date)) return dateString;
+        return date.toLocaleString('es-ES', {
+            year: 'numeric',
+            month: '2-digit',
+            day: '2-digit',
+            hour: '2-digit',
+            minute: '2-digit'
+        });
+    } catch (e) {
+        return dateString;
+    }
 };
 
 const formatRelativeTime = (dateString) => {
@@ -142,6 +154,53 @@ const getStatusChangeIcon = (status) => {
     }
 };
 
+// Obtener información del usuario que creó la tarea
+const getCreatedByUser = (task) => {
+    if (!task.status_history || task.status_history.length === 0) return null;
+
+    // El primer registro del historial es la creación (old_status === null)
+    const creationRecord = task.status_history.find(h => h.old_status === null);
+
+    if (creationRecord && creationRecord.changed_by) {
+        return {
+            id: creationRecord.changed_by.id,
+            nick: creationRecord.changed_by.nick,
+            timestamp: creationRecord.changed_at
+        };
+    }
+
+    return null;
+};
+
+// Obtener información del último usuario que modificó la tarea
+const getLastModifiedByUser = (task) => {
+    if (!task.status_history || task.status_history.length === 0) return null;
+
+    // Ordenar por fecha descendente para obtener el más reciente
+    const sortedHistory = [...task.status_history].sort((a, b) =>
+        new Date(b.changed_at) - new Date(a.changed_at)
+    );
+
+    const latestChange = sortedHistory[0];
+
+    // No mostrar si el último cambio es la creación inicial (old_status === null)
+    // Esto evita redundancia con "Creado por"
+    if (latestChange && latestChange.old_status === null) {
+        return null;
+    }
+
+    if (latestChange && latestChange.changed_by) {
+        return {
+            id: latestChange.changed_by.id,
+            nick: latestChange.changed_by.nick,
+            timestamp: latestChange.changed_at,
+            action: latestChange.reason || getStatusChangeText(latestChange.new_status)
+        };
+    }
+
+    return null;
+};
+
 // Cache para evitar recálculos innecesarios
 const statusChangeInfoCache = ref(new Map());
 
@@ -188,15 +247,34 @@ watch(
                             <Tag :value="task.status" :severity="getStatusSeverity(task.status)" class="text-xs" />
                         </div>
 
-                        <!-- Timestamps -->
+                        <!-- Timestamps y Usuario Info -->
                         <div class="text-xs text-gray-500 space-y-1">
-                            <div v-if="task.created_at" class="flex items-center gap-1">
+                            <!-- Creado por -->
+                            <div v-if="getCreatedByUser(task)" class="flex items-center gap-2 flex-wrap">
+                                <div class="flex items-center gap-1">
+                                    <i class="pi pi-user-plus text-blue-600"></i>
+                                    <span>Creado por:</span>
+                                </div>
+                                <Tag :value="getCreatedByUser(task).nick" severity="info" class="text-xs" />
+                                <span class="text-gray-400">{{ formatRelativeTime(getCreatedByUser(task).timestamp) }}</span>
+                            </div>
+                            <div v-else-if="task.created_at" class="flex items-center gap-1">
                                 <i class="pi pi-clock"></i>
                                 <span>Creado: {{ formatRelativeTime(task.created_at) }}</span>
                             </div>
 
-                            <!-- Status Change Information -->
-                            <div v-if="getStatusChangeInfoCached(task).hasChange" class="space-y-1">
+                            <!-- Última modificación por -->
+                            <div v-if="getLastModifiedByUser(task)" class="flex items-center gap-2 flex-wrap">
+                                <div class="flex items-center gap-1">
+                                    <i :class="getStatusChangeIcon(task.status)" :style="{ color: task.status === 'realizado' ? '#10b981' : task.status === 'anulado' ? '#ef4444' : '#f59e0b' }"></i>
+                                    <span>{{ getLastModifiedByUser(task).action }}:</span>
+                                </div>
+                                <Tag :value="getLastModifiedByUser(task).nick" severity="success" class="text-xs" />
+                                <span class="text-gray-400">{{ formatRelativeTime(getLastModifiedByUser(task).timestamp) }}</span>
+                            </div>
+
+                            <!-- Fallback: Status Change Information (sin usuario) -->
+                            <div v-else-if="getStatusChangeInfoCached(task).hasChange" class="space-y-1">
                                 <div class="flex items-center gap-1">
                                     <i :class="getStatusChangeIcon(task.status)" :style="{ color: task.status === 'realizado' ? '#10b981' : task.status === 'anulado' ? '#ef4444' : '#f59e0b' }"></i>
                                     <span>{{ getStatusChangeInfoCached(task).changeType }}: {{ formatRelativeTime(getStatusChangeInfoCached(task).changeTime) }}</span>
@@ -207,6 +285,7 @@ watch(
                                 </div>
                             </div>
 
+                            <!-- Fallback: Updated timestamp -->
                             <div v-else-if="task.updated_at && task.updated_at !== task.created_at" class="flex items-center gap-1">
                                 <i class="pi pi-refresh"></i>
                                 <span>Actualizado: {{ formatRelativeTime(task.updated_at) }}</span>

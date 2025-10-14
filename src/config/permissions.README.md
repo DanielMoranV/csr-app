@@ -134,6 +134,49 @@ miModulo: {
 
 ✅ **Documentación clara** - Todas las rutas y permisos están centralizados y documentados
 
+## Permisos a nivel de componente/funcionalidad
+
+Además de los permisos de módulos (acceso a rutas), algunos componentes pueden tener permisos específicos para funcionalidades individuales dentro de una vista.
+
+### Ejemplo: HospitalAttentions.vue
+
+**Ubicación:** `/src/views/attentions/HospitalAttentions.vue` (líneas 19-29)
+
+Este componente tiene tres niveles de permisos:
+
+```javascript
+// PERMISOS DE EDICIÓN: HOSPITALIZACION, DIRECTOR_MEDICO y MEDICOS pueden editar detalles y tareas de atención
+const canEdit = computed(() =>
+    hasPosition(USER_POSITIONS.HOSPITALIZACION) ||
+    hasPosition(USER_POSITIONS.DIRECTOR_MEDICO) ||
+    hasPosition(USER_POSITIONS.MEDICOS)
+);
+
+// PERMISOS DE AUDITORÍA: Solo DIRECTOR_MEDICO puede registrar/editar auditorías médicas diarias
+const canEditAudits = computed(() => hasPosition(USER_POSITIONS.DIRECTOR_MEDICO));
+
+// PERMISOS DE APROBACIÓN: Solo DIRECTOR_MEDICO puede aprobar alta de atención
+const isDirectorMedico = computed(() => hasPosition(USER_POSITIONS.DIRECTOR_MEDICO));
+```
+
+**¿Cuándo usar permisos a nivel de componente?**
+- Cuando múltiples roles pueden **ver** la misma pantalla pero solo algunos pueden **editar** ciertas secciones
+- Cuando hay acciones específicas dentro de un módulo que requieren permisos especiales
+- Para ocultar/deshabilitar botones o formularios según el rol del usuario
+
+**Cómo modificar:**
+1. Localiza la sección de "CONFIGURACIÓN DE PERMISOS POR FUNCIONALIDAD" en el componente
+2. Modifica la posición requerida en el computed correspondiente
+3. El componente aplicará automáticamente la restricción (botones ocultos, formularios en modo solo lectura, etc.)
+
+### Ubicaciones de permisos a nivel de componente
+
+| Componente | Funcionalidad | Posición Requerida | Línea Aprox. |
+|------------|---------------|-------------------|--------------|
+| `HospitalAttentions.vue` | Editar detalles y tareas | `HOSPITALIZACION`, `DIRECTOR_MEDICO`, `MEDICOS` | 23 |
+| `HospitalAttentions.vue` | Auditorías médicas | `DIRECTOR_MEDICO` | 30 |
+| `HospitalAttentions.vue` | Aprobar alta de atención | `DIRECTOR_MEDICO` | 33 |
+
 ## Ejemplos comunes
 
 ### Agregar CONTABILIDAD a un módulo existente
@@ -161,4 +204,18 @@ configuracion: {
     // ... configuración
     positions: PERMISSION_GROUPS.ADMIN_FULL
 }
+```
+
+### Cambiar quién puede registrar auditorías médicas
+
+En `/src/views/attentions/HospitalAttentions.vue`, modifica:
+
+```javascript
+// Antes: Solo DIRECTOR_MEDICO
+const canEditAudits = computed(() => hasPosition(USER_POSITIONS.DIRECTOR_MEDICO));
+
+// Después: DIRECTOR_MEDICO y MEDICOS
+const canEditAudits = computed(() =>
+    hasPosition(USER_POSITIONS.DIRECTOR_MEDICO) || hasPosition(USER_POSITIONS.MEDICOS)
+);
 ```
