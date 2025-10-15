@@ -3,8 +3,8 @@ import { useRealtimeEvents } from '@/composables/useRealtimeEvents';
 import { useHospitalizationStore } from '@/store/hospitalizationStore';
 import { storeToRefs } from 'pinia';
 import Button from 'primevue/button';
-import Card from 'primevue/card';
-import Tag from 'primevue/tag';
+import DataTable from 'primevue/datatable';
+import Column from 'primevue/column';
 import { computed, onMounted, onUnmounted, ref } from 'vue';
 
 const store = useHospitalizationStore();
@@ -19,6 +19,9 @@ const { startListening, stopListening, isListening } = useRealtimeEvents({
 
 // Estado de pantalla completa
 const isFullscreen = ref(false);
+
+// Estado de vista (cards o tabla)
+const viewMode = ref('cards'); // 'cards' o 'table'
 
 // Habitaciones con atenciones abiertas (filtrado)
 const activeRooms = computed(() => {
@@ -85,21 +88,37 @@ const stats = computed(() => {
     };
 });
 
-// Obtener iniciales del nombre
-const getInitials = (name) => {
-    if (!name) return '??';
-    const parts = name.trim().split(' ');
-    if (parts.length >= 2) {
-        return `${parts[0][0]}${parts[1][0]}`.toUpperCase();
-    }
-    return parts[0].substring(0, 2).toUpperCase();
-};
-
 // Formatear edad (redondear decimales a años completos)
 const formatAge = (age) => {
     if (!age) return 'N/A';
     return `${Math.floor(age)} años`;
 };
+
+// Alternar entre vistas
+const toggleViewMode = () => {
+    viewMode.value = viewMode.value === 'cards' ? 'table' : 'cards';
+};
+
+// Datos aplanados para la tabla
+const tableData = computed(() => {
+    const rows = [];
+    activeRooms.value.forEach((room) => {
+        room.beds.forEach((bed) => {
+            if (bed.attention) {
+                rows.push({
+                    room_number: room.room_number,
+                    bed_number: bed.bed_number,
+                    patient_name: bed.attention.patient.name,
+                    age: bed.attention.patient.age,
+                    admission_number: bed.attention.number,
+                    doctor: bed.attention.doctor,
+                    entry_date: bed.attention.entry_date
+                });
+            }
+        });
+    });
+    return rows;
+});
 
 // Toggle pantalla completa solo del componente
 const toggleFullscreen = () => {
@@ -200,6 +219,7 @@ onUnmounted(() => {
                             <i class="pi pi-circle-fill"></i>
                             <span>Tiempo Real</span>
                         </div>
+                        <Button :icon="viewMode === 'cards' ? 'pi pi-table' : 'pi pi-th-large'" @click="toggleViewMode" severity="secondary" text rounded v-tooltip.bottom="viewMode === 'cards' ? 'Vista Tabla' : 'Vista Cards'" />
                         <Button icon="pi pi-refresh" :loading="state.isLoading" @click="refreshData" severity="secondary" text rounded v-tooltip.bottom="'Actualizar'" />
                         <Button :icon="isFullscreen ? 'pi pi-times' : 'pi pi-window-maximize'" @click="toggleFullscreen" severity="secondary" text rounded v-tooltip.bottom="isFullscreen ? 'Salir de pantalla completa' : 'Pantalla completa'" />
                     </div>
@@ -229,7 +249,7 @@ onUnmounted(() => {
         </div>
 
         <!-- Habitaciones Grid - Diseño compacto -->
-        <div v-else class="rooms-display-grid">
+        <div v-else-if="viewMode === 'cards'" class="rooms-display-grid">
             <div v-for="room in activeRooms" :key="room.id" class="room-card-compact">
                 <!-- Header de habitación -->
                 <div class="room-header-compact">
@@ -267,6 +287,56 @@ onUnmounted(() => {
                 </div>
             </div>
         </div>
+
+        <!-- Vista Tabla -->
+        <div v-else-if="viewMode === 'table'" class="table-view">
+            <DataTable :value="tableData" stripedRows :paginator="false" responsiveLayout="scroll" class="hospitalization-table" :scrollable="true" scrollHeight="flex" sortMode="multiple">
+                <Column field="room_number" header="Habitación" :sortable="true" style="min-width: 110px">
+                    <template #body="slotProps">
+                        <div class="table-room-cell">
+                            <i class="pi pi-home"></i>
+                            <span>{{ slotProps.data.room_number }}</span>
+                        </div>
+                    </template>
+                </Column>
+                <Column field="bed_number" header="Cama" :sortable="true" style="min-width: 90px">
+                    <template #body="slotProps">
+                        <div class="table-bed-cell">
+                            {{ slotProps.data.bed_number }}
+                        </div>
+                    </template>
+                </Column>
+                <Column field="patient_name" header="Paciente" :sortable="true" style="min-width: 180px">
+                    <template #body="slotProps">
+                        <div class="table-patient-cell">
+                            <span class="patient-name-table">{{ slotProps.data.patient_name }}</span>
+                        </div>
+                    </template>
+                </Column>
+                <Column field="age" header="Edad" :sortable="true" style="min-width: 90px">
+                    <template #body="slotProps">
+                        <div class="table-age-cell">
+                            {{ formatAge(slotProps.data.age) }}
+                        </div>
+                    </template>
+                </Column>
+                <Column field="admission_number" header="N° Admisión" :sortable="true" style="min-width: 110px">
+                    <template #body="slotProps">
+                        <div class="table-admission-cell">
+                            {{ slotProps.data.admission_number }}
+                        </div>
+                    </template>
+                </Column>
+                <Column field="doctor" header="Médico" :sortable="true" style="min-width: 150px">
+                    <template #body="slotProps">
+                        <div class="table-doctor-cell">
+                            <i class="pi pi-user-md"></i>
+                            <span>{{ slotProps.data.doctor || 'N/A' }}</span>
+                        </div>
+                    </template>
+                </Column>
+            </DataTable>
+        </div>
     </div>
 </template>
 
@@ -274,7 +344,7 @@ onUnmounted(() => {
 .hospitalization-display {
     min-height: 100vh;
     max-height: 100vh;
-    background: linear-gradient(135deg, #f0f4f8 0%, #e2e8f0 100%);
+    background: var(--surface-ground);
     padding: 0.5rem;
     overflow: hidden;
     display: flex;
@@ -289,17 +359,16 @@ onUnmounted(() => {
     bottom: 0;
     z-index: 9999;
     padding: 0.5rem;
-    background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%);
+    background: var(--surface-ground);
 }
 
 /* Header */
 .display-header {
-    background: rgba(255, 255, 255, 0.98);
+    background: var(--surface-card);
     border-radius: 8px;
     padding: 0.75rem 1rem;
     margin-bottom: 0.5rem;
-    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.1);
-    backdrop-filter: blur(10px);
+    box-shadow: var(--card-shadow);
     flex-shrink: 0;
 }
 
@@ -319,14 +388,13 @@ onUnmounted(() => {
 .header-icon {
     width: 36px;
     height: 36px;
-    background: linear-gradient(135deg, #0ea5e9 0%, #06b6d4 100%);
+    background: var(--primary-color);
     border-radius: 8px;
     display: flex;
     align-items: center;
     justify-content: center;
-    color: white;
+    color: var(--primary-color-text);
     font-size: 1.125rem;
-    box-shadow: 0 2px 8px rgba(14, 165, 233, 0.3);
 }
 
 .header-info {
@@ -338,13 +406,13 @@ onUnmounted(() => {
     font-size: 1.125rem;
     font-weight: 700;
     margin: 0;
-    color: #1e293b;
+    color: var(--text-color);
     line-height: 1.2;
 }
 
 .header-subtitle {
     font-size: 0.75rem;
-    color: #64748b;
+    color: var(--text-color-secondary);
     margin: 0.125rem 0 0 0;
 }
 
@@ -364,25 +432,25 @@ onUnmounted(() => {
     align-items: center;
     gap: 0.375rem;
     padding: 0.375rem 0.625rem;
-    background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%);
+    background: var(--surface-100);
     border-radius: 6px;
 }
 
 .stat-item i {
     font-size: 0.875rem;
-    color: #0ea5e9;
+    color: var(--primary-color);
 }
 
 .stat-value {
     font-size: 1rem;
     font-weight: 700;
-    color: #1e293b;
+    color: var(--text-color);
     line-height: 1;
 }
 
 .stat-label {
     font-size: 0.625rem;
-    color: #64748b;
+    color: var(--text-color-secondary);
     text-transform: uppercase;
     letter-spacing: 0.25px;
     font-weight: 600;
@@ -400,11 +468,11 @@ onUnmounted(() => {
     align-items: center;
     gap: 0.375rem;
     padding: 0.375rem 0.625rem;
-    background: #f1f5f9;
+    background: var(--surface-100);
     border-radius: 6px;
     font-size: 0.75rem;
     font-weight: 600;
-    color: #64748b;
+    color: var(--text-color-secondary);
     border: 1px solid transparent;
     transition: all 0.3s ease;
 }
@@ -439,11 +507,11 @@ onUnmounted(() => {
     align-items: center;
     justify-content: center;
     min-height: 400px;
-    background: rgba(255, 255, 255, 0.98);
+    background: var(--surface-card);
     border-radius: 16px;
     padding: 3rem;
     text-align: center;
-    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+    box-shadow: var(--card-shadow);
 }
 
 .display-loading i,
@@ -454,28 +522,28 @@ onUnmounted(() => {
 }
 
 .display-loading i {
-    color: #667eea;
+    color: var(--primary-color);
 }
 
 .display-error i {
-    color: #ef4444;
+    color: var(--red-500);
 }
 
 .display-empty i {
-    color: #94a3b8;
+    color: var(--text-color-secondary);
 }
 
 .display-loading p,
 .display-error p,
 .display-empty p {
-    color: #64748b;
+    color: var(--text-color-secondary);
     font-size: 1rem;
     margin: 0.5rem 0;
 }
 
 .display-error h3,
 .display-empty h3 {
-    color: #1e293b;
+    color: var(--text-color);
     font-size: 1.5rem;
     font-weight: 600;
     margin: 0 0 0.5rem 0;
@@ -493,10 +561,10 @@ onUnmounted(() => {
 
 /* Room Card Compacto */
 .room-card-compact {
-    background: rgba(255, 255, 255, 0.98);
+    background: var(--surface-card);
     border-radius: 8px;
     overflow: hidden;
-    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+    box-shadow: var(--card-shadow);
     display: flex;
     flex-direction: column;
     max-height: 100%;
@@ -507,8 +575,8 @@ onUnmounted(() => {
     justify-content: space-between;
     align-items: center;
     padding: 0.5rem 0.625rem;
-    background: linear-gradient(135deg, #0ea5e9 0%, #06b6d4 100%);
-    color: white;
+    background: var(--primary-color);
+    color: var(--primary-color-text);
     flex-shrink: 0;
 }
 
@@ -536,10 +604,10 @@ onUnmounted(() => {
 }
 
 .bed-item-compact {
-    background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%);
+    background: var(--surface-50);
     border-radius: 6px;
     padding: 0.5rem;
-    border: 1px solid #e2e8f0;
+    border: 1px solid var(--surface-border);
     display: flex;
     flex-direction: column;
     gap: 0.375rem;
@@ -564,15 +632,14 @@ onUnmounted(() => {
     height: 32px;
     padding: 0 0.5rem;
     border-radius: 6px;
-    background: linear-gradient(135deg, #0ea5e9 0%, #06b6d4 100%);
-    color: white;
+    background: var(--primary-color);
+    color: var(--primary-color-text);
     display: flex;
     align-items: center;
     justify-content: center;
     font-weight: 700;
     font-size: 0.875rem;
     flex-shrink: 0;
-    box-shadow: 0 2px 6px rgba(14, 165, 233, 0.3);
     letter-spacing: 0.5px;
 }
 
@@ -584,7 +651,7 @@ onUnmounted(() => {
 .patient-name-compact {
     font-size: 0.813rem;
     font-weight: 700;
-    color: #1e293b;
+    color: var(--text-color);
     line-height: 1.3;
     display: -webkit-box;
     -webkit-line-clamp: 2;
@@ -598,12 +665,12 @@ onUnmounted(() => {
     align-items: center;
     gap: 0.25rem;
     font-size: 0.688rem;
-    color: #64748b;
+    color: var(--text-color-secondary);
     margin-top: 0.125rem;
 }
 
 .separator {
-    color: #cbd5e1;
+    color: var(--surface-400);
 }
 
 .bed-secondary-info {
@@ -611,7 +678,7 @@ onUnmounted(() => {
     flex-direction: column;
     gap: 0.25rem;
     padding-top: 0.375rem;
-    border-top: 1px solid #e2e8f0;
+    border-top: 1px solid var(--surface-border);
 }
 
 .info-compact {
@@ -622,7 +689,7 @@ onUnmounted(() => {
 
 .info-label-compact {
     font-size: 0.625rem;
-    color: #64748b;
+    color: var(--text-color-secondary);
     text-transform: uppercase;
     letter-spacing: 0.25px;
     font-weight: 600;
@@ -630,12 +697,95 @@ onUnmounted(() => {
 
 .info-value-compact {
     font-size: 0.688rem;
-    color: #1e293b;
+    color: var(--text-color);
     font-weight: 600;
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
     max-width: 60%;
+}
+
+/* Table View */
+.table-view {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    background: var(--surface-card);
+    border-radius: 8px;
+    overflow: hidden;
+    box-shadow: var(--card-shadow);
+}
+
+.hospitalization-table {
+    font-size: 0.875rem;
+}
+
+/* Table Headers */
+:deep(.hospitalization-table .p-datatable-thead > tr > th) {
+    background: var(--primary-color);
+    color: var(--primary-color-text);
+    font-weight: 700;
+    font-size: 0.813rem;
+    padding: 0.75rem 0.875rem;
+    border: none;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+:deep(.hospitalization-table .p-datatable-thead > tr > th .p-column-header-content) {
+    justify-content: center;
+}
+
+/* Table Body */
+:deep(.hospitalization-table .p-datatable-tbody > tr > td) {
+    padding: 0.625rem 0.875rem;
+    font-size: 0.813rem;
+}
+
+/* Table Cell Styles */
+.table-room-cell,
+.table-bed-cell,
+.table-patient-cell,
+.table-age-cell,
+.table-admission-cell,
+.table-doctor-cell {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    justify-content: center;
+    color: var(--text-color);
+    font-weight: 600;
+}
+
+.table-room-cell i,
+.table-doctor-cell i {
+    color: var(--primary-color);
+    font-size: 0.875rem;
+}
+
+.table-bed-cell {
+    background: var(--primary-color);
+    color: var(--primary-color-text);
+    padding: 0.375rem 0.625rem;
+    border-radius: 6px;
+    font-weight: 700;
+    letter-spacing: 0.5px;
+    font-size: 0.813rem;
+    justify-content: center;
+    display: inline-flex;
+}
+
+.patient-name-table {
+    font-weight: 700;
+    color: var(--text-color);
+}
+
+/* Empty State for Table */
+:deep(.hospitalization-table .p-datatable-emptymessage > td) {
+    text-align: center;
+    padding: 3rem;
+    color: var(--text-color-secondary);
+    font-size: 1rem;
 }
 
 /* Responsive - Diseño Compacto */
@@ -665,6 +815,20 @@ onUnmounted(() => {
 
     .header-content {
         flex-wrap: wrap;
+    }
+
+    .hospitalization-table {
+        font-size: 0.75rem;
+    }
+
+    :deep(.hospitalization-table .p-datatable-thead > tr > th) {
+        font-size: 0.75rem;
+        padding: 0.625rem 0.75rem;
+    }
+
+    :deep(.hospitalization-table .p-datatable-tbody > tr > td) {
+        padding: 0.5rem 0.625rem;
+        font-size: 0.75rem;
     }
 }
 
@@ -709,6 +873,25 @@ onUnmounted(() => {
         min-width: 42px;
         height: 28px;
         font-size: 0.75rem;
+    }
+
+    .hospitalization-table {
+        font-size: 0.688rem;
+    }
+
+    :deep(.hospitalization-table .p-datatable-thead > tr > th) {
+        font-size: 0.688rem;
+        padding: 0.5rem;
+    }
+
+    :deep(.hospitalization-table .p-datatable-tbody > tr > td) {
+        padding: 0.375rem 0.5rem;
+        font-size: 0.688rem;
+    }
+
+    .table-bed-cell {
+        font-size: 0.688rem;
+        padding: 0.25rem 0.5rem;
     }
 }
 </style>
