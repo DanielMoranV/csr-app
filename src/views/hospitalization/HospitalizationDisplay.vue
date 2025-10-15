@@ -291,46 +291,44 @@ onUnmounted(() => {
         <!-- Vista Tabla -->
         <div v-else-if="viewMode === 'table'" class="table-view">
             <DataTable :value="tableData" stripedRows :paginator="false" responsiveLayout="scroll" class="hospitalization-table" :scrollable="true" scrollHeight="flex" sortMode="multiple">
-                <Column field="room_number" header="Habitación" :sortable="true" style="min-width: 110px">
+                <Column field="room_number" header="Hab." :sortable="true" style="width: 80px">
                     <template #body="slotProps">
                         <div class="table-room-cell">
-                            <i class="pi pi-home"></i>
-                            <span>{{ slotProps.data.room_number }}</span>
+                            {{ slotProps.data.room_number }}
                         </div>
                     </template>
                 </Column>
-                <Column field="bed_number" header="Cama" :sortable="true" style="min-width: 90px">
+                <Column field="bed_number" header="Cama" :sortable="true" style="width: 90px">
                     <template #body="slotProps">
                         <div class="table-bed-cell">
                             {{ slotProps.data.bed_number }}
                         </div>
                     </template>
                 </Column>
-                <Column field="patient_name" header="Paciente" :sortable="true" style="min-width: 180px">
+                <Column field="patient_name" header="Paciente" :sortable="true" style="min-width: 200px">
                     <template #body="slotProps">
                         <div class="table-patient-cell">
                             <span class="patient-name-table">{{ slotProps.data.patient_name }}</span>
                         </div>
                     </template>
                 </Column>
-                <Column field="age" header="Edad" :sortable="true" style="min-width: 90px">
+                <Column field="age" header="Edad" :sortable="true" style="width: 70px">
                     <template #body="slotProps">
                         <div class="table-age-cell">
-                            {{ formatAge(slotProps.data.age) }}
+                            {{ Math.floor(slotProps.data.age) }}
                         </div>
                     </template>
                 </Column>
-                <Column field="admission_number" header="N° Admisión" :sortable="true" style="min-width: 110px">
+                <Column field="admission_number" header="N° Adm." :sortable="true" style="width: 95px">
                     <template #body="slotProps">
                         <div class="table-admission-cell">
                             {{ slotProps.data.admission_number }}
                         </div>
                     </template>
                 </Column>
-                <Column field="doctor" header="Médico" :sortable="true" style="min-width: 150px">
+                <Column field="doctor" header="Médico" :sortable="true" style="min-width: 140px">
                     <template #body="slotProps">
                         <div class="table-doctor-cell">
-                            <i class="pi pi-user-md"></i>
                             <span>{{ slotProps.data.doctor || 'N/A' }}</span>
                         </div>
                     </template>
@@ -717,7 +715,7 @@ onUnmounted(() => {
 }
 
 .hospitalization-table {
-    font-size: 0.875rem;
+    font-size: 0.813rem;
 }
 
 /* Table Headers */
@@ -725,11 +723,12 @@ onUnmounted(() => {
     background: var(--primary-color);
     color: var(--primary-color-text);
     font-weight: 700;
-    font-size: 0.813rem;
-    padding: 0.75rem 0.875rem;
+    font-size: 0.75rem;
+    padding: 0.5rem 0.5rem;
     border: none;
     text-transform: uppercase;
     letter-spacing: 0.5px;
+    white-space: nowrap;
 }
 
 :deep(.hospitalization-table .p-datatable-thead > tr > th .p-column-header-content) {
@@ -738,8 +737,8 @@ onUnmounted(() => {
 
 /* Table Body */
 :deep(.hospitalization-table .p-datatable-tbody > tr > td) {
-    padding: 0.625rem 0.875rem;
-    font-size: 0.813rem;
+    padding: 0.5rem 0.5rem;
+    font-size: 0.75rem;
 }
 
 /* Table Cell Styles */
@@ -751,33 +750,52 @@ onUnmounted(() => {
 .table-doctor-cell {
     display: flex;
     align-items: center;
-    gap: 0.5rem;
+    gap: 0.25rem;
     justify-content: center;
     color: var(--text-color);
     font-weight: 600;
 }
 
-.table-room-cell i,
-.table-doctor-cell i {
+.table-room-cell {
+    font-weight: 700;
     color: var(--primary-color);
-    font-size: 0.875rem;
 }
 
 .table-bed-cell {
     background: var(--primary-color);
     color: var(--primary-color-text);
-    padding: 0.375rem 0.625rem;
-    border-radius: 6px;
+    padding: 0.25rem 0.5rem;
+    border-radius: 4px;
     font-weight: 700;
     letter-spacing: 0.5px;
-    font-size: 0.813rem;
+    font-size: 0.75rem;
     justify-content: center;
     display: inline-flex;
+}
+
+.table-patient-cell {
+    justify-content: flex-start;
+    text-align: left;
+    width: 100%;
 }
 
 .patient-name-table {
     font-weight: 700;
     color: var(--text-color);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.table-doctor-cell {
+    justify-content: flex-start;
+    text-align: left;
+}
+
+.table-doctor-cell span {
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
 }
 
 /* Empty State for Table */
@@ -818,17 +836,22 @@ onUnmounted(() => {
     }
 
     .hospitalization-table {
-        font-size: 0.75rem;
+        font-size: 0.688rem;
     }
 
     :deep(.hospitalization-table .p-datatable-thead > tr > th) {
-        font-size: 0.75rem;
-        padding: 0.625rem 0.75rem;
+        font-size: 0.688rem;
+        padding: 0.375rem 0.375rem;
     }
 
     :deep(.hospitalization-table .p-datatable-tbody > tr > td) {
-        padding: 0.5rem 0.625rem;
-        font-size: 0.75rem;
+        padding: 0.375rem 0.375rem;
+        font-size: 0.688rem;
+    }
+
+    .table-bed-cell {
+        font-size: 0.688rem;
+        padding: 0.25rem 0.375rem;
     }
 }
 
@@ -876,22 +899,22 @@ onUnmounted(() => {
     }
 
     .hospitalization-table {
-        font-size: 0.688rem;
+        font-size: 0.625rem;
     }
 
     :deep(.hospitalization-table .p-datatable-thead > tr > th) {
-        font-size: 0.688rem;
-        padding: 0.5rem;
+        font-size: 0.625rem;
+        padding: 0.375rem 0.25rem;
     }
 
     :deep(.hospitalization-table .p-datatable-tbody > tr > td) {
-        padding: 0.375rem 0.5rem;
-        font-size: 0.688rem;
+        padding: 0.375rem 0.25rem;
+        font-size: 0.625rem;
     }
 
     .table-bed-cell {
-        font-size: 0.688rem;
-        padding: 0.25rem 0.5rem;
+        font-size: 0.625rem;
+        padding: 0.25rem 0.375rem;
     }
 }
 </style>
