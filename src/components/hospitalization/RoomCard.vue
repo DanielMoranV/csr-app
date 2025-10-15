@@ -62,12 +62,11 @@ const hasDetailField = (details, field) => {
     return latestDetail && latestDetail[field];
 };
 
-// Función para truncar nombre del paciente
-const truncateName = (name) => {
-    if (!name) return '---';
-    const maxLength = 16;
-    if (name.length <= maxLength) return name;
-    return name.substring(0, maxLength) + '...';
+// Función para truncar texto
+const truncateText = (text, maxLength = 16) => {
+    if (!text) return '---';
+    if (text.length <= maxLength) return text;
+    return text.substring(0, maxLength) + '...';
 };
 
 // Función para formatear la edad del paciente
@@ -93,10 +92,10 @@ const getSexLabel = (sex) => {
 // Función para formatear el tipo de habitación
 const formatRoomType = (type) => {
     const types = {
-        'personal': 'Personal',
-        'doble': 'Doble',
-        'triple': 'Triple',
-        'cuádruple': 'Cuádruple'
+        personal: 'Personal',
+        doble: 'Doble',
+        triple: 'Triple',
+        cuádruple: 'Cuádruple'
     };
     return types[type] || type;
 };
@@ -104,10 +103,10 @@ const formatRoomType = (type) => {
 // Función para obtener el ícono del tipo de habitación
 const getRoomTypeIcon = (type) => {
     const icons = {
-        'personal': 'pi-user',
-        'doble': 'pi-users',
-        'triple': 'pi-users',
-        'cuádruple': 'pi-users'
+        personal: 'pi-user',
+        doble: 'pi-users',
+        triple: 'pi-users',
+        cuádruple: 'pi-users'
     };
     return icons[type] || 'pi-home';
 };
@@ -186,31 +185,38 @@ const totalPendingTasks = computed(() => {
     <div class="room-card" :class="{ 'room-card--alert': hasAlerts }">
         <!-- Room Header -->
         <div class="room-card__header">
-            <div class="flex align-items-center gap-2 mb-2">
-                <i class="pi pi-home text-2xl text-primary"></i>
-                <div class="flex-1">
-                    <h3 class="m-0 text-xl font-bold">{{ room.room_number }}</h3>
-                    <div v-if="room.room_type" class="room-type-badge">
-                        <i :class="`pi ${getRoomTypeIcon(room.room_type)}`"></i>
-                        <span>{{ formatRoomType(room.room_type) }}</span>
+            <div class="flex justify-content-between align-items-start">
+                <div class="flex align-items-center gap-3">
+                    <i class="pi pi-home text-2xl text-primary"></i>
+                    <div>
+                        <h3 class="m-0 text-xl font-bold">{{ room.room_number }}</h3>
+                        <div v-if="room.room_type" class="room-type-badge">
+                            <i :class="`pi ${getRoomTypeIcon(room.room_type)}`"></i>
+                            <span>{{ formatRoomType(room.room_type) }}</span>
+                        </div>
                     </div>
                 </div>
-                <Badge v-if="hasAlerts" value="!" severity="danger" class="ml-auto" />
+                <Badge v-if="hasAlerts" value="!" severity="danger" />
             </div>
 
-            <div class="flex justify-content-between align-items-center">
-                <div class="occupancy-info">
-                    <span class="occupancy-details">{{ roomStats.occupiedBeds }} ocupada{{ roomStats.occupiedBeds === 1 ? '' : 's' }}, {{ roomStats.freeBeds }} libre{{ roomStats.freeBeds === 1 ? '' : 's' }}</span>
-                    <Tag :value="`${roomStats.occupancyRate}% ocupación`" :severity="getRoomStatusSeverity" class="font-semibold ml-2" />
+            <div class="room-stats-grid mt-3">
+                <div class="stat-item">
+                    <span class="stat-value">{{ roomStats.occupiedBeds }} <span class="stat-total">/ {{ roomStats.totalBeds }}</span></span>
+                    <span class="stat-label">Ocupadas</span>
                 </div>
-                <span class="text-sm text-600"> {{ roomStats.totalBeds }} {{ roomStats.totalBeds === 1 ? 'cama' : 'camas' }} </span>
+                <div class="stat-item">
+                    <span class="stat-value text-green-500">{{ roomStats.freeBeds }}</span>
+                    <span class="stat-label">Libres</span>
+                </div>
+                <div class="stat-item">
+                    <Tag :value="`${roomStats.occupancyRate}%`" :severity="getRoomStatusSeverity" class="stat-value-tag" />
+                    <span class="stat-label">Ocupación</span>
+                </div>
+                <div v-if="totalPendingTasks > 0" class="stat-item">
+                    <span class="stat-value text-orange-500">{{ totalPendingTasks }}</span>
+                    <span class="stat-label">Tareas Pend.</span>
+                </div>
             </div>
-        </div>
-
-        <!-- Tasks indicator (if any) -->
-        <div v-if="totalPendingTasks > 0" class="tasks-indicator">
-            <i class="pi pi-exclamation-triangle text-orange"></i>
-            <span class="tasks-count">{{ totalPendingTasks }} tarea{{ totalPendingTasks === 1 ? '' : 's' }} pendiente{{ totalPendingTasks === 1 ? '' : 's' }}</span>
         </div>
 
         <!-- Quick Bed Status -->
@@ -233,7 +239,13 @@ const totalPendingTasks = computed(() => {
                     <div v-if="bed.status === 'occupied' && bed.attention" class="bed-content bed-content--occupied">
                         <!-- Header de la cama -->
                         <div class="bed-header">
-                            <span class="bed-number">{{ bed.bed_number }}</span>
+                            <div class="bed-header-left">
+                                <span class="bed-number">{{ bed.bed_number }}</span>
+                                <small class="entry-time">
+                                    <i class="pi pi-clock mr-1"></i>
+                                    {{ getDaysInHospital(bed.attention.entry_date) }}
+                                </small>
+                            </div>
                             <div class="bed-alerts">
                                 <i v-if="hasDetailField(bed.attention.details, 'ram')" class="pi pi-exclamation-circle text-warning" title="Tiene RAM registradas"></i>
                                 <i v-if="!bed.attention.discharge_date && !bed.attention.exit_date" class="pi pi-exclamation-triangle text-danger" title="Sin alta/salida registrada"></i>
@@ -243,22 +255,28 @@ const totalPendingTasks = computed(() => {
 
                         <!-- Información del paciente -->
                         <div class="patient-info">
-                            <div class="patient-name" :title="bed.attention.patient.name">
-                                {{ truncateName(bed.attention.patient.name) }}
+                            <div class="patient-main-info">
+                                <span class="patient-name" :title="bed.attention.patient.name">
+                                    {{ truncateText(bed.attention.patient.name, 20) }}
+                                </span>
                             </div>
-                            <div class="patient-details">
-                                <span class="patient-doc">{{ bed.attention.patient.document_number }}</span>
-                                <Tag :value="bed.attention.number" severity="contrast" class="ml-2" />
+                            <div class="doctor-name" :title="bed.attention.doctor">
+                                <i class="pi pi-user-md"></i>
+                                <span>{{ truncateText(bed.attention.doctor, 22) }}</span>
                             </div>
-                            <div class="patient-metadata">
-                                <div class="patient-meta-item" :title="getSexLabel(bed.attention.patient.sex)">
-                                    <i :class="`pi ${getSexIcon(bed.attention.patient.sex)} sex-icon sex-icon--${bed.attention.patient.sex?.toLowerCase()}`"></i>
-                                    <span>{{ bed.attention.patient.sex === 'M' ? 'M' : bed.attention.patient.sex === 'F' ? 'F' : '?' }}</span>
-                                </div>
-                                <div class="patient-meta-item">
-                                    <i class="pi pi-calendar"></i>
-                                    <span>{{ formatAge(bed.attention.patient.age) }}</span>
-                                </div>
+                            <div class="patient-sub-info">
+                                <span class="sub-info-item" :title="bed.attention.number">
+                                    <i class="pi pi-hashtag"></i> {{ bed.attention.number }}
+                                </span>
+                                <span class="sub-info-item" :title="bed.attention.patient.document_number">
+                                    <i class="pi pi-id-card"></i> {{ bed.attention.patient.document_number }}
+                                </span>
+                                <span class="sub-info-item" :title="getSexLabel(bed.attention.patient.sex)">
+                                    <i :class="`pi ${getSexIcon(bed.attention.patient.sex)}`"></i> {{ bed.attention.patient.sex }}
+                                </span>
+                                <span class="sub-info-item" title="Edad">
+                                    <i class="pi pi-calendar-plus"></i> {{ formatAge(bed.attention.patient.age) }}
+                                </span>
                             </div>
                         </div>
 
@@ -269,14 +287,6 @@ const totalPendingTasks = computed(() => {
                             <Tag v-if="hasDetailField(bed.attention.details, 'interconsultation')" value="Interconsulta" severity="secondary" class="indicator-tag" />
                             <Tag v-if="hasDetailField(bed.attention.details, 'laboratory_exams')" value="Lab" severity="success" class="indicator-tag" />
                             <Tag v-if="hasDetailField(bed.attention.details, 'images_exams')" value="Imágenes" severity="info" class="indicator-tag" />
-                        </div>
-
-                        <!-- Footer con tiempo de estancia -->
-                        <div class="bed-footer">
-                            <small class="entry-time">
-                                <i class="pi pi-clock mr-1"></i>
-                                {{ getDaysInHospital(bed.attention.entry_date) }}
-                            </small>
                         </div>
                     </div>
 
@@ -511,6 +521,12 @@ const totalPendingTasks = computed(() => {
     margin-bottom: 0.375rem;
 }
 
+.bed-header-left {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
 .bed-header-simple {
     text-align: center;
     margin-bottom: 0.375rem;
@@ -553,51 +569,50 @@ const totalPendingTasks = computed(() => {
     flex: 1;
     display: flex;
     flex-direction: column;
-    gap: 0.2rem;
+    gap: 0.25rem;
     margin-bottom: 0.375rem;
+}
+
+.patient-main-info {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    gap: 0.25rem;
 }
 
 .patient-name {
     font-weight: 600;
-    font-size: 0.875rem;
+    font-size: 0.8rem;
     color: var(--text-color);
-    line-height: 1.2;
+    line-height: 1.3;
 }
 
-.patient-details {
-    font-size: 0.75rem;
-    color: var(--text-color-secondary);
-}
-
-.patient-doc {
-    background: var(--surface-100);
-    padding: 0.125rem 0.375rem;
-    border-radius: 4px;
-    font-family: monospace;
-}
-
-/* Patient Metadata (Sex and Age) */
-.patient-metadata {
-    display: flex;
-    gap: 0.5rem;
-    margin-top: 0.25rem;
-    flex-wrap: wrap;
-}
-
-.patient-meta-item {
-    display: flex;
-    align-items: center;
-    gap: 0.25rem;
+.doctor-name {
     font-size: 0.7rem;
     color: var(--text-color-secondary);
-    background: var(--surface-50);
-    padding: 0.125rem 0.375rem;
-    border-radius: 4px;
-    font-weight: 500;
+    display: flex;
+    align-items: center;
+    gap: 0.3rem;
+    font-style: italic;
+    margin-top: -2px;
 }
 
-.patient-meta-item i {
-    font-size: 0.65rem;
+.patient-sub-info {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 2px 8px;
+    font-size: 0.7rem;
+    color: var(--text-color-secondary);
+    margin-top: 4px;
+}
+
+.sub-info-item {
+    display: flex;
+    align-items: center;
+    gap: 0.3rem;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
 }
 
 .sex-icon {
@@ -759,5 +774,4 @@ const totalPendingTasks = computed(() => {
         min-height: 120px;
     }
 }
-
 </style>

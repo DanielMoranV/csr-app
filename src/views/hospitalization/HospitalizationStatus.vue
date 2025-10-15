@@ -64,8 +64,6 @@ const globalStats = computed(() => {
             occupancyRate: 0,
             totalTasks: 0,
             alertRooms: 0,
-            malePatients: 0,
-            femalePatients: 0,
             roomTypes: {}
         };
 
@@ -73,8 +71,6 @@ const globalStats = computed(() => {
     let occupiedBeds = 0;
     let totalTasks = 0;
     let alertRooms = 0;
-    let malePatients = 0;
-    let femalePatients = 0;
     const roomTypes = {};
 
     state.value.status.forEach((room) => {
@@ -91,25 +87,13 @@ const globalStats = computed(() => {
         let hasOccupiedBed = false;
 
         room.beds.forEach((bed) => {
-            if (bed.status === 'occupied') {
+            if (bed.status === 'occupied' && bed.attention) {
                 occupiedBeds++;
                 hasOccupiedBed = true;
 
-                // Contar pacientes por sexo
-                if (bed.attention?.patient?.sex === 'M') {
-                    malePatients++;
-                } else if (bed.attention?.patient?.sex === 'F') {
-                    femalePatients++;
-                }
-
                 // Contar tareas pendientes
-                if (bed.attention) {
-                    const attentions = Array.isArray(bed.attention) ? bed.attention : [bed.attention];
-                    attentions.forEach((att) => {
-                        if (att.tasks) {
-                            totalTasks += att.tasks.filter((task) => task.status === 'pendiente').length;
-                        }
-                    });
+                if (bed.attention.tasks) {
+                    totalTasks += bed.attention.tasks.filter((task) => task.status === 'pendiente').length;
                 }
             }
         });
@@ -119,11 +103,9 @@ const globalStats = computed(() => {
             roomTypes[room.room_type].occupied++;
         }
 
-        // Verificar si la habitación tiene alertas
+        // Verificar si la habitación tiene alertas (tareas pendientes)
         const hasAlerts = room.beds.some((bed) => {
-            if (!bed.attention || bed.status !== 'occupied') return false;
-            const attentions = Array.isArray(bed.attention) ? bed.attention : [bed.attention];
-            return attentions.some((att) => !att.discharge_date && !att.exit_date);
+            return bed.status === 'occupied' && bed.attention && bed.attention.tasks && bed.attention.tasks.some((task) => task.status === 'pendiente');
         });
 
         if (hasAlerts) alertRooms++;
@@ -140,8 +122,6 @@ const globalStats = computed(() => {
         occupancyRate,
         totalTasks,
         alertRooms,
-        malePatients,
-        femalePatients,
         roomTypes
     };
 });
@@ -260,6 +240,8 @@ onUnmounted(() => {
                             </div>
                         </template>
                     </Card>
+
+
 
                     <Card class="stat-card stat-card--info">
                         <template #content>
