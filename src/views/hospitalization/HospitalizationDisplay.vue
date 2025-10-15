@@ -302,14 +302,7 @@ onUnmounted(() => {
 
                 <!-- Botones de acción -->
                 <div class="header-actions">
-                    <Button
-                        :icon="viewMode === 'vertical' ? 'pi pi-th-large' : 'pi pi-list'"
-                        @click="toggleViewMode"
-                        severity="secondary"
-                        text
-                        rounded
-                        v-tooltip.bottom="viewMode === 'vertical' ? 'Vista Cards' : 'Vista Vertical'"
-                    />
+                    <Button :icon="viewMode === 'vertical' ? 'pi pi-th-large' : 'pi pi-list'" @click="toggleViewMode" severity="secondary" text rounded v-tooltip.bottom="viewMode === 'vertical' ? 'Vista Cards' : 'Vista Vertical'" />
                     <Button icon="pi pi-refresh" :loading="state.isLoading" @click="refreshData" severity="secondary" text rounded v-tooltip.bottom="'Actualizar'" />
                     <Button :icon="isFullscreen ? 'pi pi-times' : 'pi pi-window-maximize'" @click="toggleFullscreen" severity="secondary" text rounded v-tooltip.bottom="isFullscreen ? 'Salir de pantalla completa' : 'Pantalla completa'" />
                 </div>
@@ -398,7 +391,6 @@ onUnmounted(() => {
                 </div>
             </div>
         </div>
-
     </div>
 </template>
 
@@ -1005,7 +997,6 @@ onUnmounted(() => {
     justify-content: center;
     text-align: center;
 }
-
 
 /* Responsive - Optimización para pantallas verticales */
 /* Pantallas 4K verticales o muy altas (1080p+ altura) */

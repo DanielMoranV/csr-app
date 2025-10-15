@@ -63,20 +63,44 @@ const globalStats = computed(() => {
             freeBeds: 0,
             occupancyRate: 0,
             totalTasks: 0,
-            alertRooms: 0
+            alertRooms: 0,
+            malePatients: 0,
+            femalePatients: 0,
+            roomTypes: {}
         };
 
     let totalBeds = 0;
     let occupiedBeds = 0;
     let totalTasks = 0;
     let alertRooms = 0;
+    let malePatients = 0;
+    let femalePatients = 0;
+    const roomTypes = {};
 
     state.value.status.forEach((room) => {
         totalBeds += room.beds.length;
 
+        // Contar tipos de habitación
+        if (room.room_type) {
+            if (!roomTypes[room.room_type]) {
+                roomTypes[room.room_type] = { total: 0, occupied: 0 };
+            }
+            roomTypes[room.room_type].total++;
+        }
+
+        let hasOccupiedBed = false;
+
         room.beds.forEach((bed) => {
             if (bed.status === 'occupied') {
                 occupiedBeds++;
+                hasOccupiedBed = true;
+
+                // Contar pacientes por sexo
+                if (bed.attention?.patient?.sex === 'M') {
+                    malePatients++;
+                } else if (bed.attention?.patient?.sex === 'F') {
+                    femalePatients++;
+                }
 
                 // Contar tareas pendientes
                 if (bed.attention) {
@@ -89,6 +113,11 @@ const globalStats = computed(() => {
                 }
             }
         });
+
+        // Actualizar conteo de tipos de habitación ocupados
+        if (hasOccupiedBed && room.room_type && roomTypes[room.room_type]) {
+            roomTypes[room.room_type].occupied++;
+        }
 
         // Verificar si la habitación tiene alertas
         const hasAlerts = room.beds.some((bed) => {
@@ -110,7 +139,10 @@ const globalStats = computed(() => {
         freeBeds,
         occupancyRate,
         totalTasks,
-        alertRooms
+        alertRooms,
+        malePatients,
+        femalePatients,
+        roomTypes
     };
 });
 

@@ -70,6 +70,48 @@ const truncateName = (name) => {
     return name.substring(0, maxLength) + '...';
 };
 
+// Función para formatear la edad del paciente
+const formatAge = (age) => {
+    if (!age) return '---';
+    return `${Math.floor(age)} años`;
+};
+
+// Función para obtener el ícono según el sexo
+const getSexIcon = (sex) => {
+    if (sex === 'M') return 'pi-mars';
+    if (sex === 'F') return 'pi-venus';
+    return 'pi-question';
+};
+
+// Función para obtener el label del sexo
+const getSexLabel = (sex) => {
+    if (sex === 'M') return 'Masculino';
+    if (sex === 'F') return 'Femenino';
+    return 'No especificado';
+};
+
+// Función para formatear el tipo de habitación
+const formatRoomType = (type) => {
+    const types = {
+        'personal': 'Personal',
+        'doble': 'Doble',
+        'triple': 'Triple',
+        'cuádruple': 'Cuádruple'
+    };
+    return types[type] || type;
+};
+
+// Función para obtener el ícono del tipo de habitación
+const getRoomTypeIcon = (type) => {
+    const icons = {
+        'personal': 'pi-user',
+        'doble': 'pi-users',
+        'triple': 'pi-users',
+        'cuádruple': 'pi-users'
+    };
+    return icons[type] || 'pi-home';
+};
+
 // Función para calcular días de hospitalización
 const getDaysInHospital = (entryDate) => {
     if (!entryDate) return 'Sin fecha';
@@ -146,7 +188,13 @@ const totalPendingTasks = computed(() => {
         <div class="room-card__header">
             <div class="flex align-items-center gap-2 mb-2">
                 <i class="pi pi-home text-2xl text-primary"></i>
-                <h3 class="m-0 text-xl font-bold">{{ room.room_number }}</h3>
+                <div class="flex-1">
+                    <h3 class="m-0 text-xl font-bold">{{ room.room_number }}</h3>
+                    <div v-if="room.room_type" class="room-type-badge">
+                        <i :class="`pi ${getRoomTypeIcon(room.room_type)}`"></i>
+                        <span>{{ formatRoomType(room.room_type) }}</span>
+                    </div>
+                </div>
                 <Badge v-if="hasAlerts" value="!" severity="danger" class="ml-auto" />
             </div>
 
@@ -174,6 +222,8 @@ const totalPendingTasks = computed(() => {
                     class="bed-indicator"
                     :class="{
                         'bed-indicator--occupied': bed.status === 'occupied',
+                        'bed-indicator--occupied-male': bed.status === 'occupied' && bed.attention?.patient?.sex === 'M',
+                        'bed-indicator--occupied-female': bed.status === 'occupied' && bed.attention?.patient?.sex === 'F',
                         'bed-indicator--free': bed.status === 'free',
                         'bed-indicator--alert': bed.attention && bed.status === 'occupied' && !bed.attention.discharge_date && !bed.attention.exit_date
                     }"
@@ -199,6 +249,16 @@ const totalPendingTasks = computed(() => {
                             <div class="patient-details">
                                 <span class="patient-doc">{{ bed.attention.patient.document_number }}</span>
                                 <Tag :value="bed.attention.number" severity="contrast" class="ml-2" />
+                            </div>
+                            <div class="patient-metadata">
+                                <div class="patient-meta-item" :title="getSexLabel(bed.attention.patient.sex)">
+                                    <i :class="`pi ${getSexIcon(bed.attention.patient.sex)} sex-icon sex-icon--${bed.attention.patient.sex?.toLowerCase()}`"></i>
+                                    <span>{{ bed.attention.patient.sex === 'M' ? 'M' : bed.attention.patient.sex === 'F' ? 'F' : '?' }}</span>
+                                </div>
+                                <div class="patient-meta-item">
+                                    <i class="pi pi-calendar"></i>
+                                    <span>{{ formatAge(bed.attention.patient.age) }}</span>
+                                </div>
                             </div>
                         </div>
 
@@ -280,6 +340,21 @@ const totalPendingTasks = computed(() => {
     flex-shrink: 0;
 }
 
+/* Room Type Badge */
+.room-type-badge {
+    display: flex;
+    align-items: center;
+    gap: 0.375rem;
+    margin-top: 0.25rem;
+    font-size: 0.75rem;
+    color: var(--text-color-secondary);
+    font-weight: 500;
+}
+
+.room-type-badge i {
+    font-size: 0.7rem;
+}
+
 /* Occupancy Info */
 .occupancy-info {
     display: flex;
@@ -353,6 +428,29 @@ const totalPendingTasks = computed(() => {
 .bed-indicator--occupied:hover {
     background-color: #cffafe;
     border-color: #22d3ee;
+}
+
+/* Diferenciación por sexo del paciente */
+.bed-indicator--occupied-male {
+    background: linear-gradient(135deg, #dbeafe 0%, #e0f2fe 100%);
+    border: 2px solid #60a5fa;
+    color: #1e40af;
+}
+
+.bed-indicator--occupied-male:hover {
+    background: linear-gradient(135deg, #bfdbfe 0%, #dbeafe 100%);
+    border-color: #3b82f6;
+}
+
+.bed-indicator--occupied-female {
+    background: linear-gradient(135deg, #fce7f3 0%, #fce4ec 100%);
+    border: 2px solid #f472b6;
+    color: #be185d;
+}
+
+.bed-indicator--occupied-female:hover {
+    background: linear-gradient(135deg, #fbcfe8 0%, #fce7f3 100%);
+    border-color: #ec4899;
 }
 
 .bed-indicator--free {
@@ -476,6 +574,42 @@ const totalPendingTasks = computed(() => {
     padding: 0.125rem 0.375rem;
     border-radius: 4px;
     font-family: monospace;
+}
+
+/* Patient Metadata (Sex and Age) */
+.patient-metadata {
+    display: flex;
+    gap: 0.5rem;
+    margin-top: 0.25rem;
+    flex-wrap: wrap;
+}
+
+.patient-meta-item {
+    display: flex;
+    align-items: center;
+    gap: 0.25rem;
+    font-size: 0.7rem;
+    color: var(--text-color-secondary);
+    background: var(--surface-50);
+    padding: 0.125rem 0.375rem;
+    border-radius: 4px;
+    font-weight: 500;
+}
+
+.patient-meta-item i {
+    font-size: 0.65rem;
+}
+
+.sex-icon {
+    font-weight: bold;
+}
+
+.sex-icon--m {
+    color: #2563eb;
+}
+
+.sex-icon--f {
+    color: #db2777;
 }
 
 /* Medical Indicators */
