@@ -54,6 +54,12 @@ const router = createRouter({
                     meta: { requiresAuth: true, positions: MODULE_PERMISSIONS.hospitalizacion.positions }
                 },
                 {
+                    path: MODULE_PERMISSIONS.hospitalizacionDisplay.path,
+                    name: MODULE_PERMISSIONS.hospitalizacionDisplay.name,
+                    component: () => import('@/views/hospitalization/HospitalizationDisplay.vue'),
+                    meta: { requiresAuth: true, positions: MODULE_PERMISSIONS.hospitalizacionDisplay.positions }
+                },
+                {
                     path: MODULE_PERMISSIONS.tickets.path,
                     name: MODULE_PERMISSIONS.tickets.name,
                     component: () => import('@/views/tickets/Tickets.vue'),

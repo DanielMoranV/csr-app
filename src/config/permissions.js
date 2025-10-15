@@ -113,6 +113,16 @@ export const MODULE_PERMISSIONS = {
         menuSection: 'Hospitalización'
     },
 
+    // Vista pública de hospitalización
+    hospitalizacionDisplay: {
+        name: 'hospitalizacion-display',
+        path: '/hospitalizacion-display',
+        positions: PERMISSION_GROUPS.ALL,
+        label: 'Visualización',
+        icon: 'pi pi-fw pi-eye',
+        menuSection: 'Hospitalización'
+    },
+
     // Atenciones hospitalarias
     hospitalAttentions: {
         name: 'hospital-attentions',
