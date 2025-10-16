@@ -87,10 +87,10 @@ const stats = computed(() => {
 });
 
 // Formatear edad (redondear decimales a años completos)
-const formatAge = (age) => {
-    if (!age) return 'N/A';
-    return `${Math.floor(age)} años`;
-};
+// const formatAge = (age) => {
+//     if (!age) return 'N/A';
+//     return `${Math.floor(age)} años`;
+// };
 
 // Calcular días de hospitalización
 const calculateHospitalizationDays = (entryDate) => {
