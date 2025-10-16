@@ -137,7 +137,7 @@ export const MODULE_PERMISSIONS = {
     habitaciones: {
         name: 'habitaciones',
         path: '/habitaciones',
-        positions: [POSITIONS.SISTEMAS, POSITIONS.ADMINISTRACION, POSITIONS.HOSPITALIZACION],
+        positions: [POSITIONS.SISTEMAS, POSITIONS.ADMINISTRACION, POSITIONS.HOSPITALIZACION, POSITIONS.ADMISION],
         label: 'Habitaciones',
         icon: 'pi pi-fw pi-building',
         menuSection: 'Hospitalización'
