@@ -74,6 +74,7 @@ export const useHospitalizationStore = defineStore('hospitalization', () => {
                                         name: newHospitalization.patient.name,
                                         document_number: newHospitalization.patient.number_document,
                                         document_type: newHospitalization.patient.document_type,
+                                        sex: newHospitalization.patient.sex,
                                         age: newHospitalization.patient.age
                                     },
                                     doctor: newHospitalization.doctor,
@@ -157,6 +158,7 @@ export const useHospitalizationStore = defineStore('hospitalization', () => {
                                         name: updatedHospitalization.patient.name,
                                         document_number: updatedHospitalization.patient.number_document,
                                         document_type: updatedHospitalization.patient.document_type,
+                                        sex: updatedHospitalization.patient.sex,
                                         age: updatedHospitalization.patient.age
                                     },
                                     doctor: updatedHospitalization.doctor,

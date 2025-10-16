@@ -153,6 +153,51 @@ export function useRooms() {
 
     // Error handler
     const handleError = (error, defaultMessage) => {
+        // Verificar si hay errores de validación específicos (422)
+        if (error?.response?.status === 422 && error?.response?.data?.errors) {
+            const errors = error.response.data.errors;
+
+            // Mostrar cada error de validación
+            Object.keys(errors).forEach((field) => {
+                const fieldErrors = errors[field];
+                if (Array.isArray(fieldErrors)) {
+                    fieldErrors.forEach((errorMsg) => {
+                        toast.add({
+                            severity: 'warn',
+                            summary: 'Error de validación',
+                            detail: errorMsg,
+                            life: 5000
+                        });
+                    });
+                }
+            });
+            return;
+        }
+
+        // Verificar si es un error de cama/habitación ocupada (422 con mensaje específico)
+        if (error?.response?.status === 422) {
+            const message = error?.response?.data?.message;
+            const activeAttention = error?.response?.data?.data?.active_attention;
+
+            if (message && (message.includes('ocupada') || message.includes('ocupado'))) {
+                let detailMessage = message;
+
+                // Agregar información de la atención activa si está disponible
+                if (activeAttention) {
+                    detailMessage += ` (Atención #${activeAttention.id}, Paciente #${activeAttention.patient_id})`;
+                }
+
+                toast.add({
+                    severity: 'error',
+                    summary: 'Operación no permitida',
+                    detail: detailMessage,
+                    life: 7000
+                });
+                return;
+            }
+        }
+
+        // Manejo de errores genéricos
         const message = apiUtils.getMessage(error) || defaultMessage;
         toast.add({ severity: 'error', summary: 'Error', detail: message, life: 5000 });
     };

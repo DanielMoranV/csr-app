@@ -185,37 +185,42 @@ const totalPendingTasks = computed(() => {
     <div class="room-card" :class="{ 'room-card--alert': hasAlerts }">
         <!-- Room Header -->
         <div class="room-card__header">
-            <div class="flex justify-content-between align-items-start">
-                <div class="flex align-items-center gap-3">
-                    <i class="pi pi-home text-2xl text-primary"></i>
-                    <div>
-                        <h3 class="m-0 text-xl font-bold">{{ room.room_number }}</h3>
-                        <div v-if="room.room_type" class="room-type-badge">
-                            <i :class="`pi ${getRoomTypeIcon(room.room_type)}`"></i>
-                            <span>{{ formatRoomType(room.room_type) }}</span>
-                        </div>
+            <!-- First row: Room info and alert -->
+            <div class="flex justify-content-between align-items-center mb-2">
+                <div class="flex align-items-center gap-2">
+                    <i class="pi pi-home text-xl text-primary"></i>
+                    <h3 class="m-0 text-lg font-bold">{{ room.room_number }}</h3>
+                    <div v-if="room.room_type" class="room-type-badge-inline">
+                        <i :class="`pi ${getRoomTypeIcon(room.room_type)}`"></i>
+                        <span>{{ formatRoomType(room.room_type) }}</span>
                     </div>
                 </div>
                 <Badge v-if="hasAlerts" value="!" severity="danger" />
             </div>
 
-            <div class="room-stats-grid mt-3">
-                <div class="stat-item">
-                    <span class="stat-value">{{ roomStats.occupiedBeds }} <span class="stat-total">/ {{ roomStats.totalBeds }}</span></span>
-                    <span class="stat-label">Ocupadas</span>
+            <!-- Second row: Compact stats in single horizontal line -->
+            <div class="room-stats-horizontal">
+                <div class="stat-item-compact">
+                    <span class="stat-value-compact">{{ roomStats.occupiedBeds }}/{{ roomStats.totalBeds }}</span>
+                    <span class="stat-label-compact">Ocupadas</span>
                 </div>
-                <div class="stat-item">
-                    <span class="stat-value text-green-500">{{ roomStats.freeBeds }}</span>
-                    <span class="stat-label">Libres</span>
+                <span class="stat-separator">•</span>
+                <div class="stat-item-compact">
+                    <span class="stat-value-compact text-green-500">{{ roomStats.freeBeds }}</span>
+                    <span class="stat-label-compact">Libres</span>
                 </div>
-                <div class="stat-item">
-                    <Tag :value="`${roomStats.occupancyRate}%`" :severity="getRoomStatusSeverity" class="stat-value-tag" />
-                    <span class="stat-label">Ocupación</span>
+                <span class="stat-separator">•</span>
+                <div class="stat-item-compact">
+                    <Tag :value="`${roomStats.occupancyRate}%`" :severity="getRoomStatusSeverity" class="stat-tag-compact" />
+                    <span class="stat-label-compact">Ocupación</span>
                 </div>
-                <div v-if="totalPendingTasks > 0" class="stat-item">
-                    <span class="stat-value text-orange-500">{{ totalPendingTasks }}</span>
-                    <span class="stat-label">Tareas Pend.</span>
-                </div>
+                <template v-if="totalPendingTasks > 0">
+                    <span class="stat-separator">•</span>
+                    <div class="stat-item-compact">
+                        <span class="stat-value-compact text-orange-500">{{ totalPendingTasks }}</span>
+                        <span class="stat-label-compact">Tareas Pend.</span>
+                    </div>
+                </template>
             </div>
         </div>
 
@@ -350,22 +355,62 @@ const totalPendingTasks = computed(() => {
     flex-shrink: 0;
 }
 
-/* Room Type Badge */
-.room-type-badge {
+/* Room Type Badge - Inline version */
+.room-type-badge-inline {
+    display: flex;
+    align-items: center;
+    gap: 0.25rem;
+    font-size: 0.7rem;
+    color: var(--text-color-secondary);
+    font-weight: 500;
+    background: var(--surface-100);
+    padding: 0.25rem 0.5rem;
+    border-radius: 6px;
+}
+
+.room-type-badge-inline i {
+    font-size: 0.65rem;
+}
+
+/* Compact Horizontal Stats */
+.room-stats-horizontal {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    flex-wrap: wrap;
+    padding: 0.5rem 0;
+}
+
+.stat-item-compact {
     display: flex;
     align-items: center;
     gap: 0.375rem;
-    margin-top: 0.25rem;
-    font-size: 0.75rem;
+}
+
+.stat-value-compact {
+    font-size: 0.875rem;
+    font-weight: 700;
+    color: var(--text-color);
+}
+
+.stat-label-compact {
+    font-size: 0.7rem;
     color: var(--text-color-secondary);
     font-weight: 500;
 }
 
-.room-type-badge i {
+.stat-separator {
+    color: var(--text-color-secondary);
     font-size: 0.7rem;
+    opacity: 0.5;
 }
 
-/* Occupancy Info */
+.stat-tag-compact {
+    font-size: 0.75rem !important;
+    padding: 0.25rem 0.5rem !important;
+}
+
+/* Occupancy Info (legacy - can be removed if not used elsewhere) */
 .occupancy-info {
     display: flex;
     align-items: center;
@@ -699,6 +744,19 @@ const totalPendingTasks = computed(() => {
         justify-content: center;
     }
 
+    .room-stats-horizontal {
+        gap: 0.375rem;
+        padding: 0.375rem 0;
+    }
+
+    .stat-value-compact {
+        font-size: 0.8rem;
+    }
+
+    .stat-label-compact {
+        font-size: 0.65rem;
+    }
+
     .occupancy-info {
         flex-direction: column;
         align-items: flex-start;
@@ -737,6 +795,28 @@ const totalPendingTasks = computed(() => {
 
     .indicator-tag {
         font-size: 0.6rem !important;
+    }
+
+    .room-stats-horizontal {
+        gap: 0.25rem;
+        padding: 0.25rem 0;
+    }
+
+    .stat-value-compact {
+        font-size: 0.75rem;
+    }
+
+    .stat-label-compact {
+        font-size: 0.625rem;
+    }
+
+    .stat-separator {
+        font-size: 0.625rem;
+    }
+
+    .room-type-badge-inline {
+        font-size: 0.65rem;
+        padding: 0.2rem 0.4rem;
     }
 
     .occupancy-details {
