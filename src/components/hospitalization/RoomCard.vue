@@ -258,6 +258,12 @@ const totalPendingTasks = computed(() => {
                             </div>
                         </div>
 
+                        <!-- Bed Notes -->
+                        <div v-if="bed.notes" class="bed-notes">
+                            <i class="pi pi-info-circle mr-1"></i>
+                            <span>{{ bed.notes }}</span>
+                        </div>
+
                         <!-- Información del paciente -->
                         <div class="patient-info">
                             <div class="patient-main-info">
@@ -303,6 +309,11 @@ const totalPendingTasks = computed(() => {
                         <div class="free-indicator">
                             <i class="pi pi-check-circle"></i>
                             <span>Libre</span>
+                        </div>
+                        <!-- Bed Notes -->
+                        <div v-if="bed.notes" class="bed-notes">
+                            <i class="pi pi-info-circle mr-1"></i>
+                            <span>{{ bed.notes }}</span>
                         </div>
                     </div>
                 </div>
@@ -721,6 +732,22 @@ const totalPendingTasks = computed(() => {
 .free-indicator span {
     font-weight: 600;
     font-size: 0.875rem;
+}
+
+/* Bed Notes */
+.bed-notes {
+    font-size: 0.75rem;
+    color: var(--text-color-secondary);
+    background: var(--yellow-50);
+    padding: 0.375rem 0.625rem;
+    border-radius: 8px;
+    margin-top: 0.375rem;
+    display: flex;
+    align-items: center;
+    gap: 0.375rem;
+    font-style: italic;
+    border: 1px solid var(--yellow-200);
+    line-height: 1.4;
 }
 
 /* Responsive Adjustments */

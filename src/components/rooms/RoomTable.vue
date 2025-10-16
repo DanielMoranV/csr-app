@@ -25,7 +25,6 @@ const deleteBed = (bed) => emit('delete-bed', bed);
 const toggleBedStatus = (bed) => emit('toggle-bed-status', bed);
 
 const getSeverity = (isActive) => (isActive ? 'success' : 'danger');
-const getBedSeverity = (isActive) => (isActive ? 'success' : 'warning');
 </script>
 
 <template>
@@ -62,15 +61,15 @@ const getBedSeverity = (isActive) => (isActive ? 'success' : 'warning');
                 </div>
                 <DataTable :value="data.beds">
                     <Column field="name" header="Cama"></Column>
-                    <Column field="is_active" header="Estado">
+                    <Column field="is_occupied" header="Estado">
                         <template #body="{ data: bedData }">
-                            <Tag :value="bedData.is_active ? 'Libre' : 'Ocupada'" :severity="getBedSeverity(bedData.is_active)" />
+                            <Tag :value="bedData.is_occupied ? 'Ocupada' : 'Libre'" :severity="bedData.is_occupied ? 'danger' : 'success'" />
                         </template>
                     </Column>
                     <Column header="Acciones">
                         <template #body="{ data: bedData }">
                             <Button icon="pi pi-pencil" class="p-button-rounded p-button-success mr-2" @click="editBed(bedData)" />
-                            <Button icon="pi pi-power-off" class="p-button-rounded p-button-warning mr-2" @click="toggleBedStatus(bedData)" v-tooltip.bottom="bedData.is_active ? 'Marcar Ocupada' : 'Marcar Libre'" />
+                            <Button icon="pi pi-power-off" class="p-button-rounded p-button-warning mr-2" @click="toggleBedStatus(bedData)" v-tooltip.bottom="bedData.is_occupied ? 'Marcar Libre' : 'Marcar Ocupada'" />
                             <Button icon="pi pi-trash" class="p-button-rounded p-button-danger" @click="deleteBed(bedData)" />
                         </template>
                     </Column>

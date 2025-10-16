@@ -18,8 +18,9 @@ const isEditingRoom = ref(false);
 const isEditingBed = ref(false);
 const currentRoomId = ref(null);
 
-onMounted(() => {
-    fetchRooms();
+onMounted(async () => {
+    await fetchRooms();
+    console.log('Rooms data from backend:', JSON.parse(JSON.stringify(rooms.value)));
 });
 
 // Room Handlers
