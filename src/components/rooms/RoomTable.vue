@@ -70,7 +70,7 @@ const getSeverity = (isActive) => (isActive ? 'success' : 'danger');
                         <template #body="{ data: bedData }">
                             <Button icon="pi pi-pencil" class="p-button-rounded p-button-success mr-2" @click="editBed(bedData)" />
                             <Button icon="pi pi-power-off" class="p-button-rounded p-button-warning mr-2" @click="toggleBedStatus(bedData)" v-tooltip.bottom="bedData.is_occupied ? 'Marcar Libre' : 'Marcar Ocupada'" />
-                            <Button icon="pi pi-trash" class="p-button-rounded p-button-danger" @click="deleteBed(bedData)" />
+                            <Button icon="pi pi-trash" class="p-button-rounded p-button-danger" @click="deleteBed(bedData)" :disabled="bedData.is_occupied" v-tooltip.bottom="bedData.is_occupied ? 'No se puede eliminar una cama ocupada' : 'Eliminar cama'" />
                         </template>
                     </Column>
                 </DataTable>
