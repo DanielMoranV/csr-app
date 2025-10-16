@@ -459,6 +459,20 @@ const getUserInfo = (userObj) => {
                     <Badge v-if="currentDetail && currentDetail.id" :value="currentDetail.id" severity="info" size="small" />
                 </div>
             </div>
+            <div class="audit-info-header">
+                <div v-if="getUserInfo(currentDetail.created_by)" class="audit-item">
+                    <i class="pi pi-user-plus"></i>
+                    <span
+                        >Creado por <b>{{ getUserInfo(currentDetail.created_by).nick }}</b> el {{ formatDateTime(currentDetail.created_at) }}</span
+                    >
+                </div>
+                <div v-if="getUserInfo(currentDetail.updated_by) && currentDetail.updated_at !== currentDetail.created_at" class="audit-item">
+                    <i class="pi pi-user-edit"></i>
+                    <span
+                        >Actualizado por <b>{{ getUserInfo(currentDetail.updated_by).nick }}</b> el {{ formatDateTime(currentDetail.updated_at) }}</span
+                    >
+                </div>
+            </div>
         </div>
 
         <!-- Contenido en tabs -->
@@ -595,20 +609,7 @@ const getUserInfo = (userObj) => {
             <div class="footer-content">
                 <div class="footer-info-wrapper">
                     <!-- Información de auditoría -->
-                    <div v-if="!isEditing && currentDetail" class="audit-info">
-                        <div v-if="getUserInfo(currentDetail.created_by)" class="audit-item audit-item--created">
-                            <i class="pi pi-user-plus"></i>
-                            <span class="audit-label">Creado por:</span>
-                            <Tag :value="getUserInfo(currentDetail.created_by).nick" severity="info" size="small" />
-                            <span class="audit-date">{{ formatDateTime(currentDetail.created_at) }}</span>
-                        </div>
-                        <div v-if="getUserInfo(currentDetail.updated_by) && currentDetail.updated_by?.id !== currentDetail.created_by?.id" class="audit-item audit-item--updated">
-                            <i class="pi pi-user-edit"></i>
-                            <span class="audit-label">Actualizado por:</span>
-                            <Tag :value="getUserInfo(currentDetail.updated_by).nick" severity="success" size="small" />
-                            <span class="audit-date">{{ formatDateTime(currentDetail.updated_at) }}</span>
-                        </div>
-                    </div>
+                    <div v-if="!isEditing && currentDetail" class="audit-info"></div>
                     <div v-else class="footer-info">
                         <i class="pi pi-info-circle"></i>
                         <span>Campos opcionales - Fecha: {{ convertDateToString(localDetails.attention_date) }}</span>
@@ -875,6 +876,32 @@ const getUserInfo = (userObj) => {
 }
 
 /* ===== NUEVOS ESTILOS COMPACTOS ===== */
+
+.audit-info-header {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+    margin-top: 0.75rem;
+    padding-top: 0.75rem;
+    border-top: 1px solid var(--surface-200);
+}
+
+.audit-info-header .audit-item {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    font-size: 0.8rem;
+    color: var(--text-color-secondary);
+}
+
+.audit-info-header .audit-item i {
+    font-size: 0.875rem;
+}
+
+.audit-info-header .audit-item b {
+    font-weight: 600;
+    color: var(--text-color);
+}
 
 /* Header Compacto */
 .details-header-compact {
