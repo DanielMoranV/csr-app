@@ -130,6 +130,32 @@ const getDaysInHospital = (entryDate) => {
     }
 };
 
+// Función para formatear fecha de reserva
+const formatReservationDate = (dateString) => {
+    if (!dateString) return '';
+
+    const date = new Date(dateString);
+    const now = new Date();
+    const diffTime = now - date;
+    const diffHours = Math.floor(diffTime / (1000 * 60 * 60));
+    const diffDays = Math.floor(diffTime / (1000 * 60 * 60 * 24));
+
+    if (diffHours < 1) {
+        return 'Hace unos minutos';
+    } else if (diffHours < 24) {
+        return `Hace ${diffHours}h`;
+    } else if (diffDays === 1) {
+        return 'Hace 1 día';
+    } else if (diffDays < 7) {
+        return `Hace ${diffDays} días`;
+    } else {
+        return date.toLocaleDateString('es-ES', {
+            day: '2-digit',
+            month: 'short'
+        });
+    }
+};
+
 // Computed properties for room statistics
 const roomStats = computed(() => {
     const totalBeds = props.room.beds.length;
@@ -216,8 +242,9 @@ const totalPendingTasks = computed(() => {
                 </div>
                 <template v-if="totalPendingTasks > 0">
                     <span class="stat-separator">•</span>
-                    <div class="stat-item-compact">
-                        <span class="stat-value-compact text-orange-500">{{ totalPendingTasks }}</span>
+                    <div class="stat-item-compact stat-item-alert">
+                        <i class="pi pi-exclamation-triangle text-red-500"></i>
+                        <span class="stat-value-compact text-red-500">{{ totalPendingTasks }}</span>
                         <span class="stat-label-compact">Tareas Pend.</span>
                     </div>
                 </template>
@@ -235,7 +262,8 @@ const totalPendingTasks = computed(() => {
                         'bed-indicator--occupied': bed.status === 'occupied',
                         'bed-indicator--occupied-male': bed.status === 'occupied' && bed.attention?.patient?.sex === 'M',
                         'bed-indicator--occupied-female': bed.status === 'occupied' && bed.attention?.patient?.sex === 'F',
-                        'bed-indicator--free': bed.status === 'free',
+                        'bed-indicator--reserved': (bed.status === 'reserved' || bed.status === 'reservada' || bed.is_reserved) && bed.status !== 'occupied',
+                        'bed-indicator--free': (bed.status === 'free' || bed.status === 'disponible') && !bed.is_reserved && bed.status !== 'occupied' && bed.status !== 'reserved' && bed.status !== 'reservada',
                         'bed-indicator--alert': bed.attention && bed.status === 'occupied' && !bed.attention.discharge_date && !bed.attention.exit_date
                     }"
                     @click="openBedDrawer(bed)"
@@ -252,16 +280,21 @@ const totalPendingTasks = computed(() => {
                                 </small>
                             </div>
                             <div class="bed-alerts">
+                                <i v-if="bed.notes" class="pi pi-file-edit text-info" title="Tiene notas"></i>
                                 <i v-if="hasDetailField(bed.attention.details, 'ram')" class="pi pi-exclamation-circle text-warning" title="Tiene RAM registradas"></i>
                                 <i v-if="!bed.attention.discharge_date && !bed.attention.exit_date" class="pi pi-exclamation-triangle text-danger" title="Sin alta/salida registrada"></i>
-                                <Badge v-if="getPendingTasksCount(bed.attention.tasks)" :value="getPendingTasksCount(bed.attention.tasks)" severity="warning" size="small" title="Tareas pendientes" />
+                                <Badge v-if="getPendingTasksCount(bed.attention.tasks)" :value="getPendingTasksCount(bed.attention.tasks)" severity="danger" size="small" title="Tareas pendientes" />
                             </div>
                         </div>
 
                         <!-- Bed Notes -->
-                        <div v-if="bed.notes" class="bed-notes">
-                            <i class="pi pi-info-circle mr-1"></i>
-                            <span>{{ bed.notes }}</span>
+                        <div v-if="bed.notes" class="bed-notes bed-notes--occupied">
+                            <div class="bed-notes__icon">
+                                <i class="pi pi-file-edit"></i>
+                            </div>
+                            <div class="bed-notes__content">
+                                <span class="bed-notes__text">{{ bed.notes }}</span>
+                            </div>
                         </div>
 
                         <!-- Información del paciente -->
@@ -301,19 +334,84 @@ const totalPendingTasks = computed(() => {
                         </div>
                     </div>
 
+                    <!-- Cama Reservada -->
+                    <div v-else-if="bed.is_reserved || bed.status === 'reserved' || bed.status === 'reservada'" class="bed-content bed-content--reserved">
+                        <div class="bed-header">
+                            <div class="bed-header-left">
+                                <span class="bed-number">{{ bed.bed_number }}</span>
+                            </div>
+                            <div class="bed-alerts">
+                                <i v-if="bed.notes" class="pi pi-file-edit text-info" title="Tiene notas"></i>
+                            </div>
+                        </div>
+
+                        <!-- Bed Notes -->
+                        <div v-if="bed.notes" class="bed-notes bed-notes--reserved">
+                            <div class="bed-notes__icon">
+                                <i class="pi pi-file-edit"></i>
+                            </div>
+                            <div class="bed-notes__content">
+                                <span class="bed-notes__text">{{ bed.notes }}</span>
+                            </div>
+                        </div>
+
+                        <!-- Reservation Info -->
+                        <div class="reservation-info">
+                            <div class="reservation-status">
+                                <i class="pi pi-calendar-plus"></i>
+                                <span>Reservada</span>
+                            </div>
+
+                            <!-- Usuario que reservó -->
+                            <div v-if="bed.reservation?.reserved_by" class="reservation-detail-item">
+                                <div class="reservation-detail-label">
+                                    <i class="pi pi-user"></i>
+                                    <span>Reservado por:</span>
+                                </div>
+                                <div class="reservation-detail-value">
+                                    {{ bed.reservation.reserved_by.name }}
+                                </div>
+                            </div>
+
+                            <!-- Notas de la reserva -->
+                            <div v-if="bed.reservation?.notes" class="reservation-detail-item">
+                                <div class="reservation-detail-label">
+                                    <i class="pi pi-comment"></i>
+                                    <span>Nota:</span>
+                                </div>
+                                <div class="reservation-detail-value">
+                                    {{ bed.reservation.notes }}
+                                </div>
+                            </div>
+
+                            <!-- Fecha de creación -->
+                            <div v-if="bed.reservation?.created_at" class="reservation-detail-item reservation-date">
+                                <i class="pi pi-clock"></i>
+                                <span>{{ formatReservationDate(bed.reservation.created_at) }}</span>
+                            </div>
+                        </div>
+                    </div>
+
                     <!-- Cama Libre - Vista Simple -->
                     <div v-else class="bed-content bed-content--free">
                         <div class="bed-header-simple">
-                            <span class="bed-number">{{ bed.bed_number }}</span>
+                            <div class="bed-header-simple-content">
+                                <span class="bed-number">{{ bed.bed_number }}</span>
+                                <i v-if="bed.notes" class="pi pi-file-edit text-info bed-note-indicator" title="Tiene notas"></i>
+                            </div>
                         </div>
                         <div class="free-indicator">
                             <i class="pi pi-check-circle"></i>
-                            <span>Libre</span>
+                            <span>Disponible</span>
                         </div>
                         <!-- Bed Notes -->
-                        <div v-if="bed.notes" class="bed-notes">
-                            <i class="pi pi-info-circle mr-1"></i>
-                            <span>{{ bed.notes }}</span>
+                        <div v-if="bed.notes" class="bed-notes bed-notes--free">
+                            <div class="bed-notes__icon">
+                                <i class="pi pi-file-edit"></i>
+                            </div>
+                            <div class="bed-notes__content">
+                                <span class="bed-notes__text">{{ bed.notes }}</span>
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -396,6 +494,45 @@ const totalPendingTasks = computed(() => {
     display: flex;
     align-items: center;
     gap: 0.375rem;
+}
+
+.stat-item-alert {
+    background: var(--red-50);
+    padding: 0.25rem 0.5rem;
+    border-radius: 6px;
+    border: 1px solid var(--red-200);
+    animation: alert-pulse 2s infinite;
+}
+
+@keyframes alert-pulse {
+    0%,
+    100% {
+        background: var(--red-50);
+    }
+    50% {
+        background: var(--red-100);
+    }
+}
+
+.stat-item-alert i {
+    font-size: 0.875rem;
+    animation: shake 3s infinite;
+}
+
+@keyframes shake {
+    0%,
+    90%,
+    100% {
+        transform: rotate(0deg);
+    }
+    92%,
+    96% {
+        transform: rotate(-10deg);
+    }
+    94%,
+    98% {
+        transform: rotate(10deg);
+    }
 }
 
 .stat-value-compact {
@@ -519,6 +656,17 @@ const totalPendingTasks = computed(() => {
     border-color: #ec4899;
 }
 
+.bed-indicator--reserved {
+    background: linear-gradient(135deg, #fef3c7 0%, #fde68a 100%);
+    border: 2px solid #fbbf24;
+    color: #92400e;
+}
+
+.bed-indicator--reserved:hover {
+    background: linear-gradient(135deg, #fde68a 0%, #fcd34d 100%);
+    border-color: #f59e0b;
+}
+
 .bed-indicator--free {
     background-color: #f0fdf4;
     border: 2px solid #86efac;
@@ -561,6 +709,10 @@ const totalPendingTasks = computed(() => {
     /* The background is now inherited from .bed-indicator--occupied */
 }
 
+.bed-content--reserved {
+    /* The background is now inherited from .bed-indicator--reserved */
+}
+
 .bed-content--free {
     display: flex;
     flex-direction: column;
@@ -586,6 +738,30 @@ const totalPendingTasks = computed(() => {
 .bed-header-simple {
     text-align: center;
     margin-bottom: 0.375rem;
+}
+
+.bed-header-simple-content {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem;
+}
+
+.bed-note-indicator {
+    font-size: 0.875rem;
+    animation: note-pulse 2s infinite;
+}
+
+@keyframes note-pulse {
+    0%,
+    100% {
+        transform: scale(1);
+        opacity: 1;
+    }
+    50% {
+        transform: scale(1.15);
+        opacity: 0.8;
+    }
 }
 
 .bed-number {
@@ -616,8 +792,16 @@ const totalPendingTasks = computed(() => {
     color: var(--red-600) !important;
 }
 
+.text-red-500 {
+    color: var(--red-500) !important;
+}
+
 .text-orange {
     color: var(--orange-600) !important;
+}
+
+.text-info {
+    color: var(--blue-600) !important;
 }
 
 /* Patient Information */
@@ -734,20 +918,225 @@ const totalPendingTasks = computed(() => {
     font-size: 0.875rem;
 }
 
-/* Bed Notes */
+/* Bed Notes - Mejorado */
 .bed-notes {
-    font-size: 0.75rem;
-    color: var(--text-color-secondary);
-    background: var(--yellow-50);
-    padding: 0.375rem 0.625rem;
+    padding: 0.45rem 0.55rem;
     border-radius: 8px;
     margin-top: 0.375rem;
     display: flex;
+    align-items: flex-start;
+    gap: 0.5rem;
+    position: relative;
+    animation: note-appear 0.3s ease;
+    transition: all 0.25s ease;
+    cursor: help;
+    border: 2px solid transparent;
+}
+
+@keyframes note-appear {
+    from {
+        opacity: 0;
+        transform: translateY(-8px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+.bed-notes:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 6px 12px rgba(0, 0, 0, 0.15);
+}
+
+.bed-notes__icon {
+    flex-shrink: 0;
+    width: 22px;
+    height: 22px;
+    border-radius: 6px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 0.7rem;
+    transition: all 0.2s ease;
+}
+
+.bed-notes:hover .bed-notes__icon {
+    transform: rotate(-5deg) scale(1.1);
+}
+
+.bed-notes__content {
+    flex: 1;
+    display: flex;
+    align-items: center;
+}
+
+.bed-notes__text {
+    font-size: 0.7rem;
+    line-height: 1.4;
+    word-break: break-word;
+    font-weight: 500;
+}
+
+/* Notas en camas ocupadas */
+.bed-notes--occupied {
+    background: linear-gradient(135deg, #dbeafe 0%, #bfdbfe 100%);
+    border-color: #60a5fa;
+    box-shadow: 0 3px 8px rgba(59, 130, 246, 0.25);
+}
+
+.bed-notes--occupied .bed-notes__icon {
+    background: linear-gradient(135deg, #3b82f6, #2563eb);
+    color: white;
+    box-shadow: 0 2px 6px rgba(59, 130, 246, 0.4);
+}
+
+.bed-notes--occupied .bed-notes__label {
+    color: #1e40af;
+}
+
+.bed-notes--occupied .bed-notes__text {
+    color: #1e3a8a;
+}
+
+.bed-notes--occupied:hover {
+    background: linear-gradient(135deg, #bfdbfe 0%, #93c5fd 100%);
+    border-color: #3b82f6;
+}
+
+/* Notas en camas libres */
+.bed-notes--free {
+    background: linear-gradient(135deg, #d1fae5 0%, #a7f3d0 100%);
+    border-color: #34d399;
+    box-shadow: 0 3px 8px rgba(16, 185, 129, 0.25);
+}
+
+.bed-notes--free .bed-notes__icon {
+    background: linear-gradient(135deg, #10b981, #059669);
+    color: white;
+    box-shadow: 0 2px 6px rgba(16, 185, 129, 0.4);
+}
+
+.bed-notes--free .bed-notes__label {
+    color: #065f46;
+}
+
+.bed-notes--free .bed-notes__text {
+    color: #064e3b;
+}
+
+.bed-notes--free:hover {
+    background: linear-gradient(135deg, #a7f3d0 0%, #6ee7b7 100%);
+    border-color: #10b981;
+}
+
+/* Notas en camas reservadas */
+.bed-notes--reserved {
+    background: linear-gradient(135deg, #fef3c7 0%, #fde68a 100%);
+    border-color: #fbbf24;
+    box-shadow: 0 3px 8px rgba(251, 191, 36, 0.25);
+}
+
+.bed-notes--reserved .bed-notes__icon {
+    background: linear-gradient(135deg, #f59e0b, #d97706);
+    color: white;
+    box-shadow: 0 2px 6px rgba(245, 158, 11, 0.4);
+}
+
+.bed-notes--reserved .bed-notes__label {
+    color: #78350f;
+}
+
+.bed-notes--reserved .bed-notes__text {
+    color: #78350f;
+}
+
+.bed-notes--reserved:hover {
+    background: linear-gradient(135deg, #fde68a 0%, #fcd34d 100%);
+    border-color: #f59e0b;
+}
+
+/* Reservation Info - Mejorado */
+.reservation-info {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+    margin-bottom: 0.375rem;
+}
+
+.reservation-status {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    font-weight: 700;
+    font-size: 0.875rem;
+    color: #92400e;
+    padding: 0.5rem 0.625rem;
+    background: linear-gradient(135deg, rgba(251, 191, 36, 0.25), rgba(251, 191, 36, 0.15));
+    border-radius: 6px;
+    border: 1px solid rgba(251, 191, 36, 0.3);
+}
+
+.reservation-status i {
+    font-size: 1rem;
+}
+
+/* Detalles de reserva mejorados */
+.reservation-detail-item {
+    display: flex;
+    flex-direction: column;
+    gap: 0.25rem;
+    padding: 0.375rem 0.5rem;
+    background: rgba(255, 255, 255, 0.5);
+    border-radius: 6px;
+    border-left: 3px solid #f59e0b;
+}
+
+.reservation-detail-label {
+    display: flex;
     align-items: center;
     gap: 0.375rem;
-    font-style: italic;
-    border: 1px solid var(--yellow-200);
+    font-size: 0.65rem;
+    font-weight: 600;
+    color: #92400e;
+    text-transform: uppercase;
+    letter-spacing: 0.3px;
+}
+
+.reservation-detail-label i {
+    font-size: 0.7rem;
+    color: #d97706;
+}
+
+.reservation-detail-value {
+    font-size: 0.75rem;
+    color: #78350f;
+    font-weight: 500;
     line-height: 1.4;
+    word-break: break-word;
+    padding-left: 1.125rem;
+}
+
+.reservation-date {
+    flex-direction: row;
+    align-items: center;
+    gap: 0.375rem;
+    padding: 0.25rem 0.5rem;
+    background: rgba(251, 191, 36, 0.15);
+    border-left: none;
+    border: 1px solid rgba(251, 191, 36, 0.2);
+}
+
+.reservation-date i {
+    font-size: 0.7rem;
+    color: #d97706;
+}
+
+.reservation-date span {
+    font-size: 0.7rem;
+    color: #92400e;
+    font-weight: 500;
 }
 
 /* Responsive Adjustments */
@@ -858,6 +1247,21 @@ const totalPendingTasks = computed(() => {
     .free-indicator i {
         font-size: 1.25rem;
     }
+
+    .bed-notes {
+        padding: 0.4rem 0.5rem;
+        gap: 0.4rem;
+    }
+
+    .bed-notes__icon {
+        width: 20px;
+        height: 20px;
+        font-size: 0.65rem;
+    }
+
+    .bed-notes__text {
+        font-size: 0.65rem;
+    }
 }
 
 @media (min-width: 901px) and (max-width: 1400px) {
@@ -868,6 +1272,21 @@ const totalPendingTasks = computed(() => {
 
     .bed-indicator {
         min-height: 115px;
+    }
+
+    .bed-notes {
+        padding: 0.45rem 0.55rem;
+        gap: 0.45rem;
+    }
+
+    .bed-notes__icon {
+        width: 21px;
+        height: 21px;
+        font-size: 0.675rem;
+    }
+
+    .bed-notes__text {
+        font-size: 0.675rem;
     }
 }
 

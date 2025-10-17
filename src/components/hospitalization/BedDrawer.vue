@@ -2,8 +2,11 @@
 import AttentionDetails from '@/components/attentions/AttentionDetails.vue';
 import AttentionTasks from '@/components/attentions/AttentionTasks.vue';
 import DetailsTimeline from '@/components/attentions/DetailsTimeline.vue';
+import BedReservationDialog from '@/components/hospitalization/BedReservationDialog.vue';
 import { usePermissions, USER_POSITIONS } from '@/composables/usePermissions';
 import { useHospitalAttentionsStore } from '@/store/hospitalAttentionsStore';
+import { useBedReservationsStore } from '@/store/bedReservationsStore';
+import { useToast } from 'primevue/usetoast';
 import Badge from 'primevue/badge';
 import Button from 'primevue/button';
 import Drawer from 'primevue/drawer';
@@ -29,7 +32,9 @@ const props = defineProps({
 const emit = defineEmits(['update:visible', 'refresh-data']);
 
 const hospitalAttentionsStore = useHospitalAttentionsStore();
+const reservationsStore = useBedReservationsStore();
 const { hasPosition } = usePermissions();
+const toast = useToast();
 
 // PERMISOS DE EDICIÓN: HOSPITALIZACION, DIRECTOR_MEDICO, MEDICOS y EMERGENCIA pueden editar detalles y tareas de atención
 const canEdit = computed(() => {
@@ -52,6 +57,8 @@ const drawerVisible = computed({
 
 const activeTab = ref('0');
 const selectedDate = ref(null); // Para controlar la fecha seleccionada en detalles
+const showReservationDialog = ref(false);
+const isLoadingReservation = ref(false);
 
 // Computed para obtener los datos de la atención
 const attention = computed(() => {
@@ -188,6 +195,68 @@ const handleCreateNewDetail = (date) => {
     selectedDate.value = date;
 };
 
+// Computed para determinar si la cama está reservada
+const isReserved = computed(() => {
+    return props.bed?.is_reserved || props.bed?.status === 'reserved';
+});
+
+const activeReservation = computed(() => {
+    return props.bed?.active_reservation || null;
+});
+
+// Computed para determinar si se puede reservar
+const canReserve = computed(() => {
+    if (!props.bed) return false;
+    // Solo se puede reservar si está libre y no tiene reserva activa
+    return (props.bed.status === 'free' || props.bed.is_available) && !isReserved.value;
+});
+
+// Handlers para reservas
+const handleOpenReservationDialog = () => {
+    showReservationDialog.value = true;
+};
+
+const handleReservationCreated = () => {
+    showReservationDialog.value = false;
+    toast.add({
+        severity: 'success',
+        summary: 'Éxito',
+        detail: 'Reserva creada exitosamente',
+        life: 3000
+    });
+    emit('refresh-data');
+};
+
+const handleCancelReservation = async () => {
+    if (!activeReservation.value) return;
+
+    isLoadingReservation.value = true;
+
+    try {
+        await reservationsStore.cancelReservation(activeReservation.value.id);
+
+        toast.add({
+            severity: 'success',
+            summary: 'Éxito',
+            detail: 'Reserva cancelada exitosamente',
+            life: 3000
+        });
+
+        emit('refresh-data');
+    } catch (error) {
+        console.error('Error cancelling reservation:', error);
+
+        toast.add({
+            severity: 'error',
+            summary: 'Error',
+            detail: error.response?.data?.message || 'Error al cancelar la reserva',
+            life: 5000
+        });
+    } finally {
+        isLoadingReservation.value = false;
+    }
+};
+
 // Watch para resetear el tab activo cuando se cambia de cama
 watch(
     () => props.bed,
@@ -231,6 +300,31 @@ watch(
                             <i class="pi pi-list-check text-orange-500 text-xs"></i>
                             <span class="text-600">{{ attention.tasks.length }}</span>
                             <Tag v-if="attention.tasks.some((t) => t.status === 'pendiente')" value="Pend." severity="warning" class="text-xs py-0" />
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Estado cuando la cama está reservada -->
+                <div v-else-if="isReserved && activeReservation" class="bg-yellow-50 p-2 border-round border-l-3 border-yellow-500">
+                    <div class="flex items-center justify-between gap-2 mb-2">
+                        <div class="flex items-center gap-2">
+                            <i class="pi pi-calendar-plus text-yellow-600 text-sm"></i>
+                            <span class="text-yellow-800 text-sm font-semibold">Cama Reservada</span>
+                        </div>
+                        <Tag value="RESERVADA" severity="warn" class="text-xs" />
+                    </div>
+                    <div class="text-xs text-600 flex flex-col gap-1">
+                        <div v-if="activeReservation.user" class="flex items-center gap-1">
+                            <i class="pi pi-user"></i>
+                            <span>Por: {{ activeReservation.user.name }}</span>
+                        </div>
+                        <div v-if="activeReservation.notes" class="flex items-center gap-1">
+                            <i class="pi pi-comment"></i>
+                            <span>{{ activeReservation.notes }}</span>
+                        </div>
+                        <div v-if="activeReservation.created_at" class="flex items-center gap-1">
+                            <i class="pi pi-clock"></i>
+                            <span>{{ formatDate(activeReservation.created_at) }}</span>
                         </div>
                     </div>
                 </div>
@@ -290,14 +384,59 @@ watch(
                 </Tabs>
             </div>
 
+            <!-- Estado cuando la cama está reservada -->
+            <div v-else-if="isReserved && activeReservation" class="flex flex-col items-center justify-center h-full text-center py-8">
+                <i class="pi pi-calendar-plus text-6xl text-yellow-400 mb-4"></i>
+                <h3 class="text-xl font-semibold text-gray-700 mb-2">Cama Reservada</h3>
+                <p class="text-gray-600 mb-4">Esta cama tiene una reserva activa.</p>
+
+                <!-- Información de la reserva -->
+                <div class="bg-yellow-50 border-1 border-yellow-200 border-round-md p-4 mb-4 max-w-md w-full text-left">
+                    <div class="flex flex-col gap-2 text-sm">
+                        <div v-if="activeReservation.user" class="flex items-start gap-2">
+                            <i class="pi pi-user text-yellow-600 mt-1"></i>
+                            <div>
+                                <div class="font-semibold text-gray-700">Reservado por:</div>
+                                <div class="text-gray-600">{{ activeReservation.user.name }}</div>
+                            </div>
+                        </div>
+                        <div v-if="activeReservation.notes" class="flex items-start gap-2">
+                            <i class="pi pi-comment text-yellow-600 mt-1"></i>
+                            <div>
+                                <div class="font-semibold text-gray-700">Notas:</div>
+                                <div class="text-gray-600">{{ activeReservation.notes }}</div>
+                            </div>
+                        </div>
+                        <div v-if="activeReservation.created_at" class="flex items-start gap-2">
+                            <i class="pi pi-clock text-yellow-600 mt-1"></i>
+                            <div>
+                                <div class="font-semibold text-gray-700">Creada:</div>
+                                <div class="text-gray-600">{{ formatDate(activeReservation.created_at) }}</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="flex gap-2">
+                    <Button label="Cancelar Reserva" icon="pi pi-times-circle" @click="handleCancelReservation" :loading="isLoadingReservation" severity="danger" outlined />
+                    <Button label="Cerrar" icon="pi pi-times" @click="drawerVisible = false" severity="secondary" outlined />
+                </div>
+            </div>
+
             <!-- Estado cuando la cama está libre -->
             <div v-else class="flex flex-col items-center justify-center h-full text-center py-8">
                 <i class="pi pi-bed text-6xl text-gray-300 mb-4"></i>
-                <h3 class="text-xl font-semibold text-gray-600 mb-2">Cama Libre</h3>
-                <p class="text-gray-500 mb-4">Esta cama está disponible para recibir un nuevo paciente.</p>
-                <Button label="Cerrar" icon="pi pi-times" outlined @click="drawerVisible = false" />
+                <h3 class="text-xl font-semibold text-gray-600 mb-2">Cama Disponible</h3>
+                <p class="text-gray-500 mb-4">Esta cama está disponible para recibir un nuevo paciente o puede ser reservada.</p>
+                <div class="flex gap-2">
+                    <Button v-if="canReserve" label="Reservar Cama" icon="pi pi-calendar-plus" @click="handleOpenReservationDialog" severity="warning" />
+                    <Button label="Cerrar" icon="pi pi-times" outlined @click="drawerVisible = false" severity="secondary" />
+                </div>
             </div>
         </div>
+
+        <!-- Dialogo de Reserva -->
+        <BedReservationDialog v-model:visible="showReservationDialog" :bed="bed" @reservation-created="handleReservationCreated" />
     </Drawer>
 </template>
 

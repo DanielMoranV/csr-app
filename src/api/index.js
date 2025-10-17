@@ -84,6 +84,12 @@ export { hospitalAttentions } from './hospitalAttentions';
 // Hospital Statistics Management
 export { hospitalStatistics } from './hospitalStatistics';
 
+// Beds Management
+export { beds } from './beds';
+
+// Bed Reservations Management
+export { bedReservations } from './bedReservations';
+
 // Tickets Management
 export { TicketService } from './tickets';
 
