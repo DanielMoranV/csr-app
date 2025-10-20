@@ -3,6 +3,7 @@ import Badge from 'primevue/badge';
 import Tag from 'primevue/tag';
 import { computed, defineEmits, ref } from 'vue';
 import BedDrawer from './BedDrawer.vue';
+import CudyrBadge from '@/components/cudyr/CudyrBadge.vue';
 
 const props = defineProps({
     room: {
@@ -60,6 +61,12 @@ const getLatestDetails = (details) => {
 const hasDetailField = (details, field) => {
     const latestDetail = getLatestDetails(details);
     return latestDetail && latestDetail[field];
+};
+
+// Función para obtener la categoría CUDYR del detalle más reciente
+const getCudyrCategory = (details) => {
+    const latestDetail = getLatestDetails(details);
+    return latestDetail?.cudyr_evaluation?.cudyr_category || null;
 };
 
 // Función para truncar texto
@@ -309,23 +316,16 @@ const totalPendingTasks = computed(() => {
                                 <span>{{ truncateText(bed.attention.doctor, 22) }}</span>
                             </div>
                             <div class="patient-sub-info">
-                                <span class="sub-info-item" :title="bed.attention.number">
-                                    <i class="pi pi-hashtag"></i> {{ bed.attention.number }}
-                                </span>
-                                <span class="sub-info-item" :title="bed.attention.patient.document_number">
-                                    <i class="pi pi-id-card"></i> {{ bed.attention.patient.document_number }}
-                                </span>
-                                <span class="sub-info-item" :title="getSexLabel(bed.attention.patient.sex)">
-                                    <i :class="`pi ${getSexIcon(bed.attention.patient.sex)}`"></i> {{ bed.attention.patient.sex }}
-                                </span>
-                                <span class="sub-info-item" title="Edad">
-                                    <i class="pi pi-calendar-plus"></i> {{ formatAge(bed.attention.patient.age) }}
-                                </span>
+                                <span class="sub-info-item" :title="bed.attention.number"> <i class="pi pi-hashtag"></i> {{ bed.attention.number }} </span>
+                                <span class="sub-info-item" :title="bed.attention.patient.document_number"> <i class="pi pi-id-card"></i> {{ bed.attention.patient.document_number }} </span>
+                                <span class="sub-info-item" :title="getSexLabel(bed.attention.patient.sex)"> <i :class="`pi ${getSexIcon(bed.attention.patient.sex)}`"></i> {{ bed.attention.patient.sex }} </span>
+                                <span class="sub-info-item" title="Edad"> <i class="pi pi-calendar-plus"></i> {{ formatAge(bed.attention.patient.age) }} </span>
                             </div>
                         </div>
 
                         <!-- Indicadores médicos importantes -->
                         <div class="medical-indicators">
+                            <CudyrBadge v-if="getCudyrCategory(bed.attention.details)" :category="getCudyrCategory(bed.attention.details)" size="small" :show-icon="true" :show-label="false" />
                             <Tag v-if="hasDetailField(bed.attention.details, 'ram')" value="RAM" severity="warn" class="indicator-tag" title="Reacciones Alérgicas a Medicamentos" />
                             <Tag v-if="hasDetailField(bed.attention.details, 'medical_order')" value="Órdenes" severity="info" class="indicator-tag" />
                             <Tag v-if="hasDetailField(bed.attention.details, 'interconsultation')" value="Interconsulta" severity="secondary" class="indicator-tag" />
@@ -692,8 +692,6 @@ const totalPendingTasks = computed(() => {
     /* The background is now inherited from .bed-indicator--occupied */
 }
 
-
-
 .bed-content--free {
     display: flex;
     flex-direction: column;
@@ -1010,8 +1008,6 @@ const totalPendingTasks = computed(() => {
     background: linear-gradient(135deg, #a7f3d0 0%, #6ee7b7 100%);
     border-color: #10b981;
 }
-
-
 
 /* Minimalist Reserved Bed */
 .bed-content--reserved-minimal {

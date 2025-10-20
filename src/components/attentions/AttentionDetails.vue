@@ -2,6 +2,15 @@
 import { useConfirm } from 'primevue/useconfirm';
 import { useToast } from 'primevue/usetoast';
 import { computed, defineEmits, defineProps, ref, watch } from 'vue';
+import { CUDYR_CONSTANTS } from '@/api/cudyr';
+import CudyrBadge from '@/components/cudyr/CudyrBadge.vue';
+import Message from 'primevue/message';
+import Divider from 'primevue/divider';
+import Accordion from 'primevue/accordion';
+import AccordionPanel from 'primevue/accordionpanel';
+import AccordionHeader from 'primevue/accordionheader';
+import AccordionContent from 'primevue/accordioncontent';
+import InputSwitch from 'primevue/inputswitch';
 
 const props = defineProps({
     details: {
@@ -35,6 +44,29 @@ const toast = useToast();
 const isEditing = ref(false);
 const localDetails = ref({});
 const isLoading = ref(false);
+
+// Estado para CUDYR
+const includeCudyr = ref(false);
+const cudyrData = ref({
+    // Dependencia
+    dependency_mobility: 0,
+    dependency_hygiene: 0,
+    dependency_nutrition: 0,
+    dependency_elimination: 0,
+    dependency_psychosocial: 0,
+    dependency_surveillance: 0,
+    // Riesgo
+    risk_oxygen_therapy: 0,
+    risk_airway_management: 0,
+    risk_vital_signs: 0,
+    risk_fluid_balance: 0,
+    risk_wound_care: 0,
+    risk_invasive_devices: 0,
+    risk_procedures: 0,
+    risk_medications: 0,
+    notes: ''
+});
+const cudyrPreview = ref(null);
 
 // Configuración de campos con validaciones y ayuda contextual
 const detailFields = [
@@ -95,12 +127,12 @@ const detailFields = [
 const scoreFields = [
     {
         key: 'score_CUDYR',
-        label: 'Score CUDYR',
+        label: 'Score CUDYR (Dependencia)',
         icon: 'pi pi-chart-bar',
         min: 0,
-        max: 100,
+        max: 18,
         suffix: 'pts',
-        help: 'Escala de evaluación funcional'
+        help: 'Score de Dependencia (0-18) - Se actualiza automáticamente con evaluación CUDYR'
     },
     {
         key: 'thrombosis_risk_score',
@@ -173,6 +205,85 @@ const resetForm = () => {
     };
 };
 
+// Resetear datos de CUDYR
+const resetCudyrData = () => {
+    cudyrData.value = {
+        dependency_mobility: 0,
+        dependency_hygiene: 0,
+        dependency_nutrition: 0,
+        dependency_elimination: 0,
+        dependency_psychosocial: 0,
+        dependency_surveillance: 0,
+        risk_oxygen_therapy: 0,
+        risk_airway_management: 0,
+        risk_vital_signs: 0,
+        risk_fluid_balance: 0,
+        risk_wound_care: 0,
+        risk_invasive_devices: 0,
+        risk_procedures: 0,
+        risk_medications: 0,
+        notes: ''
+    };
+    cudyrPreview.value = null;
+};
+
+// Calcular scores de CUDYR
+const calculateCudyrScores = () => {
+    const dependencyScore =
+        cudyrData.value.dependency_mobility +
+        cudyrData.value.dependency_hygiene +
+        cudyrData.value.dependency_nutrition +
+        cudyrData.value.dependency_elimination +
+        cudyrData.value.dependency_psychosocial +
+        cudyrData.value.dependency_surveillance;
+
+    const riskScore =
+        cudyrData.value.risk_oxygen_therapy +
+        cudyrData.value.risk_airway_management +
+        cudyrData.value.risk_vital_signs +
+        cudyrData.value.risk_fluid_balance +
+        cudyrData.value.risk_wound_care +
+        cudyrData.value.risk_invasive_devices +
+        cudyrData.value.risk_procedures +
+        cudyrData.value.risk_medications;
+
+    // Determinar clasificación de dependencia
+    let dependencyClass = 'D'; // Autosuficiencia
+    if (dependencyScore >= 13) dependencyClass = 'B'; // Total
+    else if (dependencyScore >= 7) dependencyClass = 'C'; // Parcial
+
+    // Determinar clasificación de riesgo
+    let riskClass = '4'; // Bajo
+    if (riskScore >= 19) riskClass = '1'; // Máximo
+    else if (riskScore >= 13) riskClass = '2'; // Alto
+    else if (riskScore >= 7) riskClass = '3'; // Mediano
+
+    // Determinar categoría CUDYR
+    let category = 'D3';
+    if (dependencyClass === 'B') {
+        if (riskClass === '1') category = 'A1';
+        else if (riskClass === '2') category = 'A2';
+        else category = 'A3';
+    } else if (dependencyClass === 'C') {
+        if (riskClass === '1') category = 'B1';
+        else if (riskClass === '2') category = 'B2';
+        else category = 'B3';
+    } else {
+        // dependencyClass === 'D'
+        if (riskClass === '1') category = 'C1';
+        else if (riskClass === '2') category = 'C2';
+        else category = 'C3';
+    }
+
+    return {
+        dependencyScore,
+        riskScore,
+        dependencyClass,
+        riskClass,
+        category
+    };
+};
+
 // Computed para obtener el detalle actual basado en selectedDate o el más reciente
 const currentDetail = computed(() => {
     if (!props.details) return null;
@@ -207,9 +318,40 @@ watch(
             } else if (typeof localDetails.value.attention_date === 'string') {
                 localDetails.value.attention_date = convertStringToDate(localDetails.value.attention_date);
             }
+
+            // Detectar y pre-cargar evaluación CUDYR existente
+            if (newDetails.cudyr_evaluation) {
+                includeCudyr.value = true;
+                cudyrData.value = {
+                    dependency_mobility: newDetails.cudyr_evaluation.dependency_mobility || 0,
+                    dependency_hygiene: newDetails.cudyr_evaluation.dependency_hygiene || 0,
+                    dependency_nutrition: newDetails.cudyr_evaluation.dependency_nutrition || 0,
+                    dependency_elimination: newDetails.cudyr_evaluation.dependency_elimination || 0,
+                    dependency_psychosocial: newDetails.cudyr_evaluation.dependency_psychosocial || 0,
+                    dependency_surveillance: newDetails.cudyr_evaluation.dependency_surveillance || 0,
+                    risk_oxygen_therapy: newDetails.cudyr_evaluation.risk_oxygen_therapy || 0,
+                    risk_airway_management: newDetails.cudyr_evaluation.risk_airway_management || 0,
+                    risk_vital_signs: newDetails.cudyr_evaluation.risk_vital_signs || 0,
+                    risk_fluid_balance: newDetails.cudyr_evaluation.risk_fluid_balance || 0,
+                    risk_wound_care: newDetails.cudyr_evaluation.risk_wound_care || 0,
+                    risk_invasive_devices: newDetails.cudyr_evaluation.risk_invasive_devices || 0,
+                    risk_procedures: newDetails.cudyr_evaluation.risk_procedures || 0,
+                    risk_medications: newDetails.cudyr_evaluation.risk_medications || 0,
+                    notes: newDetails.cudyr_evaluation.notes || ''
+                };
+                // Calcular preview automáticamente
+                cudyrPreview.value = calculateCudyrScores();
+            } else {
+                // Si no hay evaluación CUDYR, resetear
+                includeCudyr.value = false;
+                resetCudyrData();
+            }
+
             isEditing.value = false;
         } else {
             resetForm();
+            includeCudyr.value = false;
+            resetCudyrData();
             isEditing.value = true;
         }
     },
@@ -235,6 +377,50 @@ const convertDateToString = (date) => {
     return `${year}-${month}-${day}`;
 };
 
+// Computed para verificar si todas las dimensiones CUDYR están completas
+const allCudyrDimensionsCompleted = computed(() => {
+    if (!includeCudyr.value) return true;
+
+    const dimensions = [
+        'dependency_mobility',
+        'dependency_hygiene',
+        'dependency_nutrition',
+        'dependency_elimination',
+        'dependency_psychosocial',
+        'dependency_surveillance',
+        'risk_oxygen_therapy',
+        'risk_airway_management',
+        'risk_vital_signs',
+        'risk_fluid_balance',
+        'risk_wound_care',
+        'risk_invasive_devices',
+        'risk_procedures',
+        'risk_medications'
+    ];
+
+    return dimensions.every((dim) => cudyrData.value[dim] !== null && cudyrData.value[dim] !== undefined);
+});
+
+// Watch para actualizar preview cuando cambian los datos CUDYR
+watch(
+    () => cudyrData.value,
+    () => {
+        if (includeCudyr.value && allCudyrDimensionsCompleted.value) {
+            cudyrPreview.value = calculateCudyrScores();
+        } else {
+            cudyrPreview.value = null;
+        }
+    },
+    { deep: true }
+);
+
+// Watch para resetear CUDYR cuando se deshabilita el toggle
+watch(includeCudyr, (newVal) => {
+    if (!newVal) {
+        resetCudyrData();
+    }
+});
+
 const handleSave = async () => {
     if (!isFormValid.value) {
         toast.add({
@@ -242,6 +428,17 @@ const handleSave = async () => {
             summary: 'Validación',
             detail: 'Error en la validación del formulario',
             life: 3000
+        });
+        return;
+    }
+
+    // Validar CUDYR si está incluido
+    if (includeCudyr.value && !allCudyrDimensionsCompleted.value) {
+        toast.add({
+            severity: 'warn',
+            summary: 'Validación CUDYR',
+            detail: 'Debe completar todas las 14 dimensiones de la evaluación CUDYR',
+            life: 5000
         });
         return;
     }
@@ -260,12 +457,35 @@ const handleSave = async () => {
             attention_date: convertDateToString(localDetails.value.attention_date)
         };
 
+        // Agregar evaluación CUDYR si está habilitada
+        if (includeCudyr.value && allCudyrDimensionsCompleted.value) {
+            dataToSend.cudyr_evaluation = {
+                dependency_mobility: cudyrData.value.dependency_mobility,
+                dependency_hygiene: cudyrData.value.dependency_hygiene,
+                dependency_nutrition: cudyrData.value.dependency_nutrition,
+                dependency_elimination: cudyrData.value.dependency_elimination,
+                dependency_psychosocial: cudyrData.value.dependency_psychosocial,
+                dependency_surveillance: cudyrData.value.dependency_surveillance,
+                risk_oxygen_therapy: cudyrData.value.risk_oxygen_therapy,
+                risk_airway_management: cudyrData.value.risk_airway_management,
+                risk_vital_signs: cudyrData.value.risk_vital_signs,
+                risk_fluid_balance: cudyrData.value.risk_fluid_balance,
+                risk_wound_care: cudyrData.value.risk_wound_care,
+                risk_invasive_devices: cudyrData.value.risk_invasive_devices,
+                risk_procedures: cudyrData.value.risk_procedures,
+                risk_medications: cudyrData.value.risk_medications,
+                notes: cudyrData.value.notes
+            };
+        }
+
         if (currentDetail.value) {
             await emit('update-details', dataToSend.id, dataToSend);
             toast.add({
                 severity: 'success',
                 summary: 'Éxito',
-                detail: 'Detalles actualizados correctamente',
+                detail: includeCudyr.value
+                    ? 'Detalles y evaluación CUDYR actualizados correctamente'
+                    : 'Detalles actualizados correctamente',
                 life: 3000
             });
         } else {
@@ -273,12 +493,16 @@ const handleSave = async () => {
             toast.add({
                 severity: 'success',
                 summary: 'Éxito',
-                detail: 'Detalles creados correctamente',
+                detail: includeCudyr.value
+                    ? 'Detalles y evaluación CUDYR creados correctamente'
+                    : 'Detalles creados correctamente',
                 life: 3000
             });
         }
 
         isEditing.value = false;
+        includeCudyr.value = false;
+        resetCudyrData();
     } catch (error) {
         toast.add({
             severity: 'error',
@@ -327,8 +551,33 @@ const handleDelete = () => {
 const startEditing = () => {
     if (currentDetail.value) {
         localDetails.value = { ...currentDetail.value };
+
+        // Pre-cargar evaluación CUDYR si existe
+        if (currentDetail.value.cudyr_evaluation) {
+            includeCudyr.value = true;
+            cudyrData.value = {
+                dependency_mobility: currentDetail.value.cudyr_evaluation.dependency_mobility || 0,
+                dependency_hygiene: currentDetail.value.cudyr_evaluation.dependency_hygiene || 0,
+                dependency_nutrition: currentDetail.value.cudyr_evaluation.dependency_nutrition || 0,
+                dependency_elimination: currentDetail.value.cudyr_evaluation.dependency_elimination || 0,
+                dependency_psychosocial: currentDetail.value.cudyr_evaluation.dependency_psychosocial || 0,
+                dependency_surveillance: currentDetail.value.cudyr_evaluation.dependency_surveillance || 0,
+                risk_oxygen_therapy: currentDetail.value.cudyr_evaluation.risk_oxygen_therapy || 0,
+                risk_airway_management: currentDetail.value.cudyr_evaluation.risk_airway_management || 0,
+                risk_vital_signs: currentDetail.value.cudyr_evaluation.risk_vital_signs || 0,
+                risk_fluid_balance: currentDetail.value.cudyr_evaluation.risk_fluid_balance || 0,
+                risk_wound_care: currentDetail.value.cudyr_evaluation.risk_wound_care || 0,
+                risk_invasive_devices: currentDetail.value.cudyr_evaluation.risk_invasive_devices || 0,
+                risk_procedures: currentDetail.value.cudyr_evaluation.risk_procedures || 0,
+                risk_medications: currentDetail.value.cudyr_evaluation.risk_medications || 0,
+                notes: currentDetail.value.cudyr_evaluation.notes || ''
+            };
+            cudyrPreview.value = calculateCudyrScores();
+        }
     } else {
         resetForm();
+        includeCudyr.value = false;
+        resetCudyrData();
     }
     isEditing.value = true;
 };
@@ -345,18 +594,76 @@ const cancelEditing = () => {
             accept: () => {
                 if (currentDetail.value) {
                     localDetails.value = { ...currentDetail.value };
+
+                    // Restaurar datos CUDYR originales
+                    if (currentDetail.value.cudyr_evaluation) {
+                        includeCudyr.value = true;
+                        cudyrData.value = {
+                            dependency_mobility: currentDetail.value.cudyr_evaluation.dependency_mobility || 0,
+                            dependency_hygiene: currentDetail.value.cudyr_evaluation.dependency_hygiene || 0,
+                            dependency_nutrition: currentDetail.value.cudyr_evaluation.dependency_nutrition || 0,
+                            dependency_elimination: currentDetail.value.cudyr_evaluation.dependency_elimination || 0,
+                            dependency_psychosocial: currentDetail.value.cudyr_evaluation.dependency_psychosocial || 0,
+                            dependency_surveillance: currentDetail.value.cudyr_evaluation.dependency_surveillance || 0,
+                            risk_oxygen_therapy: currentDetail.value.cudyr_evaluation.risk_oxygen_therapy || 0,
+                            risk_airway_management: currentDetail.value.cudyr_evaluation.risk_airway_management || 0,
+                            risk_vital_signs: currentDetail.value.cudyr_evaluation.risk_vital_signs || 0,
+                            risk_fluid_balance: currentDetail.value.cudyr_evaluation.risk_fluid_balance || 0,
+                            risk_wound_care: currentDetail.value.cudyr_evaluation.risk_wound_care || 0,
+                            risk_invasive_devices: currentDetail.value.cudyr_evaluation.risk_invasive_devices || 0,
+                            risk_procedures: currentDetail.value.cudyr_evaluation.risk_procedures || 0,
+                            risk_medications: currentDetail.value.cudyr_evaluation.risk_medications || 0,
+                            notes: currentDetail.value.cudyr_evaluation.notes || ''
+                        };
+                        cudyrPreview.value = calculateCudyrScores();
+                    } else {
+                        includeCudyr.value = false;
+                        resetCudyrData();
+                    }
+
                     isEditing.value = false;
                 } else {
                     resetForm();
+                    includeCudyr.value = false;
+                    resetCudyrData();
                 }
             }
         });
     } else {
         if (currentDetail.value) {
             localDetails.value = { ...currentDetail.value };
+
+            // Restaurar datos CUDYR originales
+            if (currentDetail.value.cudyr_evaluation) {
+                includeCudyr.value = true;
+                cudyrData.value = {
+                    dependency_mobility: currentDetail.value.cudyr_evaluation.dependency_mobility || 0,
+                    dependency_hygiene: currentDetail.value.cudyr_evaluation.dependency_hygiene || 0,
+                    dependency_nutrition: currentDetail.value.cudyr_evaluation.dependency_nutrition || 0,
+                    dependency_elimination: currentDetail.value.cudyr_evaluation.dependency_elimination || 0,
+                    dependency_psychosocial: currentDetail.value.cudyr_evaluation.dependency_psychosocial || 0,
+                    dependency_surveillance: currentDetail.value.cudyr_evaluation.dependency_surveillance || 0,
+                    risk_oxygen_therapy: currentDetail.value.cudyr_evaluation.risk_oxygen_therapy || 0,
+                    risk_airway_management: currentDetail.value.cudyr_evaluation.risk_airway_management || 0,
+                    risk_vital_signs: currentDetail.value.cudyr_evaluation.risk_vital_signs || 0,
+                    risk_fluid_balance: currentDetail.value.cudyr_evaluation.risk_fluid_balance || 0,
+                    risk_wound_care: currentDetail.value.cudyr_evaluation.risk_wound_care || 0,
+                    risk_invasive_devices: currentDetail.value.cudyr_evaluation.risk_invasive_devices || 0,
+                    risk_procedures: currentDetail.value.cudyr_evaluation.risk_procedures || 0,
+                    risk_medications: currentDetail.value.cudyr_evaluation.risk_medications || 0,
+                    notes: currentDetail.value.cudyr_evaluation.notes || ''
+                };
+                cudyrPreview.value = calculateCudyrScores();
+            } else {
+                includeCudyr.value = false;
+                resetCudyrData();
+            }
+
             isEditing.value = false;
         } else {
             resetForm();
+            includeCudyr.value = false;
+            resetCudyrData();
         }
     }
 };
@@ -598,6 +905,306 @@ const getUserInfo = (userObj) => {
                                 <Badge v-if="field.priority === 'high'" value="Importante" severity="info" size="small" />
                             </label>
                             <Textarea :id="field.key" v-model="localDetails[field.key]" :placeholder="field.placeholder" rows="3" auto-resize class="w-full" />
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Sección de Evaluación CUDYR (NUEVA) -->
+                <div class="edit-section cudyr-section">
+                    <div class="cudyr-toggle-header">
+                        <h4 class="edit-section-title">
+                            <i class="pi pi-chart-bar"></i>
+                            Evaluación CUDYR
+                        </h4>
+                        <div class="cudyr-toggle-container">
+                            <label class="cudyr-toggle-label">
+                                <InputSwitch v-model="includeCudyr" />
+                                <span class="ml-2">{{ includeCudyr ? 'Incluir Evaluación CUDYR' : 'Agregar Evaluación CUDYR' }}</span>
+                            </label>
+                        </div>
+                    </div>
+
+                    <!-- Preview CUDYR -->
+                    <Message v-if="includeCudyr && cudyrPreview" severity="success" :closable="false" class="cudyr-preview-message">
+                        <div class="cudyr-preview-content">
+                            <div class="preview-header">
+                                <span class="preview-label">Categoría CUDYR:</span>
+                                <CudyrBadge :category="cudyrPreview.category" size="normal" />
+                            </div>
+                            <Divider />
+                            <div class="preview-scores">
+                                <div class="preview-score-item">
+                                    <i class="pi pi-users"></i>
+                                    <span>Dependencia: <strong>{{ cudyrPreview.dependencyScore }}/18</strong> ({{ cudyrPreview.dependencyClass }})</span>
+                                </div>
+                                <div class="preview-score-item">
+                                    <i class="pi pi-exclamation-triangle"></i>
+                                    <span>Riesgo: <strong>{{ cudyrPreview.riskScore }}/24</strong> ({{ cudyrPreview.riskClass }})</span>
+                                </div>
+                            </div>
+                        </div>
+                    </Message>
+
+                    <!-- Formulario CUDYR -->
+                    <div v-if="includeCudyr" class="cudyr-form-container">
+                        <Message severity="info" :closable="false" class="mb-3">
+                            Complete las 14 dimensiones (6 dependencia + 8 riesgo). Cada dimensión se evalúa de 0 a 3 puntos.
+                        </Message>
+
+                        <!-- Acordeones para Dependencia y Riesgo -->
+                        <Accordion :value="['0', '1']" multiple>
+                            <!-- Panel de Dependencia -->
+                            <AccordionPanel value="0">
+                                <AccordionHeader>
+                                    <i class="pi pi-users mr-2"></i>
+                                    <span>Escala de Dependencia (6 dimensiones)</span>
+                                    <Badge v-if="cudyrPreview" :value="`${cudyrPreview.dependencyScore}/18`" severity="info" class="ml-auto mr-2" />
+                                </AccordionHeader>
+                                <AccordionContent>
+                                    <div class="cudyr-dimensions-grid">
+                                        <!-- Movilización -->
+                                        <div class="cudyr-dimension-field">
+                                            <label class="dimension-label-compact">
+                                                {{ CUDYR_CONSTANTS.DEPENDENCY_DIMENSIONS.mobility.label }}
+                                                <span class="dimension-value-compact">{{ cudyrData.dependency_mobility }}/3</span>
+                                            </label>
+                                            <div class="dimension-options-compact">
+                                                <div v-for="(description, index) in CUDYR_CONSTANTS.DEPENDENCY_DIMENSIONS.mobility.descriptions" :key="index" class="dimension-option-compact" :class="{ 'selected': cudyrData.dependency_mobility === index }" @click="cudyrData.dependency_mobility = index">
+                                                    <div class="option-radio-compact">{{ index }}</div>
+                                                    <span class="option-description-compact">{{ description }}</span>
+                                                </div>
+                                            </div>
+                                        </div>
+
+                                        <Divider />
+
+                                        <!-- Higiene -->
+                                        <div class="cudyr-dimension-field">
+                                            <label class="dimension-label-compact">
+                                                {{ CUDYR_CONSTANTS.DEPENDENCY_DIMENSIONS.hygiene.label }}
+                                                <span class="dimension-value-compact">{{ cudyrData.dependency_hygiene }}/3</span>
+                                            </label>
+                                            <div class="dimension-options-compact">
+                                                <div v-for="(description, index) in CUDYR_CONSTANTS.DEPENDENCY_DIMENSIONS.hygiene.descriptions" :key="index" class="dimension-option-compact" :class="{ 'selected': cudyrData.dependency_hygiene === index }" @click="cudyrData.dependency_hygiene = index">
+                                                    <div class="option-radio-compact">{{ index }}</div>
+                                                    <span class="option-description-compact">{{ description }}</span>
+                                                </div>
+                                            </div>
+                                        </div>
+
+                                        <Divider />
+
+                                        <!-- Alimentación -->
+                                        <div class="cudyr-dimension-field">
+                                            <label class="dimension-label-compact">
+                                                {{ CUDYR_CONSTANTS.DEPENDENCY_DIMENSIONS.nutrition.label }}
+                                                <span class="dimension-value-compact">{{ cudyrData.dependency_nutrition }}/3</span>
+                                            </label>
+                                            <div class="dimension-options-compact">
+                                                <div v-for="(description, index) in CUDYR_CONSTANTS.DEPENDENCY_DIMENSIONS.nutrition.descriptions" :key="index" class="dimension-option-compact" :class="{ 'selected': cudyrData.dependency_nutrition === index }" @click="cudyrData.dependency_nutrition = index">
+                                                    <div class="option-radio-compact">{{ index }}</div>
+                                                    <span class="option-description-compact">{{ description }}</span>
+                                                </div>
+                                            </div>
+                                        </div>
+
+                                        <Divider />
+
+                                        <!-- Eliminación -->
+                                        <div class="cudyr-dimension-field">
+                                            <label class="dimension-label-compact">
+                                                {{ CUDYR_CONSTANTS.DEPENDENCY_DIMENSIONS.elimination.label }}
+                                                <span class="dimension-value-compact">{{ cudyrData.dependency_elimination }}/3</span>
+                                            </label>
+                                            <div class="dimension-options-compact">
+                                                <div v-for="(description, index) in CUDYR_CONSTANTS.DEPENDENCY_DIMENSIONS.elimination.descriptions" :key="index" class="dimension-option-compact" :class="{ 'selected': cudyrData.dependency_elimination === index }" @click="cudyrData.dependency_elimination = index">
+                                                    <div class="option-radio-compact">{{ index }}</div>
+                                                    <span class="option-description-compact">{{ description }}</span>
+                                                </div>
+                                            </div>
+                                        </div>
+
+                                        <Divider />
+
+                                        <!-- Apoyo Psicosocial -->
+                                        <div class="cudyr-dimension-field">
+                                            <label class="dimension-label-compact">
+                                                {{ CUDYR_CONSTANTS.DEPENDENCY_DIMENSIONS.psychosocial.label }}
+                                                <span class="dimension-value-compact">{{ cudyrData.dependency_psychosocial }}/3</span>
+                                            </label>
+                                            <div class="dimension-options-compact">
+                                                <div v-for="(description, index) in CUDYR_CONSTANTS.DEPENDENCY_DIMENSIONS.psychosocial.descriptions" :key="index" class="dimension-option-compact" :class="{ 'selected': cudyrData.dependency_psychosocial === index }" @click="cudyrData.dependency_psychosocial = index">
+                                                    <div class="option-radio-compact">{{ index }}</div>
+                                                    <span class="option-description-compact">{{ description }}</span>
+                                                </div>
+                                            </div>
+                                        </div>
+
+                                        <Divider />
+
+                                        <!-- Vigilancia -->
+                                        <div class="cudyr-dimension-field">
+                                            <label class="dimension-label-compact">
+                                                {{ CUDYR_CONSTANTS.DEPENDENCY_DIMENSIONS.surveillance.label }}
+                                                <span class="dimension-value-compact">{{ cudyrData.dependency_surveillance }}/3</span>
+                                            </label>
+                                            <div class="dimension-options-compact">
+                                                <div v-for="(description, index) in CUDYR_CONSTANTS.DEPENDENCY_DIMENSIONS.surveillance.descriptions" :key="index" class="dimension-option-compact" :class="{ 'selected': cudyrData.dependency_surveillance === index }" @click="cudyrData.dependency_surveillance = index">
+                                                    <div class="option-radio-compact">{{ index }}</div>
+                                                    <span class="option-description-compact">{{ description }}</span>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </AccordionContent>
+                            </AccordionPanel>
+
+                            <!-- Panel de Riesgo -->
+                            <AccordionPanel value="1">
+                                <AccordionHeader>
+                                    <i class="pi pi-exclamation-triangle mr-2"></i>
+                                    <span>Escala de Riesgo (8 dimensiones)</span>
+                                    <Badge v-if="cudyrPreview" :value="`${cudyrPreview.riskScore}/24`" severity="warning" class="ml-auto mr-2" />
+                                </AccordionHeader>
+                                <AccordionContent>
+                                    <div class="cudyr-dimensions-grid">
+                                        <!-- Oxigenoterapia -->
+                                        <div class="cudyr-dimension-field">
+                                            <label class="dimension-label-compact">
+                                                {{ CUDYR_CONSTANTS.RISK_DIMENSIONS.oxygen_therapy.label }}
+                                                <span class="dimension-value-compact">{{ cudyrData.risk_oxygen_therapy }}/3</span>
+                                            </label>
+                                            <div class="dimension-options-compact">
+                                                <div v-for="(description, index) in CUDYR_CONSTANTS.RISK_DIMENSIONS.oxygen_therapy.descriptions" :key="index" class="dimension-option-compact" :class="{ 'selected': cudyrData.risk_oxygen_therapy === index }" @click="cudyrData.risk_oxygen_therapy = index">
+                                                    <div class="option-radio-compact">{{ index }}</div>
+                                                    <span class="option-description-compact">{{ description }}</span>
+                                                </div>
+                                            </div>
+                                        </div>
+
+                                        <Divider />
+
+                                        <!-- Manejo de Vía Aérea -->
+                                        <div class="cudyr-dimension-field">
+                                            <label class="dimension-label-compact">
+                                                {{ CUDYR_CONSTANTS.RISK_DIMENSIONS.airway_management.label }}
+                                                <span class="dimension-value-compact">{{ cudyrData.risk_airway_management }}/3</span>
+                                            </label>
+                                            <div class="dimension-options-compact">
+                                                <div v-for="(description, index) in CUDYR_CONSTANTS.RISK_DIMENSIONS.airway_management.descriptions" :key="index" class="dimension-option-compact" :class="{ 'selected': cudyrData.risk_airway_management === index }" @click="cudyrData.risk_airway_management = index">
+                                                    <div class="option-radio-compact">{{ index }}</div>
+                                                    <span class="option-description-compact">{{ description }}</span>
+                                                </div>
+                                            </div>
+                                        </div>
+
+                                        <Divider />
+
+                                        <!-- Signos Vitales -->
+                                        <div class="cudyr-dimension-field">
+                                            <label class="dimension-label-compact">
+                                                {{ CUDYR_CONSTANTS.RISK_DIMENSIONS.vital_signs.label }}
+                                                <span class="dimension-value-compact">{{ cudyrData.risk_vital_signs }}/3</span>
+                                            </label>
+                                            <div class="dimension-options-compact">
+                                                <div v-for="(description, index) in CUDYR_CONSTANTS.RISK_DIMENSIONS.vital_signs.descriptions" :key="index" class="dimension-option-compact" :class="{ 'selected': cudyrData.risk_vital_signs === index }" @click="cudyrData.risk_vital_signs = index">
+                                                    <div class="option-radio-compact">{{ index }}</div>
+                                                    <span class="option-description-compact">{{ description }}</span>
+                                                </div>
+                                            </div>
+                                        </div>
+
+                                        <Divider />
+
+                                        <!-- Balance Hídrico -->
+                                        <div class="cudyr-dimension-field">
+                                            <label class="dimension-label-compact">
+                                                {{ CUDYR_CONSTANTS.RISK_DIMENSIONS.fluid_balance.label }}
+                                                <span class="dimension-value-compact">{{ cudyrData.risk_fluid_balance }}/3</span>
+                                            </label>
+                                            <div class="dimension-options-compact">
+                                                <div v-for="(description, index) in CUDYR_CONSTANTS.RISK_DIMENSIONS.fluid_balance.descriptions" :key="index" class="dimension-option-compact" :class="{ 'selected': cudyrData.risk_fluid_balance === index }" @click="cudyrData.risk_fluid_balance = index">
+                                                    <div class="option-radio-compact">{{ index }}</div>
+                                                    <span class="option-description-compact">{{ description }}</span>
+                                                </div>
+                                            </div>
+                                        </div>
+
+                                        <Divider />
+
+                                        <!-- Curaciones -->
+                                        <div class="cudyr-dimension-field">
+                                            <label class="dimension-label-compact">
+                                                {{ CUDYR_CONSTANTS.RISK_DIMENSIONS.wound_care.label }}
+                                                <span class="dimension-value-compact">{{ cudyrData.risk_wound_care }}/3</span>
+                                            </label>
+                                            <div class="dimension-options-compact">
+                                                <div v-for="(description, index) in CUDYR_CONSTANTS.RISK_DIMENSIONS.wound_care.descriptions" :key="index" class="dimension-option-compact" :class="{ 'selected': cudyrData.risk_wound_care === index }" @click="cudyrData.risk_wound_care = index">
+                                                    <div class="option-radio-compact">{{ index }}</div>
+                                                    <span class="option-description-compact">{{ description }}</span>
+                                                </div>
+                                            </div>
+                                        </div>
+
+                                        <Divider />
+
+                                        <!-- Elementos Invasivos -->
+                                        <div class="cudyr-dimension-field">
+                                            <label class="dimension-label-compact">
+                                                {{ CUDYR_CONSTANTS.RISK_DIMENSIONS.invasive_devices.label }}
+                                                <span class="dimension-value-compact">{{ cudyrData.risk_invasive_devices }}/3</span>
+                                            </label>
+                                            <div class="dimension-options-compact">
+                                                <div v-for="(description, index) in CUDYR_CONSTANTS.RISK_DIMENSIONS.invasive_devices.descriptions" :key="index" class="dimension-option-compact" :class="{ 'selected': cudyrData.risk_invasive_devices === index }" @click="cudyrData.risk_invasive_devices = index">
+                                                    <div class="option-radio-compact">{{ index }}</div>
+                                                    <span class="option-description-compact">{{ description }}</span>
+                                                </div>
+                                            </div>
+                                        </div>
+
+                                        <Divider />
+
+                                        <!-- Procedimientos -->
+                                        <div class="cudyr-dimension-field">
+                                            <label class="dimension-label-compact">
+                                                {{ CUDYR_CONSTANTS.RISK_DIMENSIONS.procedures.label }}
+                                                <span class="dimension-value-compact">{{ cudyrData.risk_procedures }}/3</span>
+                                            </label>
+                                            <div class="dimension-options-compact">
+                                                <div v-for="(description, index) in CUDYR_CONSTANTS.RISK_DIMENSIONS.procedures.descriptions" :key="index" class="dimension-option-compact" :class="{ 'selected': cudyrData.risk_procedures === index }" @click="cudyrData.risk_procedures = index">
+                                                    <div class="option-radio-compact">{{ index }}</div>
+                                                    <span class="option-description-compact">{{ description }}</span>
+                                                </div>
+                                            </div>
+                                        </div>
+
+                                        <Divider />
+
+                                        <!-- Medicamentos -->
+                                        <div class="cudyr-dimension-field">
+                                            <label class="dimension-label-compact">
+                                                {{ CUDYR_CONSTANTS.RISK_DIMENSIONS.medications.label }}
+                                                <span class="dimension-value-compact">{{ cudyrData.risk_medications }}/3</span>
+                                            </label>
+                                            <div class="dimension-options-compact">
+                                                <div v-for="(description, index) in CUDYR_CONSTANTS.RISK_DIMENSIONS.medications.descriptions" :key="index" class="dimension-option-compact" :class="{ 'selected': cudyrData.risk_medications === index }" @click="cudyrData.risk_medications = index">
+                                                    <div class="option-radio-compact">{{ index }}</div>
+                                                    <span class="option-description-compact">{{ description }}</span>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </AccordionContent>
+                            </AccordionPanel>
+                        </Accordion>
+
+                        <!-- Notas CUDYR -->
+                        <div class="cudyr-notes-field">
+                            <label class="field-label">
+                                <i class="pi pi-file-edit"></i>
+                                Observaciones CUDYR (Opcional)
+                            </label>
+                            <Textarea v-model="cudyrData.notes" rows="3" placeholder="Observaciones adicionales sobre la evaluación..." class="w-full" />
                         </div>
                     </div>
                 </div>
@@ -1461,5 +2068,225 @@ const getUserInfo = (userObj) => {
 :deep(.p-inputtextarea) {
     padding: 0.5rem;
     font-size: 0.9rem;
+}
+
+/* ===== ESTILOS CUDYR ===== */
+
+/* Sección CUDYR */
+.cudyr-section {
+    background: linear-gradient(135deg, var(--blue-50), var(--surface-card));
+    border: 2px solid var(--primary-color);
+}
+
+.cudyr-toggle-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 1rem;
+}
+
+.cudyr-toggle-container {
+    flex-shrink: 0;
+}
+
+.cudyr-toggle-label {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    font-size: 0.9rem;
+    font-weight: 500;
+    cursor: pointer;
+}
+
+/* Preview CUDYR */
+.cudyr-preview-message {
+    margin-bottom: 1rem;
+    background: linear-gradient(135deg, var(--green-50), var(--surface-card));
+    border-left: 4px solid var(--green-500);
+}
+
+.cudyr-preview-content {
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+}
+
+.preview-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+}
+
+.preview-label {
+    font-weight: 600;
+    font-size: 1rem;
+}
+
+.preview-scores {
+    display: flex;
+    gap: 1.5rem;
+    flex-wrap: wrap;
+}
+
+.preview-score-item {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    font-size: 0.9rem;
+}
+
+.preview-score-item i {
+    font-size: 1.1rem;
+    color: var(--primary-color);
+}
+
+/* Formulario CUDYR */
+.cudyr-form-container {
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+}
+
+.cudyr-dimensions-grid {
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+}
+
+.cudyr-dimension-field {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+}
+
+.dimension-label-compact {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    font-weight: 600;
+    font-size: 0.95rem;
+    color: var(--text-color);
+    padding: 0.5rem;
+    background: var(--surface-100);
+    border-radius: 6px;
+}
+
+.dimension-value-compact {
+    background: var(--primary-color);
+    color: white;
+    padding: 0.25rem 0.75rem;
+    border-radius: 12px;
+    font-size: 0.85rem;
+    font-weight: 700;
+}
+
+.dimension-options-compact {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+}
+
+.dimension-option-compact {
+    display: flex;
+    align-items: flex-start;
+    gap: 0.75rem;
+    padding: 0.75rem;
+    background: var(--surface-card);
+    border: 2px solid var(--surface-border);
+    border-radius: 8px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.dimension-option-compact:hover {
+    background: var(--surface-50);
+    border-color: var(--primary-color);
+    transform: translateX(4px);
+}
+
+.dimension-option-compact.selected {
+    background: var(--primary-50);
+    border-color: var(--primary-color);
+    box-shadow: 0 2px 8px rgba(var(--primary-rgb), 0.2);
+}
+
+.option-radio-compact {
+    flex-shrink: 0;
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    background: var(--surface-100);
+    border: 2px solid var(--surface-border);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: 700;
+    font-size: 1rem;
+    color: var(--text-color-secondary);
+    transition: all 0.2s ease;
+}
+
+.dimension-option-compact.selected .option-radio-compact {
+    background: var(--primary-color);
+    border-color: var(--primary-color);
+    color: white;
+}
+
+.option-description-compact {
+    flex: 1;
+    font-size: 0.85rem;
+    line-height: 1.5;
+    color: var(--text-color);
+}
+
+.cudyr-notes-field {
+    margin-top: 1rem;
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+}
+
+/* Responsive CUDYR */
+@media (max-width: 768px) {
+    .cudyr-toggle-header {
+        flex-direction: column;
+        align-items: stretch;
+        gap: 0.75rem;
+    }
+
+    .cudyr-toggle-container {
+        width: 100%;
+    }
+
+    .cudyr-toggle-label {
+        justify-content: center;
+    }
+
+    .preview-header {
+        flex-direction: column;
+        align-items: stretch;
+        text-align: center;
+    }
+
+    .preview-scores {
+        flex-direction: column;
+        gap: 0.75rem;
+    }
+
+    .dimension-option-compact {
+        padding: 0.5rem;
+    }
+
+    .option-radio-compact {
+        width: 28px;
+        height: 28px;
+        font-size: 0.9rem;
+    }
+
+    .option-description-compact {
+        font-size: 0.8rem;
+    }
 }
 </style>

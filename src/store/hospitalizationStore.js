@@ -407,6 +407,81 @@ export const useHospitalizationStore = defineStore('hospitalization', () => {
         });
     };
 
+    // CUDYR Evaluation event handlers
+    const handleCudyrEvaluationCreated = (eventData) => {
+        console.log('[HospitalizationStore] Handling CUDYR evaluation created:', eventData);
+        const evaluation = eventData.evaluation || eventData.data;
+
+        if (!evaluation || !evaluation.id_details_attention) return;
+
+        const detailId = evaluation.id_details_attention;
+
+        // Find the detail and update it with the CUDYR evaluation
+        state.status.forEach((room) => {
+            if (room.beds) {
+                room.beds.forEach((bed) => {
+                    if (bed.attention && bed.attention.details) {
+                        const detailIndex = bed.attention.details.findIndex((d) => d.id === detailId);
+                        if (detailIndex !== -1) {
+                            // Add the cudyr_evaluation to the detail
+                            bed.attention.details[detailIndex].cudyr_evaluation = evaluation;
+                            console.log(`[HospitalizationStore] Added CUDYR evaluation to detail ${detailId} in bed ${bed.id}`);
+                        }
+                    }
+                });
+            }
+        });
+    };
+
+    const handleCudyrEvaluationUpdated = (eventData) => {
+        console.log('[HospitalizationStore] Handling CUDYR evaluation updated:', eventData);
+        const evaluation = eventData.evaluation || eventData.data;
+
+        if (!evaluation || !evaluation.id_details_attention) return;
+
+        const detailId = evaluation.id_details_attention;
+
+        // Find the detail and update its CUDYR evaluation
+        state.status.forEach((room) => {
+            if (room.beds) {
+                room.beds.forEach((bed) => {
+                    if (bed.attention && bed.attention.details) {
+                        const detailIndex = bed.attention.details.findIndex((d) => d.id === detailId);
+                        if (detailIndex !== -1) {
+                            // Update the cudyr_evaluation in the detail
+                            bed.attention.details[detailIndex].cudyr_evaluation = evaluation;
+                            console.log(`[HospitalizationStore] Updated CUDYR evaluation for detail ${detailId} in bed ${bed.id}`);
+                        }
+                    }
+                });
+            }
+        });
+    };
+
+    const handleCudyrEvaluationDeleted = (eventData) => {
+        console.log('[HospitalizationStore] Handling CUDYR evaluation deleted:', eventData);
+        const evaluationId = eventData.evaluation?.id || eventData.id;
+        const detailId = eventData.evaluation?.id_details_attention || eventData.id_details_attention;
+
+        if (!detailId) return;
+
+        // Find the detail and remove its CUDYR evaluation
+        state.status.forEach((room) => {
+            if (room.beds) {
+                room.beds.forEach((bed) => {
+                    if (bed.attention && bed.attention.details) {
+                        const detailIndex = bed.attention.details.findIndex((d) => d.id === detailId);
+                        if (detailIndex !== -1) {
+                            // Remove the cudyr_evaluation from the detail
+                            bed.attention.details[detailIndex].cudyr_evaluation = null;
+                            console.log(`[HospitalizationStore] Removed CUDYR evaluation from detail ${detailId} in bed ${bed.id}`);
+                        }
+                    }
+                });
+            }
+        });
+    };
+
     return {
         state,
         hospitalizationStatus,
@@ -420,6 +495,10 @@ export const useHospitalizationStore = defineStore('hospitalization', () => {
         handleTaskDeleted,
         handleDetailsCreated,
         handleDetailsUpdated,
-        handleDetailsDeleted
+        handleDetailsDeleted,
+        // CUDYR event handlers
+        handleCudyrEvaluationCreated,
+        handleCudyrEvaluationUpdated,
+        handleCudyrEvaluationDeleted
     };
 });

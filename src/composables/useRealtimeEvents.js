@@ -104,6 +104,21 @@ export function useRealtimeEvents(options = {}) {
                     hospitalizationStore.handleDetailsDeleted(e);
                 }
             })
+            .listen('.cudyr.created', (e) => {
+                if (updateHospitalization) {
+                    hospitalizationStore.handleCudyrEvaluationCreated(e);
+                }
+            })
+            .listen('.cudyr.updated', (e) => {
+                if (updateHospitalization) {
+                    hospitalizationStore.handleCudyrEvaluationUpdated(e);
+                }
+            })
+            .listen('.cudyr.deleted', (e) => {
+                if (updateHospitalization) {
+                    hospitalizationStore.handleCudyrEvaluationDeleted(e);
+                }
+            })
             .listen('.audit.created', (e) => {
                 if (updateAudits && updateAttentions) {
                     hospitalAttentionsStore.handleAuditCreated(e);
