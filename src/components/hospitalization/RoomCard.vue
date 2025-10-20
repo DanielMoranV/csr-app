@@ -334,61 +334,44 @@ const totalPendingTasks = computed(() => {
                         </div>
                     </div>
 
-                    <!-- Cama Reservada -->
-                    <div v-else-if="bed.is_reserved || bed.status === 'reserved' || bed.status === 'reservada'" class="bed-content bed-content--reserved">
+                    <!-- Cama Reservada (Minimalist) -->
+                    <div v-else-if="bed.is_reserved || bed.status === 'reserved' || bed.status === 'reservada'" class="bed-content bed-content--reserved-minimal">
                         <div class="bed-header">
                             <div class="bed-header-left">
                                 <span class="bed-number">{{ bed.bed_number }}</span>
                             </div>
                             <div class="bed-alerts">
-                                <i v-if="bed.notes" class="pi pi-file-edit text-info" title="Tiene notas"></i>
+                                <i v-if="bed.notes || bed.reservation?.notes" class="pi pi-file-edit text-info" title="Tiene notas"></i>
                             </div>
                         </div>
 
-                        <!-- Bed Notes -->
-                        <div v-if="bed.notes" class="bed-notes bed-notes--reserved">
-                            <div class="bed-notes__icon">
-                                <i class="pi pi-file-edit"></i>
-                            </div>
-                            <div class="bed-notes__content">
-                                <span class="bed-notes__text">{{ bed.notes }}</span>
-                            </div>
-                        </div>
-
-                        <!-- Reservation Info -->
-                        <div class="reservation-info">
-                            <div class="reservation-status">
-                                <i class="pi pi-calendar-plus"></i>
+                        <div class="reservation-info-minimal">
+                            <div class="reservation-status-minimal">
+                                <i class="pi pi-bookmark-fill"></i>
                                 <span>Reservada</span>
                             </div>
 
-                            <!-- Usuario que reservó -->
-                            <div v-if="bed.reservation?.reserved_by" class="reservation-detail-item">
-                                <div class="reservation-detail-label">
-                                    <i class="pi pi-user"></i>
-                                    <span>Reservado por:</span>
-                                </div>
-                                <div class="reservation-detail-value">
-                                    {{ bed.reservation.reserved_by.name }}
-                                </div>
+                            <div v-if="bed.reservation?.reserved_by" class="reservation-detail-minimal">
+                                <i class="pi pi-user"></i>
+                                <span>{{ bed.reservation.reserved_by.name }}</span>
                             </div>
 
-                            <!-- Notas de la reserva -->
-                            <div v-if="bed.reservation?.notes" class="reservation-detail-item">
-                                <div class="reservation-detail-label">
-                                    <i class="pi pi-comment"></i>
-                                    <span>Nota:</span>
-                                </div>
-                                <div class="reservation-detail-value">
-                                    {{ bed.reservation.notes }}
-                                </div>
-                            </div>
-
-                            <!-- Fecha de creación -->
-                            <div v-if="bed.reservation?.created_at" class="reservation-detail-item reservation-date">
+                            <div v-if="bed.reservation?.created_at" class="reservation-detail-minimal">
                                 <i class="pi pi-clock"></i>
                                 <span>{{ formatReservationDate(bed.reservation.created_at) }}</span>
                             </div>
+                        </div>
+
+                        <!-- Combined Notes -->
+                        <div v-if="bed.notes || bed.reservation?.notes" class="bed-notes-minimal">
+                            <p v-if="bed.reservation?.notes" class="note-item">
+                                <strong class="note-label">Reserva:</strong>
+                                <span class="note-text">{{ bed.reservation.notes }}</span>
+                            </p>
+                            <p v-if="bed.notes" class="note-item">
+                                <strong class="note-label">Cama:</strong>
+                                <span class="note-text">{{ bed.notes }}</span>
+                            </p>
                         </div>
                     </div>
 
@@ -709,9 +692,7 @@ const totalPendingTasks = computed(() => {
     /* The background is now inherited from .bed-indicator--occupied */
 }
 
-.bed-content--reserved {
-    /* The background is now inherited from .bed-indicator--reserved */
-}
+
 
 .bed-content--free {
     display: flex;
@@ -1030,113 +1011,68 @@ const totalPendingTasks = computed(() => {
     border-color: #10b981;
 }
 
-/* Notas en camas reservadas */
-.bed-notes--reserved {
-    background: linear-gradient(135deg, #fef3c7 0%, #fde68a 100%);
-    border-color: #fbbf24;
-    box-shadow: 0 3px 8px rgba(251, 191, 36, 0.25);
-}
 
-.bed-notes--reserved .bed-notes__icon {
-    background: linear-gradient(135deg, #f59e0b, #d97706);
-    color: white;
-    box-shadow: 0 2px 6px rgba(245, 158, 11, 0.4);
-}
 
-.bed-notes--reserved .bed-notes__label {
-    color: #78350f;
-}
-
-.bed-notes--reserved .bed-notes__text {
-    color: #78350f;
-}
-
-.bed-notes--reserved:hover {
-    background: linear-gradient(135deg, #fde68a 0%, #fcd34d 100%);
-    border-color: #f59e0b;
-}
-
-/* Reservation Info - Mejorado */
-.reservation-info {
-    flex: 1;
+/* Minimalist Reserved Bed */
+.bed-content--reserved-minimal {
     display: flex;
     flex-direction: column;
     gap: 0.5rem;
-    margin-bottom: 0.375rem;
+    justify-content: space-between;
+    height: 100%;
 }
 
-.reservation-status {
+.reservation-info-minimal {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    text-align: center;
+    gap: 0.375rem;
+}
+
+.reservation-status-minimal {
     display: flex;
     align-items: center;
     gap: 0.5rem;
     font-weight: 700;
-    font-size: 0.875rem;
+    font-size: 0.9rem;
     color: #92400e;
-    padding: 0.5rem 0.625rem;
-    background: linear-gradient(135deg, rgba(251, 191, 36, 0.25), rgba(251, 191, 36, 0.15));
-    border-radius: 6px;
-    border: 1px solid rgba(251, 191, 36, 0.3);
 }
 
-.reservation-status i {
+.reservation-status-minimal i {
     font-size: 1rem;
 }
 
-/* Detalles de reserva mejorados */
-.reservation-detail-item {
+.reservation-detail-minimal {
     display: flex;
-    flex-direction: column;
-    gap: 0.25rem;
-    padding: 0.375rem 0.5rem;
-    background: rgba(255, 255, 255, 0.5);
+    align-items: center;
+    gap: 0.375rem;
+    font-size: 0.7rem;
+    color: #a16207;
+}
+
+.reservation-detail-minimal i {
+    font-size: 0.7rem;
+}
+
+.bed-notes-minimal {
+    font-size: 0.7rem;
+    background: rgba(255, 255, 255, 0.6);
     border-radius: 6px;
-    border-left: 3px solid #f59e0b;
+    padding: 0.375rem 0.5rem;
+    border-top: 2px solid #fcd34d;
 }
 
-.reservation-detail-label {
-    display: flex;
-    align-items: center;
-    gap: 0.375rem;
-    font-size: 0.65rem;
-    font-weight: 600;
-    color: #92400e;
-    text-transform: uppercase;
-    letter-spacing: 0.3px;
-}
-
-.reservation-detail-label i {
-    font-size: 0.7rem;
-    color: #d97706;
-}
-
-.reservation-detail-value {
-    font-size: 0.75rem;
-    color: #78350f;
-    font-weight: 500;
+.bed-notes-minimal .note-item {
+    margin: 0;
     line-height: 1.4;
-    word-break: break-word;
-    padding-left: 1.125rem;
+    color: #78350f;
 }
 
-.reservation-date {
-    flex-direction: row;
-    align-items: center;
-    gap: 0.375rem;
-    padding: 0.25rem 0.5rem;
-    background: rgba(251, 191, 36, 0.15);
-    border-left: none;
-    border: 1px solid rgba(251, 191, 36, 0.2);
-}
-
-.reservation-date i {
-    font-size: 0.7rem;
-    color: #d97706;
-}
-
-.reservation-date span {
-    font-size: 0.7rem;
-    color: #92400e;
-    font-weight: 500;
+.bed-notes-minimal .note-label {
+    font-weight: 600;
 }
 
 /* Responsive Adjustments */
