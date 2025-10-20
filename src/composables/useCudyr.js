@@ -304,11 +304,7 @@ export function useCudyr(detailsAttentionId = null) {
     const isEditMode = computed(() => hasEvaluation.value && state.evaluation?.id);
 
     const canSubmit = computed(() => {
-        return (
-            formData.id_details_attention &&
-            !state.isSaving &&
-            Object.keys(state.validationErrors).length === 0
-        );
+        return formData.id_details_attention && !state.isSaving && Object.keys(state.validationErrors).length === 0;
     });
 
     const categoryConfig = computed(() => {
@@ -518,13 +514,9 @@ export function useCudyrStatistics() {
 
     const highRiskCount = computed(() => state.statistics?.alerts?.high_risk_patients || 0);
 
-    const criticalDependencyCount = computed(
-        () => state.statistics?.alerts?.critical_dependency || 0
-    );
+    const criticalDependencyCount = computed(() => state.statistics?.alerts?.critical_dependency || 0);
 
-    const averageDependencyScore = computed(
-        () => state.statistics?.dependency?.average_score || 0
-    );
+    const averageDependencyScore = computed(() => state.statistics?.dependency?.average_score || 0);
 
     const averageRiskScore = computed(() => state.statistics?.risk?.average_score || 0);
 

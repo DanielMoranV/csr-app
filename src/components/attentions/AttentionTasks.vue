@@ -159,7 +159,7 @@ const getCreatedByUser = (task) => {
     if (!task.status_history || task.status_history.length === 0) return null;
 
     // El primer registro del historial es la creación (old_status === null)
-    const creationRecord = task.status_history.find(h => h.old_status === null);
+    const creationRecord = task.status_history.find((h) => h.old_status === null);
 
     if (creationRecord && creationRecord.changed_by) {
         return {
@@ -177,9 +177,7 @@ const getLastModifiedByUser = (task) => {
     if (!task.status_history || task.status_history.length === 0) return null;
 
     // Ordenar por fecha descendente para obtener el más reciente
-    const sortedHistory = [...task.status_history].sort((a, b) =>
-        new Date(b.changed_at) - new Date(a.changed_at)
-    );
+    const sortedHistory = [...task.status_history].sort((a, b) => new Date(b.changed_at) - new Date(a.changed_at));
 
     const latestChange = sortedHistory[0];
 

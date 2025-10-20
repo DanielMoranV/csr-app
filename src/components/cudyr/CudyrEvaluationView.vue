@@ -49,10 +49,7 @@ const getScorePercentage = (score, max) => {
 
 // Obtener descripción de una dimensión
 const getDimensionDescription = (dimensionKey, value, type = 'dependency') => {
-    const dimensions =
-        type === 'dependency'
-            ? CUDYR_CONSTANTS.DEPENDENCY_DIMENSIONS
-            : CUDYR_CONSTANTS.RISK_DIMENSIONS;
+    const dimensions = type === 'dependency' ? CUDYR_CONSTANTS.DEPENDENCY_DIMENSIONS : CUDYR_CONSTANTS.RISK_DIMENSIONS;
 
     const dimension = dimensions[dimensionKey];
     if (!dimension || !dimension.descriptions) return '';
@@ -62,10 +59,7 @@ const getDimensionDescription = (dimensionKey, value, type = 'dependency') => {
 
 // Obtener label de una dimensión
 const getDimensionLabel = (dimensionKey, type = 'dependency') => {
-    const dimensions =
-        type === 'dependency'
-            ? CUDYR_CONSTANTS.DEPENDENCY_DIMENSIONS
-            : CUDYR_CONSTANTS.RISK_DIMENSIONS;
+    const dimensions = type === 'dependency' ? CUDYR_CONSTANTS.DEPENDENCY_DIMENSIONS : CUDYR_CONSTANTS.RISK_DIMENSIONS;
 
     const dimension = dimensions[dimensionKey];
     return dimension?.label || dimensionKey;
@@ -119,11 +113,7 @@ const getDimensionLabel = (dimensionKey, type = 'dependency') => {
                             <span class="score-number">{{ dependencyData?.total_score || 0 }}</span>
                             <span class="score-max">/18</span>
                         </div>
-                        <ProgressBar
-                            :value="getScorePercentage(dependencyData?.total_score || 0, 18)"
-                            :show-value="false"
-                            class="score-progress"
-                        />
+                        <ProgressBar :value="getScorePercentage(dependencyData?.total_score || 0, 18)" :show-value="false" class="score-progress" />
                         <p class="score-classification">
                             {{ dependencyData?.classification_text || '---' }}
                         </p>
@@ -142,11 +132,7 @@ const getDimensionLabel = (dimensionKey, type = 'dependency') => {
                             <span class="score-number">{{ riskData?.total_score || 0 }}</span>
                             <span class="score-max">/24</span>
                         </div>
-                        <ProgressBar
-                            :value="getScorePercentage(riskData?.total_score || 0, 24)"
-                            :show-value="false"
-                            class="score-progress"
-                        />
+                        <ProgressBar :value="getScorePercentage(riskData?.total_score || 0, 24)" :show-value="false" class="score-progress" />
                         <p class="score-classification">{{ riskData?.classification_text || '---' }}</p>
                     </div>
                 </template>
@@ -163,11 +149,7 @@ const getDimensionLabel = (dimensionKey, type = 'dependency') => {
             </template>
             <template #content>
                 <div class="dimensions-list">
-                    <div
-                        v-for="(value, key) in dependencyData.dimensions"
-                        :key="key"
-                        class="dimension-item"
-                    >
+                    <div v-for="(value, key) in dependencyData.dimensions" :key="key" class="dimension-item">
                         <div class="dimension-header">
                             <span class="dimension-label">{{ getDimensionLabel(key, 'dependency') }}</span>
                             <span class="dimension-value">{{ value }}/3</span>
@@ -175,11 +157,7 @@ const getDimensionLabel = (dimensionKey, type = 'dependency') => {
                         <p class="dimension-description">
                             {{ getDimensionDescription(key, value, 'dependency') }}
                         </p>
-                        <ProgressBar
-                            :value="getScorePercentage(value, 3)"
-                            :show-value="false"
-                            class="dimension-progress"
-                        />
+                        <ProgressBar :value="getScorePercentage(value, 3)" :show-value="false" class="dimension-progress" />
                     </div>
                 </div>
             </template>
@@ -195,11 +173,7 @@ const getDimensionLabel = (dimensionKey, type = 'dependency') => {
             </template>
             <template #content>
                 <div class="dimensions-list">
-                    <div
-                        v-for="(value, key) in riskData.dimensions"
-                        :key="key"
-                        class="dimension-item"
-                    >
+                    <div v-for="(value, key) in riskData.dimensions" :key="key" class="dimension-item">
                         <div class="dimension-header">
                             <span class="dimension-label">{{ getDimensionLabel(key, 'risk') }}</span>
                             <span class="dimension-value">{{ value }}/3</span>
@@ -207,11 +181,7 @@ const getDimensionLabel = (dimensionKey, type = 'dependency') => {
                         <p class="dimension-description">
                             {{ getDimensionDescription(key, value, 'risk') }}
                         </p>
-                        <ProgressBar
-                            :value="getScorePercentage(value, 3)"
-                            :show-value="false"
-                            class="dimension-progress"
-                        />
+                        <ProgressBar :value="getScorePercentage(value, 3)" :show-value="false" class="dimension-progress" />
                     </div>
                 </div>
             </template>

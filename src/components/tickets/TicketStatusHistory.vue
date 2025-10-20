@@ -15,7 +15,7 @@ const ticketsStore = useTicketsStore();
 
 // Get current ticket from store for real-time updates
 const currentTicket = computed(() => {
-    return ticketsStore.tickets.find(t => t.id === props.ticket?.id) || props.ticket;
+    return ticketsStore.tickets.find((t) => t.id === props.ticket?.id) || props.ticket;
 });
 
 const getStatusDetails = (status) => {

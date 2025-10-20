@@ -29,7 +29,7 @@ const selectedAttachment = ref(null);
 
 // Get current ticket from store for real-time updates
 const currentTicket = computed(() => {
-    return ticketsStore.tickets.find(ticket => ticket.id === props.ticketId) || null;
+    return ticketsStore.tickets.find((ticket) => ticket.id === props.ticketId) || null;
 });
 
 // Refs for custom upload

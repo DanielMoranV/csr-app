@@ -92,8 +92,7 @@ export const cudyr = {
      * @param {string} params.end_date - Fecha final
      * @returns {Promise} Respuesta con lista de evaluaciones
      */
-    getByAttention: (attentionId, params = {}) =>
-        axios.get(`/cudyr-evaluations/attention/${attentionId}`, { params }),
+    getByAttention: (attentionId, params = {}) => axios.get(`/cudyr-evaluations/attention/${attentionId}`, { params }),
 
     /**
      * 8. Filtrar evaluaciones por categoría CUDYR
@@ -176,57 +175,27 @@ export const CUDYR_CONSTANTS = {
     DEPENDENCY_DIMENSIONS: {
         mobility: {
             label: 'Movilización',
-            descriptions: [
-                'Deambula sin ayuda, se moviliza solo en cama',
-                'Se levanta y deambula con ayuda',
-                'Es levantado a silla, requiere cambio de posición 4-9 veces/día',
-                'No se levanta, requiere cambio de posición 10 o más veces/día'
-            ]
+            descriptions: ['Deambula sin ayuda, se moviliza solo en cama', 'Se levanta y deambula con ayuda', 'Es levantado a silla, requiere cambio de posición 4-9 veces/día', 'No se levanta, requiere cambio de posición 10 o más veces/día']
         },
         hygiene: {
             label: 'Higiene',
-            descriptions: [
-                'Se baña y viste sin ayuda',
-                'Participa en su higiene con supervisión',
-                'Requiere cambio de ropa 1-2 veces/día',
-                'Requiere cambio de ropa 3 o más veces/día'
-            ]
+            descriptions: ['Se baña y viste sin ayuda', 'Participa en su higiene con supervisión', 'Requiere cambio de ropa 1-2 veces/día', 'Requiere cambio de ropa 3 o más veces/día']
         },
         nutrition: {
             label: 'Alimentación',
-            descriptions: [
-                'Se alimenta sin ayuda',
-                'Se alimenta con ayuda y supervisión',
-                'Alimentación oral que le es administrada',
-                'Alimentación parenteral total/parcial o enteral permanente'
-            ]
+            descriptions: ['Se alimenta sin ayuda', 'Se alimenta con ayuda y supervisión', 'Alimentación oral que le es administrada', 'Alimentación parenteral total/parcial o enteral permanente']
         },
         elimination: {
             label: 'Eliminación',
-            descriptions: [
-                'Usa colectores sin ayuda o usa WC',
-                'Usuario y familia realizan recolección con ayuda',
-                'Se le entregan/colocan colectores (chata, pato)',
-                'Sonda, prótesis, diálisis, colectores adhesivos o pañales'
-            ]
+            descriptions: ['Usa colectores sin ayuda o usa WC', 'Usuario y familia realizan recolección con ayuda', 'Se le entregan/colocan colectores (chata, pato)', 'Sonda, prótesis, diálisis, colectores adhesivos o pañales']
         },
         psychosocial: {
             label: 'Apoyo Psicosocial',
-            descriptions: [
-                'Requiere menos de 5 minutos de apoyo durante el turno',
-                'Requiere entre 5-14 minutos de apoyo',
-                'Requiere entre 15-30 minutos de apoyo',
-                'Requiere más de 30 minutos de apoyo durante el turno'
-            ]
+            descriptions: ['Requiere menos de 5 minutos de apoyo durante el turno', 'Requiere entre 5-14 minutos de apoyo', 'Requiere entre 15-30 minutos de apoyo', 'Requiere más de 30 minutos de apoyo durante el turno']
         },
         surveillance: {
             label: 'Vigilancia',
-            descriptions: [
-                'Consciente, orientado, autónomo',
-                'Consciente con inestabilidad de la marcha',
-                'Consciente pero intranquilo, con riesgo de caída',
-                'Alteración de consciencia/conducta o alto riesgo de caída'
-            ]
+            descriptions: ['Consciente, orientado, autónomo', 'Consciente con inestabilidad de la marcha', 'Consciente pero intranquilo, con riesgo de caída', 'Alteración de consciencia/conducta o alto riesgo de caída']
         }
     },
 
@@ -234,12 +203,7 @@ export const CUDYR_CONSTANTS = {
     RISK_DIMENSIONS: {
         oxygen_therapy: {
             label: 'Oxigenoterapia',
-            descriptions: [
-                'No requiere oxígeno adicional',
-                'Oxígeno por cánula nasal',
-                'Oxígeno por mascarilla simple o con reservorio',
-                'Ventilación mecánica o FiO2 >40%'
-            ]
+            descriptions: ['No requiere oxígeno adicional', 'Oxígeno por cánula nasal', 'Oxígeno por mascarilla simple o con reservorio', 'Ventilación mecánica o FiO2 >40%']
         },
         airway_management: {
             label: 'Manejo de Vía Aérea',
@@ -252,57 +216,27 @@ export const CUDYR_CONSTANTS = {
         },
         vital_signs: {
             label: 'Signos Vitales',
-            descriptions: [
-                'No requiere medición',
-                'Medición cada 8-12 horas',
-                'Medición cada 4 horas',
-                'Medición de 2+ parámetros cada 2 horas o menos'
-            ]
+            descriptions: ['No requiere medición', 'Medición cada 8-12 horas', 'Medición cada 4 horas', 'Medición de 2+ parámetros cada 2 horas o menos']
         },
         fluid_balance: {
             label: 'Balance Hídrico',
-            descriptions: [
-                'No requiere balance hídrico',
-                'Balance 1 vez (cada 24 horas)',
-                'Balance 2-5 veces (cada 12, 8, 6 o 5 horas)',
-                'Balance 6 veces o más (cada 4 horas o más frecuente)'
-            ]
+            descriptions: ['No requiere balance hídrico', 'Balance 1 vez (cada 24 horas)', 'Balance 2-5 veces (cada 12, 8, 6 o 5 horas)', 'Balance 6 veces o más (cada 4 horas o más frecuente)']
         },
         wound_care: {
             label: 'Curaciones',
-            descriptions: [
-                'No requiere curaciones',
-                '1 curación simple',
-                '1-2 curaciones de heridas complejas',
-                '3 o más curaciones de heridas complejas en 24 horas'
-            ]
+            descriptions: ['No requiere curaciones', '1 curación simple', '1-2 curaciones de heridas complejas', '3 o más curaciones de heridas complejas en 24 horas']
         },
         invasive_devices: {
             label: 'Elementos Invasivos',
-            descriptions: [
-                'Sin elementos invasivos',
-                '1 vía venosa periférica',
-                '1-2 elementos invasivos o 2+ vías venosas periféricas',
-                '3 o más elementos invasivos (catéteres, sondas, drenajes)'
-            ]
+            descriptions: ['Sin elementos invasivos', '1 vía venosa periférica', '1-2 elementos invasivos o 2+ vías venosas periféricas', '3 o más elementos invasivos (catéteres, sondas, drenajes)']
         },
         procedures: {
             label: 'Procedimientos',
-            descriptions: [
-                'No requiere procedimientos',
-                'Procedimientos menores',
-                '1-2 procedimientos de enfermería invasivos',
-                '3+ procedimientos enfermería o 1+ procedimiento médico invasivo'
-            ]
+            descriptions: ['No requiere procedimientos', 'Procedimientos menores', '1-2 procedimientos de enfermería invasivos', '3+ procedimientos enfermería o 1+ procedimiento médico invasivo']
         },
         medications: {
             label: 'Medicamentos',
-            descriptions: [
-                'Sin tratamiento farmacológico o solo VO',
-                'Medicación EV ocasional o IM/SC',
-                'Medicación EV intermitente (3 o más dosis/día)',
-                'Medicación EV continua (vasoactivos, sedación, quimioterapia)'
-            ]
+            descriptions: ['Sin tratamiento farmacológico o solo VO', 'Medicación EV ocasional o IM/SC', 'Medicación EV intermitente (3 o más dosis/día)', 'Medicación EV continua (vasoactivos, sedación, quimioterapia)']
         }
     }
 };
@@ -315,12 +249,14 @@ export const cudyrUtils = {
      * Obtiene la configuración de una categoría CUDYR
      */
     getCategoryConfig: (category) => {
-        return CUDYR_CONSTANTS.CATEGORIES[category] || {
-            risk: 'unknown',
-            label: 'DESCONOCIDO',
-            color: 'secondary',
-            icon: '⚪'
-        };
+        return (
+            CUDYR_CONSTANTS.CATEGORIES[category] || {
+                risk: 'unknown',
+                label: 'DESCONOCIDO',
+                color: 'secondary',
+                icon: '⚪'
+            }
+        );
     },
 
     /**
@@ -352,26 +288,10 @@ export const cudyrUtils = {
         const errors = {};
 
         // Validar dimensiones de dependencia
-        const dependencyFields = [
-            'dependency_mobility',
-            'dependency_hygiene',
-            'dependency_nutrition',
-            'dependency_elimination',
-            'dependency_psychosocial',
-            'dependency_surveillance'
-        ];
+        const dependencyFields = ['dependency_mobility', 'dependency_hygiene', 'dependency_nutrition', 'dependency_elimination', 'dependency_psychosocial', 'dependency_surveillance'];
 
         // Validar dimensiones de riesgo
-        const riskFields = [
-            'risk_oxygen_therapy',
-            'risk_airway_management',
-            'risk_vital_signs',
-            'risk_fluid_balance',
-            'risk_wound_care',
-            'risk_invasive_devices',
-            'risk_procedures',
-            'risk_medications'
-        ];
+        const riskFields = ['risk_oxygen_therapy', 'risk_airway_management', 'risk_vital_signs', 'risk_fluid_balance', 'risk_wound_care', 'risk_invasive_devices', 'risk_procedures', 'risk_medications'];
 
         [...dependencyFields, ...riskFields].forEach((field) => {
             const value = data[field];

@@ -1,16 +1,17 @@
 <script setup>
+import { CUDYR_CONSTANTS } from '@/api/cudyr';
+import CudyrBadge from '@/components/cudyr/CudyrBadge.vue';
+import { useCudyr } from '@/composables/useCudyr';
+import Accordion from 'primevue/accordion';
+import AccordionContent from 'primevue/accordioncontent';
+import AccordionHeader from 'primevue/accordionheader';
+import AccordionPanel from 'primevue/accordionpanel';
+import Divider from 'primevue/divider';
+import InputSwitch from 'primevue/inputswitch';
+import Message from 'primevue/message';
 import { useConfirm } from 'primevue/useconfirm';
 import { useToast } from 'primevue/usetoast';
 import { computed, defineEmits, defineProps, ref, watch } from 'vue';
-import { CUDYR_CONSTANTS } from '@/api/cudyr';
-import CudyrBadge from '@/components/cudyr/CudyrBadge.vue';
-import Message from 'primevue/message';
-import Divider from 'primevue/divider';
-import Accordion from 'primevue/accordion';
-import AccordionPanel from 'primevue/accordionpanel';
-import AccordionHeader from 'primevue/accordionheader';
-import AccordionContent from 'primevue/accordioncontent';
-import InputSwitch from 'primevue/inputswitch';
 
 const props = defineProps({
     details: {
@@ -40,6 +41,7 @@ const emit = defineEmits(['create-details', 'update-details', 'delete-details'])
 
 const confirm = useConfirm();
 const toast = useToast();
+const { evaluation: cudyrEvaluationData, loadById: loadCudyrById } = useCudyr();
 
 const isEditing = ref(false);
 const localDetails = ref({});
@@ -67,6 +69,13 @@ const cudyrData = ref({
     notes: ''
 });
 const cudyrPreview = ref(null);
+
+const fetchCudyrEvaluation = async (evaluationId) => {
+    await loadCudyrById(evaluationId);
+    if (cudyrEvaluationData.value) {
+        localDetails.value.cudyr_evaluation = cudyrEvaluationData.value;
+    }
+};
 
 // Configuración de campos con validaciones y ayuda contextual
 const detailFields = [
@@ -230,12 +239,7 @@ const resetCudyrData = () => {
 // Calcular scores de CUDYR
 const calculateCudyrScores = () => {
     const dependencyScore =
-        cudyrData.value.dependency_mobility +
-        cudyrData.value.dependency_hygiene +
-        cudyrData.value.dependency_nutrition +
-        cudyrData.value.dependency_elimination +
-        cudyrData.value.dependency_psychosocial +
-        cudyrData.value.dependency_surveillance;
+        cudyrData.value.dependency_mobility + cudyrData.value.dependency_hygiene + cudyrData.value.dependency_nutrition + cudyrData.value.dependency_elimination + cudyrData.value.dependency_psychosocial + cudyrData.value.dependency_surveillance;
 
     const riskScore =
         cudyrData.value.risk_oxygen_therapy +
@@ -249,13 +253,16 @@ const calculateCudyrScores = () => {
 
     // Determinar clasificación de dependencia
     let dependencyClass = 'D'; // Autosuficiencia
-    if (dependencyScore >= 13) dependencyClass = 'B'; // Total
+    if (dependencyScore >= 13)
+        dependencyClass = 'B'; // Total
     else if (dependencyScore >= 7) dependencyClass = 'C'; // Parcial
 
     // Determinar clasificación de riesgo
     let riskClass = '4'; // Bajo
-    if (riskScore >= 19) riskClass = '1'; // Máximo
-    else if (riskScore >= 13) riskClass = '2'; // Alto
+    if (riskScore >= 19)
+        riskClass = '1'; // Máximo
+    else if (riskScore >= 13)
+        riskClass = '2'; // Alto
     else if (riskScore >= 7) riskClass = '3'; // Mediano
 
     // Determinar categoría CUDYR
@@ -341,6 +348,8 @@ watch(
                 };
                 // Calcular preview automáticamente
                 cudyrPreview.value = calculateCudyrScores();
+            } else if (newDetails.cudyr_evaluation_id) {
+                fetchCudyrEvaluation(newDetails.cudyr_evaluation_id);
             } else {
                 // Si no hay evaluación CUDYR, resetear
                 includeCudyr.value = false;
@@ -483,9 +492,7 @@ const handleSave = async () => {
             toast.add({
                 severity: 'success',
                 summary: 'Éxito',
-                detail: includeCudyr.value
-                    ? 'Detalles y evaluación CUDYR actualizados correctamente'
-                    : 'Detalles actualizados correctamente',
+                detail: includeCudyr.value ? 'Detalles y evaluación CUDYR actualizados correctamente' : 'Detalles actualizados correctamente',
                 life: 3000
             });
         } else {
@@ -493,9 +500,7 @@ const handleSave = async () => {
             toast.add({
                 severity: 'success',
                 summary: 'Éxito',
-                detail: includeCudyr.value
-                    ? 'Detalles y evaluación CUDYR creados correctamente'
-                    : 'Detalles creados correctamente',
+                detail: includeCudyr.value ? 'Detalles y evaluación CUDYR creados correctamente' : 'Detalles creados correctamente',
                 life: 3000
             });
         }
@@ -935,11 +940,15 @@ const getUserInfo = (userObj) => {
                             <div class="preview-scores">
                                 <div class="preview-score-item">
                                     <i class="pi pi-users"></i>
-                                    <span>Dependencia: <strong>{{ cudyrPreview.dependencyScore }}/18</strong> ({{ cudyrPreview.dependencyClass }})</span>
+                                    <span
+                                        >Dependencia: <strong>{{ cudyrPreview.dependencyScore }}/18</strong> ({{ cudyrPreview.dependencyClass }})</span
+                                    >
                                 </div>
                                 <div class="preview-score-item">
                                     <i class="pi pi-exclamation-triangle"></i>
-                                    <span>Riesgo: <strong>{{ cudyrPreview.riskScore }}/24</strong> ({{ cudyrPreview.riskClass }})</span>
+                                    <span
+                                        >Riesgo: <strong>{{ cudyrPreview.riskScore }}/24</strong> ({{ cudyrPreview.riskClass }})</span
+                                    >
                                 </div>
                             </div>
                         </div>
@@ -947,9 +956,7 @@ const getUserInfo = (userObj) => {
 
                     <!-- Formulario CUDYR -->
                     <div v-if="includeCudyr" class="cudyr-form-container">
-                        <Message severity="info" :closable="false" class="mb-3">
-                            Complete las 14 dimensiones (6 dependencia + 8 riesgo). Cada dimensión se evalúa de 0 a 3 puntos.
-                        </Message>
+                        <Message severity="info" :closable="false" class="mb-3"> Complete las 14 dimensiones (6 dependencia + 8 riesgo). Cada dimensión se evalúa de 0 a 3 puntos. </Message>
 
                         <!-- Acordeones para Dependencia y Riesgo -->
                         <Accordion :value="['0', '1']" multiple>
@@ -969,7 +976,13 @@ const getUserInfo = (userObj) => {
                                                 <span class="dimension-value-compact">{{ cudyrData.dependency_mobility }}/3</span>
                                             </label>
                                             <div class="dimension-options-compact">
-                                                <div v-for="(description, index) in CUDYR_CONSTANTS.DEPENDENCY_DIMENSIONS.mobility.descriptions" :key="index" class="dimension-option-compact" :class="{ 'selected': cudyrData.dependency_mobility === index }" @click="cudyrData.dependency_mobility = index">
+                                                <div
+                                                    v-for="(description, index) in CUDYR_CONSTANTS.DEPENDENCY_DIMENSIONS.mobility.descriptions"
+                                                    :key="index"
+                                                    class="dimension-option-compact"
+                                                    :class="{ selected: cudyrData.dependency_mobility === index }"
+                                                    @click="cudyrData.dependency_mobility = index"
+                                                >
                                                     <div class="option-radio-compact">{{ index }}</div>
                                                     <span class="option-description-compact">{{ description }}</span>
                                                 </div>
@@ -985,7 +998,13 @@ const getUserInfo = (userObj) => {
                                                 <span class="dimension-value-compact">{{ cudyrData.dependency_hygiene }}/3</span>
                                             </label>
                                             <div class="dimension-options-compact">
-                                                <div v-for="(description, index) in CUDYR_CONSTANTS.DEPENDENCY_DIMENSIONS.hygiene.descriptions" :key="index" class="dimension-option-compact" :class="{ 'selected': cudyrData.dependency_hygiene === index }" @click="cudyrData.dependency_hygiene = index">
+                                                <div
+                                                    v-for="(description, index) in CUDYR_CONSTANTS.DEPENDENCY_DIMENSIONS.hygiene.descriptions"
+                                                    :key="index"
+                                                    class="dimension-option-compact"
+                                                    :class="{ selected: cudyrData.dependency_hygiene === index }"
+                                                    @click="cudyrData.dependency_hygiene = index"
+                                                >
                                                     <div class="option-radio-compact">{{ index }}</div>
                                                     <span class="option-description-compact">{{ description }}</span>
                                                 </div>
@@ -1001,7 +1020,13 @@ const getUserInfo = (userObj) => {
                                                 <span class="dimension-value-compact">{{ cudyrData.dependency_nutrition }}/3</span>
                                             </label>
                                             <div class="dimension-options-compact">
-                                                <div v-for="(description, index) in CUDYR_CONSTANTS.DEPENDENCY_DIMENSIONS.nutrition.descriptions" :key="index" class="dimension-option-compact" :class="{ 'selected': cudyrData.dependency_nutrition === index }" @click="cudyrData.dependency_nutrition = index">
+                                                <div
+                                                    v-for="(description, index) in CUDYR_CONSTANTS.DEPENDENCY_DIMENSIONS.nutrition.descriptions"
+                                                    :key="index"
+                                                    class="dimension-option-compact"
+                                                    :class="{ selected: cudyrData.dependency_nutrition === index }"
+                                                    @click="cudyrData.dependency_nutrition = index"
+                                                >
                                                     <div class="option-radio-compact">{{ index }}</div>
                                                     <span class="option-description-compact">{{ description }}</span>
                                                 </div>
@@ -1017,7 +1042,13 @@ const getUserInfo = (userObj) => {
                                                 <span class="dimension-value-compact">{{ cudyrData.dependency_elimination }}/3</span>
                                             </label>
                                             <div class="dimension-options-compact">
-                                                <div v-for="(description, index) in CUDYR_CONSTANTS.DEPENDENCY_DIMENSIONS.elimination.descriptions" :key="index" class="dimension-option-compact" :class="{ 'selected': cudyrData.dependency_elimination === index }" @click="cudyrData.dependency_elimination = index">
+                                                <div
+                                                    v-for="(description, index) in CUDYR_CONSTANTS.DEPENDENCY_DIMENSIONS.elimination.descriptions"
+                                                    :key="index"
+                                                    class="dimension-option-compact"
+                                                    :class="{ selected: cudyrData.dependency_elimination === index }"
+                                                    @click="cudyrData.dependency_elimination = index"
+                                                >
                                                     <div class="option-radio-compact">{{ index }}</div>
                                                     <span class="option-description-compact">{{ description }}</span>
                                                 </div>
@@ -1033,7 +1064,13 @@ const getUserInfo = (userObj) => {
                                                 <span class="dimension-value-compact">{{ cudyrData.dependency_psychosocial }}/3</span>
                                             </label>
                                             <div class="dimension-options-compact">
-                                                <div v-for="(description, index) in CUDYR_CONSTANTS.DEPENDENCY_DIMENSIONS.psychosocial.descriptions" :key="index" class="dimension-option-compact" :class="{ 'selected': cudyrData.dependency_psychosocial === index }" @click="cudyrData.dependency_psychosocial = index">
+                                                <div
+                                                    v-for="(description, index) in CUDYR_CONSTANTS.DEPENDENCY_DIMENSIONS.psychosocial.descriptions"
+                                                    :key="index"
+                                                    class="dimension-option-compact"
+                                                    :class="{ selected: cudyrData.dependency_psychosocial === index }"
+                                                    @click="cudyrData.dependency_psychosocial = index"
+                                                >
                                                     <div class="option-radio-compact">{{ index }}</div>
                                                     <span class="option-description-compact">{{ description }}</span>
                                                 </div>
@@ -1049,7 +1086,13 @@ const getUserInfo = (userObj) => {
                                                 <span class="dimension-value-compact">{{ cudyrData.dependency_surveillance }}/3</span>
                                             </label>
                                             <div class="dimension-options-compact">
-                                                <div v-for="(description, index) in CUDYR_CONSTANTS.DEPENDENCY_DIMENSIONS.surveillance.descriptions" :key="index" class="dimension-option-compact" :class="{ 'selected': cudyrData.dependency_surveillance === index }" @click="cudyrData.dependency_surveillance = index">
+                                                <div
+                                                    v-for="(description, index) in CUDYR_CONSTANTS.DEPENDENCY_DIMENSIONS.surveillance.descriptions"
+                                                    :key="index"
+                                                    class="dimension-option-compact"
+                                                    :class="{ selected: cudyrData.dependency_surveillance === index }"
+                                                    @click="cudyrData.dependency_surveillance = index"
+                                                >
                                                     <div class="option-radio-compact">{{ index }}</div>
                                                     <span class="option-description-compact">{{ description }}</span>
                                                 </div>
@@ -1075,7 +1118,13 @@ const getUserInfo = (userObj) => {
                                                 <span class="dimension-value-compact">{{ cudyrData.risk_oxygen_therapy }}/3</span>
                                             </label>
                                             <div class="dimension-options-compact">
-                                                <div v-for="(description, index) in CUDYR_CONSTANTS.RISK_DIMENSIONS.oxygen_therapy.descriptions" :key="index" class="dimension-option-compact" :class="{ 'selected': cudyrData.risk_oxygen_therapy === index }" @click="cudyrData.risk_oxygen_therapy = index">
+                                                <div
+                                                    v-for="(description, index) in CUDYR_CONSTANTS.RISK_DIMENSIONS.oxygen_therapy.descriptions"
+                                                    :key="index"
+                                                    class="dimension-option-compact"
+                                                    :class="{ selected: cudyrData.risk_oxygen_therapy === index }"
+                                                    @click="cudyrData.risk_oxygen_therapy = index"
+                                                >
                                                     <div class="option-radio-compact">{{ index }}</div>
                                                     <span class="option-description-compact">{{ description }}</span>
                                                 </div>
@@ -1091,7 +1140,13 @@ const getUserInfo = (userObj) => {
                                                 <span class="dimension-value-compact">{{ cudyrData.risk_airway_management }}/3</span>
                                             </label>
                                             <div class="dimension-options-compact">
-                                                <div v-for="(description, index) in CUDYR_CONSTANTS.RISK_DIMENSIONS.airway_management.descriptions" :key="index" class="dimension-option-compact" :class="{ 'selected': cudyrData.risk_airway_management === index }" @click="cudyrData.risk_airway_management = index">
+                                                <div
+                                                    v-for="(description, index) in CUDYR_CONSTANTS.RISK_DIMENSIONS.airway_management.descriptions"
+                                                    :key="index"
+                                                    class="dimension-option-compact"
+                                                    :class="{ selected: cudyrData.risk_airway_management === index }"
+                                                    @click="cudyrData.risk_airway_management = index"
+                                                >
                                                     <div class="option-radio-compact">{{ index }}</div>
                                                     <span class="option-description-compact">{{ description }}</span>
                                                 </div>
@@ -1107,7 +1162,13 @@ const getUserInfo = (userObj) => {
                                                 <span class="dimension-value-compact">{{ cudyrData.risk_vital_signs }}/3</span>
                                             </label>
                                             <div class="dimension-options-compact">
-                                                <div v-for="(description, index) in CUDYR_CONSTANTS.RISK_DIMENSIONS.vital_signs.descriptions" :key="index" class="dimension-option-compact" :class="{ 'selected': cudyrData.risk_vital_signs === index }" @click="cudyrData.risk_vital_signs = index">
+                                                <div
+                                                    v-for="(description, index) in CUDYR_CONSTANTS.RISK_DIMENSIONS.vital_signs.descriptions"
+                                                    :key="index"
+                                                    class="dimension-option-compact"
+                                                    :class="{ selected: cudyrData.risk_vital_signs === index }"
+                                                    @click="cudyrData.risk_vital_signs = index"
+                                                >
                                                     <div class="option-radio-compact">{{ index }}</div>
                                                     <span class="option-description-compact">{{ description }}</span>
                                                 </div>
@@ -1123,7 +1184,13 @@ const getUserInfo = (userObj) => {
                                                 <span class="dimension-value-compact">{{ cudyrData.risk_fluid_balance }}/3</span>
                                             </label>
                                             <div class="dimension-options-compact">
-                                                <div v-for="(description, index) in CUDYR_CONSTANTS.RISK_DIMENSIONS.fluid_balance.descriptions" :key="index" class="dimension-option-compact" :class="{ 'selected': cudyrData.risk_fluid_balance === index }" @click="cudyrData.risk_fluid_balance = index">
+                                                <div
+                                                    v-for="(description, index) in CUDYR_CONSTANTS.RISK_DIMENSIONS.fluid_balance.descriptions"
+                                                    :key="index"
+                                                    class="dimension-option-compact"
+                                                    :class="{ selected: cudyrData.risk_fluid_balance === index }"
+                                                    @click="cudyrData.risk_fluid_balance = index"
+                                                >
                                                     <div class="option-radio-compact">{{ index }}</div>
                                                     <span class="option-description-compact">{{ description }}</span>
                                                 </div>
@@ -1139,7 +1206,13 @@ const getUserInfo = (userObj) => {
                                                 <span class="dimension-value-compact">{{ cudyrData.risk_wound_care }}/3</span>
                                             </label>
                                             <div class="dimension-options-compact">
-                                                <div v-for="(description, index) in CUDYR_CONSTANTS.RISK_DIMENSIONS.wound_care.descriptions" :key="index" class="dimension-option-compact" :class="{ 'selected': cudyrData.risk_wound_care === index }" @click="cudyrData.risk_wound_care = index">
+                                                <div
+                                                    v-for="(description, index) in CUDYR_CONSTANTS.RISK_DIMENSIONS.wound_care.descriptions"
+                                                    :key="index"
+                                                    class="dimension-option-compact"
+                                                    :class="{ selected: cudyrData.risk_wound_care === index }"
+                                                    @click="cudyrData.risk_wound_care = index"
+                                                >
                                                     <div class="option-radio-compact">{{ index }}</div>
                                                     <span class="option-description-compact">{{ description }}</span>
                                                 </div>
@@ -1155,7 +1228,13 @@ const getUserInfo = (userObj) => {
                                                 <span class="dimension-value-compact">{{ cudyrData.risk_invasive_devices }}/3</span>
                                             </label>
                                             <div class="dimension-options-compact">
-                                                <div v-for="(description, index) in CUDYR_CONSTANTS.RISK_DIMENSIONS.invasive_devices.descriptions" :key="index" class="dimension-option-compact" :class="{ 'selected': cudyrData.risk_invasive_devices === index }" @click="cudyrData.risk_invasive_devices = index">
+                                                <div
+                                                    v-for="(description, index) in CUDYR_CONSTANTS.RISK_DIMENSIONS.invasive_devices.descriptions"
+                                                    :key="index"
+                                                    class="dimension-option-compact"
+                                                    :class="{ selected: cudyrData.risk_invasive_devices === index }"
+                                                    @click="cudyrData.risk_invasive_devices = index"
+                                                >
                                                     <div class="option-radio-compact">{{ index }}</div>
                                                     <span class="option-description-compact">{{ description }}</span>
                                                 </div>
@@ -1171,7 +1250,13 @@ const getUserInfo = (userObj) => {
                                                 <span class="dimension-value-compact">{{ cudyrData.risk_procedures }}/3</span>
                                             </label>
                                             <div class="dimension-options-compact">
-                                                <div v-for="(description, index) in CUDYR_CONSTANTS.RISK_DIMENSIONS.procedures.descriptions" :key="index" class="dimension-option-compact" :class="{ 'selected': cudyrData.risk_procedures === index }" @click="cudyrData.risk_procedures = index">
+                                                <div
+                                                    v-for="(description, index) in CUDYR_CONSTANTS.RISK_DIMENSIONS.procedures.descriptions"
+                                                    :key="index"
+                                                    class="dimension-option-compact"
+                                                    :class="{ selected: cudyrData.risk_procedures === index }"
+                                                    @click="cudyrData.risk_procedures = index"
+                                                >
                                                     <div class="option-radio-compact">{{ index }}</div>
                                                     <span class="option-description-compact">{{ description }}</span>
                                                 </div>
@@ -1187,7 +1272,13 @@ const getUserInfo = (userObj) => {
                                                 <span class="dimension-value-compact">{{ cudyrData.risk_medications }}/3</span>
                                             </label>
                                             <div class="dimension-options-compact">
-                                                <div v-for="(description, index) in CUDYR_CONSTANTS.RISK_DIMENSIONS.medications.descriptions" :key="index" class="dimension-option-compact" :class="{ 'selected': cudyrData.risk_medications === index }" @click="cudyrData.risk_medications = index">
+                                                <div
+                                                    v-for="(description, index) in CUDYR_CONSTANTS.RISK_DIMENSIONS.medications.descriptions"
+                                                    :key="index"
+                                                    class="dimension-option-compact"
+                                                    :class="{ selected: cudyrData.risk_medications === index }"
+                                                    @click="cudyrData.risk_medications = index"
+                                                >
                                                     <div class="option-radio-compact">{{ index }}</div>
                                                     <span class="option-description-compact">{{ description }}</span>
                                                 </div>

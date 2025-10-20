@@ -34,15 +34,7 @@ const formatStayDays = (days) => {
 
 <template>
     <div class="doctors-table-container">
-        <DataTable
-            :value="topDoctors"
-            :loading="loading"
-            stripedRows
-            showGridlines
-            responsiveLayout="scroll"
-            :paginator="false"
-            class="doctors-table"
-        >
+        <DataTable :value="topDoctors" :loading="loading" stripedRows showGridlines responsiveLayout="scroll" :paginator="false" class="doctors-table">
             <template #empty>
                 <div class="empty-state">
                     <i class="pi pi-users text-4xl text-gray-400 mb-2"></i>

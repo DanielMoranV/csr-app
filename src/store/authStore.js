@@ -257,7 +257,7 @@ export const useAuthStore = defineStore('auth', () => {
             }
         } catch (error) {
             clearAuthData();
-            
+
             // Mejorar el mensaje de error según el tipo
             if (apiUtils.isConnectionError(error)) {
                 throw {
@@ -278,7 +278,7 @@ export const useAuthStore = defineStore('auth', () => {
                     }
                 };
             }
-            
+
             throw error;
         } finally {
             state.isLoading = false;

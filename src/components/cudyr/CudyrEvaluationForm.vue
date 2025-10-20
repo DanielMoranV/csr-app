@@ -26,20 +26,7 @@ const emit = defineEmits(['success', 'cancel']);
 const toast = useToast();
 
 // Usar el composable CUDYR
-const {
-    state,
-    formData,
-    preview,
-    create,
-    update,
-    calculatePreview,
-    updateDimension,
-    isEditMode,
-    canSubmit,
-    categoryConfig,
-    isCriticalPatient,
-    populateForm
-} = useCudyr(props.detailsAttentionId);
+const { state, formData, preview, create, update, calculatePreview, updateDimension, isEditMode, canSubmit, categoryConfig, isCriticalPatient, populateForm } = useCudyr(props.detailsAttentionId);
 
 // Si hay una evaluación inicial, poblar el formulario
 if (props.initialEvaluation) {
@@ -76,9 +63,7 @@ const handleSubmit = async () => {
         toast.add({
             severity: 'success',
             summary: 'Éxito',
-            detail: isEditMode.value
-                ? 'Evaluación CUDYR actualizada correctamente'
-                : 'Evaluación CUDYR creada correctamente',
+            detail: isEditMode.value ? 'Evaluación CUDYR actualizada correctamente' : 'Evaluación CUDYR creada correctamente',
             life: 3000
         });
         emit('success', result.data);
@@ -101,29 +86,11 @@ const handleCancel = () => {
 
 // Computed para validar que todas las dimensiones estén completadas
 const allDimensionsCompleted = computed(() => {
-    const dependencyDimensions = [
-        'dependency_mobility',
-        'dependency_hygiene',
-        'dependency_nutrition',
-        'dependency_elimination',
-        'dependency_psychosocial',
-        'dependency_surveillance'
-    ];
+    const dependencyDimensions = ['dependency_mobility', 'dependency_hygiene', 'dependency_nutrition', 'dependency_elimination', 'dependency_psychosocial', 'dependency_surveillance'];
 
-    const riskDimensions = [
-        'risk_oxygen_therapy',
-        'risk_airway_management',
-        'risk_vital_signs',
-        'risk_fluid_balance',
-        'risk_wound_care',
-        'risk_invasive_devices',
-        'risk_procedures',
-        'risk_medications'
-    ];
+    const riskDimensions = ['risk_oxygen_therapy', 'risk_airway_management', 'risk_vital_signs', 'risk_fluid_balance', 'risk_wound_care', 'risk_invasive_devices', 'risk_procedures', 'risk_medications'];
 
-    return [...dependencyDimensions, ...riskDimensions].every(
-        (field) => formData[field] !== null && formData[field] !== undefined
-    );
+    return [...dependencyDimensions, ...riskDimensions].every((field) => formData[field] !== null && formData[field] !== undefined);
 });
 </script>
 
@@ -575,13 +542,7 @@ const allDimensionsCompleted = computed(() => {
         <!-- Botones de acción -->
         <div class="form-actions">
             <Button label="Cancelar" icon="pi pi-times" severity="secondary" outlined @click="handleCancel" :disabled="state.isSaving" />
-            <Button
-                :label="isEditMode ? 'Actualizar Evaluación' : 'Guardar Evaluación'"
-                icon="pi pi-check"
-                :loading="state.isSaving"
-                :disabled="!canSubmit || !allDimensionsCompleted"
-                @click="handleSubmit"
-            />
+            <Button :label="isEditMode ? 'Actualizar Evaluación' : 'Guardar Evaluación'" icon="pi pi-check" :loading="state.isSaving" :disabled="!canSubmit || !allDimensionsCompleted" @click="handleSubmit" />
         </div>
     </div>
 </template>

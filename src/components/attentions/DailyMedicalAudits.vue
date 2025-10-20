@@ -25,13 +25,7 @@ const emit = defineEmits(['audit-created', 'audit-updated', 'audit-deleted', 'au
 const confirm = useConfirm();
 const toast = useToast();
 
-const {
-    getAuditSeverity,
-    getComplianceScoreSeverity,
-    formatAuditDate,
-    formatAuditDateTime,
-    getTodayDate
-} = useDailyMedicalAudits();
+const { getAuditSeverity, getComplianceScoreSeverity, formatAuditDate, formatAuditDateTime, getTodayDate } = useDailyMedicalAudits();
 
 const localAudits = ref([]);
 const isDialogVisible = ref(false);
@@ -155,9 +149,7 @@ const handleSave = async () => {
 
         // Verificar si ya existe una auditoría para esta fecha (solo al crear)
         if (!isEditing.value) {
-            const existingAudit = localAudits.value.find(
-                (a) => normalizeDate(a.audit_date) === normalizedFormDate
-            );
+            const existingAudit = localAudits.value.find((a) => normalizeDate(a.audit_date) === normalizedFormDate);
 
             if (existingAudit) {
                 toast.add({

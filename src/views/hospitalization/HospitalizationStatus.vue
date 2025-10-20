@@ -241,8 +241,6 @@ onUnmounted(() => {
                         </template>
                     </Card>
 
-
-
                     <Card class="stat-card stat-card--info">
                         <template #content>
                             <div class="stat-content">

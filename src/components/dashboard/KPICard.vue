@@ -103,15 +103,8 @@ const colorClasses = computed(() => {
 
             <!-- Tendencia opcional -->
             <div v-if="trend" class="kpi-trend">
-                <i
-                    :class="[
-                        'pi',
-                        trend.isPositive ? 'pi-arrow-up text-green-500' : 'pi-arrow-down text-red-500'
-                    ]"
-                ></i>
-                <span :class="trend.isPositive ? 'text-green-600' : 'text-red-600'">
-                    {{ Math.abs(trend.value) }}%
-                </span>
+                <i :class="['pi', trend.isPositive ? 'pi-arrow-up text-green-500' : 'pi-arrow-down text-red-500']"></i>
+                <span :class="trend.isPositive ? 'text-green-600' : 'text-red-600'"> {{ Math.abs(trend.value) }}% </span>
                 <span class="text-gray-500 text-xs ml-1">vs período anterior</span>
             </div>
         </div>

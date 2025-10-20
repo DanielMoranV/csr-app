@@ -43,12 +43,7 @@ const toast = useToast();
 
 // PERMISOS DE EDICIÓN: HOSPITALIZACION, DIRECTOR_MEDICO, MEDICOS y EMERGENCIA pueden editar detalles y tareas de atención
 const canEdit = computed(() => {
-    if (
-        !hasPosition(USER_POSITIONS.HOSPITALIZACION) &&
-        !hasPosition(USER_POSITIONS.DIRECTOR_MEDICO) &&
-        !hasPosition(USER_POSITIONS.MEDICOS) &&
-        !hasPosition(USER_POSITIONS.EMERGENCIA)
-    ) {
+    if (!hasPosition(USER_POSITIONS.HOSPITALIZACION) && !hasPosition(USER_POSITIONS.DIRECTOR_MEDICO) && !hasPosition(USER_POSITIONS.MEDICOS) && !hasPosition(USER_POSITIONS.EMERGENCIA)) {
         return false;
     }
     if (!attention.value) return false;

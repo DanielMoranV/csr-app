@@ -203,14 +203,7 @@ const handleSubmit = async () => {
                     <i class="pi pi-file-edit mr-2"></i>
                     Notas <span class="optional">(Opcional)</span>
                 </label>
-                <Textarea
-                    id="notes"
-                    v-model="formData.notes"
-                    rows="4"
-                    placeholder="Agregar notas sobre la reserva (ej: para cirugía programada, traslado, etc.)"
-                    :disabled="isLoading"
-                    class="notes-textarea"
-                />
+                <Textarea id="notes" v-model="formData.notes" rows="4" placeholder="Agregar notas sobre la reserva (ej: para cirugía programada, traslado, etc.)" :disabled="isLoading" class="notes-textarea" />
                 <small class="notes-hint">Las notas ayudan a otros usuarios a entender el propósito de la reserva</small>
             </div>
         </div>

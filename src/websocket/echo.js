@@ -15,18 +15,18 @@ const getAuthHeaders = () => {
     try {
         const authStore = useAuthStore();
         const token = authStore.getToken;
-        
+
         if (!token) {
             console.warn('[Echo] No token available for authentication');
             return {};
         }
-        
+
         const headers = {
             Authorization: `Bearer ${token}`,
             'Content-Type': 'application/json',
-            'Accept': 'application/json'
+            Accept: 'application/json'
         };
-        
+
         return headers;
     } catch (error) {
         console.error('[Echo] Error getting auth headers:', error);
@@ -61,29 +61,29 @@ if (broadcaster === 'reverb') {
             return {
                 authorize: (socketId, callback) => {
                     const headers = getAuthHeaders();
-                    
+
                     // Use fetch instead of XMLHttpRequest for better control
                     fetch(`${api_url}/broadcasting/auth`, {
                         method: 'POST',
                         headers: {
                             ...headers,
-                            'Content-Type': 'application/x-www-form-urlencoded',
+                            'Content-Type': 'application/x-www-form-urlencoded'
                         },
                         body: `socket_id=${socketId}&channel_name=${channel.name}`
                     })
-                    .then(response => {
-                        if (response.ok) {
-                            return response.json();
-                        }
-                        throw new Error(`HTTP ${response.status}`);
-                    })
-                    .then(data => {
-                        callback(null, data);
-                    })
-                    .catch(error => {
-                        console.error('[Echo] Authorization failed:', error);
-                        callback(error, null);
-                    });
+                        .then((response) => {
+                            if (response.ok) {
+                                return response.json();
+                            }
+                            throw new Error(`HTTP ${response.status}`);
+                        })
+                        .then((data) => {
+                            callback(null, data);
+                        })
+                        .catch((error) => {
+                            console.error('[Echo] Authorization failed:', error);
+                            callback(error, null);
+                        });
                 }
             };
         }

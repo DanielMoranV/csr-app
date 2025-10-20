@@ -55,12 +55,7 @@ const validateForm = () => {
 
 // Computed para deshabilitar botón guardar
 const isFormValid = computed(() => {
-    return (
-        localRoom.value.number &&
-        localRoom.value.number.trim() !== '' &&
-        localRoom.value.notes &&
-        localRoom.value.notes.trim() !== ''
-    );
+    return localRoom.value.number && localRoom.value.number.trim() !== '' && localRoom.value.notes && localRoom.value.notes.trim() !== '';
 });
 
 const save = () => {

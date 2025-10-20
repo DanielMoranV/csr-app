@@ -91,7 +91,7 @@ export const useTicketAttachmentsStore = defineStore('ticketAttachments', () => 
         try {
             const response = await TicketAttachmentService.deleteAttachment(ticketId, attachmentId);
             if (apiUtils.isSuccess(response)) {
-                state.attachments = state.attachments.filter(att => att.id !== attachmentId);
+                state.attachments = state.attachments.filter((att) => att.id !== attachmentId);
                 return response;
             }
             throw response;
@@ -108,7 +108,7 @@ export const useTicketAttachmentsStore = defineStore('ticketAttachments', () => 
     const handleAttachmentCreated = (attachment, ticketId) => {
         // Only add attachment if we're currently viewing this ticket
         if (state.currentTicketId === ticketId) {
-            const exists = state.attachments.some(a => a.id === attachment.id);
+            const exists = state.attachments.some((a) => a.id === attachment.id);
             if (!exists) {
                 state.attachments.push(attachment);
                 console.log(`[TicketAttachmentsStore] Attachment added for ticket ${ticketId}:`, attachment);
@@ -119,7 +119,7 @@ export const useTicketAttachmentsStore = defineStore('ticketAttachments', () => 
     const handleAttachmentDeleted = (attachmentId, ticketId) => {
         // Only remove attachment if we're currently viewing this ticket
         if (state.currentTicketId === ticketId) {
-            const index = state.attachments.findIndex(a => a.id === attachmentId);
+            const index = state.attachments.findIndex((a) => a.id === attachmentId);
             if (index !== -1) {
                 state.attachments.splice(index, 1);
                 console.log(`[TicketAttachmentsStore] Attachment removed for ticket ${ticketId}:`, attachmentId);

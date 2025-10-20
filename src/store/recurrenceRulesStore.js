@@ -12,7 +12,8 @@ export const useRecurrenceRulesStore = defineStore('recurrenceRules', () => {
         isSaving: false,
         isDeleting: false,
         lastFetch: null,
-        filters: { // Add filters if needed in the future
+        filters: {
+            // Add filters if needed in the future
             per_page: null // No pagination by default
         }
     });
