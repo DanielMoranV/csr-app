@@ -6,9 +6,21 @@ import Accordion from 'primevue/accordion';
 import AccordionContent from 'primevue/accordioncontent';
 import AccordionHeader from 'primevue/accordionheader';
 import AccordionPanel from 'primevue/accordionpanel';
+import Badge from 'primevue/badge';
+import Button from 'primevue/button';
+import Calendar from 'primevue/calendar';
 import Divider from 'primevue/divider';
+import InputNumber from 'primevue/inputnumber';
 import InputSwitch from 'primevue/inputswitch';
 import Message from 'primevue/message';
+import ProgressBar from 'primevue/progressbar';
+import Tab from 'primevue/tab';
+import TabList from 'primevue/tablist';
+import TabPanel from 'primevue/tabpanel';
+import TabPanels from 'primevue/tabpanels';
+import Tabs from 'primevue/tabs';
+import Tag from 'primevue/tag';
+import Textarea from 'primevue/textarea';
 import { useConfirm } from 'primevue/useconfirm';
 import { useToast } from 'primevue/usetoast';
 import { computed, defineEmits, defineProps, ref, watch } from 'vue';
@@ -41,7 +53,7 @@ const emit = defineEmits(['create-details', 'update-details', 'delete-details'])
 
 const confirm = useConfirm();
 const toast = useToast();
-const { evaluation: cudyrEvaluationData, loadById: loadCudyrById } = useCudyr();
+const { state: cudyrState, loadById: loadCudyrById } = useCudyr();
 
 const isEditing = ref(false);
 const localDetails = ref({});
@@ -72,8 +84,54 @@ const cudyrPreview = ref(null);
 
 const fetchCudyrEvaluation = async (evaluationId) => {
     await loadCudyrById(evaluationId);
-    if (cudyrEvaluationData.value) {
-        localDetails.value.cudyr_evaluation = cudyrEvaluationData.value;
+    if (cudyrState.evaluation) {
+        localDetails.value.cudyr_evaluation = cudyrState.evaluation;
+    }
+};
+
+// Helper para convertir estructura anidada del backend a estructura plana del formulario
+const mapCudyrEvaluationToForm = (evaluation) => {
+    if (!evaluation) return null;
+
+    // Verificar si los datos vienen en estructura anidada (del backend) o plana
+    if (evaluation.dependency && evaluation.dependency.dimensions) {
+        // Estructura anidada del backend
+        return {
+            dependency_mobility: evaluation.dependency.dimensions.mobility || 0,
+            dependency_hygiene: evaluation.dependency.dimensions.hygiene || 0,
+            dependency_nutrition: evaluation.dependency.dimensions.nutrition || 0,
+            dependency_elimination: evaluation.dependency.dimensions.elimination || 0,
+            dependency_psychosocial: evaluation.dependency.dimensions.psychosocial || 0,
+            dependency_surveillance: evaluation.dependency.dimensions.surveillance || 0,
+            risk_oxygen_therapy: evaluation.risk?.dimensions?.oxygen_therapy || 0,
+            risk_airway_management: evaluation.risk?.dimensions?.airway_management || 0,
+            risk_vital_signs: evaluation.risk?.dimensions?.vital_signs || 0,
+            risk_fluid_balance: evaluation.risk?.dimensions?.fluid_balance || 0,
+            risk_wound_care: evaluation.risk?.dimensions?.wound_care || 0,
+            risk_invasive_devices: evaluation.risk?.dimensions?.invasive_devices || 0,
+            risk_procedures: evaluation.risk?.dimensions?.procedures || 0,
+            risk_medications: evaluation.risk?.dimensions?.medications || 0,
+            notes: evaluation.notes || ''
+        };
+    } else {
+        // Estructura plana
+        return {
+            dependency_mobility: evaluation.dependency_mobility || 0,
+            dependency_hygiene: evaluation.dependency_hygiene || 0,
+            dependency_nutrition: evaluation.dependency_nutrition || 0,
+            dependency_elimination: evaluation.dependency_elimination || 0,
+            dependency_psychosocial: evaluation.dependency_psychosocial || 0,
+            dependency_surveillance: evaluation.dependency_surveillance || 0,
+            risk_oxygen_therapy: evaluation.risk_oxygen_therapy || 0,
+            risk_airway_management: evaluation.risk_airway_management || 0,
+            risk_vital_signs: evaluation.risk_vital_signs || 0,
+            risk_fluid_balance: evaluation.risk_fluid_balance || 0,
+            risk_wound_care: evaluation.risk_wound_care || 0,
+            risk_invasive_devices: evaluation.risk_invasive_devices || 0,
+            risk_procedures: evaluation.risk_procedures || 0,
+            risk_medications: evaluation.risk_medications || 0,
+            notes: evaluation.notes || ''
+        };
     }
 };
 
@@ -135,15 +193,6 @@ const detailFields = [
 
 const scoreFields = [
     {
-        key: 'score_CUDYR',
-        label: 'Score CUDYR (Dependencia)',
-        icon: 'pi pi-chart-bar',
-        min: 0,
-        max: 18,
-        suffix: 'pts',
-        help: 'Score de Dependencia (0-18) - Se actualiza automáticamente con evaluación CUDYR'
-    },
-    {
         key: 'thrombosis_risk_score',
         label: 'Riesgo de Trombosis',
         icon: 'pi pi-heart',
@@ -162,6 +211,12 @@ const scoreFields = [
         help: 'Evaluación del riesgo hemorrágico'
     }
 ];
+
+// Computed para determinar si hay evaluación CUDYR
+const hasCudyrEvaluation = computed(() => {
+    return (currentDetail.value?.cudyr_evaluation || currentDetail.value?.cudyr_evaluation_id) &&
+           localDetails.value?.score_CUDYR > 0;
+});
 
 // Computed para validaciones - Solo id_attentions es requerido
 const isFormValid = computed(() => {
@@ -329,25 +384,12 @@ watch(
             // Detectar y pre-cargar evaluación CUDYR existente
             if (newDetails.cudyr_evaluation) {
                 includeCudyr.value = true;
-                cudyrData.value = {
-                    dependency_mobility: newDetails.cudyr_evaluation.dependency_mobility || 0,
-                    dependency_hygiene: newDetails.cudyr_evaluation.dependency_hygiene || 0,
-                    dependency_nutrition: newDetails.cudyr_evaluation.dependency_nutrition || 0,
-                    dependency_elimination: newDetails.cudyr_evaluation.dependency_elimination || 0,
-                    dependency_psychosocial: newDetails.cudyr_evaluation.dependency_psychosocial || 0,
-                    dependency_surveillance: newDetails.cudyr_evaluation.dependency_surveillance || 0,
-                    risk_oxygen_therapy: newDetails.cudyr_evaluation.risk_oxygen_therapy || 0,
-                    risk_airway_management: newDetails.cudyr_evaluation.risk_airway_management || 0,
-                    risk_vital_signs: newDetails.cudyr_evaluation.risk_vital_signs || 0,
-                    risk_fluid_balance: newDetails.cudyr_evaluation.risk_fluid_balance || 0,
-                    risk_wound_care: newDetails.cudyr_evaluation.risk_wound_care || 0,
-                    risk_invasive_devices: newDetails.cudyr_evaluation.risk_invasive_devices || 0,
-                    risk_procedures: newDetails.cudyr_evaluation.risk_procedures || 0,
-                    risk_medications: newDetails.cudyr_evaluation.risk_medications || 0,
-                    notes: newDetails.cudyr_evaluation.notes || ''
-                };
-                // Calcular preview automáticamente
-                cudyrPreview.value = calculateCudyrScores();
+                const mappedData = mapCudyrEvaluationToForm(newDetails.cudyr_evaluation);
+                if (mappedData) {
+                    cudyrData.value = mappedData;
+                    // Calcular preview automáticamente
+                    cudyrPreview.value = calculateCudyrScores();
+                }
             } else if (newDetails.cudyr_evaluation_id) {
                 fetchCudyrEvaluation(newDetails.cudyr_evaluation_id);
             } else {
@@ -373,6 +415,20 @@ watch(
     (newDate) => {
         if (newDate && localDetails.value) {
             localDetails.value.attention_date = convertStringToDate(newDate);
+        }
+    }
+);
+
+// Watch para actualizar cudyrData cuando se carga la evaluación desde el composable
+watch(
+    () => cudyrState.evaluation,
+    (newEvaluation) => {
+        if (newEvaluation && includeCudyr.value) {
+            const mappedData = mapCudyrEvaluationToForm(newEvaluation);
+            if (mappedData) {
+                cudyrData.value = mappedData;
+                cudyrPreview.value = calculateCudyrScores();
+            }
         }
     }
 );
@@ -485,6 +541,11 @@ const handleSave = async () => {
                 risk_medications: cudyrData.value.risk_medications,
                 notes: cudyrData.value.notes
             };
+
+            // Calcular y actualizar automáticamente el score_CUDYR
+            if (cudyrPreview.value) {
+                dataToSend.score_CUDYR = cudyrPreview.value.dependencyScore;
+            }
         }
 
         if (currentDetail.value) {
@@ -560,24 +621,30 @@ const startEditing = () => {
         // Pre-cargar evaluación CUDYR si existe
         if (currentDetail.value.cudyr_evaluation) {
             includeCudyr.value = true;
-            cudyrData.value = {
-                dependency_mobility: currentDetail.value.cudyr_evaluation.dependency_mobility || 0,
-                dependency_hygiene: currentDetail.value.cudyr_evaluation.dependency_hygiene || 0,
-                dependency_nutrition: currentDetail.value.cudyr_evaluation.dependency_nutrition || 0,
-                dependency_elimination: currentDetail.value.cudyr_evaluation.dependency_elimination || 0,
-                dependency_psychosocial: currentDetail.value.cudyr_evaluation.dependency_psychosocial || 0,
-                dependency_surveillance: currentDetail.value.cudyr_evaluation.dependency_surveillance || 0,
-                risk_oxygen_therapy: currentDetail.value.cudyr_evaluation.risk_oxygen_therapy || 0,
-                risk_airway_management: currentDetail.value.cudyr_evaluation.risk_airway_management || 0,
-                risk_vital_signs: currentDetail.value.cudyr_evaluation.risk_vital_signs || 0,
-                risk_fluid_balance: currentDetail.value.cudyr_evaluation.risk_fluid_balance || 0,
-                risk_wound_care: currentDetail.value.cudyr_evaluation.risk_wound_care || 0,
-                risk_invasive_devices: currentDetail.value.cudyr_evaluation.risk_invasive_devices || 0,
-                risk_procedures: currentDetail.value.cudyr_evaluation.risk_procedures || 0,
-                risk_medications: currentDetail.value.cudyr_evaluation.risk_medications || 0,
-                notes: currentDetail.value.cudyr_evaluation.notes || ''
-            };
-            cudyrPreview.value = calculateCudyrScores();
+            const mappedData = mapCudyrEvaluationToForm(currentDetail.value.cudyr_evaluation);
+            if (mappedData) {
+                cudyrData.value = mappedData;
+                cudyrPreview.value = calculateCudyrScores();
+            }
+        } else if (currentDetail.value.cudyr_evaluation_id) {
+            // Si solo existe el ID, marcar que tiene evaluación CUDYR
+            // Los datos se cargarán por el watch que detecta cudyr_evaluation_id
+            includeCudyr.value = true;
+            // Cargar evaluación por ID si no está cargada
+            if (!cudyrState.evaluation || cudyrState.evaluation.id !== currentDetail.value.cudyr_evaluation_id) {
+                fetchCudyrEvaluation(currentDetail.value.cudyr_evaluation_id);
+            } else {
+                // Si ya está cargada en el estado, usar esos datos
+                const mappedData = mapCudyrEvaluationToForm(cudyrState.evaluation);
+                if (mappedData) {
+                    cudyrData.value = mappedData;
+                    cudyrPreview.value = calculateCudyrScores();
+                }
+            }
+        } else {
+            // No hay evaluación CUDYR
+            includeCudyr.value = false;
+            resetCudyrData();
         }
     } else {
         resetForm();
@@ -588,77 +655,26 @@ const startEditing = () => {
 };
 
 const cancelEditing = () => {
-    if (hasUnsavedChanges.value) {
-        confirm.require({
-            message: 'Tiene cambios sin guardar. ¿Desea descartar los cambios?',
-            header: 'Confirmar Cancelación',
-            icon: 'pi pi-question-circle',
-            rejectClass: 'p-button-secondary p-button-outlined',
-            rejectLabel: 'Continuar Editando',
-            acceptLabel: 'Descartar Cambios',
-            accept: () => {
-                if (currentDetail.value) {
-                    localDetails.value = { ...currentDetail.value };
-
-                    // Restaurar datos CUDYR originales
-                    if (currentDetail.value.cudyr_evaluation) {
-                        includeCudyr.value = true;
-                        cudyrData.value = {
-                            dependency_mobility: currentDetail.value.cudyr_evaluation.dependency_mobility || 0,
-                            dependency_hygiene: currentDetail.value.cudyr_evaluation.dependency_hygiene || 0,
-                            dependency_nutrition: currentDetail.value.cudyr_evaluation.dependency_nutrition || 0,
-                            dependency_elimination: currentDetail.value.cudyr_evaluation.dependency_elimination || 0,
-                            dependency_psychosocial: currentDetail.value.cudyr_evaluation.dependency_psychosocial || 0,
-                            dependency_surveillance: currentDetail.value.cudyr_evaluation.dependency_surveillance || 0,
-                            risk_oxygen_therapy: currentDetail.value.cudyr_evaluation.risk_oxygen_therapy || 0,
-                            risk_airway_management: currentDetail.value.cudyr_evaluation.risk_airway_management || 0,
-                            risk_vital_signs: currentDetail.value.cudyr_evaluation.risk_vital_signs || 0,
-                            risk_fluid_balance: currentDetail.value.cudyr_evaluation.risk_fluid_balance || 0,
-                            risk_wound_care: currentDetail.value.cudyr_evaluation.risk_wound_care || 0,
-                            risk_invasive_devices: currentDetail.value.cudyr_evaluation.risk_invasive_devices || 0,
-                            risk_procedures: currentDetail.value.cudyr_evaluation.risk_procedures || 0,
-                            risk_medications: currentDetail.value.cudyr_evaluation.risk_medications || 0,
-                            notes: currentDetail.value.cudyr_evaluation.notes || ''
-                        };
-                        cudyrPreview.value = calculateCudyrScores();
-                    } else {
-                        includeCudyr.value = false;
-                        resetCudyrData();
-                    }
-
-                    isEditing.value = false;
-                } else {
-                    resetForm();
-                    includeCudyr.value = false;
-                    resetCudyrData();
-                }
-            }
-        });
-    } else {
+    const restoreCudyrData = () => {
         if (currentDetail.value) {
             localDetails.value = { ...currentDetail.value };
 
             // Restaurar datos CUDYR originales
             if (currentDetail.value.cudyr_evaluation) {
                 includeCudyr.value = true;
-                cudyrData.value = {
-                    dependency_mobility: currentDetail.value.cudyr_evaluation.dependency_mobility || 0,
-                    dependency_hygiene: currentDetail.value.cudyr_evaluation.dependency_hygiene || 0,
-                    dependency_nutrition: currentDetail.value.cudyr_evaluation.dependency_nutrition || 0,
-                    dependency_elimination: currentDetail.value.cudyr_evaluation.dependency_elimination || 0,
-                    dependency_psychosocial: currentDetail.value.cudyr_evaluation.dependency_psychosocial || 0,
-                    dependency_surveillance: currentDetail.value.cudyr_evaluation.dependency_surveillance || 0,
-                    risk_oxygen_therapy: currentDetail.value.cudyr_evaluation.risk_oxygen_therapy || 0,
-                    risk_airway_management: currentDetail.value.cudyr_evaluation.risk_airway_management || 0,
-                    risk_vital_signs: currentDetail.value.cudyr_evaluation.risk_vital_signs || 0,
-                    risk_fluid_balance: currentDetail.value.cudyr_evaluation.risk_fluid_balance || 0,
-                    risk_wound_care: currentDetail.value.cudyr_evaluation.risk_wound_care || 0,
-                    risk_invasive_devices: currentDetail.value.cudyr_evaluation.risk_invasive_devices || 0,
-                    risk_procedures: currentDetail.value.cudyr_evaluation.risk_procedures || 0,
-                    risk_medications: currentDetail.value.cudyr_evaluation.risk_medications || 0,
-                    notes: currentDetail.value.cudyr_evaluation.notes || ''
-                };
-                cudyrPreview.value = calculateCudyrScores();
+                const mappedData = mapCudyrEvaluationToForm(currentDetail.value.cudyr_evaluation);
+                if (mappedData) {
+                    cudyrData.value = mappedData;
+                    cudyrPreview.value = calculateCudyrScores();
+                }
+            } else if (currentDetail.value.cudyr_evaluation_id && cudyrState.evaluation) {
+                // Si solo existe el ID y ya está cargada la evaluación
+                includeCudyr.value = true;
+                const mappedData = mapCudyrEvaluationToForm(cudyrState.evaluation);
+                if (mappedData) {
+                    cudyrData.value = mappedData;
+                    cudyrPreview.value = calculateCudyrScores();
+                }
             } else {
                 includeCudyr.value = false;
                 resetCudyrData();
@@ -670,6 +686,20 @@ const cancelEditing = () => {
             includeCudyr.value = false;
             resetCudyrData();
         }
+    };
+
+    if (hasUnsavedChanges.value) {
+        confirm.require({
+            message: 'Tiene cambios sin guardar. ¿Desea descartar los cambios?',
+            header: 'Confirmar Cancelación',
+            icon: 'pi pi-question-circle',
+            rejectClass: 'p-button-secondary p-button-outlined',
+            rejectLabel: 'Continuar Editando',
+            acceptLabel: 'Descartar Cambios',
+            accept: restoreCudyrData
+        });
+    } else {
+        restoreCudyrData();
     }
 };
 
@@ -690,6 +720,59 @@ const getScorePercentage = (score, maxScore) => {
 // Función para obtener el valor del score de forma segura
 const getScoreValue = (score) => {
     return score && typeof score === 'number' ? score : 0;
+};
+
+// Funciones para clasificación CUDYR
+const getCudyrDependencyClassification = (score) => {
+    if (score >= 13) return { class: 'B', text: 'Dependencia Total', color: 'danger' };
+    if (score >= 7) return { class: 'C', text: 'Dependencia Parcial', color: 'warn' };
+    return { class: 'D', text: 'Autosuficiencia', color: 'success' };
+};
+
+const getCudyrRiskClassification = (score) => {
+    if (score >= 19) return { class: '1', text: 'Riesgo Máximo', color: 'danger' };
+    if (score >= 13) return { class: '2', text: 'Riesgo Alto', color: 'warn' };
+    if (score >= 7) return { class: '3', text: 'Riesgo Mediano', color: 'info' };
+    return { class: '4', text: 'Riesgo Bajo', color: 'success' };
+};
+
+const getCudyrCategory = (dependencyScore, riskScore = 0) => {
+    const depClass = getCudyrDependencyClassification(dependencyScore).class;
+    const riskClass = getCudyrRiskClassification(riskScore).class;
+
+    let category = 'D3';
+    if (depClass === 'B') {
+        if (riskClass === '1') category = 'A1';
+        else if (riskClass === '2') category = 'A2';
+        else category = 'A3';
+    } else if (depClass === 'C') {
+        if (riskClass === '1') category = 'B1';
+        else if (riskClass === '2') category = 'B2';
+        else category = 'B3';
+    } else {
+        if (riskClass === '1') category = 'C1';
+        else if (riskClass === '2') category = 'C2';
+        else category = 'C3';
+    }
+
+    return category;
+};
+
+const getCudyrCategoryColor = (category) => {
+    if (!category) return 'secondary';
+
+    // A1, A2, A3 - Dependencia Total
+    if (category.startsWith('A')) return 'danger';
+
+    // B1, B2, B3 - Dependencia Parcial
+    if (category.startsWith('B')) return 'warn';
+
+    // C1, C2, C3 - Autosuficiencia
+    if (category === 'C1' || category === 'C2') return 'info';
+    if (category === 'C3') return 'success';
+
+    // D3 - Autosuficiencia Completa
+    return 'success';
 };
 
 const formatAuditDate = (dateString) => {
@@ -804,6 +887,28 @@ const getUserInfo = (userObj) => {
                 <TabPanels>
                     <!-- Panel de Scores Compacto -->
                     <TabPanel value="0" class="pt-3">
+                        <!-- Tarjeta especial de Evaluación CUDYR completa -->
+                        <div v-if="hasCudyrEvaluation" class="cudyr-evaluation-card">
+                            <div class="cudyr-eval-header">
+                                <i class="pi pi-chart-bar"></i>
+                                <span class="cudyr-eval-title">Evaluación CUDYR</span>
+                            </div>
+                            <Divider class="my-2" />
+                            <div class="cudyr-eval-body-simple">
+                                <div class="cudyr-category-section">
+                                    <span class="cudyr-category-label">Categoría CUDYR:</span>
+                                    <div class="cudyr-category-display-simple">
+                                        <CudyrBadge :category="currentDetail.cudyr_evaluation?.cudyr_category || getCudyrCategory(localDetails.score_CUDYR || 0)" size="large" />
+                                    </div>
+                                </div>
+                                <Divider class="my-3" />
+                                <div class="cudyr-score-section">
+                                    <span class="cudyr-score-label">Puntuación:</span>
+                                    <span class="cudyr-score-value-large">{{ localDetails.score_CUDYR || 0 }}/18</span>
+                                </div>
+                            </div>
+                        </div>
+
                         <div v-if="scoreFields.some((score) => getScoreValue(localDetails[score.key]) > 0)" class="scores-container">
                             <div v-for="score in scoreFields" :key="score.key" class="score-card" :class="{ 'score-card--active': getScoreValue(localDetails[score.key]) > 0 }">
                                 <div class="score-header">
@@ -820,10 +925,10 @@ const getUserInfo = (userObj) => {
                                 </div>
                             </div>
                         </div>
-                        <div v-else class="empty-scores">
+                        <div v-else-if="!hasCudyrEvaluation" class="empty-scores">
                             <i class="pi pi-chart-bar"></i>
-                            <span>No hay evaluaciones de riesgo</span>
-                            <Button v-if="!readOnly" label="Añadir" icon="pi pi-plus" size="small" severity="secondary" outlined @click="startEditing" />
+                            <span>No hay evaluaciones de riesgo registradas</span>
+                            <Button v-if="!readOnly" label="Añadir Evaluaciones" icon="pi pi-plus" size="small" severity="secondary" outlined @click="startEditing" />
                         </div>
                     </TabPanel>
 
@@ -1675,6 +1780,7 @@ const getUserInfo = (userObj) => {
     box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
 }
 
+
 .score-header {
     display: flex;
     align-items: center;
@@ -1731,6 +1837,99 @@ const getUserInfo = (userObj) => {
     text-align: center;
     margin-bottom: 0.25rem;
     font-weight: 500;
+}
+
+/* Tarjeta de Evaluación CUDYR Completa */
+.cudyr-evaluation-card {
+    background: linear-gradient(135deg, var(--surface-card) 0%, var(--blue-50) 100%);
+    border: 2px solid var(--primary-color);
+    border-radius: 12px;
+    padding: 1rem;
+    margin-bottom: 1rem;
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+}
+
+.cudyr-eval-header {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    font-size: 1.1rem;
+    font-weight: 600;
+    color: var(--text-color);
+}
+
+.cudyr-eval-header i {
+    color: var(--primary-color);
+    font-size: 1.25rem;
+}
+
+.cudyr-eval-title {
+    flex: 1;
+}
+
+.cudyr-eval-body-simple {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    text-align: center;
+    padding: 0.5rem 0;
+}
+
+.cudyr-category-section {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 1rem;
+    width: 100%;
+}
+
+.cudyr-category-label {
+    font-size: 0.95rem;
+    font-weight: 600;
+    color: var(--text-color);
+}
+
+.cudyr-category-display-simple {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.cudyr-score-section {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0.75rem;
+    width: 100%;
+}
+
+.cudyr-score-label {
+    font-size: 0.95rem;
+    font-weight: 600;
+    color: var(--text-color);
+}
+
+.cudyr-score-value-large {
+    font-size: 2.5rem;
+    font-weight: 700;
+    color: var(--primary-color);
+    line-height: 1;
+}
+
+/* Responsive para tarjeta CUDYR */
+@media (max-width: 768px) {
+    .cudyr-evaluation-card {
+        padding: 0.75rem;
+    }
+
+    .cudyr-score-value-large {
+        font-size: 2rem;
+    }
+
+    .cudyr-category-label,
+    .cudyr-score-label {
+        font-size: 0.85rem;
+    }
 }
 
 .empty-scores {

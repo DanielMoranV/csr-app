@@ -55,6 +55,7 @@ export function useCudyr(detailsAttentionId = null) {
 
         try {
             const response = await cudyr.getByDetail(detailId);
+            console.log('[useCudyr] Response from getByDetail:', response);
 
             if (apiUtils.isSuccess(response)) {
                 const data = apiUtils.getData(response);
@@ -112,23 +113,47 @@ export function useCudyr(detailsAttentionId = null) {
 
         formData.id_details_attention = evaluation.id_details_attention;
 
-        // Dimensiones de dependencia
-        formData.dependency_mobility = evaluation.dependency_mobility || 0;
-        formData.dependency_hygiene = evaluation.dependency_hygiene || 0;
-        formData.dependency_nutrition = evaluation.dependency_nutrition || 0;
-        formData.dependency_elimination = evaluation.dependency_elimination || 0;
-        formData.dependency_psychosocial = evaluation.dependency_psychosocial || 0;
-        formData.dependency_surveillance = evaluation.dependency_surveillance || 0;
+        // Verificar si los datos vienen en estructura anidada (del backend) o plana
+        if (evaluation.dependency && evaluation.dependency.dimensions) {
+            // Estructura anidada del backend
+            formData.dependency_mobility = evaluation.dependency.dimensions.mobility || 0;
+            formData.dependency_hygiene = evaluation.dependency.dimensions.hygiene || 0;
+            formData.dependency_nutrition = evaluation.dependency.dimensions.nutrition || 0;
+            formData.dependency_elimination = evaluation.dependency.dimensions.elimination || 0;
+            formData.dependency_psychosocial = evaluation.dependency.dimensions.psychosocial || 0;
+            formData.dependency_surveillance = evaluation.dependency.dimensions.surveillance || 0;
+        } else {
+            // Estructura plana
+            formData.dependency_mobility = evaluation.dependency_mobility || 0;
+            formData.dependency_hygiene = evaluation.dependency_hygiene || 0;
+            formData.dependency_nutrition = evaluation.dependency_nutrition || 0;
+            formData.dependency_elimination = evaluation.dependency_elimination || 0;
+            formData.dependency_psychosocial = evaluation.dependency_psychosocial || 0;
+            formData.dependency_surveillance = evaluation.dependency_surveillance || 0;
+        }
 
-        // Dimensiones de riesgo
-        formData.risk_oxygen_therapy = evaluation.risk_oxygen_therapy || 0;
-        formData.risk_airway_management = evaluation.risk_airway_management || 0;
-        formData.risk_vital_signs = evaluation.risk_vital_signs || 0;
-        formData.risk_fluid_balance = evaluation.risk_fluid_balance || 0;
-        formData.risk_wound_care = evaluation.risk_wound_care || 0;
-        formData.risk_invasive_devices = evaluation.risk_invasive_devices || 0;
-        formData.risk_procedures = evaluation.risk_procedures || 0;
-        formData.risk_medications = evaluation.risk_medications || 0;
+        // Verificar si los datos vienen en estructura anidada (del backend) o plana
+        if (evaluation.risk && evaluation.risk.dimensions) {
+            // Estructura anidada del backend
+            formData.risk_oxygen_therapy = evaluation.risk.dimensions.oxygen_therapy || 0;
+            formData.risk_airway_management = evaluation.risk.dimensions.airway_management || 0;
+            formData.risk_vital_signs = evaluation.risk.dimensions.vital_signs || 0;
+            formData.risk_fluid_balance = evaluation.risk.dimensions.fluid_balance || 0;
+            formData.risk_wound_care = evaluation.risk.dimensions.wound_care || 0;
+            formData.risk_invasive_devices = evaluation.risk.dimensions.invasive_devices || 0;
+            formData.risk_procedures = evaluation.risk.dimensions.procedures || 0;
+            formData.risk_medications = evaluation.risk.dimensions.medications || 0;
+        } else {
+            // Estructura plana
+            formData.risk_oxygen_therapy = evaluation.risk_oxygen_therapy || 0;
+            formData.risk_airway_management = evaluation.risk_airway_management || 0;
+            formData.risk_vital_signs = evaluation.risk_vital_signs || 0;
+            formData.risk_fluid_balance = evaluation.risk_fluid_balance || 0;
+            formData.risk_wound_care = evaluation.risk_wound_care || 0;
+            formData.risk_invasive_devices = evaluation.risk_invasive_devices || 0;
+            formData.risk_procedures = evaluation.risk_procedures || 0;
+            formData.risk_medications = evaluation.risk_medications || 0;
+        }
 
         formData.notes = evaluation.notes || '';
     };

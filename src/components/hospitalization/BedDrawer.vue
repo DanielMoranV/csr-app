@@ -3,13 +3,9 @@ import AttentionDetails from '@/components/attentions/AttentionDetails.vue';
 import AttentionTasks from '@/components/attentions/AttentionTasks.vue';
 import DetailsTimeline from '@/components/attentions/DetailsTimeline.vue';
 import BedReservationDialog from '@/components/hospitalization/BedReservationDialog.vue';
-import CudyrBadge from '@/components/cudyr/CudyrBadge.vue';
-import CudyrEvaluationForm from '@/components/cudyr/CudyrEvaluationForm.vue';
-import CudyrEvaluationView from '@/components/cudyr/CudyrEvaluationView.vue';
 import { usePermissions, USER_POSITIONS } from '@/composables/usePermissions';
 import { useHospitalAttentionsStore } from '@/store/hospitalAttentionsStore';
 import { useBedReservationsStore } from '@/store/bedReservationsStore';
-import { useCudyr } from '@/composables/useCudyr';
 import { useToast } from 'primevue/usetoast';
 import Badge from 'primevue/badge';
 import Button from 'primevue/button';
@@ -20,7 +16,6 @@ import TabPanel from 'primevue/tabpanel';
 import TabPanels from 'primevue/tabpanels';
 import Tabs from 'primevue/tabs';
 import Tag from 'primevue/tag';
-import Message from 'primevue/message';
 import { computed, ref, watch } from 'vue';
 
 const props = defineProps({
@@ -59,37 +54,6 @@ const activeTab = ref('0');
 const selectedDate = ref(null); // Para controlar la fecha seleccionada en detalles
 const showReservationDialog = ref(false);
 const isLoadingReservation = ref(false);
-
-// Estado para CUDYR
-const showCudyrForm = ref(false);
-const cudyrDetailsId = ref(null);
-
-// Computed para obtener el ID del detalle más reciente
-const latestDetailId = computed(() => {
-    if (!currentDetailsArray.value || currentDetailsArray.value.length === 0) return null;
-
-    // Ordenar por fecha descendente y tomar el primero
-    const sorted = [...currentDetailsArray.value].sort((a, b) => {
-        const dateA = new Date(a.attention_date || a.created_at || 0);
-        const dateB = new Date(b.attention_date || b.created_at || 0);
-        return dateB - dateA;
-    });
-
-    return sorted[0]?.id || null;
-});
-
-// Computed para obtener la evaluación CUDYR del detalle más reciente
-const latestCudyrEvaluation = computed(() => {
-    if (!currentDetailsArray.value || currentDetailsArray.value.length === 0) return null;
-
-    const sorted = [...currentDetailsArray.value].sort((a, b) => {
-        const dateA = new Date(a.attention_date || a.created_at || 0);
-        const dateB = new Date(b.attention_date || b.created_at || 0);
-        return dateB - dateA;
-    });
-
-    return sorted[0]?.cudyr_evaluation || null;
-});
 
 // Computed para obtener los datos de la atención
 const attention = computed(() => {
@@ -288,39 +252,6 @@ const handleCancelReservation = async () => {
     }
 };
 
-// Handlers para CUDYR
-const handleOpenCudyrForm = () => {
-    if (!latestDetailId.value) {
-        toast.add({
-            severity: 'warn',
-            summary: 'Advertencia',
-            detail: 'Debe crear un detalle de atención primero',
-            life: 5000
-        });
-        return;
-    }
-
-    cudyrDetailsId.value = latestDetailId.value;
-    showCudyrForm.value = true;
-};
-
-const handleCudyrSuccess = () => {
-    showCudyrForm.value = false;
-    cudyrDetailsId.value = null;
-    emit('refresh-data');
-};
-
-const handleCudyrCancel = () => {
-    showCudyrForm.value = false;
-    cudyrDetailsId.value = null;
-};
-
-const handleEditCudyr = () => {
-    if (!latestDetailId.value) return;
-    cudyrDetailsId.value = latestDetailId.value;
-    showCudyrForm.value = true;
-};
-
 // Watch para resetear el tab activo cuando se cambia de cama
 watch(
     () => props.bed,
@@ -416,11 +347,6 @@ watch(
                             Tareas
                             <Badge v-if="attention.tasks?.length" :value="attention.tasks.length" severity="info" class="ml-2" />
                         </Tab>
-                        <Tab value="2">
-                            <i class="pi pi-chart-bar mr-2"></i>
-                            CUDYR
-                            <CudyrBadge v-if="latestCudyrEvaluation" :category="latestCudyrEvaluation.cudyr_category" size="small" :show-label="false" class="ml-2" />
-                        </Tab>
                     </TabList>
 
                     <TabPanels class="flex-1">
@@ -448,49 +374,6 @@ watch(
 
                         <TabPanel value="1" class="h-full">
                             <AttentionTasks :tasks="attention.tasks || []" :attention-id="attention.hospital_attention_id" :read-only="!canEdit" @create-task="handleCreateTask" @update-task="handleUpdateTask" @delete-task="handleDeleteTask" />
-                        </TabPanel>
-
-                        <TabPanel value="2" class="h-full">
-                            <!-- Panel CUDYR -->
-                            <div class="cudyr-panel">
-                                <!-- Sin detalle de atención -->
-                                <Message v-if="!latestDetailId" severity="info" :closable="false">
-                                    <div class="flex flex-col gap-2">
-                                        <span>No hay detalles de atención registrados.</span>
-                                        <span class="text-sm">Debe crear un detalle de atención antes de poder realizar una evaluación CUDYR.</span>
-                                    </div>
-                                </Message>
-
-                                <!-- Con detalle pero mostrando formulario -->
-                                <div v-else-if="showCudyrForm">
-                                    <CudyrEvaluationForm :details-attention-id="cudyrDetailsId" :initial-evaluation="latestCudyrEvaluation" @success="handleCudyrSuccess" @cancel="handleCudyrCancel" />
-                                </div>
-
-                                <!-- Con detalle y evaluación existente -->
-                                <div v-else-if="latestCudyrEvaluation">
-                                    <div class="flex justify-between items-center mb-4">
-                                        <h3 class="text-lg font-semibold m-0">Evaluación CUDYR</h3>
-                                        <div class="flex gap-2">
-                                            <Button v-if="canEdit" label="Editar" icon="pi pi-pencil" size="small" @click="handleEditCudyr" />
-                                        </div>
-                                    </div>
-                                    <CudyrEvaluationView :evaluation="latestCudyrEvaluation" />
-                                </div>
-
-                                <!-- Con detalle pero sin evaluación -->
-                                <div v-else class="flex flex-col items-center justify-center py-8 text-center">
-                                    <i class="pi pi-chart-bar text-6xl text-gray-300 mb-4"></i>
-                                    <h3 class="text-xl font-semibold text-gray-600 mb-2">Sin Evaluación CUDYR</h3>
-                                    <p class="text-gray-500 mb-4">Este paciente aún no tiene una evaluación CUDYR registrada.</p>
-                                    <Message severity="info" :closable="false" class="mb-4 max-w-md">
-                                        <div class="text-sm">
-                                            <p class="mb-2 font-semibold">¿Qué es CUDYR?</p>
-                                            <p>Sistema de clasificación de pacientes que evalúa la dependencia (0-18) y el riesgo (0-24) para determinar el nivel de cuidados requeridos.</p>
-                                        </div>
-                                    </Message>
-                                    <Button v-if="canEdit" label="Nueva Evaluación CUDYR" icon="pi pi-plus" @click="handleOpenCudyrForm" />
-                                </div>
-                            </div>
                         </TabPanel>
                     </TabPanels>
                 </Tabs>
@@ -634,19 +517,6 @@ watch(
 
     .details-sidebar-right {
         max-height: calc(100vh - 620px);
-    }
-}
-
-/* CUDYR Panel Styles */
-.cudyr-panel {
-    padding: 1rem;
-    height: 100%;
-    overflow-y: auto;
-}
-
-@media (max-width: 768px) {
-    .cudyr-panel {
-        padding: 0.75rem;
     }
 }
 </style>
