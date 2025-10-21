@@ -6,6 +6,7 @@ import { storeToRefs } from 'pinia';
 import Badge from 'primevue/badge';
 import Button from 'primevue/button';
 import Card from 'primevue/card';
+import Checkbox from 'primevue/checkbox';
 import Select from 'primevue/select';
 import Tag from 'primevue/tag';
 import { computed, onMounted, onUnmounted, ref } from 'vue';
@@ -23,6 +24,13 @@ const { startListening, stopListening, isListening } = useRealtimeEvents({
 // Filtros
 const selectedRoom = ref(null);
 const showStats = ref(true);
+
+// Filtros de ocupación
+const occupancyFilters = ref({
+    occupied: true,
+    free: true,
+    reserved: true
+});
 
 // Opciones para el dropdown de habitaciones
 const roomOptions = computed(() => {
@@ -49,8 +57,38 @@ const roomOptions = computed(() => {
 // Habitaciones filtradas
 const filteredRooms = computed(() => {
     if (!state.value.status) return [];
-    if (!selectedRoom.value) return state.value.status;
-    return state.value.status.filter((room) => room.id === selectedRoom.value);
+
+    let rooms = state.value.status;
+
+    // Filtrar por habitación específica
+    if (selectedRoom.value) {
+        rooms = rooms.filter((room) => room.id === selectedRoom.value);
+    }
+
+    // Filtrar por estado de ocupación
+    rooms = rooms.filter((room) => {
+        // Determinar el estado predominante de la habitación
+        const totalBeds = room.beds.length;
+        const occupiedBeds = room.beds.filter((bed) => bed.status === 'occupied').length;
+        const reservedBeds = room.beds.filter((bed) => bed.is_reserved || bed.status === 'reserved' || bed.status === 'reservada').length;
+        const freeBeds = totalBeds - occupiedBeds - reservedBeds;
+
+        // Una habitación se considera "ocupada" si tiene al menos 1 cama ocupada
+        const hasOccupied = occupiedBeds > 0;
+        // Una habitación se considera "reservada" si tiene al menos 1 cama reservada (y no está completamente ocupada)
+        const hasReserved = reservedBeds > 0 && occupiedBeds < totalBeds;
+        // Una habitación se considera "libre" si todas las camas están libres
+        const isFree = freeBeds === totalBeds;
+
+        // Aplicar filtros
+        if (isFree && !occupancyFilters.value.free) return false;
+        if (hasReserved && !occupancyFilters.value.reserved) return false;
+        if (hasOccupied && !occupancyFilters.value.occupied) return false;
+
+        return true;
+    });
+
+    return rooms;
 });
 
 // Estadísticas generales
@@ -135,9 +173,19 @@ const getGlobalStatusSeverity = computed(() => {
     return 'success';
 });
 
-// Limpiar filtro
+// Limpiar filtro de habitación específica
 const clearFilter = () => {
     selectedRoom.value = null;
+};
+
+// Limpiar todos los filtros
+const clearAllFilters = () => {
+    selectedRoom.value = null;
+    occupancyFilters.value = {
+        occupied: true,
+        free: true,
+        reserved: true
+    };
 };
 
 // Actualizar datos
@@ -308,13 +356,44 @@ onUnmounted(() => {
                                         </template>
                                     </Select>
 
-                                    <Button v-if="selectedRoom" icon="pi pi-times" @click="clearFilter" severity="secondary" outlined size="small" v-tooltip.bottom="'Limpiar filtro'" />
+                                    <Button v-if="selectedRoom" icon="pi pi-times" @click="clearFilter" severity="secondary" outlined size="small" v-tooltip.bottom="'Limpiar filtro de habitación'" />
+                                </div>
+                            </div>
+
+                            <!-- Filtros de estado de ocupación -->
+                            <div class="filter-group occupancy-filter-group">
+                                <label class="filter-label">
+                                    <i class="pi pi-list mr-2"></i>
+                                    Estado de ocupación:
+                                </label>
+                                <div class="occupancy-filters">
+                                    <div class="occupancy-checkbox">
+                                        <Checkbox v-model="occupancyFilters.occupied" inputId="filter-occupied" :binary="true" />
+                                        <label for="filter-occupied" class="occupancy-label">
+                                            <i class="pi pi-users text-cyan-500"></i>
+                                            <span>Ocupadas</span>
+                                        </label>
+                                    </div>
+                                    <div class="occupancy-checkbox">
+                                        <Checkbox v-model="occupancyFilters.free" inputId="filter-free" :binary="true" />
+                                        <label for="filter-free" class="occupancy-label">
+                                            <i class="pi pi-check-circle text-green-500"></i>
+                                            <span>Libres</span>
+                                        </label>
+                                    </div>
+                                    <div class="occupancy-checkbox">
+                                        <Checkbox v-model="occupancyFilters.reserved" inputId="filter-reserved" :binary="true" />
+                                        <label for="filter-reserved" class="occupancy-label">
+                                            <i class="pi pi-bookmark-fill text-yellow-500"></i>
+                                            <span>Reservadas</span>
+                                        </label>
+                                    </div>
                                 </div>
                             </div>
 
                             <div class="filter-info">
-                                <Badge v-if="selectedRoom" :value="`Mostrando: ${filteredRooms.length} habitación(es)`" severity="info" />
-                                <Badge v-else :value="`Mostrando: ${globalStats.totalRooms} habitaciones`" severity="success" />
+                                <Badge :value="`Mostrando: ${filteredRooms.length} habitación(es)`" severity="info" />
+                                <Button v-if="selectedRoom || !occupancyFilters.occupied || !occupancyFilters.free || !occupancyFilters.reserved" icon="pi pi-filter-slash" label="Limpiar filtros" @click="clearAllFilters" severity="secondary" outlined size="small" />
                             </div>
                         </div>
                     </template>
@@ -612,6 +691,47 @@ onUnmounted(() => {
 
 .filter-info {
     flex-shrink: 0;
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+}
+
+/* Occupancy Filters */
+.occupancy-filter-group {
+    min-width: auto;
+}
+
+.occupancy-filters {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    flex-wrap: wrap;
+}
+
+.occupancy-checkbox {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.occupancy-label {
+    display: flex;
+    align-items: center;
+    gap: 0.375rem;
+    font-size: 0.875rem;
+    font-weight: 500;
+    color: var(--text-color);
+    cursor: pointer;
+    user-select: none;
+    transition: color 0.2s ease;
+}
+
+.occupancy-label:hover {
+    color: var(--primary-color);
+}
+
+.occupancy-label i {
+    font-size: 0.875rem;
 }
 
 /* Select Option Styles */
@@ -721,6 +841,22 @@ onUnmounted(() => {
 
     .filter-controls {
         min-width: auto;
+    }
+
+    .occupancy-filter-group {
+        flex-direction: column;
+        align-items: stretch;
+    }
+
+    .occupancy-filters {
+        gap: 0.75rem;
+        justify-content: flex-start;
+    }
+
+    .filter-info {
+        flex-direction: column;
+        align-items: stretch;
+        gap: 0.5rem;
     }
 }
 
