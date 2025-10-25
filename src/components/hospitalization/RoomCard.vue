@@ -212,6 +212,39 @@ const totalPendingTasks = computed(() => {
     });
     return count;
 });
+
+// Función para verificar si una cama tiene tareas vencidas
+const hasOverdueTasks = (bed) => {
+    if (!bed.attention) return false;
+    const attention = bed.attention;
+    if (!attention.tasks || !Array.isArray(attention.tasks)) return false;
+
+    return attention.tasks.some((task) =>
+        task.status === 'pendiente' && task.alert_status === 'vencida'
+    );
+};
+
+// Función para verificar si una cama tiene tareas por vencer
+const hasNearingDueTasks = (bed) => {
+    if (!bed.attention) return false;
+    const attention = bed.attention;
+    if (!attention.tasks || !Array.isArray(attention.tasks)) return false;
+
+    return attention.tasks.some((task) =>
+        task.status === 'pendiente' && task.alert_status === 'por_vencer'
+    );
+};
+
+// Función para verificar si una cama tiene tareas pendientes (sin alert_status o normal)
+const hasPendingTasks = (bed) => {
+    if (!bed.attention) return false;
+    const attention = bed.attention;
+    if (!attention.tasks || !Array.isArray(attention.tasks)) return false;
+
+    return attention.tasks.some((task) =>
+        task.status === 'pendiente' && (!task.alert_status || task.alert_status === 'normal')
+    );
+};
 </script>
 
 <template>
@@ -271,10 +304,17 @@ const totalPendingTasks = computed(() => {
                         'bed-indicator--occupied-female': bed.status === 'occupied' && bed.attention?.patient?.sex === 'F',
                         'bed-indicator--reserved': (bed.status === 'reserved' || bed.status === 'reservada' || bed.is_reserved) && bed.status !== 'occupied',
                         'bed-indicator--free': (bed.status === 'free' || bed.status === 'disponible') && !bed.is_reserved && bed.status !== 'occupied' && bed.status !== 'reserved' && bed.status !== 'reservada',
-                        'bed-indicator--alert': bed.attention && bed.status === 'occupied' && !bed.attention.discharge_date && !bed.attention.exit_date
+                        'bed-indicator--alert': bed.attention && bed.status === 'occupied' && !bed.attention.discharge_date && !bed.attention.exit_date,
+                        'bed-indicator--overdue': hasOverdueTasks(bed),
+                        'bed-indicator--nearing-due': !hasOverdueTasks(bed) && hasNearingDueTasks(bed),
+                        'bed-indicator--pending': !hasOverdueTasks(bed) && !hasNearingDueTasks(bed) && hasPendingTasks(bed)
                     }"
                     @click="openBedDrawer(bed)"
                 >
+                    <!-- Triángulo de advertencia para tareas por vencer -->
+                    <div v-if="!hasOverdueTasks(bed) && hasNearingDueTasks(bed)" class="warning-triangle">
+                        <i class="pi pi-exclamation-triangle"></i>
+                    </div>
                     <!-- Cama Ocupada - Vista Expandida -->
                     <div v-if="bed.status === 'occupied' && bed.attention" class="bed-content bed-content--occupied">
                         <!-- Header de la cama -->
@@ -676,6 +716,109 @@ const totalPendingTasks = computed(() => {
     50% {
         border-color: var(--orange-500);
         box-shadow: 0 0 0 8px rgba(251, 146, 60, 0);
+    }
+}
+
+/* Estilos para tareas vencidas - Parpadeo rojo */
+.bed-indicator--overdue {
+    animation: overdue-blink 1.5s ease-in-out infinite !important;
+    border-color: var(--red-600) !important;
+    position: relative;
+}
+
+@keyframes overdue-blink {
+    0%,
+    100% {
+        background-color: #fee2e2;
+        border-color: var(--red-600);
+        box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.7), 0 4px 12px rgba(239, 68, 68, 0.3);
+    }
+    50% {
+        background-color: #fca5a5;
+        border-color: var(--red-700);
+        box-shadow: 0 0 0 12px rgba(239, 68, 68, 0), 0 8px 20px rgba(239, 68, 68, 0.5);
+    }
+}
+
+/* Estilos para tareas pendientes - Parpadeo naranja */
+.bed-indicator--pending {
+    animation: pending-blink 2s ease-in-out infinite !important;
+    border-color: var(--orange-500) !important;
+    position: relative;
+}
+
+@keyframes pending-blink {
+    0%,
+    100% {
+        background-color: #ffedd5;
+        border-color: var(--orange-500);
+        box-shadow: 0 0 0 0 rgba(249, 115, 22, 0.6), 0 4px 12px rgba(249, 115, 22, 0.2);
+    }
+    50% {
+        background-color: #fed7aa;
+        border-color: var(--orange-600);
+        box-shadow: 0 0 0 10px rgba(249, 115, 22, 0), 0 6px 16px rgba(249, 115, 22, 0.4);
+    }
+}
+
+/* Estilos para tareas por vencer */
+.bed-indicator--nearing-due {
+    position: relative;
+}
+
+/* Triángulo de advertencia amarillo */
+.warning-triangle {
+    position: absolute;
+    top: -2px;
+    right: -2px;
+    z-index: 10;
+    background: linear-gradient(135deg, #fbbf24, #f59e0b);
+    color: #78350f;
+    width: 32px;
+    height: 32px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 0 8px 0 0;
+    clip-path: polygon(0 0, 100% 0, 100% 100%);
+    box-shadow: 0 2px 8px rgba(251, 191, 36, 0.5);
+    animation: warning-pulse 2s ease-in-out infinite;
+}
+
+.warning-triangle i {
+    position: absolute;
+    top: 4px;
+    right: 4px;
+    font-size: 0.75rem;
+    font-weight: bold;
+    animation: warning-shake 3s ease-in-out infinite;
+}
+
+@keyframes warning-pulse {
+    0%,
+    100% {
+        opacity: 1;
+        filter: brightness(1);
+    }
+    50% {
+        opacity: 0.85;
+        filter: brightness(1.1);
+    }
+}
+
+@keyframes warning-shake {
+    0%,
+    90%,
+    100% {
+        transform: rotate(0deg);
+    }
+    92%,
+    96% {
+        transform: rotate(-8deg);
+    }
+    94%,
+    98% {
+        transform: rotate(8deg);
     }
 }
 

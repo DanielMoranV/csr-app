@@ -1,5 +1,5 @@
 <script setup>
-import { defineEmits, defineProps, ref, watch } from 'vue';
+import { computed, defineEmits, defineProps, ref, watch } from 'vue';
 
 const props = defineProps({
     tasks: {
@@ -19,15 +19,52 @@ const props = defineProps({
 const emit = defineEmits(['create-task', 'update-task', 'delete-task']);
 
 const newTaskDescription = ref('');
+const newTaskDueDate = ref(null);
+const enableDueDate = ref(false);
+
+// Fecha mínima: ahora + 1 minuto
+const minDate = computed(() => {
+    const date = new Date();
+    date.setMinutes(date.getMinutes() + 1);
+    return date;
+});
 
 const createTask = () => {
     if (newTaskDescription.value.trim()) {
-        emit('create-task', {
+        const taskData = {
             id_attentions: props.attentionId,
             description: newTaskDescription.value.trim(),
             status: 'pendiente'
-        });
+        };
+
+        // Solo incluir due_date si está habilitado y tiene valor
+        if (enableDueDate.value && newTaskDueDate.value) {
+            const selectedDate = new Date(newTaskDueDate.value);
+
+            // Extraer componentes de fecha/hora LOCAL (no convertir a UTC)
+            // El backend con timezone America/Lima interpreta esto como hora de Lima
+            const year = selectedDate.getFullYear();
+            const month = String(selectedDate.getMonth() + 1).padStart(2, '0');
+            const day = String(selectedDate.getDate()).padStart(2, '0');
+            const hours = String(selectedDate.getHours()).padStart(2, '0');
+            const minutes = String(selectedDate.getMinutes()).padStart(2, '0');
+            const seconds = String(selectedDate.getSeconds()).padStart(2, '0');
+
+            // Formato ISO sin timezone: Laravel lo interpreta como hora de Lima
+            const localIsoString = `${year}-${month}-${day}T${hours}:${minutes}:${seconds}`;
+
+            console.log('[AttentionTasks] Fecha seleccionada:', selectedDate.toLocaleString('es-PE'));
+            console.log('[AttentionTasks] Fecha a enviar (hora Lima):', localIsoString);
+
+            taskData.due_date = localIsoString;
+        }
+
+        emit('create-task', taskData);
+
+        // Limpiar formulario
         newTaskDescription.value = '';
+        newTaskDueDate.value = null;
+        enableDueDate.value = false;
     }
 };
 
@@ -60,16 +97,19 @@ const formatDateTime = (dateString) => {
             const [year, month, day] = dateString.split('-').map(Number);
             date = new Date(year, month - 1, day);
         } else {
+            // new Date() automáticamente convierte UTC a hora local del navegador
             date = new Date(dateString);
         }
 
         if (isNaN(date)) return dateString;
+        // Usar la zona horaria local del navegador
         return date.toLocaleString('es-ES', {
             year: 'numeric',
             month: '2-digit',
             day: '2-digit',
             hour: '2-digit',
-            minute: '2-digit'
+            minute: '2-digit',
+            hour12: false
         });
     } catch (e) {
         return dateString;
@@ -96,6 +136,63 @@ const formatRelativeTime = (dateString) => {
     } else {
         return formatDateTime(dateString);
     }
+};
+
+// Formatear tiempo restante hasta due_date
+const formatTimeUntilDue = (dueDate) => {
+    if (!dueDate) return null;
+
+    // Parsear la fecha UTC del backend
+    const date = new Date(dueDate);
+    if (isNaN(date)) return null;
+
+    // Obtener la hora actual
+    const now = new Date();
+
+    // Calcular diferencia en milisegundos
+    const diffMs = date - now;
+    const absDiffMs = Math.abs(diffMs);
+
+    // Calcular unidades de tiempo
+    const diffMinutes = Math.floor(absDiffMs / (1000 * 60));
+    const diffHours = Math.floor(absDiffMs / (1000 * 60 * 60));
+    const diffDays = Math.floor(diffHours / 24);
+
+    if (diffMs < 0) {
+        // Vencida
+        if (diffMinutes < 60) {
+            return `Vencida hace ${diffMinutes} ${diffMinutes === 1 ? 'minuto' : 'minutos'}`;
+        } else if (diffHours < 24) {
+            return `Vencida hace ${diffHours} ${diffHours === 1 ? 'hora' : 'horas'}`;
+        } else {
+            return `Vencida hace ${diffDays} ${diffDays === 1 ? 'día' : 'días'}`;
+        }
+    } else {
+        // Pendiente
+        if (diffMinutes < 60) {
+            return `Vence en ${diffMinutes} ${diffMinutes === 1 ? 'minuto' : 'minutos'}`;
+        } else if (diffHours < 24) {
+            return `Vence en ${diffHours} ${diffHours === 1 ? 'hora' : 'horas'}`;
+        } else {
+            return `Vence en ${diffDays} ${diffDays === 1 ? 'día' : 'días'}`;
+        }
+    }
+};
+
+// Obtener severidad de la alerta
+const getAlertSeverity = (task) => {
+    if (!task.alert_status) return null;
+    if (task.alert_status === 'vencida') return 'danger';
+    if (task.alert_status === 'por_vencer') return 'warn';
+    return null;
+};
+
+// Obtener icono de alerta
+const getAlertIcon = (task) => {
+    if (!task.alert_status) return null;
+    if (task.alert_status === 'vencida') return 'pi pi-exclamation-circle';
+    if (task.alert_status === 'por_vencer') return 'pi pi-clock';
+    return null;
 };
 
 const getStatusChangeInfo = (task) => {
@@ -227,22 +324,84 @@ watch(
 <template>
     <div class="p-4">
         <!-- New Task Input -->
-        <div v-if="!readOnly" class="flex gap-2 mb-4">
-            <InputText v-model="newTaskDescription" placeholder="Nueva tarea..." class="flex-grow" @keyup.enter="createTask" />
-            <Button icon="pi pi-plus" @click="createTask" :disabled="!newTaskDescription.trim()" />
+        <div v-if="!readOnly" class="space-y-3 mb-4">
+            <!-- Descripción de la tarea -->
+            <div class="flex gap-2">
+                <InputText v-model="newTaskDescription" placeholder="Nueva tarea..." class="flex-grow" @keyup.enter="createTask" />
+                <Button icon="pi pi-plus" @click="createTask" :disabled="!newTaskDescription.trim() || (enableDueDate && !newTaskDueDate)" />
+            </div>
+
+            <!-- Opciones de fecha límite -->
+            <div class="border rounded-lg p-3 bg-gray-50">
+                <div class="flex items-center gap-2 mb-2">
+                    <Checkbox v-model="enableDueDate" inputId="enableDueDate" :binary="true" />
+                    <label for="enableDueDate" class="font-medium text-sm cursor-pointer">Establecer fecha límite (opcional)</label>
+                </div>
+
+                <!-- DatePicker para due_date -->
+                <div v-if="enableDueDate" class="ml-6">
+                    <DatePicker v-model="newTaskDueDate" :minDate="minDate" showTime hourFormat="24" showIcon iconDisplay="input" dateFormat="dd/mm/yy" placeholder="Seleccionar fecha y hora límite" class="w-full" />
+                    <small class="text-gray-500 block mt-1">
+                        <i class="pi pi-info-circle mr-1"></i>
+                        La tarea generará alertas automáticas al alcanzar el 80% del tiempo y al vencer.
+                    </small>
+                </div>
+            </div>
         </div>
 
         <!-- Task List -->
         <div v-if="tasks.length > 0" class="flex flex-col gap-3">
-            <div v-for="task in tasks" :key="task.id" class="border rounded-lg p-3 hover:shadow-md transition-shadow">
+            <div v-for="task in tasks" :key="task.id" class="border rounded-lg p-3 hover:shadow-md transition-shadow" :data-alert="task.alert_status || null">
                 <!-- Task Header -->
                 <div class="flex items-start justify-between mb-2">
                     <div class="flex-grow">
-                        <div class="flex items-center gap-2 mb-1">
+                        <div class="flex items-center gap-2 mb-1 flex-wrap">
                             <span :class="{ 'line-through text-gray-500': task.status === 'realizado' || task.status === 'anulado' }" class="font-medium">
                                 {{ task.description }}
                             </span>
                             <Tag :value="task.status" :severity="getStatusSeverity(task.status)" class="text-xs" />
+
+                            <!-- Alerta visual si tiene alert_status -->
+                            <Tag v-if="task.alert_status && task.status === 'pendiente'" :severity="getAlertSeverity(task)" class="text-xs">
+                                <i :class="getAlertIcon(task)" class="mr-1"></i>
+                                {{ task.alert_status === 'vencida' ? 'VENCIDA' : 'POR VENCER' }}
+                            </Tag>
+                        </div>
+
+                        <!-- Due Date Info -->
+                        <div v-if="task.due_date" class="mb-2 px-3 py-2 rounded" :class="{ 'bg-blue-50 border-l-4 border-blue-400': !task.completed_at, 'bg-green-50 border-l-4 border-green-500': task.is_completed_on_time, 'bg-orange-50 border-l-4 border-orange-500': task.is_completed_late }">
+                            <div class="flex items-center gap-2 text-sm">
+                                <i class="pi pi-calendar" :class="{ 'text-blue-600': !task.completed_at, 'text-green-600': task.is_completed_on_time, 'text-orange-600': task.is_completed_late }"></i>
+                                <span class="font-medium" :class="{ 'text-blue-900': !task.completed_at, 'text-green-900': task.is_completed_on_time, 'text-orange-900': task.is_completed_late }">Fecha límite:</span>
+                                <span :class="{ 'text-blue-700': !task.completed_at, 'text-green-700': task.is_completed_on_time, 'text-orange-700': task.is_completed_late }">{{ formatDateTime(task.due_date) }}</span>
+                            </div>
+
+                            <!-- Tiempo restante o vencimiento (solo si NO está completada) -->
+                            <div
+                                v-if="!task.completed_at && formatTimeUntilDue(task.due_date)"
+                                class="flex items-center gap-2 text-sm mt-1"
+                                :class="{ 'text-red-600 font-semibold': task.alert_status === 'vencida', 'text-amber-600 font-medium': task.alert_status === 'por_vencer', 'text-blue-600': !task.alert_status }"
+                            >
+                                <i :class="task.alert_status === 'vencida' ? 'pi pi-exclamation-triangle' : task.alert_status === 'por_vencer' ? 'pi pi-clock' : 'pi pi-hourglass'"></i>
+                                <span>{{ formatTimeUntilDue(task.due_date) }}</span>
+                            </div>
+
+                            <!-- Información de completado -->
+                            <div v-if="task.completed_at" class="mt-2 pt-2 border-t" :class="{ 'border-green-200': task.is_completed_on_time, 'border-orange-200': task.is_completed_late }">
+                                <div class="flex items-center gap-2 text-sm">
+                                    <i class="pi pi-check-circle" :class="{ 'text-green-600': task.is_completed_on_time, 'text-orange-600': task.is_completed_late }"></i>
+                                    <span class="font-medium" :class="{ 'text-green-900': task.is_completed_on_time, 'text-orange-900': task.is_completed_late }">Completado:</span>
+                                    <span :class="{ 'text-green-700': task.is_completed_on_time, 'text-orange-700': task.is_completed_late }">{{ formatDateTime(task.completed_at) }}</span>
+                                </div>
+                                <div v-if="task.is_completed_late" class="flex items-center gap-2 text-sm mt-1 text-orange-700 font-medium">
+                                    <i class="pi pi-exclamation-circle"></i>
+                                    <span>Completada fuera de plazo</span>
+                                </div>
+                                <div v-if="task.is_completed_on_time" class="flex items-center gap-2 text-sm mt-1 text-green-700 font-medium">
+                                    <i class="pi pi-check"></i>
+                                    <span>Completada a tiempo</span>
+                                </div>
+                            </div>
                         </div>
 
                         <!-- Timestamps y Usuario Info -->
@@ -320,5 +479,47 @@ watch(
 /* Hover effects for task cards */
 .border:hover {
     border-color: #cbd5e1;
+}
+
+/* Space utility for form */
+.space-y-3 > * + * {
+    margin-top: 0.75rem;
+}
+
+/* Alert borders for overdue tasks */
+.border-rounded-lg:has([data-alert='vencida']) {
+    border-left: 4px solid #ef4444;
+}
+
+.border-rounded-lg:has([data-alert='por_vencer']) {
+    border-left: 4px solid #f59e0b;
+}
+
+/* Due date info box animations */
+.bg-blue-50,
+.bg-green-50,
+.bg-orange-50 {
+    transition: all 0.2s ease;
+}
+
+.bg-blue-50:hover {
+    background-color: #dbeafe;
+}
+
+.bg-green-50:hover {
+    background-color: #dcfce7;
+}
+
+.bg-orange-50:hover {
+    background-color: #ffedd5;
+}
+
+/* Border colors for completed tasks */
+.border-green-200 {
+    border-color: #bbf7d0;
+}
+
+.border-orange-200 {
+    border-color: #fed7aa;
 }
 </style>

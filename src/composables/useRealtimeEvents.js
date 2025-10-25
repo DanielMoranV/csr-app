@@ -194,6 +194,32 @@ export function useRealtimeEvents(options = {}) {
                     if (updateHospitalization) {
                         hospitalizationStore.handleTaskDeleted(e);
                     }
+                })
+                .listen('.task.nearing-due', (e) => {
+                    console.log('[RealtimeEvents] 🟡 Tarea por vencer:', e);
+                    // Refrescar datos para obtener el estado actualizado con alert_status
+                    if (updateHospitalization) {
+                        hospitalizationStore.fetchHospitalizationStatus();
+                    }
+                    if (updateAttentions) {
+                        hospitalAttentionsStore.fetchAttentions();
+                    }
+                    if (updateDashboard) {
+                        dashboardStore.handleDashboardTaskEvent(e);
+                    }
+                })
+                .listen('.task.overdue', (e) => {
+                    console.log('[RealtimeEvents] 🔴 Tarea vencida:', e);
+                    // Refrescar datos para obtener el estado actualizado con alert_status
+                    if (updateHospitalization) {
+                        hospitalizationStore.fetchHospitalizationStatus();
+                    }
+                    if (updateAttentions) {
+                        hospitalAttentionsStore.fetchAttentions();
+                    }
+                    if (updateDashboard) {
+                        dashboardStore.handleDashboardTaskEvent(e);
+                    }
                 });
         }
 

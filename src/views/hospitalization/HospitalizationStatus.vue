@@ -101,6 +101,8 @@ const globalStats = computed(() => {
             freeBeds: 0,
             occupancyRate: 0,
             totalTasks: 0,
+            tasksNearingDue: 0,
+            tasksOverdue: 0,
             alertRooms: 0,
             roomTypes: {}
         };
@@ -108,6 +110,8 @@ const globalStats = computed(() => {
     let totalBeds = 0;
     let occupiedBeds = 0;
     let totalTasks = 0;
+    let tasksNearingDue = 0;
+    let tasksOverdue = 0;
     let alertRooms = 0;
     const roomTypes = {};
 
@@ -129,9 +133,20 @@ const globalStats = computed(() => {
                 occupiedBeds++;
                 hasOccupiedBed = true;
 
-                // Contar tareas pendientes
+                // Contar tareas pendientes y alertas
                 if (bed.attention.tasks) {
-                    totalTasks += bed.attention.tasks.filter((task) => task.status === 'pendiente').length;
+                    bed.attention.tasks.forEach((task) => {
+                        if (task.status === 'pendiente') {
+                            totalTasks++;
+
+                            // Contar tareas por vencer y vencidas según alert_status
+                            if (task.alert_status === 'por_vencer') {
+                                tasksNearingDue++;
+                            } else if (task.alert_status === 'vencida') {
+                                tasksOverdue++;
+                            }
+                        }
+                    });
                 }
             }
         });
@@ -141,9 +156,14 @@ const globalStats = computed(() => {
             roomTypes[room.room_type].occupied++;
         }
 
-        // Verificar si la habitación tiene alertas (tareas pendientes)
+        // Verificar si la habitación tiene alertas (tareas pendientes, por vencer o vencidas)
         const hasAlerts = room.beds.some((bed) => {
-            return bed.status === 'occupied' && bed.attention && bed.attention.tasks && bed.attention.tasks.some((task) => task.status === 'pendiente');
+            return (
+                bed.status === 'occupied' &&
+                bed.attention &&
+                bed.attention.tasks &&
+                bed.attention.tasks.some((task) => task.status === 'pendiente' && (task.alert_status === 'por_vencer' || task.alert_status === 'vencida'))
+            );
         });
 
         if (hasAlerts) alertRooms++;
@@ -159,6 +179,8 @@ const globalStats = computed(() => {
         freeBeds,
         occupancyRate,
         totalTasks,
+        tasksNearingDue,
+        tasksOverdue,
         alertRooms,
         roomTypes
     };
@@ -238,9 +260,7 @@ onUnmounted(() => {
                     </div>
 
                     <Button icon="pi pi-refresh" :loading="state.isLoading" @click="refreshData" severity="secondary" outlined v-tooltip.bottom="'Actualizar datos manualmente'" />
-                    <Button :icon="showStats ? 'pi pi-eye-slash' : 'pi pi-eye'" @click="showStats = !showStats" severity="secondary" outlined :label="showStats ? 'Ocultar estadísticas' : 'Mostrar estadísticas'">
-                        <template #loadingicon="slotProps"></template>
-                    </Button>
+                    <Button :icon="showStats ? 'pi pi-eye-slash' : 'pi pi-eye'" @click="showStats = !showStats" severity="secondary" outlined :label="showStats ? 'Ocultar estadísticas' : 'Mostrar estadísticas'" />
                 </div>
             </div>
 
@@ -303,15 +323,43 @@ onUnmounted(() => {
                         </template>
                     </Card>
 
-                    <Card v-if="globalStats.totalTasks > 0" class="stat-card stat-card--danger">
+                    <Card v-if="globalStats.totalTasks > 0" class="stat-card stat-card--info-dark">
                         <template #content>
                             <div class="stat-content">
                                 <div class="stat-icon">
-                                    <i class="pi pi-exclamation-triangle"></i>
+                                    <i class="pi pi-list-check"></i>
                                 </div>
                                 <div class="stat-info">
                                     <div class="stat-value">{{ globalStats.totalTasks }}</div>
                                     <div class="stat-label">Tareas Pendientes</div>
+                                </div>
+                            </div>
+                        </template>
+                    </Card>
+
+                    <Card v-if="globalStats.tasksNearingDue > 0" class="stat-card stat-card--warning-alert">
+                        <template #content>
+                            <div class="stat-content">
+                                <div class="stat-icon">
+                                    <i class="pi pi-clock"></i>
+                                </div>
+                                <div class="stat-info">
+                                    <div class="stat-value">{{ globalStats.tasksNearingDue }}</div>
+                                    <div class="stat-label">Por Vencer</div>
+                                </div>
+                            </div>
+                        </template>
+                    </Card>
+
+                    <Card v-if="globalStats.tasksOverdue > 0" class="stat-card stat-card--danger">
+                        <template #content>
+                            <div class="stat-content">
+                                <div class="stat-icon">
+                                    <i class="pi pi-exclamation-circle"></i>
+                                </div>
+                                <div class="stat-info">
+                                    <div class="stat-value">{{ globalStats.tasksOverdue }}</div>
+                                    <div class="stat-label">Vencidas</div>
                                 </div>
                             </div>
                         </template>
@@ -325,7 +373,7 @@ onUnmounted(() => {
                                 </div>
                                 <div class="stat-info">
                                     <div class="stat-value">{{ globalStats.alertRooms }}</div>
-                                    <div class="stat-label">Con Alertas</div>
+                                    <div class="stat-label">Habitaciones con Alertas</div>
                                 </div>
                             </div>
                         </template>
@@ -603,6 +651,14 @@ onUnmounted(() => {
 
 .stat-card--alert {
     border-left: 4px solid var(--yellow-500);
+}
+
+.stat-card--info-dark {
+    border-left: 4px solid var(--indigo-500);
+}
+
+.stat-card--warning-alert {
+    border-left: 4px solid var(--amber-500);
 }
 
 .stat-content {
