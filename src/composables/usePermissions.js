@@ -43,8 +43,8 @@ export const PERMISSION_GROUPS = {
     ALL_ACCESS: [USER_POSITIONS.SISTEMAS, USER_POSITIONS.DIRECTOR_MEDICO, USER_POSITIONS.ADMINISTRACION],
 
     // Acciones peligrosas (eliminar, etc.)
-    // Para modificar o añadir más posiciones de usuario con permisos para realizar acciones peligrosas, 
-    // edita este array. Por ejemplo, para incluir a 'ADMINISTRACION': 
+    // Para modificar o añadir más posiciones de usuario con permisos para realizar acciones peligrosas,
+    // edita este array. Por ejemplo, para incluir a 'ADMINISTRACION':
     // DANGER_ZONE: [USER_POSITIONS.SISTEMAS, USER_POSITIONS.ADMINISTRACION]
     DANGER_ZONE: [USER_POSITIONS.SISTEMAS]
 };
