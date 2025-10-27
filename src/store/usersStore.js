@@ -140,11 +140,13 @@ export const useUsersStore = defineStore('users', () => {
             errors.name = ['El nombre no puede exceder 255 caracteres'];
         }
 
-        // Validar DNI
-        if (!userData.dni?.trim()) {
-            errors.dni = ['El DNI es obligatorio'];
-        } else if (!/^\d{8}$/.test(userData.dni.trim())) {
-            errors.dni = ['El DNI debe tener exactamente 8 dígitos'];
+        // Validar DNI (solo para creación)
+        if (!isEditing) {
+            if (!userData.dni?.trim()) {
+                errors.dni = ['El DNI es obligatorio'];
+            } else if (!/^\d{8}$/.test(userData.dni.trim())) {
+                errors.dni = ['El DNI debe tener exactamente 8 dígitos'];
+            }
         }
 
         // Validar email
