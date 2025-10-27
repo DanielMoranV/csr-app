@@ -133,6 +133,10 @@ export function useRooms() {
     };
 
     const toggleBedStatus = async (bed) => {
+        if (bed.is_occupied) {
+            toast.add({ severity: 'error', summary: 'Error', detail: 'No se puede desactivar una cama ocupada.', life: 5000 });
+            return;
+        }
         operationInProgress.value = true;
         const action = bed.is_active ? 'desactivada' : 'activada';
         try {

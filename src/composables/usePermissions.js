@@ -40,7 +40,13 @@ export const PERMISSION_GROUPS = {
     SYSTEM_ADMIN: [USER_POSITIONS.SISTEMAS, USER_POSITIONS.ADMINISTRACION],
 
     // Acceso completo
-    ALL_ACCESS: [USER_POSITIONS.SISTEMAS, USER_POSITIONS.DIRECTOR_MEDICO, USER_POSITIONS.ADMINISTRACION]
+    ALL_ACCESS: [USER_POSITIONS.SISTEMAS, USER_POSITIONS.DIRECTOR_MEDICO, USER_POSITIONS.ADMINISTRACION],
+
+    // Acciones peligrosas (eliminar, etc.)
+    // Para modificar o añadir más posiciones de usuario con permisos para realizar acciones peligrosas, 
+    // edita este array. Por ejemplo, para incluir a 'ADMINISTRACION': 
+    // DANGER_ZONE: [USER_POSITIONS.SISTEMAS, USER_POSITIONS.ADMINISTRACION]
+    DANGER_ZONE: [USER_POSITIONS.SISTEMAS]
 };
 
 export function usePermissions() {
@@ -104,6 +110,11 @@ export function usePermissions() {
         return belongsToGroup('SUPPORT_STAFF');
     });
 
+    // Verificar si el usuario puede realizar acciones peligrosas
+    const canPerformDangerousActions = computed(() => {
+        return belongsToGroup('DANGER_ZONE');
+    });
+
     // Filtrar items de menú basado en permisos
     const filterMenuItems = (items) => {
         if (!Array.isArray(items)) return [];
@@ -149,6 +160,7 @@ export function usePermissions() {
         isAdministrativeStaff,
         isTechnicalStaff,
         isSupportStaff,
+        canPerformDangerousActions,
 
         // Utilidades
         filterMenuItems,

@@ -9,6 +9,10 @@ defineProps({
     loading: {
         type: Boolean,
         default: false
+    },
+    canDelete: {
+        type: Boolean,
+        default: false
     }
 });
 
@@ -28,7 +32,7 @@ const getSeverity = (isActive) => (isActive ? 'success' : 'danger');
 </script>
 
 <template>
-    <DataTable :value="rooms" :loading="loading" paginator :rows="10" responsiveLayout="scroll" v-model:expandedRows="expandedRows" dataKey="id">
+    <DataTable :value="rooms" :loading="loading" paginator :rows="10" responsiveLayout="stack" v-model:expandedRows="expandedRows" dataKey="id">
         <template #empty> No se encontraron habitaciones. </template>
         <template #loading> Cargando habitaciones... </template>
 
@@ -48,8 +52,8 @@ const getSeverity = (isActive) => (isActive ? 'success' : 'danger');
         <Column header="Acciones" style="min-width: 12rem">
             <template #body="{ data }">
                 <Button icon="pi pi-pencil" class="p-button-rounded p-button-success mr-2" @click="editRoom(data)" />
-                <Button icon="pi pi-power-off" class="p-button-rounded p-button-warning mr-2" @click="toggleStatus(data)" v-tooltip.bottom="data.is_active ? 'Desactivar' : 'Activar'" />
-                <Button icon="pi pi-trash" class="p-button-rounded p-button-danger" @click="deleteRoom(data)" />
+                <InputSwitch :modelValue="data.is_active" @update:modelValue="toggleStatus(data)" class="mr-2" />
+                <Button icon="pi pi-trash" class="p-button-rounded p-button-danger" @click="deleteRoom(data)" v-if="canDelete" />
             </template>
         </Column>
 
@@ -59,23 +63,28 @@ const getSeverity = (isActive) => (isActive ? 'success' : 'danger');
                     <h5>Camas en la Habitación {{ data.number }}</h5>
                     <Button icon="pi pi-plus" label="Añadir Cama" class="p-button-sm" @click="addBed(data.id)" />
                 </div>
-                <DataTable :value="data.beds">
+                <DataTable :value="data.beds" responsiveLayout="stack">
                     <Column field="name" header="Cama"></Column>
-                    <Column field="is_occupied" header="Estado">
+                    <Column field="is_occupied" header="Estado Ocupación">
                         <template #body="{ data: bedData }">
                             <Tag :value="bedData.is_occupied ? 'Ocupada' : 'Libre'" :severity="bedData.is_occupied ? 'danger' : 'success'" />
+                        </template>
+                    </Column>
+                    <Column header="Activa">
+                        <template #body="{ data: bedData }">
+                            <InputSwitch :modelValue="bedData.is_active" @update:modelValue="toggleBedStatus(bedData)" :disabled="bedData.is_occupied" />
                         </template>
                     </Column>
                     <Column header="Acciones">
                         <template #body="{ data: bedData }">
                             <Button icon="pi pi-pencil" class="p-button-rounded p-button-success mr-2" @click="editBed(bedData)" />
-                            <Button icon="pi pi-power-off" class="p-button-rounded p-button-warning mr-2" @click="toggleBedStatus(bedData)" v-tooltip.bottom="bedData.is_occupied ? 'Marcar Libre' : 'Marcar Ocupada'" />
                             <Button
                                 icon="pi pi-trash"
                                 class="p-button-rounded p-button-danger"
                                 @click="deleteBed(bedData)"
                                 :disabled="bedData.is_occupied"
                                 v-tooltip.bottom="bedData.is_occupied ? 'No se puede eliminar una cama ocupada' : 'Eliminar cama'"
+                                v-if="canDelete"
                             />
                         </template>
                     </Column>

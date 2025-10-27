@@ -4,9 +4,11 @@ import ConfirmDeleteDialog from '@/components/rooms/ConfirmDeleteDialog.vue';
 import RoomDialog from '@/components/rooms/RoomDialog.vue';
 import RoomTable from '@/components/rooms/RoomTable.vue';
 import { useRooms } from '@/composables/useRooms';
+import { usePermissions } from '@/composables/usePermissions';
 import { onMounted, ref } from 'vue';
 
 const { rooms, isLoading, fetchRooms, createRoom, updateRoom, deleteRoom, toggleRoomStatus, addBed, updateBed, deleteBed, toggleBedStatus } = useRooms();
+const { canPerformDangerousActions } = usePermissions();
 
 const roomDialogVisible = ref(false);
 const bedDialogVisible = ref(false);
@@ -115,6 +117,7 @@ const handleSaveBed = async (bedData) => {
             @edit-bed="editBed"
             @delete-bed="confirmDeleteBed"
             @toggle-bed-status="toggleBedStatus"
+            :can-delete="canPerformDangerousActions"
         />
 
         <RoomDialog v-model:visible="roomDialogVisible" :room="selectedRoom" :editing="isEditingRoom" @save="handleSaveRoom" />
