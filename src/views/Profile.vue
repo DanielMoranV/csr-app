@@ -151,16 +151,33 @@ const saveProfile = async () => {
 const changePassword = async () => {
     if (!validatePasswordForm()) return;
     changingPassword.value = true;
+    passwordErrors.value = {};
     try {
         await profile.changePassword({
             current_password: passwordData.value.current,
-            new_password: passwordData.value.new,
-            new_password_confirmation: passwordData.value.confirm
+            password: passwordData.value.new,
+            password_confirmation: passwordData.value.confirm
         });
-        showToast('success', 'Contraseña Cambiada');
+        showToast('success', 'Contraseña actualizada exitosamente');
         passwordData.value = { current: '', new: '', confirm: '' };
         passwordErrors.value = {};
     } catch (error) {
+        if (error.response && error.response.status === 422 && error.response.data.errors) {
+            const backendErrors = error.response.data.errors;
+            const newPasswordErrors = {};
+            if (backendErrors.current_password) {
+                newPasswordErrors.current = backendErrors.current_password[0];
+            }
+            if (backendErrors.password) {
+                const passwordErrorText = backendErrors.password[0];
+                if (passwordErrorText.toLowerCase().includes('coinciden')) {
+                    newPasswordErrors.confirm = passwordErrorText;
+                } else {
+                    newPasswordErrors.new = passwordErrorText;
+                }
+            }
+            passwordErrors.value = newPasswordErrors;
+        }
         showToast('error', error.response?.data?.message || 'No se pudo cambiar la contraseña');
     } finally {
         changingPassword.value = false;
