@@ -183,10 +183,7 @@ export const useUsersStore = defineStore('users', () => {
                 errors.password = ['La contraseña es obligatoria'];
             } else if (userData.password.length < 8) {
                 errors.password = ['La contraseña debe tener al menos 8 caracteres'];
-            } else if (!/(?=.*[a-z])(?=.*[A-Z])(?=.*\d)/.test(userData.password)) {
-                errors.password = ['La contraseña debe contener al menos: 1 minúscula, 1 mayúscula y 1 número'];
             }
-
             if (userData.password !== userData.password_confirmation) {
                 errors.password_confirmation = ['Las contraseñas no coinciden'];
             }
