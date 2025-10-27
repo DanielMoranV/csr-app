@@ -341,11 +341,13 @@ export const useUsersStore = defineStore('users', () => {
             const existingUser = state.users.find((u) => u.id === id);
             const changedData = {};
 
-            Object.entries(errors).forEach(([field, messages]) => {
-                if (existingUser[key] !== value) {
-                    changedData[key] = value;
-                }
-            });
+            if (existingUser) {
+                Object.entries(cleanData).forEach(([key, value]) => {
+                    if (existingUser[key] !== value) {
+                        changedData[key] = value;
+                    }
+                });
+            }
 
             if (Object.keys(changedData).length === 0) {
                 throw {
