@@ -157,6 +157,10 @@ const validateField = (fieldName) => {
             break;
 
         case 'dni':
+            if (isEditing.value) {
+                delete validationErrors.value.dni;
+                break;
+            }
             if (!userForm.dni) {
                 validationErrors.value.dni = 'El DNI es obligatorio';
             } else if (!/^\d{8}$/.test(userForm.dni)) {
@@ -236,17 +240,15 @@ const validateField = (fieldName) => {
 };
 
 const validateAllFields = () => {
-    const fieldsToValidate = ['name', 'dni', 'email', 'phone', 'position', 'nick'];
+    let fieldsToValidate = ['name', 'email', 'phone', 'position', 'nick'];
 
     if (!isEditing.value) {
-        fieldsToValidate.push('password', 'password_confirmation');
+        fieldsToValidate.push('dni', 'password', 'password_confirmation');
     }
 
     fieldsToValidate.forEach((field) => {
         validateField(field);
-    });
-
-    return Object.keys(validationErrors.value).length === 0;
+    });    return Object.keys(validationErrors.value).length === 0;
 };
 
 const getFieldError = (fieldName) => {
