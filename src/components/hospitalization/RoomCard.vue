@@ -2,6 +2,7 @@
 import CudyrBadge from '@/components/cudyr/CudyrBadge.vue';
 import Badge from 'primevue/badge';
 import Tag from 'primevue/tag';
+import { useToast } from 'primevue/usetoast';
 import { computed, defineEmits, ref } from 'vue';
 import BedDrawer from './BedDrawer.vue';
 
@@ -13,6 +14,21 @@ const props = defineProps({
 });
 
 const emit = defineEmits(['refresh-data']);
+
+const toast = useToast();
+
+// Función para copiar al portapapeles
+const copyToClipboard = (text) => {
+    navigator.clipboard
+        .writeText(text)
+        .then(() => {
+            toast.add({ severity: 'success', summary: 'Copiado', detail: 'Número de admisión copiado al portapapeles', life: 3000 });
+        })
+        .catch((err) => {
+            console.error('Error al copiar: ', err);
+            toast.add({ severity: 'error', summary: 'Error', detail: 'No se pudo copiar el texto', life: 3000 });
+        });
+};
 
 // Estado del drawer
 const drawerVisible = ref(false);
@@ -33,6 +49,17 @@ const handleRefreshData = () => {
 const getPendingTasksCount = (tasks) => {
     if (!tasks || !Array.isArray(tasks)) return 0;
     return tasks.filter((task) => task.status === 'pendiente').length;
+};
+
+const getTasksTooltip = (tasks) => {
+    if (!tasks || !Array.isArray(tasks) || tasks.length === 0) {
+        return 'No hay tareas asociadas';
+    }
+    const pendingTasksCount = getPendingTasksCount(tasks);
+    if (pendingTasksCount === 0) {
+        return 'Todas las tareas completadas';
+    }
+    return `${pendingTasksCount} de ${tasks.length} tareas pendientes`;
 };
 
 // Función para obtener el detalle más reciente (o combinado)
@@ -331,7 +358,7 @@ const hasPendingTasks = (bed) => {
                                 <i v-if="bed.notes" class="pi pi-file-edit text-info" title="Tiene notas"></i>
                                 <i v-if="hasDetailField(bed.attention.details, 'ram')" class="pi pi-exclamation-circle text-warning" title="Tiene RAM registradas"></i>
                                 <i v-if="!bed.attention.discharge_date && !bed.attention.exit_date" class="pi pi-exclamation-triangle text-danger" title="Sin alta/salida registrada"></i>
-                                <Badge v-if="getPendingTasksCount(bed.attention.tasks)" :value="getPendingTasksCount(bed.attention.tasks)" severity="danger" size="small" title="Tareas pendientes" />
+                                <Badge v-if="getPendingTasksCount(bed.attention.tasks)" :value="getPendingTasksCount(bed.attention.tasks)" severity="danger" size="small" v-tooltip.top="getTasksTooltip(bed.attention.tasks)" />
                             </div>
                         </div>
 
@@ -357,7 +384,10 @@ const hasPendingTasks = (bed) => {
                                 <span>{{ truncateText(bed.attention.doctor, 22) }}</span>
                             </div>
                             <div class="patient-sub-info">
-                                <span class="sub-info-item" :title="bed.attention.number"> <i class="pi pi-hashtag"></i> {{ bed.attention.number }} </span>
+                                <span class="sub-info-item" :title="bed.attention.number">
+                                    <i class="pi pi-hashtag"></i> {{ bed.attention.number }}
+                                    <i class="pi pi-copy copy-icon" @click.stop="copyToClipboard(bed.attention.number)" v-tooltip.top="'Copiar número de admisión'"></i>
+                                </span>
                                 <span class="sub-info-item" :title="bed.attention.patient.document_number"> <i class="pi pi-id-card"></i> {{ bed.attention.patient.document_number }} </span>
                                 <span class="sub-info-item" :title="getSexLabel(bed.attention.patient.sex)"> <i :class="`pi ${getSexIcon(bed.attention.patient.sex)}`"></i> {{ bed.attention.patient.sex }} </span>
                                 <span class="sub-info-item" title="Edad"> <i class="pi pi-calendar-plus"></i> {{ formatAge(bed.attention.patient.age) }} </span>
@@ -366,12 +396,43 @@ const hasPendingTasks = (bed) => {
 
                         <!-- Indicadores médicos importantes -->
                         <div class="medical-indicators">
-                            <CudyrBadge v-if="getCudyrCategory(bed.attention.details)" :category="getCudyrCategory(bed.attention.details)" size="small" :show-icon="true" :show-label="false" />
-                            <Tag v-if="hasDetailField(bed.attention.details, 'ram')" value="RAM" severity="warn" class="indicator-tag" title="Reacciones Alérgicas a Medicamentos" />
-                            <Tag v-if="hasDetailField(bed.attention.details, 'medical_order')" value="Órdenes" severity="info" class="indicator-tag" />
-                            <Tag v-if="hasDetailField(bed.attention.details, 'interconsultation')" value="Interconsulta" severity="secondary" class="indicator-tag" />
-                            <Tag v-if="hasDetailField(bed.attention.details, 'laboratory_exams')" value="Lab" severity="success" class="indicator-tag" />
-                            <Tag v-if="hasDetailField(bed.attention.details, 'images_exams')" value="Imágenes" severity="info" class="indicator-tag" />
+                            <CudyrBadge
+                                v-if="getCudyrCategory(bed.attention.details)"
+                                :category="getCudyrCategory(bed.attention.details)"
+                                size="small"
+                                :show-icon="true"
+                                :show-label="false"
+                                v-tooltip.top="`Evaluación CUDYR: ${getCudyrCategory(bed.attention.details)}`"
+                            />
+                            <Tag v-if="hasDetailField(bed.attention.details, 'ram')" value="RAM" severity="warn" class="indicator-tag" v-tooltip.top="getLatestDetails(bed.attention.details)?.ram || 'Reacciones Alérgicas a Medicamentos'" />
+                            <Tag
+                                v-if="hasDetailField(bed.attention.details, 'medical_order')"
+                                value="Órdenes"
+                                severity="info"
+                                class="indicator-tag"
+                                v-tooltip.top="getLatestDetails(bed.attention.details)?.medical_order || 'Tiene órdenes médicas registradas'"
+                            />
+                            <Tag
+                                v-if="hasDetailField(bed.attention.details, 'interconsultation')"
+                                value="Interconsulta"
+                                severity="secondary"
+                                class="indicator-tag"
+                                v-tooltip.top="getLatestDetails(bed.attention.details)?.interconsultation || 'Tiene interconsultas registradas'"
+                            />
+                            <Tag
+                                v-if="hasDetailField(bed.attention.details, 'laboratory_exams')"
+                                value="Lab"
+                                severity="success"
+                                class="indicator-tag"
+                                v-tooltip.top="getLatestDetails(bed.attention.details)?.laboratory_exams || 'Tiene exámenes de laboratorio registrados'"
+                            />
+                            <Tag
+                                v-if="hasDetailField(bed.attention.details, 'images_exams')"
+                                value="Imágenes"
+                                severity="info"
+                                class="indicator-tag"
+                                v-tooltip.top="getLatestDetails(bed.attention.details)?.images_exams || 'Tiene exámenes de imágenes registrados'"
+                            />
                         </div>
                     </div>
 
@@ -984,6 +1045,17 @@ const hasPendingTasks = (bed) => {
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
+}
+
+.copy-icon {
+    cursor: pointer;
+    margin-left: 0.5rem;
+    color: var(--primary-color);
+    font-size: 0.8rem;
+}
+
+.copy-icon:hover {
+    color: var(--primary-600);
 }
 
 .sex-icon {

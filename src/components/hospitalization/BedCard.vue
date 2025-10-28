@@ -87,6 +87,18 @@ const formatDate = (dateString) => {
 const getPendingTasks = (tasks) => {
     return tasks ? tasks.filter((task) => task.status === 'pendiente') : [];
 };
+
+// Función para generar el tooltip de las tareas
+const getTasksTooltip = (tasks) => {
+    if (!tasks || tasks.length === 0) {
+        return 'No hay tareas asociadas';
+    }
+    const pendingTasks = getPendingTasks(tasks);
+    if (pendingTasks.length === 0) {
+        return 'Todas las tareas completadas';
+    }
+    return `${pendingTasks.length} de ${tasks.length} tareas pendientes`;
+};
 </script>
 
 <template>
@@ -126,9 +138,9 @@ const getPendingTasks = (tasks) => {
 
                     <!-- Indicadores rápidos -->
                     <div class="flex align-items-center gap-2 mt-2">
-                        <Tag v-if="att.details?.ram" value="RAM" severity="warn" class="text-xs" />
-                        <Tag v-if="att.details?.medical_order" value="Órdenes" severity="info" class="text-xs" />
-                        <Tag v-if="att.tasks?.length" :value="`${att.tasks.length} tareas`" :severity="getPendingTasks(att.tasks).length > 0 ? 'warning' : 'success'" class="text-xs" />
+                        <Tag v-if="att.details?.ram" value="RAM" severity="warn" class="text-xs" v-tooltip.top="'Paciente con Reacciones Alérgicas a Medicamentos (RAM)'" />
+                        <Tag v-if="att.details?.medical_order" value="Órdenes" severity="info" class="text-xs" v-tooltip.top="'Tiene órdenes médicas registradas'" />
+                        <Tag v-if="att.tasks?.length" :value="`${getPendingTasks(att.tasks).length} pend."` :severity="getPendingTasks(att.tasks).length > 0 ? 'warning' : 'success'" class="text-xs" v-tooltip.top="getTasksTooltip(att.tasks)" />
                     </div>
                 </div>
             </div>
