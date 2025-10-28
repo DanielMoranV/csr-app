@@ -872,7 +872,7 @@ const getUserInfo = (userObj) => {
 
         <!-- Contenido en tabs -->
         <div v-if="!isEditing && currentDetail" class="view-mode">
-            <Tabs value="0" class="custom-tabs">
+            <Tabs value="1" class="custom-tabs">
                 <TabList>
                     <Tab value="0">
                         <i class="pi pi-chart-bar mr-2"></i>

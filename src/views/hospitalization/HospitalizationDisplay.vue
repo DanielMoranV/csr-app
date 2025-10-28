@@ -266,14 +266,28 @@ const refreshData = async () => {
     await store.fetchHospitalizationStatus();
 };
 
+const refreshInterval = ref(null);
+
 onMounted(async () => {
     await store.fetchHospitalizationStatus();
     startListening();
     console.log('[HospitalizationDisplay] Component mounted, listening for real-time events');
+
+    // Auto-refresh every 30 minutes
+    refreshInterval.value = setInterval(async () => {
+        console.log('[HospitalizationDisplay] Auto-refreshing data...');
+        await refreshData();
+    }, 30 * 60 * 1000);
 });
 
 onUnmounted(() => {
     stopListening();
+
+    // Clear auto-refresh interval
+    if (refreshInterval.value) {
+        clearInterval(refreshInterval.value);
+        console.log('[HospitalizationDisplay] Auto-refresh interval cleared.');
+    }
 
     // Asegurarse de restaurar el layout si se desmonta el componente
     if (isFullscreen.value) {

@@ -221,18 +221,32 @@ const handleRefreshFromChild = async () => {
     await refreshData();
 };
 
+const refreshInterval = ref(null);
+
 onMounted(async () => {
     await store.fetchHospitalizationStatus();
 
     // Start listening for real-time events
     startListening();
     console.log('[HospitalizationStatus] Started listening for real-time events');
+
+    // Auto-refresh every 30 minutes
+    refreshInterval.value = setInterval(async () => {
+        console.log('[HospitalizationStatus] Auto-refreshing data...');
+        await refreshData();
+    }, 30 * 60 * 1000);
 });
 
 onUnmounted(() => {
     // Stop listening for real-time events
     stopListening();
     console.log('[HospitalizationStatus] Stopped listening for real-time events');
+
+    // Clear auto-refresh interval
+    if (refreshInterval.value) {
+        clearInterval(refreshInterval.value);
+        console.log('[HospitalizationStatus] Auto-refresh interval cleared.');
+    }
 });
 </script>
 
