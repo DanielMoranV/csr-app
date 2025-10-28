@@ -149,22 +149,39 @@ const roomTypeColors = {
         bg: 'rgba(239, 68, 68, 0.85)', // red-500
         text: '#ffffff'
     },
-    quíntuple: {
+    múltiple: {
         bg: 'rgba(139, 92, 246, 0.85)', // violet-500
         text: '#ffffff'
     }
 };
 
-// Formatear tipo de habitación
+// Derivar el tipo de habitación desde el número de camas
+const getRoomTypeFromBeds = (beds) => {
+    const count = beds ? beds.length : 0;
+    switch (count) {
+        case 1:
+            return 'personal';
+        case 2:
+            return 'doble';
+        case 3:
+            return 'triple';
+        case 4:
+            return 'cuádruple';
+        default:
+            return count > 4 ? 'múltiple' : 'sin camas';
+    }
+};
+
+// Formatear tipo de habitación a una abreviatura
 const formatRoomType = (roomType) => {
     const types = {
         personal: 'P',
         doble: 'D',
         triple: 'T',
         cuádruple: 'C',
-        quíntuple: 'Q'
+        múltiple: 'M'
     };
-    return types[roomType?.toLowerCase()] || roomType?.charAt(0).toUpperCase() || '';
+    return types[roomType?.toLowerCase()] || '';
 };
 
 // Obtener color del tipo de habitación
@@ -180,20 +197,23 @@ const tableData = computed(() => {
     let colorIndex = 0;
 
     activeRooms.value.forEach((room) => {
-        // Asignar color único a cada habitación
         if (!roomColorMap[room.room_number]) {
             roomColorMap[room.room_number] = roomColors[colorIndex % roomColors.length];
             colorIndex++;
         }
 
+        // Obtener el tipo de habitación basado en el número total de camas de la habitación original
+        const originalRoom = state.value.status.find((r) => r.id === room.id);
+        const roomType = getRoomTypeFromBeds(originalRoom.beds);
+
         room.beds.forEach((bed) => {
             if (bed.attention) {
                 rows.push({
                     room_number: room.room_number,
-                    room_type: room.room_type,
-                    room_type_formatted: formatRoomType(room.room_type),
+                    room_type: roomType, // Usar el tipo de habitación calculado
+                    room_type_formatted: formatRoomType(roomType),
                     bed_number: bed.bed_number,
-                    bed_label: `${room.room_number}-${bed.bed_number}`, // Formato compacto
+                    bed_label: `${room.room_number}-${bed.bed_number}`,
                     patient_name: bed.attention.patient.name,
                     age: bed.attention.patient.age,
                     sex: bed.attention.patient.sex || 'N/A',
@@ -202,7 +222,7 @@ const tableData = computed(() => {
                     entry_date: bed.attention.entry_date,
                     entry_date_formatted: formatEntryDate(bed.attention.entry_date),
                     days: calculateHospitalizationDays(bed.attention.entry_date),
-                    room_color: roomColorMap[room.room_number] // Color para agrupar visualmente
+                    room_color: roomColorMap[room.room_number]
                 });
             }
         });

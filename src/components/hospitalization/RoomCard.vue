@@ -1,9 +1,9 @@
 <script setup>
+import CudyrBadge from '@/components/cudyr/CudyrBadge.vue';
 import Badge from 'primevue/badge';
 import Tag from 'primevue/tag';
 import { computed, defineEmits, ref } from 'vue';
 import BedDrawer from './BedDrawer.vue';
-import CudyrBadge from '@/components/cudyr/CudyrBadge.vue';
 
 const props = defineProps({
     room: {
@@ -96,26 +96,33 @@ const getSexLabel = (sex) => {
     return 'No especificado';
 };
 
-// Función para formatear el tipo de habitación
-const formatRoomType = (type) => {
-    const types = {
-        personal: 'Personal',
-        doble: 'Doble',
-        triple: 'Triple',
-        cuádruple: 'Cuádruple'
-    };
-    return types[type] || type;
+// Función para formatear el tipo de habitación basado en el número de camas
+const formatRoomType = (beds) => {
+    const count = beds.length;
+    switch (count) {
+        case 1:
+            return 'Personal';
+        case 2:
+            return 'Doble';
+        case 3:
+            return 'Triple';
+        case 4:
+            return 'Cuádruple';
+        default:
+            return count > 4 ? 'Múltiple' : 'Sin camas';
+    }
 };
 
-// Función para obtener el ícono del tipo de habitación
-const getRoomTypeIcon = (type) => {
-    const icons = {
-        personal: 'pi-user',
-        doble: 'pi-users',
-        triple: 'pi-users',
-        cuádruple: 'pi-users'
-    };
-    return icons[type] || 'pi-home';
+// Función para obtener el ícono del tipo de habitación basado en el número de camas
+const getRoomTypeIcon = (beds) => {
+    const count = beds.length;
+    if (count === 1) {
+        return 'pi-user';
+    }
+    if (count > 1) {
+        return 'pi-users';
+    }
+    return 'pi-home';
 };
 
 // Función para calcular días de hospitalización
@@ -219,9 +226,7 @@ const hasOverdueTasks = (bed) => {
     const attention = bed.attention;
     if (!attention.tasks || !Array.isArray(attention.tasks)) return false;
 
-    return attention.tasks.some((task) =>
-        task.status === 'pendiente' && task.alert_status === 'vencida'
-    );
+    return attention.tasks.some((task) => task.status === 'pendiente' && task.alert_status === 'vencida');
 };
 
 // Función para verificar si una cama tiene tareas por vencer
@@ -230,9 +235,7 @@ const hasNearingDueTasks = (bed) => {
     const attention = bed.attention;
     if (!attention.tasks || !Array.isArray(attention.tasks)) return false;
 
-    return attention.tasks.some((task) =>
-        task.status === 'pendiente' && task.alert_status === 'por_vencer'
-    );
+    return attention.tasks.some((task) => task.status === 'pendiente' && task.alert_status === 'por_vencer');
 };
 
 // Función para verificar si una cama tiene tareas pendientes (sin alert_status o normal)
@@ -241,9 +244,7 @@ const hasPendingTasks = (bed) => {
     const attention = bed.attention;
     if (!attention.tasks || !Array.isArray(attention.tasks)) return false;
 
-    return attention.tasks.some((task) =>
-        task.status === 'pendiente' && (!task.alert_status || task.alert_status === 'normal')
-    );
+    return attention.tasks.some((task) => task.status === 'pendiente' && (!task.alert_status || task.alert_status === 'normal'));
 };
 </script>
 
@@ -256,9 +257,9 @@ const hasPendingTasks = (bed) => {
                 <div class="flex align-items-center gap-2">
                     <i class="pi pi-home text-xl text-primary"></i>
                     <h3 class="m-0 text-lg font-bold">{{ room.room_number }}</h3>
-                    <div v-if="room.room_type" class="room-type-badge-inline">
-                        <i :class="`pi ${getRoomTypeIcon(room.room_type)}`"></i>
-                        <span>{{ formatRoomType(room.room_type) }}</span>
+                    <div v-if="room.beds && room.beds.length > 0" class="room-type-badge-inline">
+                        <i :class="`pi ${getRoomTypeIcon(room.beds)}`"></i>
+                        <span>{{ formatRoomType(room.beds) }}</span>
                     </div>
                 </div>
                 <Badge v-if="hasAlerts" value="!" severity="danger" />
@@ -731,12 +732,16 @@ const hasPendingTasks = (bed) => {
     100% {
         background-color: #fee2e2;
         border-color: var(--red-600);
-        box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.7), 0 4px 12px rgba(239, 68, 68, 0.3);
+        box-shadow:
+            0 0 0 0 rgba(239, 68, 68, 0.7),
+            0 4px 12px rgba(239, 68, 68, 0.3);
     }
     50% {
         background-color: #fca5a5;
         border-color: var(--red-700);
-        box-shadow: 0 0 0 12px rgba(239, 68, 68, 0), 0 8px 20px rgba(239, 68, 68, 0.5);
+        box-shadow:
+            0 0 0 12px rgba(239, 68, 68, 0),
+            0 8px 20px rgba(239, 68, 68, 0.5);
     }
 }
 
@@ -752,12 +757,16 @@ const hasPendingTasks = (bed) => {
     100% {
         background-color: #ffedd5;
         border-color: var(--orange-500);
-        box-shadow: 0 0 0 0 rgba(249, 115, 22, 0.6), 0 4px 12px rgba(249, 115, 22, 0.2);
+        box-shadow:
+            0 0 0 0 rgba(249, 115, 22, 0.6),
+            0 4px 12px rgba(249, 115, 22, 0.2);
     }
     50% {
         background-color: #fed7aa;
         border-color: var(--orange-600);
-        box-shadow: 0 0 0 10px rgba(249, 115, 22, 0), 0 6px 16px rgba(249, 115, 22, 0.4);
+        box-shadow:
+            0 0 0 10px rgba(249, 115, 22, 0),
+            0 6px 16px rgba(249, 115, 22, 0.4);
     }
 }
 

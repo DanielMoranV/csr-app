@@ -5,7 +5,7 @@ import Pusher from 'pusher-js';
 const api_url = import.meta.env.VITE_API_URL;
 
 window.Pusher = Pusher;
-Pusher.logToConsole = true;
+//Pusher.logToConsole = true;
 
 const broadcaster = import.meta.env.VITE_BROADCAST_DRIVER;
 
