@@ -1,10 +1,9 @@
 import axios from './axios';
 
-export const tasks = {
-    list: (params) => axios.get('/tasks', { params }),
-    getById: (id) => axios.get(`/tasks/${id}`),
-    create: (data) => axios.post('/tasks', data),
-    update: (id, data) => axios.put(`/tasks/${id}`, data),
-    delete: (id) => axios.delete(`/tasks/${id}`),
-    getStats: () => axios.get('/tasks/stats')
-};
+export const getTasks = (params) => axios.get('/tasks', { params });
+export const getTask = (id) => axios.get(`/tasks/${id}`);
+export const createTask = (data) => axios.post('/tasks', data);
+export const updateTask = (id, data) => axios.put(`/tasks/${id}`, data);
+export const deleteTask = (id) => axios.delete(`/tasks/${id}`);
+export const getTaskStats = () => axios.get('/tasks/stats');
+export const searchTasks = (params) => axios.get('/tasks', { params });

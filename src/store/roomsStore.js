@@ -8,6 +8,7 @@ export const useRoomsStore = defineStore('rooms', () => {
     // State
     const state = reactive({
         rooms: [],
+        beds: [], // Estado para almacenar las camas
         currentRoom: null,
         isLoading: false,
         isSaving: false,
@@ -52,6 +53,8 @@ export const useRoomsStore = defineStore('rooms', () => {
         return filtered;
     });
 
+    const allBeds = computed(() => state.beds);
+
     // Actions for Rooms
     const fetchRooms = async (params = {}) => {
         state.isLoading = true;
@@ -66,6 +69,23 @@ export const useRoomsStore = defineStore('rooms', () => {
             throw response;
         } catch (error) {
             console.error('Error fetching rooms:', error);
+            throw error;
+        } finally {
+            state.isLoading = false;
+        }
+    };
+
+    const fetchBeds = async () => {
+        state.isLoading = true;
+        try {
+            const response = await bedsApi.getAll();
+            if (apiUtils.isSuccess(response)) {
+                state.beds = apiUtils.getData(response);
+                return response;
+            }
+            throw response;
+        } catch (error) {
+            console.error('Error fetching beds:', error);
             throw error;
         } finally {
             state.isLoading = false;
@@ -272,6 +292,8 @@ export const useRoomsStore = defineStore('rooms', () => {
         deleteBed,
         toggleBedStatus,
         setFilter,
-        clearFilters
+        clearFilters,
+        allBeds,
+        fetchBeds
     };
 });

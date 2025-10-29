@@ -1,5 +1,5 @@
-import AppLayout from '@/layout/AppLayout.vue';
 import { MODULE_PERMISSIONS } from '@/config/permissions';
+import AppLayout from '@/layout/AppLayout.vue';
 import { useAuthStore } from '@/store/authStore';
 import { createRouter, createWebHistory } from 'vue-router';
 
@@ -48,6 +48,12 @@ const router = createRouter({
                     meta: { requiresAuth: true, positions: MODULE_PERMISSIONS.habitaciones.positions }
                 },
                 {
+                    path: MODULE_PERMISSIONS.bedReservations.path,
+                    name: MODULE_PERMISSIONS.bedReservations.name,
+                    component: () => import('@/views/hospitalization/BedReservationsView.vue'),
+                    meta: { requiresAuth: true, positions: MODULE_PERMISSIONS.bedReservations.positions }
+                },
+                {
                     path: MODULE_PERMISSIONS.hospitalizacion.path,
                     name: MODULE_PERMISSIONS.hospitalizacion.name,
                     component: () => import('@/views/hospitalization/HospitalizationStatus.vue'),
@@ -70,6 +76,12 @@ const router = createRouter({
                     name: MODULE_PERMISSIONS.ticketRecurrenceRules.name,
                     component: () => import('@/views/tickets/RecurrenceRules.vue'),
                     meta: { requiresAuth: true, positions: MODULE_PERMISSIONS.ticketRecurrenceRules.positions }
+                },
+                {
+                    path: MODULE_PERMISSIONS.hospitalTasks.path,
+                    name: MODULE_PERMISSIONS.hospitalTasks.name,
+                    component: () => import('@/views/hospitalization/TasksView.vue'),
+                    meta: { requiresAuth: true, positions: MODULE_PERMISSIONS.hospitalTasks.positions }
                 }
             ]
         },

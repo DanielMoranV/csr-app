@@ -58,6 +58,9 @@ export const PERMISSION_GROUPS = {
     // Acceso a información de atenciones
     ATTENTIONS_ACCESS: [POSITIONS.SISTEMAS, POSITIONS.ADMINISTRACION, POSITIONS.DIRECTOR_MEDICO, POSITIONS.ADMISION, POSITIONS.FACTURACION, POSITIONS.MEDICOS, POSITIONS.EMERGENCIA, POSITIONS.HOSPITALIZACION],
 
+    // Personal con acceso a la gestión de reservas de camas
+    BED_RESERVATIONS_STAFF: [POSITIONS.SISTEMAS, POSITIONS.DIRECTOR_MEDICO, POSITIONS.ADMINISTRACION, POSITIONS.MEDICOS, POSITIONS.EMERGENCIA, POSITIONS.HOSPITALIZACION, POSITIONS.QUIROFANO, POSITIONS.ADMISION],
+
     // Todos los usuarios autenticados
     ALL: ['*']
 };
@@ -140,6 +143,26 @@ export const MODULE_PERMISSIONS = {
         positions: [POSITIONS.SISTEMAS, POSITIONS.ADMINISTRACION, POSITIONS.HOSPITALIZACION, POSITIONS.ADMISION],
         label: 'Habitaciones',
         icon: 'pi pi-fw pi-building',
+        menuSection: 'Hospitalización'
+    },
+
+    // Gestión de Reservas de Camas
+    bedReservations: {
+        name: 'bed-reservations',
+        path: '/bed-reservations',
+        positions: PERMISSION_GROUPS.BED_RESERVATIONS_STAFF,
+        label: 'Reservas de Camas',
+        icon: 'pi pi-fw pi-book',
+        menuSection: 'Hospitalización'
+    },
+
+    // Gestión de Tareas de Hospitalización
+    hospitalTasks: {
+        name: 'hospital-tasks',
+        path: '/hospital-tasks',
+        positions: PERMISSION_GROUPS.HOSPITALIZATION_STAFF,
+        label: 'Tareas',
+        icon: 'pi pi-fw pi-check-square',
         menuSection: 'Hospitalización'
     },
 
