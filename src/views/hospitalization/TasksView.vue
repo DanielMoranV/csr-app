@@ -2,22 +2,28 @@
 import { ref, onMounted } from 'vue';
 import { useTasksStore } from '@/store/tasksStore';
 import TasksTable from '@/components/hospitalization/TasksTable.vue';
-import TaskDialog from '@/components/hospitalization/TaskDialog.vue';
+import { format } from 'date-fns';
 
 const store = useTasksStore();
-const displayTaskDialog = ref(false);
+const startDate = ref();
+const endDate = ref();
 
 onMounted(() => {
-    store.fetchTasks({ paginate: true, page: 1, per_page: 10 });
+    const today = new Date();
+    endDate.value = today;
+    const oneMonthAgo = new Date(today);
+    oneMonthAgo.setMonth(today.getMonth() - 1);
+    startDate.value = oneMonthAgo;
+
+    fetchTasks();
 });
 
-const openNewTaskDialog = () => {
-    store.clearSelectedTask();
-    displayTaskDialog.value = true;
-};
-
-const onHideDialog = () => {
-    displayTaskDialog.value = false;
+const fetchTasks = () => {
+    if (startDate.value && endDate.value) {
+        const formattedStartDate = format(startDate.value, 'yyyy-MM-dd');
+        const formattedEndDate = format(endDate.value, 'yyyy-MM-dd');
+        store.fetchTasksByDateRange(formattedStartDate, formattedEndDate);
+    }
 };
 </script>
 
@@ -25,9 +31,23 @@ const onHideDialog = () => {
     <div class="grid">
         <div class="col-12">
             <div class="card">
-                <TasksTable @edit-task="displayTaskDialog = true" @new-task="openNewTaskDialog" />
+                <Toolbar class="mb-4">
+                    <template #start>
+                        <div class="flex flex-wrap gap-2">
+                            <div class="flex flex-column gap-2">
+                                <label for="start_date">Fecha de inicio</label>
+                                <Calendar v-model="startDate" dateFormat="dd/mm/yy" showIcon />
+                            </div>
+                            <div class="flex flex-column gap-2">
+                                <label for="end_date">Fecha de fin</label>
+                                <Calendar v-model="endDate" dateFormat="dd/mm/yy" showIcon />
+                            </div>
+                            <Button label="Buscar" icon="pi pi-search" class="p-button-primary mt-4" @click="fetchTasks" />
+                        </div>
+                    </template>
+                </Toolbar>
+                <TasksTable />
             </div>
-            <TaskDialog :visible="displayTaskDialog" @hide="onHideDialog" />
         </div>
     </div>
 </template>

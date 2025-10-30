@@ -33,6 +33,18 @@ export const useTasksStore = defineStore('tasks', () => {
         }
     };
 
+    const fetchTasksByDateRange = async (startDate, endDate) => {
+        loading.value = true;
+        try {
+            const { data } = await findTasks({ start_date: startDate, end_date: endDate });
+            tasks.value = data;
+        } catch (error) {
+            console.error('Error fetching tasks by date range:', error);
+        } finally {
+            loading.value = false;
+        }
+    };
+
     const createTask = async (taskData) => {
         loading.value = true;
         try {
@@ -93,6 +105,7 @@ export const useTasksStore = defineStore('tasks', () => {
         loading,
         stats,
         fetchTasks,
+        fetchTasksByDateRange,
         createTask,
         updateTask,
         deleteTask,
