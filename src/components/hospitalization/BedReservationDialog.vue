@@ -14,7 +14,7 @@ const props = defineProps({
     bed: Object // Para modo crear
 });
 
-const emit = defineEmits(['save', 'close', 'reservation-created']);
+const emit = defineEmits(['save', 'close', 'reservation-created', 'update:visible']);
 
 const bedReservationsStore = useBedReservationsStore();
 const authStore = useAuthStore();
@@ -42,7 +42,8 @@ const availableStatuses = computed(() => {
 
     // Modo editar: transiciones de estado
     if (formData.value.status === 'activa') {
-        return ['activa', 'confirmada', 'cancelada'];
+        // Desde activa puede ir a: confirmada, cancelada o completada
+        return ['activa', 'confirmada', 'cancelada', 'completada'];
     } else if (formData.value.status === 'confirmada') {
         return ['confirmada', 'cancelada', 'completada'];
     } else if (formData.value.status === 'cancelada' || formData.value.status === 'completada') {
@@ -68,17 +69,21 @@ watch(
 
             if (isEditMode.value) {
                 // Modo editar: cargar datos de la reserva existente
+                console.log('[BedReservationDialog] Modo EDITAR - Reserva recibida:', props.reservation);
                 formData.value = {
                     ...props.reservation
                 };
+                console.log('[BedReservationDialog] FormData inicializado:', formData.value);
             } else if (isCreateMode.value) {
                 // Modo crear: inicializar formulario vacío
                 // API espera: id_beds, id_users (usuario autenticado), notes
+                console.log('[BedReservationDialog] Modo CREAR - Cama:', props.bed);
                 formData.value = {
                     id_beds: props.bed?.id,
                     id_users: authStore.getUser?.id,
                     notes: ''
                 };
+                console.log('[BedReservationDialog] FormData inicializado:', formData.value);
             }
         }
     }
@@ -175,6 +180,8 @@ const submit = async () => {
 };
 
 const closeDialog = () => {
+    // Emitir update:visible para cerrar el diálogo (v-model)
+    emit('update:visible', false);
     emit('close');
 };
 </script>
@@ -221,7 +228,7 @@ const closeDialog = () => {
                     />
                     <small class="p-hint">
                         <template v-if="formData.status === 'activa'">
-                            Puede confirmar o cancelar esta reserva
+                            Puede confirmar, completar o cancelar esta reserva
                         </template>
                         <template v-else-if="formData.status === 'confirmada'">
                             Puede completar o cancelar esta reserva

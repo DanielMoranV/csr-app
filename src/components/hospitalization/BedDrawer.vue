@@ -192,11 +192,36 @@ const handleCreateNewDetail = (date) => {
 
 // Computed para determinar si la cama está reservada
 const isReserved = computed(() => {
+    console.log('[BedDrawer] Verificando reserva:', {
+        bed: props.bed,
+        is_reserved: props.bed?.is_reserved,
+        status: props.bed?.status,
+        active_reservation: props.bed?.active_reservation,
+        bed_reservation: props.bed?.bed_reservation,
+        reservation: props.bed?.reservation
+    });
     return props.bed?.is_reserved || props.bed?.status === 'reserved';
 });
 
 const activeReservation = computed(() => {
-    return props.bed?.active_reservation || null;
+    // Intentar diferentes nombres de campo para la reserva activa
+    const reservation = props.bed?.active_reservation || props.bed?.bed_reservation || props.bed?.reservation || null;
+    console.log('[BedDrawer] Reserva activa detectada:', reservation);
+
+    // Mapear campos del backend al formato esperado por el componente
+    if (reservation) {
+        return {
+            id: reservation.reservation_id || reservation.id,
+            id_beds: props.bed?.id,
+            id_users: reservation.reserved_by?.id,
+            notes: reservation.notes,
+            status: reservation.status,
+            created_at: reservation.created_at,
+            user: reservation.reserved_by
+        };
+    }
+
+    return null;
 });
 
 // Computed para determinar si se puede reservar
@@ -211,12 +236,27 @@ const handleOpenReservationDialog = () => {
     showReservationDialog.value = true;
 };
 
+const handleEditReservation = () => {
+    showReservationDialog.value = true;
+};
+
 const handleReservationCreated = () => {
     showReservationDialog.value = false;
     toast.add({
         severity: 'success',
         summary: 'Éxito',
         detail: 'Reserva creada exitosamente',
+        life: 3000
+    });
+    emit('refresh-data');
+};
+
+const handleReservationUpdated = () => {
+    showReservationDialog.value = false;
+    toast.add({
+        severity: 'success',
+        summary: 'Éxito',
+        detail: 'Reserva actualizada exitosamente',
         life: 3000
     });
     emit('refresh-data');
@@ -413,6 +453,7 @@ watch(
                 </div>
 
                 <div class="flex gap-2">
+                    <Button label="Editar Reserva" icon="pi pi-pencil" @click="handleEditReservation" severity="primary" />
                     <Button label="Cancelar Reserva" icon="pi pi-times-circle" @click="handleCancelReservation" :loading="isLoadingReservation" severity="danger" outlined />
                     <Button label="Cerrar" icon="pi pi-times" @click="drawerVisible = false" severity="secondary" outlined />
                 </div>
@@ -431,7 +472,13 @@ watch(
         </div>
 
         <!-- Dialogo de Reserva -->
-        <BedReservationDialog v-model:visible="showReservationDialog" :bed="bed" @reservation-created="handleReservationCreated" />
+        <BedReservationDialog
+            v-model:visible="showReservationDialog"
+            :bed="bed"
+            :reservation="activeReservation"
+            @reservation-created="handleReservationCreated"
+            @save="handleReservationUpdated"
+        />
     </Drawer>
 </template>
 
