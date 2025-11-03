@@ -192,21 +192,12 @@ const handleCreateNewDetail = (date) => {
 
 // Computed para determinar si la cama está reservada
 const isReserved = computed(() => {
-    console.log('[BedDrawer] Verificando reserva:', {
-        bed: props.bed,
-        is_reserved: props.bed?.is_reserved,
-        status: props.bed?.status,
-        active_reservation: props.bed?.active_reservation,
-        bed_reservation: props.bed?.bed_reservation,
-        reservation: props.bed?.reservation
-    });
     return props.bed?.is_reserved || props.bed?.status === 'reserved';
 });
 
 const activeReservation = computed(() => {
     // Intentar diferentes nombres de campo para la reserva activa
     const reservation = props.bed?.active_reservation || props.bed?.bed_reservation || props.bed?.reservation || null;
-    console.log('[BedDrawer] Reserva activa detectada:', reservation);
 
     // Mapear campos del backend al formato esperado por el componente
     if (reservation) {

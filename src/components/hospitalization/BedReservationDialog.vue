@@ -69,21 +69,17 @@ watch(
 
             if (isEditMode.value) {
                 // Modo editar: cargar datos de la reserva existente
-                console.log('[BedReservationDialog] Modo EDITAR - Reserva recibida:', props.reservation);
                 formData.value = {
                     ...props.reservation
                 };
-                console.log('[BedReservationDialog] FormData inicializado:', formData.value);
             } else if (isCreateMode.value) {
                 // Modo crear: inicializar formulario vacío
                 // API espera: id_beds, id_users (usuario autenticado), notes
-                console.log('[BedReservationDialog] Modo CREAR - Cama:', props.bed);
                 formData.value = {
                     id_beds: props.bed?.id,
                     id_users: authStore.getUser?.id,
                     notes: ''
                 };
-                console.log('[BedReservationDialog] FormData inicializado:', formData.value);
             }
         }
     }
