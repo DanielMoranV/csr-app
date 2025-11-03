@@ -8,10 +8,12 @@ import { useRealtimeEvents } from '@/composables/useRealtimeEvents';
 import { useHospitalAttentionsStore } from '@/store/hospitalAttentionsStore';
 import { FilterMatchMode } from '@primevue/core/api';
 import { computed, onMounted, onUnmounted, ref, watch } from 'vue';
+import { useExcelExport } from '@/composables/useExcelExport';
 
 const hospitalAttentionsStore = useHospitalAttentionsStore();
 const { startListening, stopListening } = useRealtimeEvents();
 const { hasPosition } = usePermissions();
+const { exportToExcel } = useExcelExport();
 
 const attentions = computed(() => hospitalAttentionsStore.allAttentions);
 const isLoading = computed(() => hospitalAttentionsStore.isLoading);
@@ -405,6 +407,25 @@ const currentAuditsArray = computed(() => {
 
     return audits;
 });
+
+const exportData = () => {
+    const columns = [
+        { field: 'number', header: 'Admisión' },
+        { field: 'patient.name', header: 'Paciente' },
+        { field: 'patient.number_document', header: 'Documento' },
+        { field: 'doctor', header: 'Médico' },
+        { field: 'insurance', header: 'Seguro' },
+        { field: 'type_attention', header: 'Tipo Atención' },
+        { field: 'bed.room.number', header: 'Habitación' },
+        { field: 'bed.name', header: 'Cama' },
+        { field: 'entry_at', header: 'Fecha Ingreso', type: 'date' },
+        { field: 'exit_at', header: 'Fecha Salida', type: 'date' },
+        { field: 'is_active', header: 'Activa', type: 'boolean' },
+        { field: 'is_approved_by_director', header: 'Aprobado Director', type: 'boolean' }
+    ];
+
+    exportToExcel(filteredAttentionsByDate.value, columns, 'AtencionesHospitalarias');
+};
 </script>
 <template>
     <div class="card">
@@ -434,6 +455,7 @@ const currentAuditsArray = computed(() => {
                             <InputIcon class="pi pi-search" />
                             <InputText v-model="filters['global'].value" placeholder="Buscar..." />
                         </IconField>
+                        <Button label="Exportar" icon="pi pi-upload" severity="primary" @click="exportData" />
                     </div>
 
                     <!-- Filtros de rango de fechas -->

@@ -42,6 +42,21 @@ export const useBedReservationsStore = defineStore('bedReservations', () => {
             reservations.value = reservations.value.filter((r) => r.id !== id);
         } catch (error) {
             console.error('Error deleting reservation:', error);
+            throw error;
+        }
+    }
+
+    async function cancelReservation(id) {
+        try {
+            const response = await bedReservationsApi.update(id, { status: 'cancelada' });
+            const index = reservations.value.findIndex((r) => r.id === id);
+            if (index !== -1) {
+                reservations.value[index] = response.data;
+            }
+            return response;
+        } catch (error) {
+            console.error('Error cancelling reservation:', error);
+            throw error;
         }
     }
 
@@ -50,6 +65,7 @@ export const useBedReservationsStore = defineStore('bedReservations', () => {
         fetchReservations,
         createReservation,
         updateReservation,
-        deleteReservation
+        deleteReservation,
+        cancelReservation
     };
 });
