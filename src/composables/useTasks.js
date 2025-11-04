@@ -54,10 +54,14 @@ export default function useTasks() {
 
     const findTasks = async (params) => {
         try {
+            console.log('[useTasks] Llamando al endpoint /tasks/search con params:', params);
             const response = await searchTasks(params);
-            return response.data;
+            console.log('[useTasks] Respuesta del axios (después del interceptor):', response);
+            console.log('[useTasks] Tipo de response:', typeof response);
+            console.log('[useTasks] response.data:', response.data);
+            return response;
         } catch (error) {
-            console.error('Failed to search tasks:', error);
+            console.error('[useTasks] Failed to search tasks:', error);
             throw error;
         }
     };

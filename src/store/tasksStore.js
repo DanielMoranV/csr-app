@@ -33,13 +33,25 @@ export const useTasksStore = defineStore('tasks', () => {
         }
     };
 
-    const fetchTasksByDateRange = async (startDate, endDate) => {
+    const fetchTasksByDateRange = async (params) => {
         loading.value = true;
         try {
-            const { data } = await findTasks({ start_date: startDate, end_date: endDate });
-            tasks.value = data;
+            console.log('[TasksStore] Buscando tareas con parámetros:', params);
+            const response = await findTasks(params);
+            console.log('[TasksStore] Respuesta completa del composable:', response);
+
+            // El composable devuelve { success, message, data }
+            if (response && response.data) {
+                tasks.value = response.data;
+                console.log('[TasksStore] Tareas asignadas:', response.data);
+                console.log('[TasksStore] Total de tareas encontradas:', response.data.length);
+            } else {
+                console.warn('[TasksStore] No se encontró el campo data en la respuesta:', response);
+                tasks.value = [];
+            }
         } catch (error) {
-            console.error('Error fetching tasks by date range:', error);
+            console.error('[TasksStore] Error fetching tasks by date range:', error);
+            tasks.value = [];
         } finally {
             loading.value = false;
         }

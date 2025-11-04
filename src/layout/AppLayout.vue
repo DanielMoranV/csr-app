@@ -8,6 +8,7 @@ import AppTopbar from './AppTopbar.vue';
 // Imports for real-time functionality
 import { useAuthStore } from '@/store/authStore';
 import { useTicketsStore } from '@/store/ticketsStore';
+import { slugify } from '@/utils/pusher-helpers';
 import useEcho from '@/websocket/echo';
 
 const { layoutConfig, layoutState, isSidebarActive } = useLayout();
@@ -74,7 +75,8 @@ onMounted(() => {
                 // Disconnect from any existing channels to prevent duplicates on hot-reload
                 useEcho.leave(`App.Models.User.${userId}`);
                 if (userPosition) {
-                    useEcho.leave(`tickets.position.${userPosition}`);
+                    const positionSlug = slugify(userPosition);
+                    useEcho.leave(`tickets.position.${positionSlug}`);
                 }
 
                 // Listen for events on the private user channel
@@ -91,8 +93,9 @@ onMounted(() => {
 
                 // Listen for events on the position-based presence channel
                 if (userPosition) {
+                    const positionSlug = slugify(userPosition);
                     useEcho
-                        .join(`tickets.position.${userPosition}`)
+                        .join(`tickets.position.${positionSlug}`)
                         .here((users) => {
                             console.log('Connected to position channel. Users here:', users);
                         })

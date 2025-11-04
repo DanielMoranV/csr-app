@@ -1,5 +1,6 @@
 import { TicketService } from '@/api/tickets';
 import useEcho from '@/websocket/echo';
+import { slugify } from '@/utils/pusher-helpers';
 import { defineStore } from 'pinia';
 import { useToast } from 'primevue/usetoast';
 import { computed, reactive } from 'vue';
@@ -252,25 +253,26 @@ export const useTicketsStore = defineStore('tickets', () => {
         }
 
         if (userPosition) {
-            console.log(`[TicketsStore] Attempting to join presence channel: tickets.position.${userPosition}`);
+            const positionSlug = slugify(userPosition);
+            console.log(`[TicketsStore] Attempting to join presence channel: tickets.position.${positionSlug}`);
 
-            const presenceChannel = useEcho.join(`tickets.position.${userPosition}`);
+            const presenceChannel = useEcho.join(`tickets.position.${positionSlug}`);
 
             presenceChannel
                 .subscribed(() => {
-                    console.log(`[TicketsStore] Successfully joined presence channel: tickets.position.${userPosition}`);
+                    console.log(`[TicketsStore] Successfully joined presence channel: tickets.position.${positionSlug}`);
                 })
                 .error((error) => {
-                    console.error(`[TicketsStore] Error joining presence channel: tickets.position.${userPosition}`, error);
+                    console.error(`[TicketsStore] Error joining presence channel: tickets.position.${positionSlug}`, error);
                 })
                 .here((users) => {
-                    console.log(`[TicketsStore] Users in position channel ${userPosition}:`, users);
+                    console.log(`[TicketsStore] Users in position channel ${positionSlug}:`, users);
                 })
                 .joining((user) => {
-                    console.log(`[TicketsStore] ${user.name} joined position channel ${userPosition}.`);
+                    console.log(`[TicketsStore] ${user.name} joined position channel ${positionSlug}.`);
                 })
                 .leaving((user) => {
-                    console.log(`[TicketsStore] ${user.name} left position channel ${userPosition}.`);
+                    console.log(`[TicketsStore] ${user.name} left position channel ${positionSlug}.`);
                 })
                 .listen('.ticket.created', handleTicketCreated)
                 .listen('.ticket.updated', handleTicketUpdated)
@@ -280,7 +282,7 @@ export const useTicketsStore = defineStore('tickets', () => {
                 .listen('.ticket.comment.updated', handleTicketCommentUpdated)
                 .listen('.ticket.deleted', handleTicketDeleted);
 
-            console.log(`[TicketsStore] Listening to presence position channel: tickets.position.${userPosition}`);
+            console.log(`[TicketsStore] Listening to presence position channel: tickets.position.${positionSlug}`);
         } else {
             console.warn('[TicketsStore] No userPosition found, cannot subscribe to presence channel');
         }
@@ -297,8 +299,9 @@ export const useTicketsStore = defineStore('tickets', () => {
         }
 
         if (userPosition) {
-            useEcho.leave(`tickets.position.${userPosition}`);
-            console.log(`[TicketsStore] Left presence position channel: tickets.position.${userPosition}`);
+            const positionSlug = slugify(userPosition);
+            useEcho.leave(`tickets.position.${positionSlug}`);
+            console.log(`[TicketsStore] Left presence position channel: tickets.position.${positionSlug}`);
         }
     };
 
