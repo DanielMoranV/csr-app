@@ -1,5 +1,6 @@
 <script setup>
 import { useTasksStore } from '@/store/tasksStore';
+import { useExcelExport } from '@/composables/useExcelExport';
 import { format, formatDistanceToNow } from 'date-fns';
 import { es } from 'date-fns/locale';
 import { storeToRefs } from 'pinia';
@@ -7,6 +8,7 @@ import { ref } from 'vue';
 
 const store = useTasksStore();
 const { tasks, loading } = storeToRefs(store);
+const { exportToExcel } = useExcelExport();
 const dt = ref();
 
 const filters = ref({
@@ -103,8 +105,56 @@ const getUsersTooltip = (task) => {
     return tooltip;
 };
 
-const exportCSV = () => {
-    dt.value.exportCSV();
+const exportExcel = () => {
+    if (!tasks.value || tasks.value.length === 0) {
+        console.warn('No hay datos para exportar');
+        return;
+    }
+
+    // Preparar los datos con campos calculados
+    const dataToExport = tasks.value.map((task) => ({
+        ...task,
+        patient_name: task.hospital_attention?.patient?.name || '',
+        patient_document: task.hospital_attention?.patient?.document_type + ' ' + task.hospital_attention?.patient?.number_document || '',
+        bed_name: task.hospital_attention?.bed?.name || '',
+        doctor_name: task.hospital_attention?.doctor || '',
+        doctor_code: task.hospital_attention?.code_doctor || '',
+        status_label: getStatusLabel(task.status),
+        created_by_user: getCreatedByUser(task),
+        completed_by_user: getCompletedByUser(task) || '',
+        is_late: task.is_completed_late ? 'Sí' : 'No',
+        is_on_time: task.is_completed_on_time ? 'Sí' : 'No',
+        is_overdue_text: task.is_overdue ? 'Sí' : 'No'
+    }));
+
+    // Definir las columnas para exportación
+    const columns = [
+        { field: 'id', header: 'ID', type: 'number', width: 8 },
+        { field: 'patient_name', header: 'Paciente', width: 25 },
+        { field: 'patient_document', header: 'Documento', width: 18 },
+        { field: 'bed_name', header: 'Cama', width: 12 },
+        { field: 'doctor_name', header: 'Doctor', width: 25 },
+        { field: 'doctor_code', header: 'Código Doctor', width: 15 },
+        { field: 'description', header: 'Descripción', width: 40 },
+        { field: 'status_label', header: 'Estado', width: 15 },
+        { field: 'created_by_user', header: 'Creado Por', width: 18 },
+        { field: 'completed_by_user', header: 'Completado Por', width: 18 },
+        { field: 'due_date', header: 'Fecha Vencimiento', type: 'date', width: 20 },
+        { field: 'completed_at', header: 'Fecha Completado', type: 'date', width: 20 },
+        { field: 'is_late', header: 'Completado con Retraso', width: 20 },
+        { field: 'is_overdue_text', header: 'Vencida', width: 12 }
+    ];
+
+    // Generar nombre del archivo con fecha actual
+    const today = format(new Date(), 'yyyy-MM-dd');
+    const fileName = `tareas-hospitalizacion-${today}`;
+
+    // Exportar a Excel
+    exportToExcel(dataToExport, columns, fileName, {
+        sheetName: 'Tareas',
+        autoFilter: true,
+        freezeHeader: true
+    });
 };
 </script>
 
@@ -139,7 +189,7 @@ const exportCSV = () => {
                             </InputIcon>
                             <InputText v-model="filters.global.value" placeholder="Buscar en la tabla..." class="search-input-modern" />
                         </IconField>
-                        <Button icon="pi pi-file-excel" class="export-button" @click="exportCSV" v-tooltip.top="'Exportar a Excel'" />
+                        <Button icon="pi pi-file-excel" class="export-button" @click="exportExcel" v-tooltip.top="'Exportar a Excel'" />
                     </div>
                 </div>
             </template>
@@ -247,15 +297,51 @@ const exportCSV = () => {
 </template>
 
 <style scoped>
+/* Variables personalizadas para compatibilidad con modo oscuro */
+.card {
+    --surface-hover: color-mix(in srgb, var(--surface-card) 95%, var(--text-color) 5%);
+    --card-shadow: rgba(0, 0, 0, 0.08);
+    --card-shadow-hover: rgba(0, 0, 0, 0.12);
+}
+
+/* Dark mode adjustments */
+:global(.dark) .card,
+:global([data-theme='dark']) .card {
+    --card-shadow: rgba(0, 0, 0, 0.3);
+    --card-shadow-hover: rgba(0, 0, 0, 0.4);
+}
+
 /* Modern Table Header */
 .table-header-modern {
     display: flex;
     align-items: center;
     justify-content: space-between;
     padding: 1.25rem 1.5rem;
-    background: linear-gradient(135deg, #f8f9fa 0%, #ffffff 100%);
-    border-bottom: 2px solid #e9ecef;
+    background: linear-gradient(135deg, var(--surface-section) 0%, var(--surface-card) 100%);
+    border-bottom: 2px solid color-mix(in srgb, var(--green-500) 20%, var(--surface-border));
     gap: 1rem;
+    position: relative;
+}
+
+.table-header-modern::after {
+    content: '';
+    position: absolute;
+    bottom: -2px;
+    left: 0;
+    right: 0;
+    height: 2px;
+    background: linear-gradient(90deg, #10b981, #14b8a6, #10b981);
+    background-size: 200% 100%;
+    animation: gradientShift 3s ease infinite;
+}
+
+@keyframes gradientShift {
+    0%, 100% {
+        background-position: 0% 50%;
+    }
+    50% {
+        background-position: 100% 50%;
+    }
 }
 
 .header-left {
@@ -268,16 +354,62 @@ const exportCSV = () => {
     width: 48px;
     height: 48px;
     border-radius: 12px;
-    background: linear-gradient(135deg, #10b981, #059669);
+    background: linear-gradient(135deg, #10b981 0%, #14b8a6 50%, #0891b2 100%);
     display: flex;
     align-items: center;
     justify-content: center;
-    box-shadow: 0 4px 12px rgba(16, 185, 129, 0.3);
+    box-shadow: 0 4px 12px rgba(16, 185, 129, 0.3), 0 2px 8px rgba(20, 184, 166, 0.2);
+    position: relative;
+    overflow: hidden;
+    animation: iconPulse 2s ease-in-out infinite;
+}
+
+.header-icon-badge::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(135deg, transparent 0%, rgba(255, 255, 255, 0.15) 50%, transparent 100%);
+    animation: shimmer 3s ease-in-out infinite;
+}
+
+@keyframes shimmer {
+    0%, 100% {
+        transform: translateX(-100%) rotate(45deg);
+    }
+    50% {
+        transform: translateX(100%) rotate(45deg);
+    }
+}
+
+@keyframes iconPulse {
+    0%, 100% {
+        transform: scale(1);
+        box-shadow: 0 4px 12px rgba(16, 185, 129, 0.3), 0 2px 8px rgba(20, 184, 166, 0.2);
+    }
+    50% {
+        transform: scale(1.05);
+        box-shadow: 0 6px 16px rgba(16, 185, 129, 0.4), 0 3px 10px rgba(20, 184, 166, 0.3);
+    }
 }
 
 .header-icon-badge i {
     font-size: 1.5rem;
     color: white;
+    position: relative;
+    z-index: 1;
+    filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.2));
+}
+
+/* Dark mode support */
+:global(.dark) .header-icon-badge,
+:global([data-theme='dark']) .header-icon-badge {
+    background: linear-gradient(135deg, #34d399 0%, #2dd4bf 50%, #22d3ee 100%);
+    box-shadow: 0 4px 12px rgba(52, 211, 153, 0.4), 0 2px 8px rgba(45, 212, 191, 0.3);
+}
+
+:global(.dark) .header-icon-badge::before,
+:global([data-theme='dark']) .header-icon-badge::before {
+    background: linear-gradient(135deg, transparent 0%, rgba(255, 255, 255, 0.2) 50%, transparent 100%);
 }
 
 .header-info {
@@ -289,19 +421,29 @@ const exportCSV = () => {
 .header-title {
     font-size: 1.125rem;
     font-weight: 700;
-    color: #1e293b;
+    color: var(--text-color);
     letter-spacing: -0.015em;
 }
 
 .header-count {
     font-size: 0.813rem;
     font-weight: 600;
-    color: #64748b;
-    background: #f1f5f9;
+    color: #047857;
+    background: linear-gradient(135deg, #d1fae5 0%, #ccfbf1 100%);
     padding: 0.188rem 0.625rem;
     border-radius: 6px;
     display: inline-block;
     width: fit-content;
+    border: 1px solid #6ee7b7;
+    box-shadow: 0 2px 4px rgba(16, 185, 129, 0.1);
+}
+
+/* Dark mode support */
+:global(.dark) .header-count,
+:global([data-theme='dark']) .header-count {
+    color: #6ee7b7;
+    background: linear-gradient(135deg, #064e3b 0%, #115e59 100%);
+    border: 1px solid #34d399;
 }
 
 .header-actions-modern {
@@ -316,11 +458,12 @@ const exportCSV = () => {
 
 .search-input-modern {
     border-radius: 10px;
-    border: 2px solid #e2e8f0;
+    border: 2px solid var(--surface-border);
     padding: 0.625rem 0.875rem 0.625rem 2.5rem;
     font-size: 0.875rem;
     transition: all 0.3s ease;
-    background: white;
+    background: var(--surface-ground);
+    color: var(--text-color);
 }
 
 .search-input-modern:hover {
@@ -333,18 +476,48 @@ const exportCSV = () => {
 }
 
 .export-button {
-    background: linear-gradient(135deg, #10b981, #059669) !important;
+    background: linear-gradient(135deg, #10b981 0%, #059669 100%) !important;
     border: none !important;
     width: 40px !important;
     height: 40px !important;
     border-radius: 10px !important;
-    box-shadow: 0 3px 10px rgba(16, 185, 129, 0.3) !important;
+    box-shadow: 0 3px 10px rgba(16, 185, 129, 0.3), 0 2px 6px rgba(5, 150, 105, 0.2) !important;
     transition: all 0.3s ease !important;
+    color: white !important;
+    position: relative;
+    overflow: hidden;
+}
+
+.export-button::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(135deg, transparent 0%, rgba(255, 255, 255, 0.2) 50%, transparent 100%);
+    transform: translateX(-100%);
+    transition: transform 0.6s ease;
+}
+
+.export-button:hover::before {
+    transform: translateX(100%);
 }
 
 .export-button:hover {
     transform: translateY(-2px) !important;
-    box-shadow: 0 5px 15px rgba(16, 185, 129, 0.4) !important;
+    box-shadow: 0 5px 15px rgba(16, 185, 129, 0.4), 0 3px 10px rgba(5, 150, 105, 0.3) !important;
+    background: linear-gradient(135deg, #059669 0%, #047857 100%) !important;
+}
+
+/* Dark mode support */
+:global(.dark) .export-button,
+:global([data-theme='dark']) .export-button {
+    background: linear-gradient(135deg, #10b981 0%, #059669 100%) !important;
+    box-shadow: 0 3px 10px rgba(16, 185, 129, 0.4), 0 2px 6px rgba(5, 150, 105, 0.3) !important;
+}
+
+:global(.dark) .export-button:hover,
+:global([data-theme='dark']) .export-button:hover {
+    background: linear-gradient(135deg, #34d399 0%, #10b981 100%) !important;
+    box-shadow: 0 5px 15px rgba(16, 185, 129, 0.5), 0 3px 10px rgba(5, 150, 105, 0.4) !important;
 }
 
 /* Modern Empty State */
@@ -370,7 +543,7 @@ const exportCSV = () => {
     height: 80px;
     margin: 0 auto 1.5rem;
     border-radius: 50%;
-    background: linear-gradient(135deg, #f1f5f9, #e2e8f0);
+    background: var(--surface-100);
     display: flex;
     align-items: center;
     justify-content: center;
@@ -378,19 +551,20 @@ const exportCSV = () => {
 
 .empty-icon-wrapper i {
     font-size: 2.5rem;
-    color: #94a3b8;
+    color: var(--text-color-secondary);
+    opacity: 0.5;
 }
 
 .empty-title {
     font-size: 1.25rem;
     font-weight: 700;
-    color: #334155;
+    color: var(--text-color);
     margin: 0 0 0.5rem 0;
 }
 
 .empty-description {
     font-size: 0.938rem;
-    color: #64748b;
+    color: var(--text-color-secondary);
     margin: 0;
 }
 
@@ -407,13 +581,13 @@ const exportCSV = () => {
 .p-datatable-compact :deep(.p-datatable-tbody > tr > td) {
     padding: 0.875rem 0.75rem;
     font-size: 0.875rem;
-    border-bottom: 1px solid #f1f5f9;
+    border-bottom: 1px solid var(--surface-border);
 }
 
 .p-datatable-compact :deep(.p-datatable-tbody > tr:hover) {
-    background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%) !important;
+    background: linear-gradient(135deg, var(--surface-hover) 0%, color-mix(in srgb, var(--surface-hover) 95%, var(--primary-50) 5%) 100%) !important;
     transform: scale(1.002);
-    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+    box-shadow: 0 2px 8px var(--card-shadow), 0 0 0 1px color-mix(in srgb, var(--primary-color) 10%, transparent);
 }
 
 .p-datatable-compact :deep(.p-datatable-thead > tr > th) {
@@ -422,9 +596,9 @@ const exportCSV = () => {
     font-size: 0.75rem;
     text-transform: uppercase;
     letter-spacing: 0.05em;
-    background: linear-gradient(135deg, #f8f9fa 0%, #f1f5f9 100%);
-    color: #475569;
-    border-bottom: 2px solid #e2e8f0;
+    background: var(--surface-section);
+    color: var(--text-color-secondary);
+    border-bottom: 2px solid var(--surface-border);
 }
 
 /* ID Badge - Modern Style */
@@ -432,17 +606,20 @@ const exportCSV = () => {
     display: inline-block;
     font-weight: 700;
     font-size: 0.75rem;
-    color: #6366f1;
-    background: linear-gradient(135deg, #eef2ff, #e0e7ff);
+    color: var(--indigo-700);
+    background: linear-gradient(135deg, var(--indigo-50) 0%, var(--purple-50) 100%);
     padding: 0.375rem 0.625rem;
     border-radius: 8px;
-    border: 1px solid #c7d2fe;
+    border: 1px solid var(--indigo-200);
     transition: all 0.2s ease;
+    box-shadow: 0 2px 4px color-mix(in srgb, var(--indigo-500) 10%, transparent);
 }
 
 .id-badge:hover {
-    background: linear-gradient(135deg, #e0e7ff, #ddd6fe);
+    background: linear-gradient(135deg, var(--indigo-100) 0%, var(--purple-100) 100%);
     transform: scale(1.05);
+    box-shadow: 0 3px 8px color-mix(in srgb, var(--indigo-500) 20%, transparent);
+    border-color: var(--indigo-300);
 }
 
 /* Cell Content - Enhanced */
@@ -454,44 +631,52 @@ const exportCSV = () => {
 
 .cell-icon {
     font-size: 1rem;
-    color: #6366f1;
+    color: var(--indigo-600);
     flex-shrink: 0;
     width: 24px;
     height: 24px;
     display: flex;
     align-items: center;
     justify-content: center;
-    background: #eef2ff;
+    background: linear-gradient(135deg, var(--indigo-50) 0%, var(--purple-50) 100%);
     border-radius: 6px;
+    transition: all 0.2s ease;
+    box-shadow: 0 1px 3px color-mix(in srgb, var(--indigo-500) 10%, transparent);
+}
+
+.cell-icon:hover {
+    background: linear-gradient(135deg, var(--indigo-100) 0%, var(--purple-100) 100%);
+    transform: scale(1.1);
+    box-shadow: 0 2px 6px color-mix(in srgb, var(--indigo-500) 20%, transparent);
 }
 
 .cell-icon-small {
     font-size: 0.875rem;
-    color: #64748b;
+    color: var(--text-color-secondary);
     flex-shrink: 0;
 }
 
 .cell-icon-small.success {
-    color: #10b981;
+    color: var(--green-500);
 }
 
 .cell-text {
     font-size: 0.875rem;
     font-weight: 600;
-    color: #1e293b;
+    color: var(--text-color);
     line-height: 1.4;
 }
 
 .cell-text-secondary {
     font-size: 0.813rem;
     font-weight: 500;
-    color: #475569;
+    color: var(--text-color-secondary);
     line-height: 1.4;
 }
 
 .description-text {
     font-size: 0.875rem;
-    color: #334155;
+    color: var(--text-color);
     line-height: 1.5;
     font-weight: 500;
 }
@@ -507,33 +692,33 @@ const exportCSV = () => {
 }
 
 :deep(.p-tag.p-tag-warning) {
-    background: linear-gradient(135deg, #fef3c7, #fde68a);
-    color: #92400e;
-    border-color: #fcd34d;
+    background: var(--yellow-50);
+    color: var(--yellow-800);
+    border-color: var(--yellow-200);
 }
 
 :deep(.p-tag.p-tag-success) {
-    background: linear-gradient(135deg, #d1fae5, #a7f3d0);
-    color: #065f46;
-    border-color: #6ee7b7;
+    background: var(--green-50);
+    color: var(--green-800);
+    border-color: var(--green-200);
 }
 
 :deep(.p-tag.p-tag-info) {
-    background: linear-gradient(135deg, #dbeafe, #bfdbfe);
-    color: #1e40af;
-    border-color: #93c5fd;
+    background: var(--blue-50);
+    color: var(--blue-800);
+    border-color: var(--blue-200);
 }
 
 :deep(.p-tag.p-tag-danger) {
-    background: linear-gradient(135deg, #fee2e2, #fecaca);
-    color: #991b1b;
-    border-color: #fca5a5;
+    background: var(--red-50);
+    color: var(--red-800);
+    border-color: var(--red-200);
 }
 
 :deep(.p-tag.p-tag-secondary) {
-    background: linear-gradient(135deg, #f1f5f9, #e2e8f0);
-    color: #475569;
-    border-color: #cbd5e1;
+    background: var(--surface-100);
+    color: var(--text-color-secondary);
+    border-color: var(--surface-300);
 }
 
 /* Status Cell - Enhanced */
@@ -549,18 +734,18 @@ const exportCSV = () => {
 }
 
 .status-icon.warning {
-    color: #f59e0b;
-    filter: drop-shadow(0 0 3px rgba(245, 158, 11, 0.3));
+    color: var(--orange-500);
+    filter: drop-shadow(0 0 3px color-mix(in srgb, var(--orange-500) 30%, transparent));
 }
 
 .status-icon.success {
-    color: #10b981;
-    filter: drop-shadow(0 0 3px rgba(16, 185, 129, 0.3));
+    color: var(--green-500);
+    filter: drop-shadow(0 0 3px color-mix(in srgb, var(--green-500) 30%, transparent));
 }
 
 .status-icon.danger {
-    color: #ef4444;
-    filter: drop-shadow(0 0 3px rgba(239, 68, 68, 0.3));
+    color: var(--red-500);
+    filter: drop-shadow(0 0 3px color-mix(in srgb, var(--red-500) 30%, transparent));
     animation: pulse 2s ease-in-out infinite;
 }
 
@@ -581,14 +766,14 @@ const exportCSV = () => {
 .user-name {
     font-size: 0.813rem;
     font-weight: 600;
-    color: #334155;
+    color: var(--text-color);
     line-height: 1.3;
 }
 
 .user-completed {
     font-size: 0.75rem;
     font-weight: 600;
-    color: #10b981;
+    color: var(--green-500);
     line-height: 1.3;
     display: flex;
     align-items: center;
@@ -611,14 +796,14 @@ const exportCSV = () => {
 .date-primary {
     font-size: 0.813rem;
     font-weight: 600;
-    color: #334155;
+    color: var(--text-color);
     line-height: 1.3;
 }
 
 .date-secondary {
     font-size: 0.75rem;
     font-weight: 500;
-    color: #64748b;
+    color: var(--text-color-secondary);
     line-height: 1.3;
     font-style: italic;
 }
@@ -626,7 +811,7 @@ const exportCSV = () => {
 /* Empty Value */
 .empty-value {
     font-size: 0.813rem;
-    color: #94a3b8;
+    color: var(--text-color-secondary);
     opacity: 0.7;
     font-style: italic;
 }
@@ -643,23 +828,23 @@ const exportCSV = () => {
 }
 
 .p-datatable-compact :deep(.p-datatable-wrapper::-webkit-scrollbar-track) {
-    background: #f1f5f9;
+    background: var(--surface-100);
     border-radius: 4px;
 }
 
 .p-datatable-compact :deep(.p-datatable-wrapper::-webkit-scrollbar-thumb) {
-    background: #cbd5e1;
+    background: var(--surface-300);
     border-radius: 4px;
     transition: background 0.2s ease;
 }
 
 .p-datatable-compact :deep(.p-datatable-wrapper::-webkit-scrollbar-thumb:hover) {
-    background: #94a3b8;
+    background: var(--surface-400);
 }
 
 /* Striped Rows Enhancement */
 .p-datatable-compact :deep(.p-datatable-tbody > tr:nth-child(even)) {
-    background-color: #fafbfc;
+    background-color: color-mix(in srgb, var(--surface-ground) 98%, var(--text-color) 2%);
 }
 
 /* Responsive Design */

@@ -100,129 +100,104 @@ const clearFilters = () => {
                         </div>
                     </div>
 
-                <!-- Filters Section -->
-                <div class="filters-card">
-                    <div class="filters-header" @click="toggleFilters">
-                        <div class="filters-header-left">
-                            <i class="pi pi-filter-fill"></i>
-                            <span>Filtros de Búsqueda</span>
+                    <!-- Filters Section -->
+                    <div class="filters-card">
+                        <div class="filters-header" @click="toggleFilters">
+                            <div class="filters-header-left">
+                                <i class="pi pi-filter-fill"></i>
+                                <span>Filtros de Búsqueda</span>
+                            </div>
+                            <Button :icon="filtersVisible ? 'pi pi-chevron-up' : 'pi pi-chevron-down'" text rounded class="toggle-button" v-tooltip.left="filtersVisible ? 'Ocultar filtros' : 'Mostrar filtros'" />
                         </div>
-                        <Button
-                            :icon="filtersVisible ? 'pi pi-chevron-up' : 'pi pi-chevron-down'"
-                            text
-                            rounded
-                            class="toggle-button"
-                            v-tooltip.left="filtersVisible ? 'Ocultar filtros' : 'Mostrar filtros'"
-                        />
-                    </div>
 
-                    <transition name="filter-expand">
-                        <div v-show="filtersVisible" class="filters-content">
-                            <div class="grid">
-                                <!-- Primera columna -->
-                                <div class="col-12 lg:col-6">
-                                    <!-- Fechas -->
-                                    <div class="grid">
-                                        <div class="col-12 md:col-6">
-                                            <label for="start_date" class="filter-label">
-                                                <div class="label-icon-wrapper calendar">
-                                                    <i class="pi pi-calendar-plus"></i>
-                                                </div>
-                                                <span>Fecha de inicio</span>
-                                            </label>
-                                            <Calendar v-model="startDate" inputId="start_date" dateFormat="dd/mm/yy" showIcon iconDisplay="input" class="w-full custom-calendar" placeholder="Seleccionar fecha" />
-                                        </div>
-
-                                        <div class="col-12 md:col-6">
-                                            <label for="end_date" class="filter-label">
-                                                <div class="label-icon-wrapper calendar">
-                                                    <i class="pi pi-calendar-times"></i>
-                                                </div>
-                                                <span>Fecha de fin</span>
-                                            </label>
-                                            <Calendar v-model="endDate" inputId="end_date" dateFormat="dd/mm/yy" showIcon iconDisplay="input" class="w-full custom-calendar" placeholder="Seleccionar fecha" />
-                                        </div>
-
-                                        <!-- Búsqueda por término -->
-                                        <div class="col-12">
-                                            <label for="search_term" class="filter-label">
-                                                <div class="label-icon-wrapper search">
-                                                    <i class="pi pi-search"></i>
-                                                </div>
-                                                <span>Buscar en descripción</span>
-                                            </label>
-                                            <InputText v-model="searchTerm" inputId="search_term" class="w-full custom-input" placeholder="Ej: cambiar vendaje" />
-                                        </div>
+                        <transition name="filter-expand">
+                            <div v-show="filtersVisible" class="filters-content">
+                                <div class="grid">
+                                    <!-- Fecha inicio -->
+                                    <div class="col-6 md:col-3 lg:col-2 xl:col-2">
+                                        <label for="start_date" class="filter-label-compact">
+                                            <i class="pi pi-calendar-plus label-icon calendar"></i>
+                                            Inicio
+                                        </label>
+                                        <Calendar v-model="startDate" inputId="start_date" dateFormat="dd/mm/yy" showIcon iconDisplay="input" class="w-full custom-calendar-compact" placeholder="Fecha" />
                                     </div>
-                                </div>
 
-                                <!-- Segunda columna -->
-                                <div class="col-12 lg:col-6">
-                                    <div class="grid">
-                                        <!-- Filtro por estado -->
-                                        <div class="col-12 md:col-6">
-                                            <label for="status" class="filter-label">
-                                                <div class="label-icon-wrapper filter">
-                                                    <i class="pi pi-flag"></i>
-                                                </div>
-                                                <span>Estado</span>
-                                            </label>
-                                            <Dropdown v-model="selectedStatus" :options="statusOptions" optionLabel="label" optionValue="value" inputId="status" class="w-full custom-dropdown" placeholder="Seleccionar estado" />
-                                        </div>
+                                    <!-- Fecha fin -->
+                                    <div class="col-6 md:col-3 lg:col-2 xl:col-2">
+                                        <label for="end_date" class="filter-label-compact">
+                                            <i class="pi pi-calendar-times label-icon calendar"></i>
+                                            Fin
+                                        </label>
+                                        <Calendar v-model="endDate" inputId="end_date" dateFormat="dd/mm/yy" showIcon iconDisplay="input" class="w-full custom-calendar-compact" placeholder="Fecha" />
+                                    </div>
 
-                                        <!-- Filtro por ID de atención -->
-                                        <div class="col-12 md:col-6">
-                                            <label for="attention_id" class="filter-label">
-                                                <div class="label-icon-wrapper attention">
-                                                    <i class="pi pi-hashtag"></i>
-                                                </div>
-                                                <span>ID de Atención</span>
-                                            </label>
-                                            <InputText v-model="attentionId" inputId="attention_id" class="w-full custom-input" placeholder="Ej: 123" type="number" />
-                                        </div>
+                                    <!-- Estado -->
+                                    <div class="col-8 md:col-3 lg:col-2 xl:col-2">
+                                        <label for="status" class="filter-label-compact">
+                                            <i class="pi pi-flag label-icon filter"></i>
+                                            Estado
+                                        </label>
+                                        <Dropdown v-model="selectedStatus" :options="statusOptions" optionLabel="label" optionValue="value" inputId="status" class="w-full custom-dropdown-compact" placeholder="Todos" />
+                                    </div>
 
-                                        <!-- Botones de acción -->
-                                        <div class="col-12 flex gap-3 action-buttons-wrapper">
-                                            <Button label="Buscar Tareas" icon="pi pi-search" class="search-button flex-1" @click="fetchTasks" />
-                                            <Button label="Limpiar" icon="pi pi-filter-slash" class="clear-button flex-1" @click="clearFilters" />
-                                        </div>
+                                    <!-- ID Atención -->
+                                    <div class="col-4 md:col-3 lg:col-1 xl:col-1">
+                                        <label for="attention_id" class="filter-label-compact">
+                                            <i class="pi pi-hashtag label-icon attention"></i>
+                                            ID
+                                        </label>
+                                        <InputText v-model="attentionId" inputId="attention_id" class="w-full custom-input-compact" placeholder="123" type="number" />
+                                    </div>
+
+                                    <!-- Búsqueda -->
+                                    <div class="col-12 md:col-8 lg:col-3 xl:col-3">
+                                        <label for="search_term" class="filter-label-compact">
+                                            <i class="pi pi-search label-icon search"></i>
+                                            Descripción
+                                        </label>
+                                        <InputText v-model="searchTerm" inputId="search_term" class="w-full custom-input-compact" placeholder="Buscar tarea..." />
+                                    </div>
+
+                                    <!-- Botones -->
+                                    <div class="col-12 md:col-4 lg:col-2 xl:col-2 flex gap-2 align-items-end">
+                                        <Button icon="pi pi-search" class="search-button-compact flex-1" @click="fetchTasks" v-tooltip.top="'Buscar tareas'" />
+                                        <Button icon="pi pi-filter-slash" class="clear-button-compact flex-1" @click="clearFilters" v-tooltip.top="'Limpiar filtros'" />
                                     </div>
                                 </div>
                             </div>
-                        </div>
-                    </transition>
-                </div>
-
-                <!-- Info Banner -->
-                <div class="info-banner" v-if="startDate || endDate || searchTerm || selectedStatus || attentionId">
-                    <div class="info-icon-wrapper">
-                        <i class="pi pi-info-circle"></i>
+                        </transition>
                     </div>
-                    <div class="info-content">
-                        <div class="info-title">Filtros aplicados</div>
-                        <div class="info-filters">
-                            <span v-if="startDate && endDate" class="filter-badge">
-                                <i class="pi pi-calendar"></i>
-                                {{ format(startDate, 'dd/MM/yyyy') }} - {{ format(endDate, 'dd/MM/yyyy') }}
-                            </span>
-                            <span v-if="searchTerm" class="filter-badge">
-                                <i class="pi pi-search"></i>
-                                {{ searchTerm }}
-                            </span>
-                            <span v-if="selectedStatus" class="filter-badge">
-                                <i class="pi pi-flag"></i>
-                                {{ statusOptions.find(s => s.value === selectedStatus)?.label }}
-                            </span>
-                            <span v-if="attentionId" class="filter-badge">
-                                <i class="pi pi-hashtag"></i>
-                                Atención {{ attentionId }}
-                            </span>
+
+                    <!-- Info Banner -->
+                    <div class="info-banner" v-if="startDate || endDate || searchTerm || selectedStatus || attentionId">
+                        <div class="info-icon-wrapper">
+                            <i class="pi pi-info-circle"></i>
+                        </div>
+                        <div class="info-content">
+                            <div class="info-title">Filtros aplicados</div>
+                            <div class="info-filters">
+                                <span v-if="startDate && endDate" class="filter-badge">
+                                    <i class="pi pi-calendar"></i>
+                                    {{ format(startDate, 'dd/MM/yyyy') }} - {{ format(endDate, 'dd/MM/yyyy') }}
+                                </span>
+                                <span v-if="searchTerm" class="filter-badge">
+                                    <i class="pi pi-search"></i>
+                                    {{ searchTerm }}
+                                </span>
+                                <span v-if="selectedStatus" class="filter-badge">
+                                    <i class="pi pi-flag"></i>
+                                    {{ statusOptions.find((s) => s.value === selectedStatus)?.label }}
+                                </span>
+                                <span v-if="attentionId" class="filter-badge">
+                                    <i class="pi pi-hashtag"></i>
+                                    Atención {{ attentionId }}
+                                </span>
+                            </div>
                         </div>
                     </div>
-                </div>
 
-                <!-- Table Section -->
-                <TasksTable />
+                    <!-- Table Section -->
+                    <TasksTable />
                 </div>
             </div>
         </div>
@@ -230,6 +205,27 @@ const clearFilters = () => {
 </template>
 
 <style scoped>
+/* Variables personalizadas para compatibilidad con modo oscuro */
+.tasks-view {
+    --primary-color-alpha: color-mix(in srgb, var(--primary-color) 30%, transparent);
+    --surface-hover: color-mix(in srgb, var(--surface-card) 95%, var(--text-color) 5%);
+
+    /* Colores específicos para modo claro/oscuro */
+    --gradient-start: var(--surface-50);
+    --gradient-end: var(--surface-0);
+    --card-shadow: rgba(0, 0, 0, 0.08);
+    --card-shadow-hover: rgba(0, 0, 0, 0.12);
+}
+
+/* Dark mode adjustments */
+:global(.dark) .tasks-view,
+:global([data-theme='dark']) .tasks-view {
+    --gradient-start: var(--surface-800);
+    --gradient-end: var(--surface-900);
+    --card-shadow: rgba(0, 0, 0, 0.3);
+    --card-shadow-hover: rgba(0, 0, 0, 0.4);
+}
+
 /* Main Container */
 .tasks-view {
     animation: fadeIn 0.4s ease-out;
@@ -247,11 +243,14 @@ const clearFilters = () => {
 }
 
 .main-card {
-    background: linear-gradient(145deg, #ffffff 0%, #f8f9fa 100%);
+    background: linear-gradient(145deg, var(--gradient-start) 0%, var(--gradient-end) 100%);
     border-radius: 20px;
     padding: 2rem;
-    box-shadow: 0 10px 40px rgba(0, 0, 0, 0.08);
+    box-shadow:
+        0 10px 40px var(--card-shadow),
+        0 0 0 1px var(--surface-border);
     transition: all 0.3s ease;
+    border: 1px solid var(--surface-border);
 }
 
 /* Header Section */
@@ -261,7 +260,7 @@ const clearFilters = () => {
     gap: 1.5rem;
     margin-bottom: 2rem;
     padding-bottom: 1.5rem;
-    border-bottom: 2px solid #e9ecef;
+    border-bottom: 2px solid var(--surface-border);
     position: relative;
 }
 
@@ -279,28 +278,72 @@ const clearFilters = () => {
     width: 70px;
     height: 70px;
     border-radius: 18px;
-    background: linear-gradient(135deg, var(--primary-color), #667eea);
+    background: linear-gradient(135deg, #6366f1 0%, #9333ea 50%, #4338ca 100%);
     display: flex;
     align-items: center;
     justify-content: center;
-    box-shadow: 0 8px 20px rgba(99, 102, 241, 0.3);
+    box-shadow:
+        0 8px 20px rgba(99, 102, 241, 0.3),
+        0 4px 12px rgba(147, 51, 234, 0.4);
     animation: pulse 2s ease-in-out infinite;
+    position: relative;
+    overflow: hidden;
+}
+
+.header-icon-wrapper::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(135deg, transparent 0%, rgba(255, 255, 255, 0.1) 50%, transparent 100%);
+    animation: shimmer 3s ease-in-out infinite;
+}
+
+@keyframes shimmer {
+    0%,
+    100% {
+        transform: translateX(-100%) rotate(45deg);
+    }
+    50% {
+        transform: translateX(100%) rotate(45deg);
+    }
 }
 
 @keyframes pulse {
-    0%, 100% {
+    0%,
+    100% {
         transform: scale(1);
-        box-shadow: 0 8px 20px rgba(99, 102, 241, 0.3);
+        box-shadow:
+            0 8px 20px rgba(99, 102, 241, 0.3),
+            0 4px 12px rgba(147, 51, 234, 0.4);
     }
     50% {
         transform: scale(1.05);
-        box-shadow: 0 12px 28px rgba(99, 102, 241, 0.4);
+        box-shadow:
+            0 12px 28px rgba(99, 102, 241, 0.4),
+            0 6px 18px rgba(147, 51, 234, 0.5);
     }
+}
+
+/* Dark mode support */
+:global(.dark) .header-icon-wrapper,
+:global([data-theme='dark']) .header-icon-wrapper {
+    background: linear-gradient(135deg, #818cf8 0%, #a855f7 50%, #6366f1 100%);
+    box-shadow:
+        0 8px 20px rgba(129, 140, 248, 0.4),
+        0 4px 12px rgba(168, 85, 247, 0.5);
+}
+
+:global(.dark) .header-icon-wrapper::before,
+:global([data-theme='dark']) .header-icon-wrapper::before {
+    background: linear-gradient(135deg, transparent 0%, rgba(255, 255, 255, 0.15) 50%, transparent 100%);
 }
 
 .header-icon {
     font-size: 2rem;
     color: white;
+    position: relative;
+    z-index: 1;
+    filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.2));
 }
 
 .header-content {
@@ -310,14 +353,14 @@ const clearFilters = () => {
 .header-title {
     font-size: 2rem;
     font-weight: 700;
-    color: #1e293b;
+    color: var(--text-color);
     margin: 0 0 0.5rem 0;
     letter-spacing: -0.025em;
 }
 
 .header-subtitle {
     font-size: 1rem;
-    color: #64748b;
+    color: var(--text-color-secondary);
     margin: 0;
     display: flex;
     align-items: center;
@@ -326,17 +369,46 @@ const clearFilters = () => {
 
 /* Filters Card */
 .filters-card {
-    background: linear-gradient(145deg, #f8f9fa 0%, #ffffff 100%);
+    background: linear-gradient(145deg, var(--surface-section) 0%, var(--surface-card) 100%);
     border-radius: 16px;
     padding: 1.25rem 1.75rem;
     margin-bottom: 1.5rem;
-    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.06);
-    border: 1px solid #e2e8f0;
+    box-shadow:
+        0 4px 20px var(--card-shadow),
+        0 0 0 1px color-mix(in srgb, var(--primary-color) 20%, var(--surface-border));
+    border: 1px solid color-mix(in srgb, var(--primary-color) 10%, var(--surface-border));
     transition: all 0.3s ease;
+    position: relative;
+    overflow: hidden;
+}
+
+.filters-card::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 3px;
+    background: linear-gradient(90deg, #6366f1, #8b5cf6, #4f46e5, #6366f1);
+    background-size: 200% 100%;
+    animation: gradientShift 3s ease infinite;
+}
+
+@keyframes gradientShift {
+    0%,
+    100% {
+        background-position: 0% 50%;
+    }
+    50% {
+        background-position: 100% 50%;
+    }
 }
 
 .filters-card:hover {
-    box-shadow: 0 6px 30px rgba(0, 0, 0, 0.1);
+    box-shadow:
+        0 6px 30px var(--card-shadow-hover),
+        0 0 0 1px color-mix(in srgb, var(--primary-color) 30%, var(--surface-border));
+    transform: translateY(-2px);
 }
 
 .filters-header {
@@ -359,7 +431,7 @@ const clearFilters = () => {
     gap: 0.75rem;
     font-size: 1.1rem;
     font-weight: 600;
-    color: #334155;
+    color: var(--text-color);
 }
 
 .filters-header-left i {
@@ -368,86 +440,107 @@ const clearFilters = () => {
 }
 
 .toggle-button {
-    color: #64748b !important;
+    color: var(--text-color-secondary) !important;
     transition: all 0.3s ease !important;
 }
 
 .toggle-button:hover {
     color: var(--primary-color) !important;
-    background: rgba(99, 102, 241, 0.1) !important;
+    background: var(--primary-50) !important;
 }
 
 .filters-content {
-    margin-top: 1.5rem;
+    margin-top: 1rem;
 }
 
-/* Filter Labels */
-.filter-label {
+.filters-content .grid {
+    display: flex;
+    flex-wrap: wrap;
+    margin: 0 -0.5rem;
+}
+
+.filters-content .grid > div {
+    padding: 0 0.5rem;
+    margin-bottom: 1rem;
+}
+
+/* Asegurar alineación vertical en desktop */
+@media (min-width: 992px) {
+    .filters-content .grid {
+        align-items: flex-end;
+    }
+}
+
+/* Compact Filter Labels */
+.filter-label-compact {
     display: flex;
     align-items: center;
-    gap: 0.5rem;
-    margin-bottom: 0.625rem;
+    gap: 0.375rem;
+    margin-bottom: 0.375rem;
     font-weight: 600;
-    font-size: 0.875rem;
-    color: #475569;
+    font-size: 0.688rem;
+    color: var(--text-color-secondary);
     text-transform: uppercase;
     letter-spacing: 0.025em;
+    white-space: nowrap;
 }
 
-.label-icon-wrapper {
-    width: 28px;
-    height: 28px;
+.label-icon {
+    font-size: 0.813rem;
+    flex-shrink: 0;
+    transition: all 0.2s ease;
+}
+
+.label-icon.calendar {
+    color: var(--blue-500);
+}
+
+.label-icon.search {
+    color: var(--purple-500);
+}
+
+.label-icon.filter {
+    color: var(--pink-500);
+}
+
+.label-icon.attention {
+    color: var(--orange-500);
+}
+
+/* Compact Custom Inputs */
+:deep(.custom-input-compact),
+:deep(.custom-calendar-compact .p-inputtext),
+:deep(.custom-dropdown-compact) {
     border-radius: 8px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
+    border: 2px solid var(--surface-border);
+    padding: 0.438rem 0.625rem;
+    font-size: 0.813rem;
     transition: all 0.3s ease;
+    background: var(--surface-ground);
+    height: 38px;
 }
 
-.label-icon-wrapper i {
-    font-size: 0.875rem;
-    color: white;
+:deep(.custom-input-compact:hover),
+:deep(.custom-calendar-compact .p-inputtext:hover),
+:deep(.custom-dropdown-compact:hover) {
+    border-color: color-mix(in srgb, var(--primary-color) 50%, var(--surface-border));
 }
 
-.label-icon-wrapper.calendar {
-    background: linear-gradient(135deg, #3b82f6, #2563eb);
-}
-
-.label-icon-wrapper.search {
-    background: linear-gradient(135deg, #8b5cf6, #7c3aed);
-}
-
-.label-icon-wrapper.filter {
-    background: linear-gradient(135deg, #ec4899, #db2777);
-}
-
-.label-icon-wrapper.attention {
-    background: linear-gradient(135deg, #f59e0b, #d97706);
-}
-
-/* Custom Inputs */
-:deep(.custom-input),
-:deep(.custom-calendar .p-inputtext),
-:deep(.custom-dropdown) {
-    border-radius: 10px;
-    border: 2px solid #e2e8f0;
-    padding: 0.75rem 1rem;
-    font-size: 0.938rem;
-    transition: all 0.3s ease;
-    background: white;
-}
-
-:deep(.custom-input:hover),
-:deep(.custom-calendar .p-inputtext:hover),
-:deep(.custom-dropdown:hover) {
-    border-color: #cbd5e1;
-}
-
-:deep(.custom-input:focus),
-:deep(.custom-calendar .p-inputtext:focus),
-:deep(.custom-dropdown:focus) {
+:deep(.custom-input-compact:focus),
+:deep(.custom-calendar-compact .p-inputtext:focus),
+:deep(.custom-dropdown-compact:focus) {
     border-color: var(--primary-color);
-    box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.1);
+    box-shadow: 0 0 0 3px var(--primary-50);
+}
+
+:deep(.custom-calendar-compact .p-datepicker-trigger),
+:deep(.custom-dropdown-compact .p-dropdown-trigger) {
+    width: 2rem;
+}
+
+:deep(.custom-calendar-compact .p-icon),
+:deep(.custom-dropdown-compact .p-icon) {
+    font-size: 0.875rem;
 }
 
 /* Filter Expand/Collapse Transitions */
@@ -468,67 +561,150 @@ const clearFilters = () => {
 .filter-expand-enter-to,
 .filter-expand-leave-from {
     opacity: 1;
-    max-height: 500px;
-    margin-top: 1.5rem;
+    max-height: 200px;
+    margin-top: 1rem;
     transform: translateY(0);
 }
 
-/* Action Buttons */
-.action-buttons-wrapper {
-    margin-top: 0.5rem;
-}
-
-.search-button {
-    background: linear-gradient(135deg, var(--primary-color), #667eea) !important;
+/* Compact Action Buttons */
+.search-button-compact {
+    background: linear-gradient(135deg, #6366f1 0%, #9333ea 100%) !important;
     border: none !important;
-    padding: 0.875rem 1.5rem !important;
-    border-radius: 12px !important;
+    padding: 0.563rem !important;
+    border-radius: 8px !important;
     font-weight: 600 !important;
-    font-size: 0.938rem !important;
-    box-shadow: 0 4px 15px rgba(99, 102, 241, 0.3) !important;
+    font-size: 1rem !important;
+    box-shadow:
+        0 3px 12px rgba(99, 102, 241, 0.3),
+        0 2px 8px rgba(147, 51, 234, 0.3) !important;
     transition: all 0.3s ease !important;
     justify-content: center !important;
+    min-width: 40px;
+    color: white !important;
+    position: relative;
+    overflow: hidden;
 }
 
-.search-button:hover {
+.search-button-compact::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(135deg, transparent 0%, rgba(255, 255, 255, 0.2) 50%, transparent 100%);
+    transform: translateX(-100%);
+    transition: transform 0.6s ease;
+}
+
+.search-button-compact:hover::before {
+    transform: translateX(100%);
+}
+
+.search-button-compact:hover {
     transform: translateY(-2px) !important;
-    box-shadow: 0 6px 25px rgba(99, 102, 241, 0.4) !important;
+    box-shadow:
+        0 5px 18px rgba(99, 102, 241, 0.4),
+        0 3px 12px rgba(147, 51, 234, 0.4) !important;
 }
 
-.search-button:active {
+.search-button-compact:active {
     transform: translateY(0) !important;
 }
 
-.clear-button {
-    background: white !important;
-    border: 2px solid #e2e8f0 !important;
-    color: #64748b !important;
-    padding: 0.875rem 1.5rem !important;
-    border-radius: 12px !important;
-    font-weight: 600 !important;
-    font-size: 0.938rem !important;
-    transition: all 0.3s ease !important;
-    justify-content: center !important;
+/* Dark mode support */
+:global(.dark) .search-button-compact,
+:global([data-theme='dark']) .search-button-compact {
+    background: linear-gradient(135deg, #818cf8 0%, #a855f7 100%) !important;
 }
 
-.clear-button:hover {
-    background: #f8fafc !important;
-    border-color: #cbd5e1 !important;
+:global(.dark) .search-button-compact:hover,
+:global([data-theme='dark']) .search-button-compact:hover {
+    background: linear-gradient(135deg, #a5b4fc 0%, #c084fc 100%) !important;
+}
+
+.clear-button-compact {
+    background: linear-gradient(135deg, #ffffff 0%, #f8fafc 100%) !important;
+    border: 2px solid #fca5a5 !important;
+    color: #ef4444 !important;
+    padding: 0.563rem !important;
+    border-radius: 8px !important;
+    font-weight: 600 !important;
+    font-size: 1rem !important;
+    transition: all 0.3s ease !important;
+    justify-content: center !important;
+    min-width: 40px;
+    position: relative;
+    overflow: hidden;
+}
+
+.clear-button-compact::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(135deg, transparent 0%, rgba(239, 68, 68, 0.1) 100%);
+    opacity: 0;
+    transition: opacity 0.3s ease;
+}
+
+.clear-button-compact:hover::before {
+    opacity: 1;
+}
+
+.clear-button-compact:hover {
+    background: linear-gradient(135deg, #fee2e2 0%, #fecaca 100%) !important;
+    border-color: #f87171 !important;
+    color: #dc2626 !important;
     transform: translateY(-2px) !important;
-    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.08) !important;
+    box-shadow: 0 3px 12px rgba(239, 68, 68, 0.2) !important;
+}
+
+/* Dark mode support */
+:global(.dark) .clear-button-compact,
+:global([data-theme='dark']) .clear-button-compact {
+    background: linear-gradient(135deg, #1e293b 0%, #334155 100%) !important;
+    border: 2px solid #f87171 !important;
+    color: #fca5a5 !important;
+}
+
+:global(.dark) .clear-button-compact:hover,
+:global([data-theme='dark']) .clear-button-compact:hover {
+    background: linear-gradient(135deg, #450a0a 0%, #7f1d1d 100%) !important;
+    border-color: #fca5a5 !important;
+    color: #fecaca !important;
 }
 
 /* Info Banner */
 .info-banner {
-    background: linear-gradient(135deg, #dbeafe 0%, #bfdbfe 100%);
+    background: linear-gradient(135deg, #dbeafe 0%, #e0e7ff 100%);
     border-radius: 14px;
     padding: 1.25rem;
     margin-bottom: 1.5rem;
     display: flex;
     align-items: flex-start;
     gap: 1rem;
-    border: 1px solid #93c5fd;
+    border: 2px solid rgba(96, 165, 250, 0.5);
     animation: slideIn 0.4s ease-out;
+    box-shadow: 0 4px 16px rgba(59, 130, 246, 0.15);
+    position: relative;
+    overflow: hidden;
+}
+
+.info-banner::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 2px;
+    background: linear-gradient(90deg, #3b82f6, #8b5cf6, #6366f1);
+    background-size: 200% 100%;
+    animation: gradientShift 3s ease infinite;
+}
+
+/* Dark mode support */
+:global(.dark) .info-banner,
+:global([data-theme='dark']) .info-banner {
+    background: linear-gradient(135deg, #1e3a8a 0%, #3730a3 100%);
+    border: 2px solid rgba(147, 197, 253, 0.3);
+    box-shadow: 0 4px 16px rgba(59, 130, 246, 0.25);
 }
 
 @keyframes slideIn {
@@ -546,16 +722,26 @@ const clearFilters = () => {
     width: 40px;
     height: 40px;
     border-radius: 10px;
-    background: linear-gradient(135deg, #3b82f6, #2563eb);
+    background: linear-gradient(135deg, #3b82f6 0%, #9333ea 100%);
     display: flex;
     align-items: center;
     justify-content: center;
     flex-shrink: 0;
+    box-shadow: 0 4px 12px rgba(59, 130, 246, 0.3);
+    position: relative;
+    z-index: 1;
 }
 
 .info-icon-wrapper i {
     font-size: 1.25rem;
     color: white;
+}
+
+/* Dark mode support */
+:global(.dark) .info-icon-wrapper,
+:global([data-theme='dark']) .info-icon-wrapper {
+    background: linear-gradient(135deg, #60a5fa 0%, #a855f7 100%);
+    box-shadow: 0 4px 12px rgba(96, 165, 250, 0.4);
 }
 
 .info-content {
@@ -565,7 +751,7 @@ const clearFilters = () => {
 .info-title {
     font-weight: 700;
     font-size: 0.875rem;
-    color: #1e40af;
+    color: var(--primary-color);
     margin-bottom: 0.5rem;
     text-transform: uppercase;
     letter-spacing: 0.05em;
@@ -581,14 +767,35 @@ const clearFilters = () => {
     display: inline-flex;
     align-items: center;
     gap: 0.375rem;
-    background: white;
+    background: linear-gradient(135deg, white 0%, #dbeafe 100%);
     padding: 0.438rem 0.875rem;
     border-radius: 8px;
     font-size: 0.813rem;
     font-weight: 600;
-    color: #1e40af;
+    color: #1d4ed8;
     border: 1px solid #93c5fd;
-    box-shadow: 0 2px 6px rgba(59, 130, 246, 0.15);
+    box-shadow: 0 2px 6px rgba(59, 130, 246, 0.2);
+    transition: all 0.2s ease;
+}
+
+.filter-badge:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 4px 10px rgba(59, 130, 246, 0.3);
+    background: linear-gradient(135deg, #dbeafe 0%, #bfdbfe 100%);
+}
+
+/* Dark mode support */
+:global(.dark) .filter-badge,
+:global([data-theme='dark']) .filter-badge {
+    background: linear-gradient(135deg, #1e3a8a 0%, #1e40af 100%);
+    color: #93c5fd;
+    border: 1px solid #60a5fa;
+}
+
+:global(.dark) .filter-badge:hover,
+:global([data-theme='dark']) .filter-badge:hover {
+    background: linear-gradient(135deg, #1e40af 0%, #2563eb 100%);
+    box-shadow: 0 4px 10px rgba(96, 165, 250, 0.3);
 }
 
 .filter-badge i {
@@ -633,21 +840,15 @@ const clearFilters = () => {
         margin-top: 1rem;
     }
 
-    .action-buttons-wrapper {
-        flex-direction: column;
-        width: 100%;
-        gap: 0.75rem !important;
-    }
-
-    .search-button,
-    .clear-button {
-        width: 100%;
-        justify-content: center;
+    .search-button-compact,
+    .clear-button-compact {
+        padding: 0.5rem 1rem !important;
+        font-size: 0.875rem !important;
     }
 
     .filter-expand-enter-to,
     .filter-expand-leave-from {
-        max-height: 800px;
+        max-height: 400px;
     }
 
     .info-banner {
