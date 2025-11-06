@@ -2,6 +2,7 @@
 import RoomCard from '@/components/hospitalization/RoomCard.vue';
 import { useRealtimeEvents } from '@/composables/useRealtimeEvents';
 import { useHospitalizationStore } from '@/store/hospitalizationStore';
+import cache from '@/utils/cache';
 import { storeToRefs } from 'pinia';
 import Badge from 'primevue/badge';
 import Button from 'primevue/button';
@@ -25,6 +26,10 @@ const { startListening, stopListening, isListening } = useRealtimeEvents({
 const selectedRoom = ref(null);
 const showStats = ref(true);
 const showFilters = ref(false);
+
+// Ordenamiento inteligente - Cargar desde cache o false por defecto
+const CACHE_KEY_SMART_SORT = 'hospitalization_smart_sort_enabled';
+const smartSortEnabled = ref(cache.getItem(CACHE_KEY_SMART_SORT) ?? false);
 
 // Filtros de ocupación
 const occupancyFilters = ref({
@@ -89,8 +94,27 @@ const filteredRooms = computed(() => {
         return true;
     });
 
+    // Aplicar ordenamiento inteligente solo si está habilitado
+    if (smartSortEnabled.value) {
+        rooms.sort((a, b) => {
+            const bedsA = a.beds.length;
+            const bedsB = b.beds.length;
+
+            // Primero ordenar por número de camas
+            if (bedsA !== bedsB) {
+                return bedsA - bedsB;
+            }
+
+            // Si tienen el mismo número de camas, ordenar por ocupación (más ocupadas primero)
+            const occupancyA = a.beds.filter(bed => bed.status === 'occupied').length;
+            const occupancyB = b.beds.filter(bed => bed.status === 'occupied').length;
+            return occupancyB - occupancyA;
+        });
+    }
+
     return rooms;
 });
+
 
 // Estadísticas generales
 const globalStats = computed(() => {
@@ -206,6 +230,12 @@ const clearAllFilters = () => {
     };
 };
 
+// Toggle ordenamiento inteligente y guardar en cache
+const toggleSmartSort = () => {
+    smartSortEnabled.value = !smartSortEnabled.value;
+    cache.setItem(CACHE_KEY_SMART_SORT, smartSortEnabled.value);
+};
+
 // Actualizar datos
 const refreshData = async () => {
     await store.fetchHospitalizationStatus();
@@ -272,6 +302,14 @@ onUnmounted(() => {
                         <span class="realtime-text">Tiempo Real</span>
                     </div>
 
+                    <Button
+                        icon="pi pi-sparkles"
+                        @click="toggleSmartSort"
+                        :severity="smartSortEnabled ? 'success' : 'secondary'"
+                        :outlined="!smartSortEnabled"
+                        v-tooltip.bottom="smartSortEnabled ? 'Ordenamiento inteligente activado' : 'Activar ordenamiento inteligente'"
+                        :class="{ 'smart-sort-active': smartSortEnabled }"
+                    />
                     <Button icon="pi pi-refresh" :loading="state.isLoading" @click="refreshData" severity="secondary" outlined v-tooltip.bottom="'Actualizar datos manualmente'" />
                     <Button :icon="showFilters ? 'pi pi-filter-slash' : 'pi pi-filter'" @click="showFilters = !showFilters" severity="secondary" outlined v-tooltip.bottom="showFilters ? 'Ocultar filtros' : 'Mostrar filtros'" />
                     <Button :icon="showStats ? 'pi pi-eye-slash' : 'pi pi-eye'" @click="showStats = !showStats" severity="secondary" outlined v-tooltip.bottom="showStats ? 'Ocultar estadísticas' : 'Mostrar estadísticas'" />
@@ -547,6 +585,21 @@ onUnmounted(() => {
     display: flex;
     gap: 0.75rem;
     align-items: center;
+}
+
+/* Smart Sort Button */
+.smart-sort-active {
+    animation: sparkle-pulse 2s ease-in-out infinite;
+}
+
+@keyframes sparkle-pulse {
+    0%,
+    100% {
+        box-shadow: 0 0 0 0 rgba(34, 197, 94, 0.4);
+    }
+    50% {
+        box-shadow: 0 0 0 8px rgba(34, 197, 94, 0);
+    }
 }
 
 /* Real-time status indicator */
@@ -852,7 +905,8 @@ onUnmounted(() => {
 
 .rooms-grid {
     display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(400px, 1fr));
+    grid-template-columns: repeat(auto-fill, minmax(350px, 1fr));
+    grid-auto-flow: dense;
     gap: 0.75rem;
     margin-top: 0.5rem;
     width: 100%;
@@ -990,7 +1044,7 @@ onUnmounted(() => {
 
 @media (min-width: 769px) and (max-width: 1200px) {
     .rooms-grid {
-        grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+        grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
         gap: 0.75rem;
     }
 
@@ -1014,7 +1068,7 @@ onUnmounted(() => {
 
 @media (min-width: 1201px) and (max-width: 1600px) {
     .rooms-grid {
-        grid-template-columns: repeat(auto-fit, minmax(400px, 1fr));
+        grid-template-columns: repeat(auto-fill, minmax(380px, 1fr));
         gap: 0.75rem;
     }
 
@@ -1066,7 +1120,7 @@ onUnmounted(() => {
 
 @media (min-width: 1601px) {
     .rooms-grid {
-        grid-template-columns: repeat(auto-fit, minmax(400px, 1fr));
+        grid-template-columns: repeat(auto-fill, minmax(400px, 1fr));
         gap: 0.875rem;
     }
 

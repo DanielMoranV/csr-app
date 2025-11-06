@@ -103,6 +103,15 @@ const truncateText = (text, maxLength = 16) => {
     return text.substring(0, maxLength) + '...';
 };
 
+// Función para sanitizar el número de admisión (quitar ceros a la izquierda)
+const sanitizeAdmissionNumber = (number) => {
+    if (!number) return '---';
+    // Convertir a string y quitar ceros a la izquierda
+    const sanitized = String(number).replace(/^0+/, '');
+    // Si después de quitar los ceros queda vacío, retornar '0'
+    return sanitized || '0';
+};
+
 // Función para formatear la edad del paciente
 const formatAge = (age) => {
     if (!age) return '---';
@@ -384,8 +393,8 @@ const hasPendingTasks = (bed) => {
                                 <span>{{ truncateText(bed.attention.doctor, 22) }}</span>
                             </div>
                             <div class="patient-sub-info">
-                                <span class="sub-info-item" :title="bed.attention.number">
-                                    <i class="pi pi-hashtag"></i> {{ bed.attention.number }}
+                                <span class="sub-info-item" :title="`Admisión: ${bed.attention.number}`">
+                                    <i class="pi pi-hashtag"></i> {{ sanitizeAdmissionNumber(bed.attention.number) }}
                                     <i class="pi pi-copy copy-icon" @click.stop="copyToClipboard(bed.attention.number)" v-tooltip.top="'Copiar número de admisión'"></i>
                                 </span>
                                 <span class="sub-info-item" :title="bed.attention.patient.document_number"> <i class="pi pi-id-card"></i> {{ bed.attention.patient.document_number }} </span>
@@ -684,7 +693,7 @@ const hasPendingTasks = (bed) => {
 .bed-indicators {
     display: grid;
     grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
-    gap: 0.75rem;
+    gap: 0.375rem;
     align-items: start;
     justify-content: start;
 }
@@ -894,11 +903,11 @@ const hasPendingTasks = (bed) => {
 
 /* Bed Content Styles */
 .bed-content {
-    padding: 0.75rem;
+    padding: 0.5rem;
     height: 100%;
     display: flex;
     flex-direction: column;
-    gap: 0.375rem;
+    gap: 0.3rem;
 }
 
 .bed-content--occupied {
@@ -918,18 +927,18 @@ const hasPendingTasks = (bed) => {
     display: flex;
     justify-content: space-between;
     align-items: center;
-    margin-bottom: 0.375rem;
+    margin-bottom: 0.25rem;
 }
 
 .bed-header-left {
     display: flex;
     align-items: center;
-    gap: 0.5rem;
+    gap: 0.375rem;
 }
 
 .bed-header-simple {
     text-align: center;
-    margin-bottom: 0.375rem;
+    margin-bottom: 0.25rem;
 }
 
 .bed-header-simple-content {
@@ -1001,8 +1010,8 @@ const hasPendingTasks = (bed) => {
     flex: 1;
     display: flex;
     flex-direction: column;
-    gap: 0.25rem;
-    margin-bottom: 0.375rem;
+    gap: 0.2rem;
+    margin-bottom: 0.25rem;
 }
 
 .patient-main-info {
@@ -1075,7 +1084,7 @@ const hasPendingTasks = (bed) => {
     display: flex;
     flex-wrap: wrap;
     gap: 0.2rem;
-    margin-bottom: 0.375rem;
+    margin-bottom: 0.25rem;
 }
 
 .indicator-tag {
@@ -1107,7 +1116,7 @@ const hasPendingTasks = (bed) => {
     display: flex;
     flex-direction: column;
     align-items: center;
-    gap: 0.375rem;
+    gap: 0.25rem;
     color: var(--green-700);
 }
 
@@ -1123,12 +1132,12 @@ const hasPendingTasks = (bed) => {
 
 /* Bed Notes - Mejorado */
 .bed-notes {
-    padding: 0.45rem 0.55rem;
+    padding: 0.4rem 0.5rem;
     border-radius: 8px;
-    margin-top: 0.375rem;
+    margin-top: 0.25rem;
     display: flex;
     align-items: flex-start;
-    gap: 0.5rem;
+    gap: 0.4rem;
     position: relative;
     animation: note-appear 0.3s ease;
     transition: all 0.25s ease;
@@ -1237,7 +1246,7 @@ const hasPendingTasks = (bed) => {
 .bed-content--reserved-minimal {
     display: flex;
     flex-direction: column;
-    gap: 0.5rem;
+    gap: 0.375rem;
     justify-content: space-between;
     height: 100%;
 }
@@ -1249,7 +1258,7 @@ const hasPendingTasks = (bed) => {
     justify-content: center;
     align-items: center;
     text-align: center;
-    gap: 0.375rem;
+    gap: 0.25rem;
 }
 
 .reservation-status-minimal {
@@ -1305,7 +1314,7 @@ const hasPendingTasks = (bed) => {
 
     .bed-indicators {
         grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-        gap: 0.625rem;
+        gap: 0.375rem;
     }
 
     .bed-indicator {
@@ -1349,7 +1358,7 @@ const hasPendingTasks = (bed) => {
 
     .bed-indicators {
         grid-template-columns: 1fr;
-        gap: 0.5rem;
+        gap: 0.375rem;
     }
 
     .bed-indicator {
@@ -1357,8 +1366,8 @@ const hasPendingTasks = (bed) => {
     }
 
     .bed-content {
-        padding: 0.625rem;
-        gap: 0.3rem;
+        padding: 0.5rem;
+        gap: 0.25rem;
     }
 
     .patient-name {
@@ -1423,7 +1432,7 @@ const hasPendingTasks = (bed) => {
 @media (min-width: 901px) and (max-width: 1400px) {
     .bed-indicators {
         grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
-        gap: 0.625rem;
+        gap: 0.375rem;
     }
 
     .bed-indicator {
@@ -1449,7 +1458,7 @@ const hasPendingTasks = (bed) => {
 @media (min-width: 1401px) {
     .bed-indicators {
         grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
-        gap: 0.75rem;
+        gap: 0.375rem;
     }
 
     .bed-indicator {
