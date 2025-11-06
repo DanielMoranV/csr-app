@@ -594,13 +594,15 @@ onUnmounted(() => {
 
 /* Statistics Overview */
 .stats-overview {
-    margin-bottom: 0.625rem;
+    margin-bottom: 0.5rem;
 }
 
 .stats-grid-compact {
     display: grid;
     grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
-    gap: 0.5rem;
+    gap: 0.625rem;
+    max-width: 1400px;
+    margin: 0 auto;
 }
 
 .stat-card-group {
@@ -628,15 +630,15 @@ onUnmounted(() => {
 }
 
 .stat-group-content {
-    padding: 0.625rem 0.75rem;
+    padding: 0.5rem 0.75rem;
 }
 
 .stat-group-header {
     display: flex;
     align-items: center;
     gap: 0.375rem;
-    margin-bottom: 0.5rem;
-    padding-bottom: 0.375rem;
+    margin-bottom: 0.375rem;
+    padding-bottom: 0.25rem;
     border-bottom: 1px solid var(--surface-border);
 }
 
@@ -657,7 +659,7 @@ onUnmounted(() => {
     display: flex;
     align-items: center;
     gap: 0.625rem;
-    justify-content: space-around;
+    justify-content: space-evenly;
 }
 
 .stat-metric {
@@ -671,8 +673,9 @@ onUnmounted(() => {
 
 .stat-metric--highlight {
     background: var(--surface-50);
-    padding: 0.375rem 0.5rem;
+    padding: 0.375rem 0.625rem;
     border-radius: 4px;
+    min-width: 140px;
 }
 
 .stat-metric--success .metric-value {
@@ -688,10 +691,10 @@ onUnmounted(() => {
 }
 
 .metric-value {
-    font-size: 1.375rem;
+    font-size: 1.25rem;
     font-weight: 700;
     line-height: 1;
-    margin-bottom: 0.25rem;
+    margin-bottom: 0.2rem;
     color: var(--text-color);
     display: flex;
     align-items: center;
@@ -700,31 +703,32 @@ onUnmounted(() => {
 }
 
 .metric-value--large {
-    font-size: 1.75rem;
+    font-size: 1.5rem;
 }
 
 .metric-icon {
-    font-size: 0.875rem;
+    font-size: 0.75rem;
 }
 
 .metric-label {
     font-size: 0.7rem;
     color: var(--text-color-secondary);
     font-weight: 500;
-    line-height: 1.1;
+    line-height: 1;
 }
 
 .stat-divider {
     width: 1px;
-    height: 2rem;
+    height: 1.75rem;
     background: var(--surface-border);
     flex-shrink: 0;
 }
 
 .occupancy-tag-inline {
     font-size: 0.7rem;
-    font-weight: 600;
+    font-weight: 700;
     padding: 0.2rem 0.4rem;
+    margin-left: 0.25rem;
 }
 
 /* Filters Section - Compact Design */
@@ -923,16 +927,20 @@ onUnmounted(() => {
     }
 
     .metric-value {
-        font-size: 1.25rem;
+        font-size: 1.125rem;
     }
 
     .stat-group-content {
-        padding: 0.5rem;
+        padding: 0.375rem 0.5rem;
     }
 
     .stat-group-header {
-        margin-bottom: 0.375rem;
-        padding-bottom: 0.25rem;
+        margin-bottom: 0.25rem;
+        padding-bottom: 0.2rem;
+    }
+
+    .stat-divider {
+        height: 1.5rem;
     }
 
     .filters-container {
@@ -1011,7 +1019,17 @@ onUnmounted(() => {
     }
 
     .stats-grid-compact {
-        gap: 0.625rem;
+        grid-template-columns: repeat(3, 1fr);
+        gap: 0.75rem;
+        max-width: 1300px;
+    }
+
+    .stat-group-body {
+        gap: 0.875rem;
+    }
+
+    .stat-metric--highlight {
+        min-width: 120px;
     }
 }
 
@@ -1025,7 +1043,12 @@ onUnmounted(() => {
     }
 
     .stat-group-content {
-        padding: 0.625rem;
+        padding: 0.5rem 0.625rem;
+    }
+
+    .stat-group-header {
+        margin-bottom: 0.3rem;
+        padding-bottom: 0.2rem;
     }
 
     .filters-container {
@@ -1049,7 +1072,63 @@ onUnmounted(() => {
 
     .stats-grid-compact {
         grid-template-columns: repeat(3, 1fr);
-        gap: 0.625rem;
+        gap: 0.75rem;
+        max-width: 1400px;
+    }
+
+    .stat-group-content {
+        padding: 0.5rem 0.875rem;
+    }
+
+    .stat-group-header {
+        margin-bottom: 0.375rem;
+        padding-bottom: 0.25rem;
+    }
+}
+
+@media (min-width: 1920px) {
+    .stats-grid-compact {
+        max-width: 1600px;
+        gap: 1rem;
+    }
+
+    .stat-group-content {
+        padding: 0.5rem 1rem;
+    }
+
+    .stat-group-header {
+        margin-bottom: 0.4rem;
+        padding-bottom: 0.3rem;
+    }
+
+    .stat-group-body {
+        gap: 1.25rem;
+    }
+
+    .metric-value {
+        font-size: 1.375rem;
+    }
+
+    .metric-value--large {
+        font-size: 1.75rem;
+    }
+
+    .stat-divider {
+        height: 2rem;
+    }
+
+    .stat-metric--highlight {
+        padding: 0.4rem 0.75rem;
+        min-width: 160px;
+    }
+
+    .occupancy-tag-inline {
+        font-size: 0.75rem;
+        padding: 0.25rem 0.5rem;
+    }
+
+    .metric-label {
+        font-size: 0.75rem;
     }
 }
 
