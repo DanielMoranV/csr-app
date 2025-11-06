@@ -24,6 +24,7 @@ const { startListening, stopListening, isListening } = useRealtimeEvents({
 // Filtros
 const selectedRoom = ref(null);
 const showStats = ref(true);
+const showFilters = ref(false);
 
 // Filtros de ocupación
 const occupancyFilters = ref({
@@ -272,120 +273,92 @@ onUnmounted(() => {
                     </div>
 
                     <Button icon="pi pi-refresh" :loading="state.isLoading" @click="refreshData" severity="secondary" outlined v-tooltip.bottom="'Actualizar datos manualmente'" />
-                    <Button :icon="showStats ? 'pi pi-eye-slash' : 'pi pi-eye'" @click="showStats = !showStats" severity="secondary" outlined :label="showStats ? 'Ocultar estadísticas' : 'Mostrar estadísticas'" />
+                    <Button :icon="showFilters ? 'pi pi-filter-slash' : 'pi pi-filter'" @click="showFilters = !showFilters" severity="secondary" outlined v-tooltip.bottom="showFilters ? 'Ocultar filtros' : 'Mostrar filtros'" />
+                    <Button :icon="showStats ? 'pi pi-eye-slash' : 'pi pi-eye'" @click="showStats = !showStats" severity="secondary" outlined v-tooltip.bottom="showStats ? 'Ocultar estadísticas' : 'Mostrar estadísticas'" />
                 </div>
             </div>
 
             <!-- Global Statistics -->
             <div v-if="showStats && globalStats.totalRooms > 0" class="stats-overview">
-                <div class="stats-grid">
-                    <Card class="stat-card stat-card--primary">
+                <div class="stats-grid-compact">
+                    <!-- Ocupación General -->
+                    <Card class="stat-card-group stat-card-group--primary">
                         <template #content>
-                            <div class="stat-content">
-                                <div class="stat-icon">
-                                    <i class="pi pi-home"></i>
+                            <div class="stat-group-content">
+                                <div class="stat-group-header">
+                                    <i class="pi pi-building"></i>
+                                    <span>Ocupación General</span>
                                 </div>
-                                <div class="stat-info">
-                                    <div class="stat-value">{{ globalStats.totalRooms }}</div>
-                                    <div class="stat-label">Habitaciones</div>
+                                <div class="stat-group-body">
+                                    <div class="stat-metric">
+                                        <div class="metric-value">{{ globalStats.totalRooms }}</div>
+                                        <div class="metric-label">Habitaciones</div>
+                                    </div>
+                                    <div class="stat-divider"></div>
+                                    <div class="stat-metric stat-metric--highlight">
+                                        <div class="metric-value">
+                                            {{ globalStats.occupiedBeds }}/{{ globalStats.totalBeds }}
+                                            <Tag :value="`${globalStats.occupancyRate}%`" :severity="getGlobalStatusSeverity" class="occupancy-tag-inline" />
+                                        </div>
+                                        <div class="metric-label">Camas Ocupadas</div>
+                                    </div>
+                                    <div class="stat-divider"></div>
+                                    <div class="stat-metric stat-metric--success">
+                                        <div class="metric-value">{{ globalStats.freeBeds }}</div>
+                                        <div class="metric-label">Camas Libres</div>
+                                    </div>
                                 </div>
                             </div>
                         </template>
                     </Card>
 
-                    <Card class="stat-card stat-card--success">
+                    <!-- Tareas Activas -->
+                    <Card v-if="globalStats.totalTasks > 0" class="stat-card-group stat-card-group--tasks">
                         <template #content>
-                            <div class="stat-content">
-                                <div class="stat-icon">
-                                    <i class="pi pi-check-circle"></i>
-                                </div>
-                                <div class="stat-info">
-                                    <div class="stat-value">{{ globalStats.freeBeds }}</div>
-                                    <div class="stat-label">Camas Libres</div>
-                                </div>
-                            </div>
-                        </template>
-                    </Card>
-
-                    <Card class="stat-card stat-card--warning">
-                        <template #content>
-                            <div class="stat-content">
-                                <div class="stat-icon">
-                                    <i class="pi pi-users"></i>
-                                </div>
-                                <div class="stat-info">
-                                    <div class="stat-value">{{ globalStats.occupiedBeds }}</div>
-                                    <div class="stat-label">Camas Ocupadas</div>
-                                </div>
-                            </div>
-                        </template>
-                    </Card>
-
-                    <Card class="stat-card stat-card--info">
-                        <template #content>
-                            <div class="stat-content">
-                                <div class="stat-icon">
-                                    <Tag :value="`${globalStats.occupancyRate}%`" :severity="getGlobalStatusSeverity" class="occupancy-tag" />
-                                </div>
-                                <div class="stat-info">
-                                    <div class="stat-value">{{ globalStats.totalBeds }}</div>
-                                    <div class="stat-label">Total Camas</div>
-                                </div>
-                            </div>
-                        </template>
-                    </Card>
-
-                    <Card v-if="globalStats.totalTasks > 0" class="stat-card stat-card--info-dark">
-                        <template #content>
-                            <div class="stat-content">
-                                <div class="stat-icon">
+                            <div class="stat-group-content">
+                                <div class="stat-group-header">
                                     <i class="pi pi-list-check"></i>
+                                    <span>Tareas Activas</span>
                                 </div>
-                                <div class="stat-info">
-                                    <div class="stat-value">{{ globalStats.totalTasks }}</div>
-                                    <div class="stat-label">Tareas Pendientes</div>
-                                </div>
-                            </div>
-                        </template>
-                    </Card>
-
-                    <Card v-if="globalStats.tasksNearingDue > 0" class="stat-card stat-card--warning-alert">
-                        <template #content>
-                            <div class="stat-content">
-                                <div class="stat-icon">
-                                    <i class="pi pi-clock"></i>
-                                </div>
-                                <div class="stat-info">
-                                    <div class="stat-value">{{ globalStats.tasksNearingDue }}</div>
-                                    <div class="stat-label">Por Vencer</div>
-                                </div>
-                            </div>
-                        </template>
-                    </Card>
-
-                    <Card v-if="globalStats.tasksOverdue > 0" class="stat-card stat-card--danger">
-                        <template #content>
-                            <div class="stat-content">
-                                <div class="stat-icon">
-                                    <i class="pi pi-exclamation-circle"></i>
-                                </div>
-                                <div class="stat-info">
-                                    <div class="stat-value">{{ globalStats.tasksOverdue }}</div>
-                                    <div class="stat-label">Vencidas</div>
+                                <div class="stat-group-body">
+                                    <div class="stat-metric">
+                                        <div class="metric-value">{{ globalStats.totalTasks }}</div>
+                                        <div class="metric-label">Pendientes</div>
+                                    </div>
+                                    <div class="stat-divider"></div>
+                                    <div class="stat-metric stat-metric--warning" v-if="globalStats.tasksNearingDue > 0">
+                                        <div class="metric-value">
+                                            <i class="pi pi-clock metric-icon"></i>
+                                            {{ globalStats.tasksNearingDue }}
+                                        </div>
+                                        <div class="metric-label">Por Vencer</div>
+                                    </div>
+                                    <div class="stat-divider" v-if="globalStats.tasksNearingDue > 0"></div>
+                                    <div class="stat-metric stat-metric--danger" v-if="globalStats.tasksOverdue > 0">
+                                        <div class="metric-value">
+                                            <i class="pi pi-exclamation-circle metric-icon"></i>
+                                            {{ globalStats.tasksOverdue }}
+                                        </div>
+                                        <div class="metric-label">Vencidas</div>
+                                    </div>
                                 </div>
                             </div>
                         </template>
                     </Card>
 
-                    <Card v-if="globalStats.alertRooms > 0" class="stat-card stat-card--alert">
+                    <!-- Alertas -->
+                    <Card v-if="globalStats.alertRooms > 0" class="stat-card-group stat-card-group--alert">
                         <template #content>
-                            <div class="stat-content">
-                                <div class="stat-icon">
+                            <div class="stat-group-content">
+                                <div class="stat-group-header">
                                     <i class="pi pi-bell"></i>
+                                    <span>Alertas</span>
                                 </div>
-                                <div class="stat-info">
-                                    <div class="stat-value">{{ globalStats.alertRooms }}</div>
-                                    <div class="stat-label">Habitaciones con Alertas</div>
+                                <div class="stat-group-body">
+                                    <div class="stat-metric stat-metric--large">
+                                        <div class="metric-value metric-value--large">{{ globalStats.alertRooms }}</div>
+                                        <div class="metric-label">Habitaciones con Alertas</div>
+                                    </div>
                                 </div>
                             </div>
                         </template>
@@ -394,78 +367,72 @@ onUnmounted(() => {
             </div>
 
             <!-- Filters Section -->
-            <div class="filters-section">
-                <Card>
-                    <template #content>
-                        <div class="filters-content">
-                            <div class="filter-group">
-                                <label class="filter-label">
-                                    <i class="pi pi-filter mr-2"></i>
-                                    Filtrar por habitación:
-                                </label>
-                                <div class="filter-controls">
-                                    <Select v-model="selectedRoom" :options="roomOptions" optionLabel="label" optionValue="value" placeholder="Seleccionar habitación" class="filter-dropdown" showClear>
-                                        <template #option="{ option }">
-                                            <div class="dropdown-option">
-                                                <i class="pi pi-th-large"></i>
-                                                <div class="option-content">
-                                                    <div class="option-label">{{ option.label }}</div>
-                                                    <small v-if="option.occupancy" class="option-occupancy">{{ option.occupancy }}</small>
-                                                </div>
-                                            </div>
-                                        </template>
-                                    </Select>
+            <div v-if="showFilters" class="filters-section">
+                <div class="filters-container">
+                    <div class="filters-row">
+                        <div class="filter-item filter-item--select">
+                            <label class="filter-label-compact">
+                                <i class="pi pi-building"></i>
+                                <span>Habitación:</span>
+                            </label>
+                            <Select v-model="selectedRoom" :options="roomOptions" optionLabel="label" optionValue="value" placeholder="Todas" class="filter-select-compact" showClear size="small">
+                                <template #option="{ option }">
+                                    <div class="dropdown-option-compact">
+                                        <span class="option-label">{{ option.label }}</span>
+                                        <small v-if="option.occupancy" class="option-occupancy">{{ option.occupancy }}</small>
+                                    </div>
+                                </template>
+                            </Select>
+                        </div>
 
-                                    <Button v-if="selectedRoom" icon="pi pi-times" @click="clearFilter" severity="secondary" outlined size="small" v-tooltip.bottom="'Limpiar filtro de habitación'" />
+                        <div class="filter-divider-vertical"></div>
+
+                        <div class="filter-item filter-item--checkboxes">
+                            <label class="filter-label-compact">
+                                <i class="pi pi-list"></i>
+                                <span>Estado:</span>
+                            </label>
+                            <div class="occupancy-filters-compact">
+                                <div class="occupancy-checkbox-compact">
+                                    <Checkbox v-model="occupancyFilters.occupied" inputId="filter-occupied" :binary="true" />
+                                    <label for="filter-occupied" class="occupancy-label-compact">
+                                        <i class="pi pi-users text-cyan-500"></i>
+                                        <span>Ocupadas</span>
+                                    </label>
                                 </div>
-                            </div>
-
-                            <!-- Filtros de estado de ocupación -->
-                            <div class="filter-group occupancy-filter-group">
-                                <label class="filter-label">
-                                    <i class="pi pi-list mr-2"></i>
-                                    Estado de ocupación:
-                                </label>
-                                <div class="occupancy-filters">
-                                    <div class="occupancy-checkbox">
-                                        <Checkbox v-model="occupancyFilters.occupied" inputId="filter-occupied" :binary="true" />
-                                        <label for="filter-occupied" class="occupancy-label">
-                                            <i class="pi pi-users text-cyan-500"></i>
-                                            <span>Ocupadas</span>
-                                        </label>
-                                    </div>
-                                    <div class="occupancy-checkbox">
-                                        <Checkbox v-model="occupancyFilters.free" inputId="filter-free" :binary="true" />
-                                        <label for="filter-free" class="occupancy-label">
-                                            <i class="pi pi-check-circle text-green-500"></i>
-                                            <span>Libres</span>
-                                        </label>
-                                    </div>
-                                    <div class="occupancy-checkbox">
-                                        <Checkbox v-model="occupancyFilters.reserved" inputId="filter-reserved" :binary="true" />
-                                        <label for="filter-reserved" class="occupancy-label">
-                                            <i class="pi pi-bookmark-fill text-yellow-500"></i>
-                                            <span>Reservadas</span>
-                                        </label>
-                                    </div>
+                                <div class="occupancy-checkbox-compact">
+                                    <Checkbox v-model="occupancyFilters.free" inputId="filter-free" :binary="true" />
+                                    <label for="filter-free" class="occupancy-label-compact">
+                                        <i class="pi pi-check-circle text-green-500"></i>
+                                        <span>Libres</span>
+                                    </label>
                                 </div>
-                            </div>
-
-                            <div class="filter-info">
-                                <Badge :value="`Mostrando: ${filteredRooms.length} habitación(es)`" severity="info" />
-                                <Button
-                                    v-if="selectedRoom || !occupancyFilters.occupied || !occupancyFilters.free || !occupancyFilters.reserved"
-                                    icon="pi pi-filter-slash"
-                                    label="Limpiar filtros"
-                                    @click="clearAllFilters"
-                                    severity="secondary"
-                                    outlined
-                                    size="small"
-                                />
+                                <div class="occupancy-checkbox-compact">
+                                    <Checkbox v-model="occupancyFilters.reserved" inputId="filter-reserved" :binary="true" />
+                                    <label for="filter-reserved" class="occupancy-label-compact">
+                                        <i class="pi pi-bookmark-fill text-yellow-500"></i>
+                                        <span>Reservadas</span>
+                                    </label>
+                                </div>
                             </div>
                         </div>
-                    </template>
-                </Card>
+
+                        <div class="filter-divider-vertical"></div>
+
+                        <div class="filter-item filter-item--actions">
+                            <Badge :value="`${filteredRooms.length} hab.`" severity="info" size="small" />
+                            <Button
+                                v-if="selectedRoom || !occupancyFilters.occupied || !occupancyFilters.free || !occupancyFilters.reserved"
+                                icon="pi pi-filter-slash"
+                                @click="clearAllFilters"
+                                severity="secondary"
+                                text
+                                size="small"
+                                v-tooltip.bottom="'Limpiar filtros'"
+                            />
+                        </div>
+                    </div>
+                </div>
             </div>
         </div>
 
@@ -535,36 +502,36 @@ onUnmounted(() => {
 
 <style scoped>
 .hospitalization-status-container {
-    padding: 1rem;
+    padding: 0.75rem;
     background-color: var(--surface-ground);
     min-height: calc(100vh - 8rem);
 }
 
 /* Header Styles */
 .header-section {
-    margin-bottom: 1rem;
+    margin-bottom: 0.625rem;
 }
 
 .header-top {
     display: flex;
     justify-content: space-between;
     align-items: center;
-    margin-bottom: 1rem;
-    padding-bottom: 0.75rem;
+    margin-bottom: 0.625rem;
+    padding-bottom: 0.5rem;
     border-bottom: 1px solid var(--surface-border);
 }
 
 .header-icon {
     background: linear-gradient(135deg, var(--primary-color), var(--primary-400));
-    border-radius: 8px;
-    padding: 0.75rem;
+    border-radius: 6px;
+    padding: 0.625rem;
     color: white;
-    font-size: 1.25rem;
+    font-size: 1.125rem;
     box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
 }
 
 .header-title {
-    font-size: 1.5rem;
+    font-size: 1.25rem;
     font-weight: 700;
     margin: 0;
     color: var(--text-color);
@@ -573,7 +540,7 @@ onUnmounted(() => {
 .header-subtitle {
     margin: 0.125rem 0 0 0;
     color: var(--text-color-secondary);
-    font-size: 0.875rem;
+    font-size: 0.8rem;
 }
 
 .header-actions {
@@ -627,221 +594,263 @@ onUnmounted(() => {
 
 /* Statistics Overview */
 .stats-overview {
-    margin-bottom: 1rem;
+    margin-bottom: 0.625rem;
 }
 
-.stats-grid {
+.stats-grid-compact {
     display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
-    gap: 0.75rem;
-    margin-bottom: 0.75rem;
+    grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+    gap: 0.5rem;
 }
 
-.stat-card {
-    border-radius: 8px;
+.stat-card-group {
+    border-radius: 6px;
     overflow: hidden;
     transition: all 0.2s ease;
     border: 1px solid var(--surface-border);
 }
 
-.stat-card:hover {
+.stat-card-group:hover {
     transform: translateY(-1px);
-    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
 }
 
-.stat-card--primary {
-    border-left: 4px solid var(--primary-color);
+.stat-card-group--primary {
+    border-top: 2px solid var(--primary-color);
 }
 
-.stat-card--success {
-    border-left: 4px solid var(--green-500);
+.stat-card-group--tasks {
+    border-top: 2px solid var(--indigo-500);
 }
 
-.stat-card--warning {
-    border-left: 4px solid var(--orange-500);
+.stat-card-group--alert {
+    border-top: 2px solid var(--yellow-600);
 }
 
-.stat-card--info {
-    border-left: 4px solid var(--blue-500);
+.stat-group-content {
+    padding: 0.625rem 0.75rem;
 }
 
-.stat-card--danger {
-    border-left: 4px solid var(--red-500);
-}
-
-.stat-card--alert {
-    border-left: 4px solid var(--yellow-500);
-}
-
-.stat-card--info-dark {
-    border-left: 4px solid var(--indigo-500);
-}
-
-.stat-card--warning-alert {
-    border-left: 4px solid var(--amber-500);
-}
-
-.stat-content {
-    display: flex;
-    align-items: center;
-    gap: 0.75rem;
-    padding: 0.75rem;
-}
-
-.stat-icon {
-    flex-shrink: 0;
-    font-size: 1.25rem;
-    color: var(--text-color-secondary);
-    display: flex;
-    align-items: center;
-}
-
-.stat-info {
-    flex: 1;
-}
-
-.stat-value {
-    font-size: 1.5rem;
-    font-weight: 700;
-    line-height: 1;
-    margin-bottom: 0.125rem;
-    color: var(--text-color);
-}
-
-.stat-label {
-    font-size: 0.75rem;
-    color: var(--text-color-secondary);
-    text-transform: uppercase;
-    letter-spacing: 0.25px;
-    font-weight: 600;
-}
-
-.occupancy-tag {
-    font-weight: 600;
-}
-
-/* Filters Section */
-.filters-section {
-    margin-bottom: 1rem;
-}
-
-.filters-content {
-    padding: 0.875rem;
-}
-
-.filters-content {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    gap: 1rem;
-    flex-wrap: wrap;
-}
-
-.filter-group {
-    display: flex;
-    align-items: center;
-    gap: 1rem;
-    flex: 1;
-}
-
-.filter-label {
-    font-weight: 600;
-    color: var(--text-color);
-    white-space: nowrap;
-    display: flex;
-    align-items: center;
-}
-
-.filter-controls {
-    display: flex;
-    align-items: center;
-    gap: 0.5rem;
-    flex: 1;
-    min-width: 250px;
-}
-
-.filter-dropdown {
-    flex: 1;
-    min-width: 200px;
-}
-
-.filter-info {
-    flex-shrink: 0;
-    display: flex;
-    align-items: center;
-    gap: 0.75rem;
-}
-
-/* Occupancy Filters */
-.occupancy-filter-group {
-    min-width: auto;
-}
-
-.occupancy-filters {
-    display: flex;
-    align-items: center;
-    gap: 1rem;
-    flex-wrap: wrap;
-}
-
-.occupancy-checkbox {
-    display: flex;
-    align-items: center;
-    gap: 0.5rem;
-}
-
-.occupancy-label {
+.stat-group-header {
     display: flex;
     align-items: center;
     gap: 0.375rem;
+    margin-bottom: 0.5rem;
+    padding-bottom: 0.375rem;
+    border-bottom: 1px solid var(--surface-border);
+}
+
+.stat-group-header i {
     font-size: 0.875rem;
+    color: var(--primary-color);
+}
+
+.stat-group-header span {
+    font-size: 0.75rem;
+    font-weight: 600;
+    color: var(--text-color);
+    text-transform: uppercase;
+    letter-spacing: 0.3px;
+}
+
+.stat-group-body {
+    display: flex;
+    align-items: center;
+    gap: 0.625rem;
+    justify-content: space-around;
+}
+
+.stat-metric {
+    text-align: center;
+    flex: 1;
+}
+
+.stat-metric--large {
+    flex: 1;
+}
+
+.stat-metric--highlight {
+    background: var(--surface-50);
+    padding: 0.375rem 0.5rem;
+    border-radius: 4px;
+}
+
+.stat-metric--success .metric-value {
+    color: var(--green-600);
+}
+
+.stat-metric--warning .metric-value {
+    color: var(--amber-600);
+}
+
+.stat-metric--danger .metric-value {
+    color: var(--red-600);
+}
+
+.metric-value {
+    font-size: 1.375rem;
+    font-weight: 700;
+    line-height: 1;
+    margin-bottom: 0.25rem;
+    color: var(--text-color);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.375rem;
+}
+
+.metric-value--large {
+    font-size: 1.75rem;
+}
+
+.metric-icon {
+    font-size: 0.875rem;
+}
+
+.metric-label {
+    font-size: 0.7rem;
+    color: var(--text-color-secondary);
+    font-weight: 500;
+    line-height: 1.1;
+}
+
+.stat-divider {
+    width: 1px;
+    height: 2rem;
+    background: var(--surface-border);
+    flex-shrink: 0;
+}
+
+.occupancy-tag-inline {
+    font-size: 0.7rem;
+    font-weight: 600;
+    padding: 0.2rem 0.4rem;
+}
+
+/* Filters Section - Compact Design */
+.filters-section {
+    margin-bottom: 0.5rem;
+}
+
+.filters-container {
+    background: var(--surface-card);
+    border: 1px solid var(--surface-border);
+    border-radius: 6px;
+    padding: 0.5rem 0.75rem;
+}
+
+.filters-row {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    flex-wrap: wrap;
+}
+
+.filter-item {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.filter-item--select {
+    flex: 0 1 auto;
+    min-width: 200px;
+}
+
+.filter-item--checkboxes {
+    flex: 1 1 auto;
+}
+
+.filter-item--actions {
+    flex-shrink: 0;
+    margin-left: auto;
+}
+
+.filter-label-compact {
+    display: flex;
+    align-items: center;
+    gap: 0.375rem;
+    font-size: 0.75rem;
+    font-weight: 600;
+    color: var(--text-color-secondary);
+    white-space: nowrap;
+}
+
+.filter-label-compact i {
+    font-size: 0.75rem;
+}
+
+.filter-select-compact {
+    min-width: 150px;
+}
+
+.filter-divider-vertical {
+    width: 1px;
+    height: 1.5rem;
+    background: var(--surface-border);
+    flex-shrink: 0;
+}
+
+/* Occupancy Filters Compact */
+.occupancy-filters-compact {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+}
+
+.occupancy-checkbox-compact {
+    display: flex;
+    align-items: center;
+    gap: 0.375rem;
+}
+
+.occupancy-label-compact {
+    display: flex;
+    align-items: center;
+    gap: 0.25rem;
+    font-size: 0.75rem;
     font-weight: 500;
     color: var(--text-color);
     cursor: pointer;
     user-select: none;
     transition: color 0.2s ease;
+    white-space: nowrap;
 }
 
-.occupancy-label:hover {
+.occupancy-label-compact:hover {
     color: var(--primary-color);
 }
 
-.occupancy-label i {
-    font-size: 0.875rem;
+.occupancy-label-compact i {
+    font-size: 0.75rem;
 }
 
-/* Select Option Styles */
-.dropdown-option {
+/* Select Option Styles Compact */
+.dropdown-option-compact {
     display: flex;
     align-items: center;
-    gap: 0.75rem;
-    padding: 0.25rem;
-}
-
-.option-icon {
-    color: var(--text-color-secondary);
-    flex-shrink: 0;
-}
-
-.option-content {
-    flex: 1;
+    justify-content: space-between;
+    gap: 0.5rem;
+    padding: 0.125rem;
 }
 
 .option-label {
     font-weight: 500;
+    font-size: 0.875rem;
     color: var(--text-color);
 }
 
 .option-occupancy {
     color: var(--text-color-secondary);
+    font-size: 0.7rem;
     font-style: italic;
 }
 
 .rooms-grid {
     display: grid;
     grid-template-columns: repeat(auto-fit, minmax(400px, 1fr));
-    gap: 1rem;
-    margin-top: 0.75rem;
+    gap: 0.75rem;
+    margin-top: 0.5rem;
     width: 100%;
 }
 
@@ -882,104 +891,165 @@ onUnmounted(() => {
     }
 
     .header-title {
-        font-size: 1.25rem;
+        font-size: 1.125rem;
     }
 
     .header-subtitle {
-        font-size: 0.8rem;
+        font-size: 0.75rem;
     }
 
-    .stats-grid {
-        grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+    .header-icon {
+        padding: 0.5rem;
+        font-size: 1rem;
+    }
+
+    .stats-grid-compact {
+        grid-template-columns: 1fr;
         gap: 0.5rem;
     }
 
-    .stat-value {
+    .stat-group-body {
+        flex-direction: column;
+        gap: 0.5rem;
+    }
+
+    .stat-divider {
+        width: 100%;
+        height: 1px;
+    }
+
+    .stat-metric {
+        width: 100%;
+    }
+
+    .metric-value {
         font-size: 1.25rem;
     }
 
-    .stat-content {
+    .stat-group-content {
         padding: 0.5rem;
+    }
+
+    .stat-group-header {
+        margin-bottom: 0.375rem;
+        padding-bottom: 0.25rem;
+    }
+
+    .filters-container {
+        padding: 0.5rem;
+    }
+
+    .filters-row {
+        flex-direction: column;
+        align-items: stretch;
         gap: 0.5rem;
     }
 
-    .filters-content {
-        flex-direction: column;
-        align-items: stretch;
-        gap: 0.75rem;
-    }
-
-    .filter-group {
+    .filter-item {
         flex-direction: column;
         align-items: stretch;
         gap: 0.375rem;
     }
 
-    .filter-controls {
-        min-width: auto;
+    .filter-item--select,
+    .filter-item--checkboxes,
+    .filter-item--actions {
+        min-width: 100%;
+        flex: 1;
+        margin-left: 0;
     }
 
-    .occupancy-filter-group {
+    .filter-divider-vertical {
+        display: none;
+    }
+
+    .occupancy-filters-compact {
         flex-direction: column;
-        align-items: stretch;
-    }
-
-    .occupancy-filters {
-        gap: 0.75rem;
-        justify-content: flex-start;
-    }
-
-    .filter-info {
-        flex-direction: column;
-        align-items: stretch;
+        align-items: flex-start;
         gap: 0.5rem;
+    }
+
+    .filter-select-compact {
+        width: 100%;
+        min-width: 100%;
+    }
+
+    .filter-item--actions {
+        flex-direction: row;
+        justify-content: space-between;
     }
 }
 
 @media (min-width: 769px) and (max-width: 1200px) {
     .rooms-grid {
         grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
-        gap: 0.875rem;
+        gap: 0.75rem;
     }
 
-    .stats-grid {
-        grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+    .stats-grid-compact {
+        grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+        gap: 0.5rem;
+    }
+
+    .filters-row {
+        flex-wrap: wrap;
+    }
+
+    .filter-item--checkboxes {
+        flex: 1 1 100%;
+    }
+
+    .occupancy-filters-compact {
+        gap: 0.625rem;
     }
 }
 
 @media (min-width: 1201px) and (max-width: 1600px) {
     .rooms-grid {
         grid-template-columns: repeat(auto-fit, minmax(400px, 1fr));
-        gap: 1rem;
+        gap: 0.75rem;
+    }
+
+    .stats-grid-compact {
+        gap: 0.625rem;
     }
 }
 
 @media (min-width: 769px) and (max-width: 1024px) {
     .header-title {
-        font-size: 1.375rem;
+        font-size: 1.125rem;
     }
 
-    .stats-grid {
-        grid-template-columns: repeat(auto-fit, minmax(155px, 1fr));
+    .stats-grid-compact {
+        grid-template-columns: 1fr;
     }
 
-    .filters-content {
-        gap: 0.75rem;
+    .stat-group-content {
+        padding: 0.625rem;
     }
 
-    .filter-dropdown {
-        min-width: 160px;
+    .filters-container {
+        padding: 0.625rem;
+    }
+
+    .filters-row {
+        gap: 0.5rem;
+    }
+
+    .filter-item--select {
+        min-width: 180px;
     }
 }
 
 @media (min-width: 1601px) {
     .rooms-grid {
         grid-template-columns: repeat(auto-fit, minmax(400px, 1fr));
-        gap: 1.25rem;
+        gap: 0.875rem;
     }
 
-    .stats-grid {
-        grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+    .stats-grid-compact {
+        grid-template-columns: repeat(3, 1fr);
+        gap: 0.625rem;
     }
 }
 
