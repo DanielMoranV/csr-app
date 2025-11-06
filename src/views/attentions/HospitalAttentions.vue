@@ -3,12 +3,12 @@ import AttentionDetails from '@/components/attentions/AttentionDetails.vue';
 import AttentionTasks from '@/components/attentions/AttentionTasks.vue';
 import DailyMedicalAudits from '@/components/attentions/DailyMedicalAudits.vue';
 import DetailsTimeline from '@/components/attentions/DetailsTimeline.vue';
+import { useExcelExport } from '@/composables/useExcelExport';
 import { usePermissions, USER_POSITIONS } from '@/composables/usePermissions';
 import { useRealtimeEvents } from '@/composables/useRealtimeEvents';
 import { useHospitalAttentionsStore } from '@/store/hospitalAttentionsStore';
 import { FilterMatchMode } from '@primevue/core/api';
 import { computed, onMounted, onUnmounted, ref, watch } from 'vue';
-import { useExcelExport } from '@/composables/useExcelExport';
 
 const hospitalAttentionsStore = useHospitalAttentionsStore();
 const { startListening, stopListening } = useRealtimeEvents();
@@ -428,190 +428,220 @@ const exportData = () => {
 };
 </script>
 <template>
-    <div class="card">
-        <h2 class="text-2xl font-bold mb-4">Gestión de Atenciones Hospitalarias</h2>
+    <div class="attentions-view">
+        <!-- Header Principal -->
+        <div class="main-card">
+            <div class="header-section">
+                <div class="header-icon-wrapper">
+                    <i class="pi pi-heart"></i>
+                </div>
+                <div class="header-content">
+                    <h1 class="header-title">Gestión de Atenciones Hospitalarias</h1>
+                    <p class="header-subtitle">
+                        <i class="pi pi-users mr-2"></i>
+                        Seguimiento completo de pacientes hospitalizados
+                    </p>
+                </div>
+            </div>
 
-        <DataTable
-            :value="filteredAttentionsByDate"
-            :loading="isLoading"
-            paginator
-            :rows="10"
-            :rowsPerPageOptions="[10, 20, 50]"
-            v-model:filters="filters"
-            filterDisplay="menu"
-            :globalFilterFields="['number', 'patient.cod_patient', 'patient.name', 'patient.number_document', 'doctor', 'insurance', 'bed.name', 'bed.room.number', 'cie10_names']"
-            removableSort
-            sortMode="multiple"
-            class="p-datatable-customers"
-            responsiveLayout="scroll"
-            scrollable
-            scrollHeight="600px"
-        >
-            <template #header>
-                <div class="flex flex-col gap-3">
-                    <!-- Búsqueda global -->
-                    <div class="flex justify-between items-center">
-                        <IconField>
-                            <InputIcon class="pi pi-search" />
-                            <InputText v-model="filters['global'].value" placeholder="Buscar..." />
-                        </IconField>
-                        <Button label="Exportar" icon="pi pi-upload" severity="primary" @click="exportData" />
+            <!-- Table Header con búsqueda -->
+            <div class="table-header-modern">
+                <div class="header-left">
+                    <div class="header-icon-badge">
+                        <i class="pi pi-table"></i>
                     </div>
-
-                    <!-- Filtros de rango de fechas -->
-                    <div class="flex items-center gap-3 flex-wrap p-3 bg-surface-50 rounded-lg border border-surface-200">
-                        <div class="flex items-center gap-2">
-                            <i class="pi pi-calendar text-primary"></i>
-                            <span class="font-semibold text-sm">Filtrar por Periodo de Ingreso:</span>
-                        </div>
-                        <div class="flex items-center gap-2">
-                            <label for="start-date" class="text-sm">Desde:</label>
-                            <Calendar id="start-date" v-model="dateRangeFilter.startDate" dateFormat="yy-mm-dd" :showIcon="true" placeholder="Fecha inicio" class="w-auto" />
-                        </div>
-                        <div class="flex items-center gap-2">
-                            <label for="end-date" class="text-sm">Hasta:</label>
-                            <Calendar id="end-date" v-model="dateRangeFilter.endDate" dateFormat="yy-mm-dd" :showIcon="true" placeholder="Fecha fin" class="w-auto" />
-                        </div>
-                        <Button v-if="dateRangeFilter.startDate || dateRangeFilter.endDate" label="Limpiar" icon="pi pi-times" severity="secondary" size="small" text @click="clearDateRangeFilter" />
-                        <div v-if="dateRangeFilter.startDate || dateRangeFilter.endDate" class="ml-auto">
-                            <Tag :value="`${filteredAttentionsByDate.length} registros`" severity="info" />
-                        </div>
+                    <div class="header-info">
+                        <span class="header-title-small">Registro de Atenciones</span>
+                        <span class="header-count" v-if="filteredAttentionsByDate"> {{ filteredAttentionsByDate.length }} {{ filteredAttentionsByDate.length === 1 ? 'atención' : 'atenciones' }} </span>
                     </div>
                 </div>
-            </template>
+                <div class="header-actions-modern">
+                    <IconField iconPosition="left" class="search-field">
+                        <InputIcon>
+                            <i class="pi pi-search" />
+                        </InputIcon>
+                        <InputText v-model="filters['global'].value" placeholder="Buscar atenciones..." class="search-input-modern" />
+                    </IconField>
+                    <Button icon="pi pi-file-excel" class="export-button" @click="exportData" v-tooltip.top="'Exportar a Excel'" />
+                </div>
+            </div>
 
-            <template #empty> No se encontraron atenciones. </template>
-            <template #loading> Cargando datos de atenciones... </template>
-
-            <Column field="number" header="Admisión" sortable style="min-width: 6rem">
-                <template #body="{ data }">
-                    <span v-tooltip.top="'Número de Admisión'">{{ data.number }}</span>
-                </template>
-            </Column>
-
-            <Column field="patient.name" header="Paciente" sortable filterField="patient.name" :showFilterMatchModes="false" style="min-width: 20rem">
-                <template #body="{ data }">
-                    <div>
-                        <div class="font-bold">HC: {{ data.patient?.cod_patient }} - {{ data.patient?.name }}</div>
-                        <div class="text-sm text-gray-500">{{ data.patient?.document_type }}: {{ data.patient?.number_document }}</div>
-                        <div class="text-sm">Edad: {{ formatAge(data.patient?.age_formatted) }}</div>
-                    </div>
-                </template>
-                <template #filter="{ filterModel }">
-                    <InputText type="text" v-model="filterModel.value" class="p-column-filter" placeholder="Buscar por paciente" />
-                </template>
-            </Column>
-
-            <Column field="doctor" header="Médico" sortable filterField="doctor" :showFilterMatchModes="false" style="min-width: 16rem">
-                <template #body="{ data }">
-                    <div>
-                        <div class="font-medium">{{ data.doctor }}</div>
-                        <div v-if="data.code_doctor" class="text-xs text-gray-500" v-tooltip.top="'Código del Médico'">Código: {{ data.code_doctor }}</div>
-                    </div>
-                </template>
-            </Column>
-            <Column header="Seguro & Tipo" sortable style="min-width: 12rem">
-                <template #body="{ data }">
-                    <div class="text-xs">
-                        <div class="font-medium">{{ data.insurance }}</div>
-                        <div v-if="data.type_attention" class="mt-1">
-                            <Tag :value="data.type_attention" severity="info" class="text-xs" />
-                        </div>
-                        <div v-if="data.origin_attention" class="text-gray-600 mt-1">Origen: {{ data.origin_attention }}</div>
-                    </div>
-                </template>
-            </Column>
-
-            <Column header="Habitación" sortable sortField="bed.room.number" style="min-width: 10rem">
-                <template #body="{ data }">
-                    <div v-if="data.bed && data.bed.room" class="flex items-center">
-                        <span class="font-bold mr-2" v-tooltip.top="'Habitación'">{{ data.bed.room.number }}</span>
-                        <Tag :value="data.bed.name.replace(data.bed.room.number, '')" :class="getBedTagClass(data.bed.name, data.bed.room.number)" v-tooltip.top="'Cama'" />
-                    </div>
-                    <div v-else>N/A</div>
-                </template>
-            </Column>
-
-            <Column header="Periodo Estancia" sortable sortField="entry_at" style="min-width: 16rem">
-                <template #body="{ data }">
-                    <div class="text-xs">
-                        <div><span class="font-semibold">Ingreso:</span> {{ formatDate(data.entry_at) }}</div>
-                        <div><span class="font-semibold">Salida:</span> {{ formatDate(data.exit_at) }}</div>
-                        <div v-if="calculateDurationDays(data)" class="text-gray-600 mt-1">
-                            <i class="pi pi-calendar mr-1"></i>
-                            <span>Duración: {{ calculateDurationDays(data) }} {{ calculateDurationDays(data) === 1 ? 'día' : 'días' }}</span>
-                            <span v-if="!data.exit_at" class="ml-1 text-blue-600 font-medium">(en curso)</span>
-                        </div>
-                        <div v-if="data.request_at" class="text-gray-600">
-                            <i class="pi pi-send mr-1"></i>
-                            <span>Solicitado: {{ formatDate(data.request_at) }}</span>
-                        </div>
-                    </div>
-                </template>
-            </Column>
-
-            <Column header="Diagnósticos CIE-10" field="cie10_names" sortable style="min-width: 20rem">
-                <template #body="{ data }">
-                    <div v-if="data.cie10_names && parseCie10Names(data.cie10_names).length > 0" class="flex flex-wrap gap-1">
-                        <Tag v-for="(name, index) in parseCie10Names(data.cie10_names)" :key="name" :value="name" :severity="cie10Severities[index % cie10Severities.length]" class="text-xs" />
-                    </div>
-                    <div v-else class="text-xs text-gray-500">Sin diagnósticos</div>
-                </template>
-            </Column>
-
-            <Column field="is_active" header="Estado" sortable dataType="boolean" style="min-width: 12rem">
-                <template #body="{ data }">
-                    <div class="space-y-1">
-                        <Tag :severity="getSeverity(data.is_active)" :icon="data.is_active ? 'pi pi-check-circle' : 'pi pi-times-circle'" v-tooltip.top="data.is_active ? 'Activa' : 'Cerrada'" />
-                        <div v-if="!data.is_active && data.medical_discharge_type" class="text-xs text-gray-600">
-                            {{ data.medical_discharge_type }}
-                        </div>
-                    </div>
-                </template>
-                <template #filter="{ filterModel }">
+            <!-- Filtros de rango de fechas -->
+            <div class="filters-card">
+                <div class="filters-content-inline">
                     <div class="flex items-center gap-2">
-                        <label for="active-filter">Activa</label>
-                        <input type="radio" id="active-filter" :value="true" v-model="filterModel.value" />
-                        <label for="inactive-filter">Cerrada</label>
-                        <input type="radio" id="inactive-filter" :value="false" v-model="filterModel.value" />
+                        <i class="pi pi-calendar filter-icon"></i>
+                        <span class="filter-label">Filtrar por Periodo de Ingreso:</span>
                     </div>
-                </template>
-            </Column>
+                    <div class="flex items-center gap-2">
+                        <label for="start-date" class="filter-label-sm">Desde:</label>
+                        <Calendar id="start-date" v-model="dateRangeFilter.startDate" dateFormat="yy-mm-dd" :showIcon="true" placeholder="Fecha inicio" class="calendar-compact" />
+                    </div>
+                    <div class="flex items-center gap-2">
+                        <label for="end-date" class="filter-label-sm">Hasta:</label>
+                        <Calendar id="end-date" v-model="dateRangeFilter.endDate" dateFormat="yy-mm-dd" :showIcon="true" placeholder="Fecha fin" class="calendar-compact" />
+                    </div>
+                    <Button v-if="dateRangeFilter.startDate || dateRangeFilter.endDate" icon="pi pi-times" class="clear-filter-button" @click="clearDateRangeFilter" v-tooltip.top="'Limpiar filtros'" />
+                    <div v-if="dateRangeFilter.startDate || dateRangeFilter.endDate" class="ml-auto">
+                        <Tag :value="`${filteredAttentionsByDate.length} registros`" severity="info" class="result-tag" />
+                    </div>
+                </div>
+            </div>
 
-            <Column header="Aprobación Director" sortable sortField="is_approved_by_director" style="min-width: 14rem">
-                <template #body="{ data }">
-                    <div class="space-y-1">
+            <DataTable
+                :value="filteredAttentionsByDate"
+                :loading="isLoading"
+                paginator
+                :rows="10"
+                :rowsPerPageOptions="[10, 20, 50]"
+                v-model:filters="filters"
+                filterDisplay="menu"
+                :globalFilterFields="['number', 'patient.cod_patient', 'patient.name', 'patient.number_document', 'doctor', 'insurance', 'bed.name', 'bed.room.number', 'cie10_names']"
+                removableSort
+                sortMode="multiple"
+                class="p-datatable-customers modern-datatable"
+                responsiveLayout="scroll"
+                scrollable
+                scrollHeight="600px"
+            >
+                <template #header>
+                    <div style="display: none"></div>
+                </template>
+
+                <template #empty> No se encontraron atenciones. </template>
+                <template #loading> Cargando datos de atenciones... </template>
+
+                <Column field="number" header="Admisión" sortable style="min-width: 6rem">
+                    <template #body="{ data }">
+                        <span v-tooltip.top="'Número de Admisión'">{{ data.number }}</span>
+                    </template>
+                </Column>
+
+                <Column field="patient.name" header="Paciente" sortable filterField="patient.name" :showFilterMatchModes="false" style="min-width: 20rem">
+                    <template #body="{ data }">
+                        <div>
+                            <div class="font-bold">HC: {{ data.patient?.cod_patient }} - {{ data.patient?.name }}</div>
+                            <div class="text-sm text-gray-500">{{ data.patient?.document_type }}: {{ data.patient?.number_document }}</div>
+                            <div class="text-sm">Edad: {{ formatAge(data.patient?.age_formatted) }}</div>
+                        </div>
+                    </template>
+                    <template #filter="{ filterModel }">
+                        <InputText type="text" v-model="filterModel.value" class="p-column-filter" placeholder="Buscar por paciente" />
+                    </template>
+                </Column>
+
+                <Column field="doctor" header="Médico" sortable filterField="doctor" :showFilterMatchModes="false" style="min-width: 16rem">
+                    <template #body="{ data }">
+                        <div>
+                            <div class="font-medium">{{ data.doctor }}</div>
+                            <div v-if="data.code_doctor" class="text-xs text-gray-500" v-tooltip.top="'Código del Médico'">Código: {{ data.code_doctor }}</div>
+                        </div>
+                    </template>
+                </Column>
+                <Column header="Seguro & Tipo" sortable style="min-width: 12rem">
+                    <template #body="{ data }">
+                        <div class="text-xs">
+                            <div class="font-medium">{{ data.insurance }}</div>
+                            <div v-if="data.type_attention" class="mt-1">
+                                <Tag :value="data.type_attention" severity="info" class="text-xs" />
+                            </div>
+                            <div v-if="data.origin_attention" class="text-gray-600 mt-1">Origen: {{ data.origin_attention }}</div>
+                        </div>
+                    </template>
+                </Column>
+
+                <Column header="Habitación" sortable sortField="bed.room.number" style="min-width: 10rem">
+                    <template #body="{ data }">
+                        <div v-if="data.bed && data.bed.room" class="flex items-center">
+                            <span class="font-bold mr-2" v-tooltip.top="'Habitación'">{{ data.bed.room.number }}</span>
+                            <Tag :value="data.bed.name.replace(data.bed.room.number, '')" :class="getBedTagClass(data.bed.name, data.bed.room.number)" v-tooltip.top="'Cama'" />
+                        </div>
+                        <div v-else>N/A</div>
+                    </template>
+                </Column>
+
+                <Column header="Periodo Estancia" sortable sortField="entry_at" style="min-width: 16rem">
+                    <template #body="{ data }">
+                        <div class="text-xs">
+                            <div><span class="font-semibold">Ingreso:</span> {{ formatDate(data.entry_at) }}</div>
+                            <div><span class="font-semibold">Salida:</span> {{ formatDate(data.exit_at) }}</div>
+                            <div v-if="calculateDurationDays(data)" class="text-gray-600 mt-1">
+                                <i class="pi pi-calendar mr-1"></i>
+                                <span>Duración: {{ calculateDurationDays(data) }} {{ calculateDurationDays(data) === 1 ? 'día' : 'días' }}</span>
+                                <span v-if="!data.exit_at" class="ml-1 text-blue-600 font-medium">(en curso)</span>
+                            </div>
+                            <div v-if="data.request_at" class="text-gray-600">
+                                <i class="pi pi-send mr-1"></i>
+                                <span>Solicitado: {{ formatDate(data.request_at) }}</span>
+                            </div>
+                        </div>
+                    </template>
+                </Column>
+
+                <Column header="Diagnósticos CIE-10" field="cie10_names" sortable style="min-width: 20rem">
+                    <template #body="{ data }">
+                        <div v-if="data.cie10_names && parseCie10Names(data.cie10_names).length > 0" class="flex flex-wrap gap-1">
+                            <Tag v-for="(name, index) in parseCie10Names(data.cie10_names)" :key="name" :value="name" :severity="cie10Severities[index % cie10Severities.length]" class="text-xs" />
+                        </div>
+                        <div v-else class="text-xs text-gray-500">Sin diagnósticos</div>
+                    </template>
+                </Column>
+
+                <Column field="is_active" header="Estado" sortable dataType="boolean" style="min-width: 12rem">
+                    <template #body="{ data }">
+                        <div class="space-y-1">
+                            <Tag :severity="getSeverity(data.is_active)" :icon="data.is_active ? 'pi pi-check-circle' : 'pi pi-times-circle'" v-tooltip.top="data.is_active ? 'Activa' : 'Cerrada'" />
+                            <div v-if="!data.is_active && data.medical_discharge_type" class="text-xs text-gray-600">
+                                {{ data.medical_discharge_type }}
+                            </div>
+                        </div>
+                    </template>
+                    <template #filter="{ filterModel }">
                         <div class="flex items-center gap-2">
-                            <Tag v-if="data.is_approved_by_director" value="Aprobada" severity="success" icon="pi pi-check-circle" class="text-xs" v-tooltip.top="'Aprobada por Director Médico'" />
-                            <Tag v-else value="Pendiente" severity="warning" icon="pi pi-clock" class="text-xs" v-tooltip.top="'Pendiente de aprobación'" />
+                            <label for="active-filter">Activa</label>
+                            <input type="radio" id="active-filter" :value="true" v-model="filterModel.value" />
+                            <label for="inactive-filter">Cerrada</label>
+                            <input type="radio" id="inactive-filter" :value="false" v-model="filterModel.value" />
                         </div>
-                        <div v-if="data.is_approved_by_director && data.medical_director_approved_by" class="text-xs text-gray-600">
-                            <i class="pi pi-user mr-1"></i>
-                            {{ data.medical_director_approved_by }}
-                        </div>
-                        <div v-if="data.is_approved_by_director && data.medical_director_approved_at" class="text-xs text-gray-600">
-                            <i class="pi pi-calendar mr-1"></i>
-                            {{ formatDate(data.medical_director_approved_at) }}
-                        </div>
-                    </div>
-                </template>
-            </Column>
+                    </template>
+                </Column>
 
-            <Column header="Acciones" style="min-width: 20rem">
-                <template #body="{ data }">
-                    <div class="flex items-center gap-1 flex-wrap">
-                        <Button icon="pi pi-eye" class="p-button-rounded p-button-info p-button-sm" @click="openDetailsSidebar(data)" v-tooltip.top="'Ver Detalles de Atención'" />
-                        <Button icon="pi pi-list-check" class="p-button-rounded p-button-secondary p-button-sm" @click="openTasksSidebar(data)" v-tooltip.top="'Ver Tareas'" />
-                        <Button icon="pi pi-check-square" class="p-button-rounded p-button-help p-button-sm" @click="openAuditsSidebar(data)" v-tooltip.top="'Ver Auditorías Médicas'" />
-                        <Button v-if="canApproveAttention(data)" icon="pi pi-check" class="p-button-rounded p-button-success p-button-sm" @click="openApproveDialog(data)" v-tooltip.top="'Aprobar alta de atención'" />
-                        <div v-if="data.tasks && data.tasks.length > 0" class="flex items-center gap-1 ml-1">
-                            <Tag :value="data.tasks.length" :severity="getTasksSeverity(data.tasks)" class="text-xs" v-tooltip.top="'Número de tareas'" />
-                            <i v-if="hasPendingTasks(data.tasks)" class="pi pi-exclamation-triangle text-warning" v-tooltip.top="'Tiene tareas pendientes'"></i>
+                <Column header="Aprobación Director" sortable sortField="is_approved_by_director" style="min-width: 14rem">
+                    <template #body="{ data }">
+                        <div class="space-y-1">
+                            <div class="flex items-center gap-2">
+                                <Tag v-if="data.is_approved_by_director" value="Aprobada" severity="success" icon="pi pi-check-circle" class="text-xs" v-tooltip.top="'Aprobada por Director Médico'" />
+                                <Tag v-else value="Pendiente" severity="warning" icon="pi pi-clock" class="text-xs" v-tooltip.top="'Pendiente de aprobación'" />
+                            </div>
+                            <div v-if="data.is_approved_by_director && data.medical_director_approved_by" class="text-xs text-gray-600">
+                                <i class="pi pi-user mr-1"></i>
+                                {{ data.medical_director_approved_by }}
+                            </div>
+                            <div v-if="data.is_approved_by_director && data.medical_director_approved_at" class="text-xs text-gray-600">
+                                <i class="pi pi-calendar mr-1"></i>
+                                {{ formatDate(data.medical_director_approved_at) }}
+                            </div>
                         </div>
-                    </div>
-                </template>
-            </Column>
-        </DataTable>
+                    </template>
+                </Column>
+
+                <Column header="Acciones" style="min-width: 20rem">
+                    <template #body="{ data }">
+                        <div class="flex items-center gap-1 flex-wrap">
+                            <Button icon="pi pi-eye" class="p-button-rounded p-button-info p-button-sm" @click="openDetailsSidebar(data)" v-tooltip.top="'Ver Detalles de Atención'" />
+                            <Button icon="pi pi-list-check" class="p-button-rounded p-button-secondary p-button-sm" @click="openTasksSidebar(data)" v-tooltip.top="'Ver Tareas'" />
+                            <Button icon="pi pi-check-square" class="p-button-rounded p-button-help p-button-sm" @click="openAuditsSidebar(data)" v-tooltip.top="'Ver Auditorías Médicas'" />
+                            <Button v-if="canApproveAttention(data)" icon="pi pi-check" class="p-button-rounded p-button-success p-button-sm" @click="openApproveDialog(data)" v-tooltip.top="'Aprobar alta de atención'" />
+                            <div v-if="data.tasks && data.tasks.length > 0" class="flex items-center gap-1 ml-1">
+                                <Tag :value="data.tasks.length" :severity="getTasksSeverity(data.tasks)" class="text-xs" v-tooltip.top="'Número de tareas'" />
+                                <i v-if="hasPendingTasks(data.tasks)" class="pi pi-exclamation-triangle text-warning" v-tooltip.top="'Tiene tareas pendientes'"></i>
+                            </div>
+                        </div>
+                    </template>
+                </Column>
+            </DataTable>
+        </div>
+        <!-- Close main-card -->
 
         <!-- Drawer para Detalles de Atención -->
         <Drawer v-model:visible="isDetailsSidebarVisible" position="right" class="!w-full md:!w-[48rem] lg:!w-[56rem] xl:!w-[64rem]">
@@ -823,10 +853,487 @@ const exportData = () => {
 </template>
 
 <style scoped>
+/* ============================================================================
+   ANIMATIONS
+   ============================================================================ */
+@keyframes shimmer {
+    0%,
+    100% {
+        transform: translateX(-100%) rotate(45deg);
+    }
+    50% {
+        transform: translateX(100%) rotate(45deg);
+    }
+}
+
+@keyframes pulse {
+    0%,
+    100% {
+        transform: scale(1);
+    }
+    50% {
+        transform: scale(1.05);
+    }
+}
+
+@keyframes gradientShift {
+    0%,
+    100% {
+        background-position: 0% 50%;
+    }
+    50% {
+        background-position: 100% 50%;
+    }
+}
+
+@keyframes fadeIn {
+    from {
+        opacity: 0;
+        transform: translateY(10px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+/* ============================================================================
+   MAIN CONTAINER
+   ============================================================================ */
+.attentions-view {
+    padding: 1rem;
+    animation: fadeIn 0.5s ease-out;
+}
+
+.main-card {
+    background: linear-gradient(145deg, var(--surface-section), var(--surface-card));
+    border: 1px solid var(--surface-border);
+    border-radius: 16px;
+    padding: 2rem;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+    position: relative;
+    overflow: hidden;
+}
+
+.main-card::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 3px;
+    background: linear-gradient(90deg, #ef4444, #f97316, #ef4444, #dc2626);
+    background-size: 200% 100%;
+    animation: gradientShift 3s ease infinite;
+}
+
+:global(.dark) .main-card {
+    background: linear-gradient(145deg, #1e293b, #0f172a);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+}
+
+/* ============================================================================
+   HEADER SECTION
+   ============================================================================ */
+.header-section {
+    display: flex;
+    align-items: center;
+    gap: 1.5rem;
+    margin-bottom: 2rem;
+}
+
+.header-icon-wrapper {
+    width: 64px;
+    height: 64px;
+    border-radius: 16px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: linear-gradient(135deg, #ef4444 0%, #dc2626 50%, #b91c1c 100%);
+    box-shadow:
+        0 8px 20px rgba(239, 68, 68, 0.3),
+        0 4px 12px rgba(220, 38, 38, 0.4);
+    animation: pulse 2s ease-in-out infinite;
+    position: relative;
+    overflow: hidden;
+}
+
+.header-icon-wrapper::before {
+    content: '';
+    position: absolute;
+    top: -50%;
+    left: -50%;
+    width: 200%;
+    height: 200%;
+    background: linear-gradient(135deg, transparent, rgba(255, 255, 255, 0.2), transparent);
+    animation: shimmer 3s infinite;
+}
+
+.header-icon-wrapper i {
+    font-size: 2rem;
+    color: #ffffff;
+    z-index: 1;
+}
+
+:global(.dark) .header-icon-wrapper {
+    background: linear-gradient(135deg, #f87171 0%, #ef4444 50%, #dc2626 100%);
+    box-shadow:
+        0 8px 20px rgba(248, 113, 113, 0.4),
+        0 4px 12px rgba(239, 68, 68, 0.5);
+}
+
+.header-content {
+    flex: 1;
+}
+
+.header-title {
+    font-size: 1.75rem;
+    font-weight: 700;
+    margin: 0 0 0.5rem 0;
+    background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+}
+
+:global(.dark) .header-title {
+    background: linear-gradient(135deg, #f87171 0%, #ef4444 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+}
+
+.header-subtitle {
+    color: var(--text-color-secondary);
+    font-size: 1rem;
+    display: flex;
+    align-items: center;
+    margin: 0;
+}
+
+/* ============================================================================
+   TABLE HEADER
+   ============================================================================ */
+.table-header-modern {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 1.25rem 1.5rem;
+    background: linear-gradient(135deg, var(--surface-section) 0%, var(--surface-card) 100%);
+    border-bottom: 2px solid color-mix(in srgb, var(--red-500) 20%, var(--surface-border));
+    gap: 1rem;
+    position: relative;
+}
+
+.table-header-modern::after {
+    content: '';
+    position: absolute;
+    bottom: -2px;
+    left: 0;
+    right: 0;
+    height: 2px;
+    background: linear-gradient(90deg, #ef4444, #f97316, #ef4444);
+    background-size: 200% 100%;
+    animation: gradientShift 3s ease infinite;
+}
+
+:global(.dark) .table-header-modern {
+    background: linear-gradient(135deg, var(--surface-section) 0%, var(--surface-card) 100%);
+}
+
+.header-left {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+}
+
+.header-icon-badge {
+    width: 48px;
+    height: 48px;
+    border-radius: 12px;
+    background: linear-gradient(135deg, #ef4444 0%, #f97316 50%, #dc2626 100%);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    box-shadow:
+        0 4px 12px rgba(239, 68, 68, 0.3),
+        0 2px 8px rgba(220, 38, 38, 0.2);
+    position: relative;
+    overflow: hidden;
+    animation: iconPulse 2s ease-in-out infinite;
+}
+
+.header-icon-badge::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(135deg, transparent 0%, rgba(255, 255, 255, 0.15) 50%, transparent 100%);
+    animation: shimmer 3s ease-in-out infinite;
+}
+
+@keyframes iconPulse {
+    0%,
+    100% {
+        transform: scale(1);
+        box-shadow:
+            0 4px 12px rgba(239, 68, 68, 0.3),
+            0 2px 8px rgba(220, 38, 38, 0.2);
+    }
+    50% {
+        transform: scale(1.05);
+        box-shadow:
+            0 6px 16px rgba(239, 68, 68, 0.4),
+            0 3px 10px rgba(220, 38, 38, 0.3);
+    }
+}
+
+.header-icon-badge i {
+    font-size: 1.5rem;
+    color: white;
+    position: relative;
+    z-index: 1;
+    filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.2));
+}
+
+:global(.dark) .header-icon-badge {
+    background: linear-gradient(135deg, #f87171 0%, #fb923c 50%, #ef4444 100%);
+    box-shadow:
+        0 4px 12px rgba(248, 113, 113, 0.4),
+        0 2px 8px rgba(239, 68, 68, 0.3);
+}
+
+:global(.dark) .header-icon-badge::before {
+    background: linear-gradient(135deg, transparent 0%, rgba(255, 255, 255, 0.2) 50%, transparent 100%);
+}
+
+.header-info {
+    display: flex;
+    flex-direction: column;
+    gap: 0.25rem;
+}
+
+.header-title-small {
+    font-size: 1.125rem;
+    font-weight: 700;
+    color: var(--text-color);
+    letter-spacing: -0.015em;
+}
+
+.header-count {
+    font-size: 0.813rem;
+    font-weight: 600;
+    color: #dc2626;
+    background: linear-gradient(135deg, #fee2e2 0%, #fef2f2 100%);
+    padding: 0.188rem 0.625rem;
+    border-radius: 6px;
+    display: inline-block;
+    width: fit-content;
+    border: 1px solid #fca5a5;
+    box-shadow: 0 2px 4px rgba(239, 68, 68, 0.1);
+}
+
+:global(.dark) .header-count {
+    color: #fca5a5;
+    background: linear-gradient(135deg, #7f1d1d 0%, #991b1b 100%);
+    border: 1px solid #f87171;
+}
+
+.header-actions-modern {
+    display: flex;
+    gap: 0.75rem;
+    align-items: center;
+}
+
+.search-field {
+    width: 280px;
+}
+
+.search-input-modern {
+    border-radius: 10px;
+    border: 2px solid var(--surface-border);
+    padding: 0.625rem 0.875rem 0.625rem 2.5rem;
+    font-size: 0.875rem;
+    transition: all 0.3s ease;
+    background: var(--surface-ground);
+    color: var(--text-color);
+}
+
+.search-input-modern:hover {
+    border-color: #cbd5e1;
+}
+
+.search-input-modern:focus {
+    border-color: #ef4444;
+    box-shadow: 0 0 0 3px rgba(239, 68, 68, 0.1);
+}
+
+.export-button {
+    background: linear-gradient(135deg, #10b981 0%, #059669 100%) !important;
+    border: none !important;
+    width: 40px !important;
+    height: 40px !important;
+    border-radius: 10px !important;
+    box-shadow:
+        0 3px 10px rgba(16, 185, 129, 0.3),
+        0 2px 6px rgba(5, 150, 105, 0.2) !important;
+    transition: all 0.3s ease !important;
+    color: white !important;
+    position: relative;
+    overflow: hidden;
+}
+
+.export-button::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(135deg, transparent 0%, rgba(255, 255, 255, 0.2) 50%, transparent 100%);
+    transform: translateX(-100%);
+    transition: transform 0.6s ease;
+}
+
+.export-button:hover::before {
+    transform: translateX(100%);
+}
+
+.export-button:hover {
+    transform: translateY(-2px) !important;
+    box-shadow:
+        0 5px 15px rgba(16, 185, 129, 0.4),
+        0 3px 10px rgba(5, 150, 105, 0.3) !important;
+    background: linear-gradient(135deg, #059669 0%, #047857 100%) !important;
+}
+
+:global(.dark) .export-button {
+    background: linear-gradient(135deg, #10b981 0%, #059669 100%) !important;
+    box-shadow:
+        0 3px 10px rgba(16, 185, 129, 0.4),
+        0 2px 6px rgba(5, 150, 105, 0.3) !important;
+}
+
+:global(.dark) .export-button:hover {
+    background: linear-gradient(135deg, #34d399 0%, #10b981 100%) !important;
+    box-shadow:
+        0 5px 15px rgba(16, 185, 129, 0.5),
+        0 3px 10px rgba(5, 150, 105, 0.4) !important;
+}
+
+/* ============================================================================
+   FILTERS CARD
+   ============================================================================ */
+.filters-card {
+    background: var(--surface-card);
+    border: 1px solid var(--surface-border);
+    border-radius: 12px;
+    padding: 1.25rem;
+    margin-bottom: 1.5rem;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+}
+
+:global(.dark) .filters-card {
+    background: var(--surface-ground);
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+}
+
+.filters-content-inline {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    flex-wrap: wrap;
+}
+
+.filter-icon {
+    color: #ef4444;
+    font-size: 1.25rem;
+}
+
+:global(.dark) .filter-icon {
+    color: #f87171;
+}
+
+.filter-label {
+    font-weight: 600;
+    color: var(--text-color);
+    font-size: 0.95rem;
+}
+
+.filter-label-sm {
+    font-weight: 500;
+    color: var(--text-color-secondary);
+    font-size: 0.875rem;
+}
+
+.calendar-compact {
+    max-width: 180px;
+}
+
+.clear-filter-button {
+    background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%) !important;
+    border: none !important;
+    color: #ffffff !important;
+    padding: 0.5rem !important;
+    border-radius: 6px !important;
+    transition: all 0.3s ease !important;
+}
+
+.clear-filter-button:hover {
+    transform: scale(1.05);
+    box-shadow: 0 4px 12px rgba(239, 68, 68, 0.3) !important;
+}
+
+:global(.dark) .clear-filter-button {
+    background: linear-gradient(135deg, #f87171 0%, #ef4444 100%) !important;
+}
+
+.result-tag {
+    font-weight: 600;
+}
+
+/* ============================================================================
+   DATATABLE ENHANCEMENTS
+   ============================================================================ */
+.modern-datatable {
+    border-radius: 12px;
+    overflow: hidden;
+    border: 1px solid var(--surface-border);
+}
+
+:deep(.modern-datatable .p-datatable-header) {
+    background: var(--surface-section);
+    border: none;
+    padding: 1rem;
+}
+
+:deep(.modern-datatable .p-datatable-thead > tr > th) {
+    background: var(--surface-section);
+    color: var(--text-color);
+    font-weight: 700;
+    border: none;
+    padding: 1rem;
+    font-size: 0.875rem;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+}
+
+:deep(.modern-datatable .p-datatable-tbody > tr) {
+    transition: background-color 0.2s ease;
+}
+
+:deep(.modern-datatable .p-datatable-tbody > tr:hover) {
+    background: var(--surface-hover) !important;
+}
+
+:deep(.modern-datatable .p-datatable-tbody > tr > td) {
+    padding: 0.875rem 1rem;
+    border-bottom: 1px solid var(--surface-border);
+}
+
 .p-datatable-customers .p-column-filter {
     width: 100%;
 }
 
+/* ============================================================================
+   BED TAG COLORS (PRESERVED - DO NOT MODIFY)
+   ============================================================================ */
 :deep(.bed-tag-A) {
     background-color: #4caf50 !important;
 }
@@ -856,7 +1363,9 @@ const exportData = () => {
     background-color: #9e9e9e !important;
 }
 
-/* Enhanced button styles */
+/* ============================================================================
+   ENHANCED BUTTON STYLES
+   ============================================================================ */
 .p-button-sm {
     padding: 0.25rem 0.5rem;
     font-size: 0.75rem;
@@ -871,7 +1380,9 @@ const exportData = () => {
     color: #f59e0b;
 }
 
-/* Grid enhancements for sidebar header */
+/* ============================================================================
+   GRID UTILITIES
+   ============================================================================ */
 .grid-cols-2 {
     grid-template-columns: repeat(2, minmax(0, 1fr));
 }
@@ -880,7 +1391,9 @@ const exportData = () => {
     grid-column: span 2 / span 2;
 }
 
-/* Details drawer layout */
+/* ============================================================================
+   DRAWER LAYOUTS
+   ============================================================================ */
 .details-drawer-content {
     display: grid;
     grid-template-columns: 320px 1fr;
@@ -900,6 +1413,9 @@ const exportData = () => {
     max-height: calc(100vh - 200px);
 }
 
+/* ============================================================================
+   RESPONSIVE DESIGN
+   ============================================================================ */
 @media (max-width: 1024px) {
     .details-drawer-content {
         grid-template-columns: 1fr;
@@ -915,6 +1431,79 @@ const exportData = () => {
 
     .details-sidebar-right {
         max-height: calc(100vh - 500px);
+    }
+
+    .table-header-modern {
+        flex-direction: column;
+        align-items: stretch;
+        gap: 1rem;
+    }
+
+    .header-actions-modern {
+        flex-direction: column;
+        width: 100%;
+    }
+
+    .search-field {
+        width: 100%;
+    }
+
+    .export-button {
+        width: 100% !important;
+    }
+
+    .filters-content-inline {
+        flex-direction: column;
+        align-items: flex-start;
+    }
+}
+
+@media (max-width: 768px) {
+    .attentions-view {
+        padding: 0.5rem;
+    }
+
+    .main-card {
+        padding: 1rem;
+        border-radius: 12px;
+    }
+
+    .header-section {
+        gap: 1rem;
+    }
+
+    .header-icon-wrapper {
+        width: 48px;
+        height: 48px;
+    }
+
+    .header-icon-wrapper i {
+        font-size: 1.5rem;
+    }
+
+    .header-title {
+        font-size: 1.25rem;
+    }
+
+    .header-subtitle {
+        font-size: 0.875rem;
+    }
+
+    .table-header-modern {
+        padding: 1rem;
+    }
+
+    .header-icon-badge {
+        width: 40px;
+        height: 40px;
+    }
+
+    .header-icon-badge i {
+        font-size: 1.25rem;
+    }
+
+    .header-title-small {
+        font-size: 1rem;
     }
 }
 </style>

@@ -158,12 +158,7 @@ const globalStats = computed(() => {
 
         // Verificar si la habitación tiene alertas (tareas pendientes, por vencer o vencidas)
         const hasAlerts = room.beds.some((bed) => {
-            return (
-                bed.status === 'occupied' &&
-                bed.attention &&
-                bed.attention.tasks &&
-                bed.attention.tasks.some((task) => task.status === 'pendiente' && (task.alert_status === 'por_vencer' || task.alert_status === 'vencida'))
-            );
+            return bed.status === 'occupied' && bed.attention && bed.attention.tasks && bed.attention.tasks.some((task) => task.status === 'pendiente' && (task.alert_status === 'por_vencer' || task.alert_status === 'vencida'));
         });
 
         if (hasAlerts) alertRooms++;
@@ -231,10 +226,13 @@ onMounted(async () => {
     console.log('[HospitalizationStatus] Started listening for real-time events');
 
     // Auto-refresh every 30 minutes
-    refreshInterval.value = setInterval(async () => {
-        console.log('[HospitalizationStatus] Auto-refreshing data...');
-        await refreshData();
-    }, 30 * 60 * 1000);
+    refreshInterval.value = setInterval(
+        async () => {
+            console.log('[HospitalizationStatus] Auto-refreshing data...');
+            await refreshData();
+        },
+        30 * 60 * 1000
+    );
 });
 
 onUnmounted(() => {
@@ -455,7 +453,15 @@ onUnmounted(() => {
 
                             <div class="filter-info">
                                 <Badge :value="`Mostrando: ${filteredRooms.length} habitación(es)`" severity="info" />
-                                <Button v-if="selectedRoom || !occupancyFilters.occupied || !occupancyFilters.free || !occupancyFilters.reserved" icon="pi pi-filter-slash" label="Limpiar filtros" @click="clearAllFilters" severity="secondary" outlined size="small" />
+                                <Button
+                                    v-if="selectedRoom || !occupancyFilters.occupied || !occupancyFilters.free || !occupancyFilters.reserved"
+                                    icon="pi pi-filter-slash"
+                                    label="Limpiar filtros"
+                                    @click="clearAllFilters"
+                                    severity="secondary"
+                                    outlined
+                                    size="small"
+                                />
                             </div>
                         </div>
                     </template>
