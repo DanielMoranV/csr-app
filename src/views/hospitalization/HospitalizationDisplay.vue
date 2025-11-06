@@ -1,5 +1,6 @@
 <script setup>
 import { useRealtimeEvents } from '@/composables/useRealtimeEvents';
+import { useSurgeryCallAlerts } from '@/composables/useSurgeryCallAlerts';
 import { useHospitalizationStore } from '@/store/hospitalizationStore';
 import { storeToRefs } from 'pinia';
 import Button from 'primevue/button';
@@ -13,6 +14,21 @@ const { startListening, stopListening, isListening } = useRealtimeEvents({
     updateAttentions: false,
     updateDashboard: false,
     updateHospitalization: true
+});
+
+// Alertas de llamado a quirófano
+const {
+    isListening: isSurgeryAlertsListening,
+    isAudioEnabled,
+    isSpeaking,
+    latestCall,
+    surgeryCalls,
+    toggleAudio,
+    testAlert,
+    clearHistory
+} = useSurgeryCallAlerts({
+    autoStart: true,
+    enableNotifications: true
 });
 
 // Estado de pantalla completa
@@ -110,6 +126,15 @@ const formatEntryDate = (dateString) => {
     const month = String(date.getMonth() + 1).padStart(2, '0');
     const year = date.getFullYear();
     return `${day}/${month}/${year}`;
+};
+
+// Formatear hora
+const formatTime = (dateString) => {
+    if (!dateString) return 'N/A';
+    const date = new Date(dateString);
+    const hours = String(date.getHours()).padStart(2, '0');
+    const minutes = String(date.getMinutes()).padStart(2, '0');
+    return `${hours}:${minutes}`;
 };
 
 // Alternar entre vistas (ciclo: vertical -> cards)

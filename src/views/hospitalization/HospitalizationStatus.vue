@@ -106,15 +106,14 @@ const filteredRooms = computed(() => {
             }
 
             // Si tienen el mismo número de camas, ordenar por ocupación (más ocupadas primero)
-            const occupancyA = a.beds.filter(bed => bed.status === 'occupied').length;
-            const occupancyB = b.beds.filter(bed => bed.status === 'occupied').length;
+            const occupancyA = a.beds.filter((bed) => bed.status === 'occupied').length;
+            const occupancyB = b.beds.filter((bed) => bed.status === 'occupied').length;
             return occupancyB - occupancyA;
         });
     }
 
     return rooms;
 });
-
 
 // Estadísticas generales
 const globalStats = computed(() => {
