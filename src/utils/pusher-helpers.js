@@ -17,9 +17,9 @@ export const slugify = (text) => {
         .toString()
         .toLowerCase()
         .trim()
-        .replace(/\s+/g, '-')        // Reemplazar espacios con -
-        .replace(/[^\w\-]+/g, '')    // Eliminar caracteres no-word
-        .replace(/\-\-+/g, '-');     // Reemplazar múltiples - con uno solo
+        .replace(/\s+/g, '-') // Reemplazar espacios con -
+        .replace(/[^\w\-]+/g, '') // Eliminar caracteres no-word
+        .replace(/\-\-+/g, '-'); // Reemplazar múltiples - con uno solo
 };
 
 /**

@@ -140,7 +140,7 @@ const getTasksTooltip = (tasks) => {
                     <div class="flex align-items-center gap-2 mt-2">
                         <Tag v-if="att.details?.ram" value="RAM" severity="warn" class="text-xs" v-tooltip.top="'Paciente con Reacciones Alérgicas a Medicamentos (RAM)'" />
                         <Tag v-if="att.details?.medical_order" value="Órdenes" severity="info" class="text-xs" v-tooltip.top="'Tiene órdenes médicas registradas'" />
-                        <Tag v-if="att.tasks?.length" :value="`${getPendingTasks(att.tasks).length} pend."` :severity="getPendingTasks(att.tasks).length > 0 ? 'warning' : 'success'" class="text-xs" v-tooltip.top="getTasksTooltip(att.tasks)" />
+                        <Tag v-if="att.tasks?.length" :value="`${getPendingTasks(att.tasks).length} pend." ` :severity="getPendingTasks(att.tasks).length > 0 ? 'warning' : 'success'" class="text-xs" v-tooltip.top="getTasksTooltip(att.tasks)" />
                     </div>
                 </div>
             </div>

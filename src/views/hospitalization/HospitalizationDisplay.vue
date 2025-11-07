@@ -17,19 +17,23 @@ const { startListening, stopListening, isListening } = useRealtimeEvents({
 });
 
 // Alertas de llamado a quirófano
+console.log('[HospitalizationDisplay] 🔍 Inicializando useSurgeryCallAlerts...');
 const {
     isListening: isSurgeryAlertsListening,
     isAudioEnabled,
     isSpeaking,
     latestCall,
     surgeryCalls,
-    toggleAudio,
-    testAlert,
-    clearHistory
+    toggleAudio
 } = useSurgeryCallAlerts({
     autoStart: true,
     enableNotifications: true
 });
+console.log('[HospitalizationDisplay] 🔍 useSurgeryCallAlerts inicializado');
+console.log('[HospitalizationDisplay] 🔍 isSurgeryAlertsListening:', isSurgeryAlertsListening);
+console.log('[HospitalizationDisplay] 🔍 isAudioEnabled:', isAudioEnabled);
+console.log('[HospitalizationDisplay] 🔍 latestCall:', latestCall);
+console.log('[HospitalizationDisplay] 🔍 surgeryCalls:', surgeryCalls);
 
 // Estado de pantalla completa
 const isFullscreen = ref(false);
@@ -39,25 +43,17 @@ const viewMode = ref('vertical'); // 'cards' o 'vertical' (optimizado para panta
 
 // Habitaciones con atenciones abiertas (filtrado)
 const activeRooms = computed(() => {
-    console.log('[HospitalizationDisplay] Estado completo:', state.value.status);
-
     if (!state.value.status) {
-        console.log('[HospitalizationDisplay] No hay status');
         return [];
     }
 
     const filtered = state.value.status
         .map((room) => {
-            console.log('[HospitalizationDisplay] Procesando habitación:', room.room_number, 'Camas:', room.beds);
-
             // Filtrar solo camas ocupadas con atención activa
             const activeBeds = room.beds.filter((bed) => {
                 if (bed.status !== 'occupied' || !bed.attention) {
                     return false;
                 }
-
-                // Expandir objeto attention completo para ver su estructura
-                console.log('[HospitalizationDisplay] Cama:', bed.bed_number, '- Estructura completa de attention:', JSON.parse(JSON.stringify(bed.attention)));
 
                 // Una atención está activa si:
                 // 1. No tiene fecha de salida (exit_date, discharge_date)
@@ -67,18 +63,8 @@ const activeRooms = computed(() => {
 
                 const isActive = !hasExitDate && isActiveByFlag;
 
-                console.log('[HospitalizationDisplay] Cama activa?', isActive, {
-                    hasExitDate,
-                    exit_date: bed.attention.exit_date,
-                    discharge_date: bed.attention.discharge_date,
-                    is_active: bed.attention.is_active,
-                    isActiveByFlag
-                });
-
                 return isActive;
             });
-
-            console.log('[HospitalizationDisplay] Habitación', room.room_number, '- Camas activas:', activeBeds.length);
 
             return {
                 ...room,
@@ -87,7 +73,6 @@ const activeRooms = computed(() => {
         })
         .filter((room) => room.beds.length > 0); // Solo habitaciones con camas ocupadas
 
-    console.log('[HospitalizationDisplay] Habitaciones con pacientes activos:', filtered);
     return filtered;
 });
 
@@ -294,15 +279,20 @@ const refreshData = async () => {
 const refreshInterval = ref(null);
 
 onMounted(async () => {
+    console.log('[HospitalizationDisplay] ✅ Component mounted');
+    console.log('[HospitalizationDisplay] 🔍 isSurgeryAlertsListening en mounted:', isSurgeryAlertsListening.value);
+    console.log('[HospitalizationDisplay] 🔍 isAudioEnabled en mounted:', isAudioEnabled.value);
+
     await store.fetchHospitalizationStatus();
     startListening();
-    console.log('[HospitalizationDisplay] Component mounted, listening for real-time events');
 
     // Auto-refresh every 30 minutes
-    refreshInterval.value = setInterval(async () => {
-        console.log('[HospitalizationDisplay] Auto-refreshing data...');
-        await refreshData();
-    }, 30 * 60 * 1000);
+    refreshInterval.value = setInterval(
+        async () => {
+            await refreshData();
+        },
+        30 * 60 * 1000
+    );
 });
 
 onUnmounted(() => {
@@ -311,7 +301,6 @@ onUnmounted(() => {
     // Clear auto-refresh interval
     if (refreshInterval.value) {
         clearInterval(refreshInterval.value);
-        console.log('[HospitalizationDisplay] Auto-refresh interval cleared.');
     }
 
     // Asegurarse de restaurar el layout si se desmonta el componente
@@ -328,7 +317,7 @@ onUnmounted(() => {
         }
     }
 
-    console.log('[HospitalizationDisplay] Component unmounted');
+    console.log('[HospitalizationDisplay] 🔍 Component unmounted');
 });
 </script>
 
@@ -361,12 +350,57 @@ onUnmounted(() => {
 
                 <!-- Botones de acción -->
                 <div class="header-actions">
+                    <Button
+                        :icon="isAudioEnabled ? 'pi pi-volume-up' : 'pi pi-volume-off'"
+                        @click="toggleAudio"
+                        :severity="isAudioEnabled ? 'success' : 'secondary'"
+                        text
+                        rounded
+                        v-tooltip.bottom="isAudioEnabled ? 'Desactivar alertas de audio' : 'Activar alertas de audio'"
+                        :class="{ 'audio-speaking': isSpeaking }"
+                    />
                     <Button :icon="viewMode === 'vertical' ? 'pi pi-th-large' : 'pi pi-list'" @click="toggleViewMode" severity="secondary" text rounded v-tooltip.bottom="viewMode === 'vertical' ? 'Vista Cards' : 'Vista Vertical'" />
                     <Button icon="pi pi-refresh" :loading="state.isLoading" @click="refreshData" severity="secondary" text rounded v-tooltip.bottom="'Actualizar'" />
                     <Button :icon="isFullscreen ? 'pi pi-times' : 'pi pi-window-maximize'" @click="toggleFullscreen" severity="secondary" text rounded v-tooltip.bottom="isFullscreen ? 'Salir de pantalla completa' : 'Pantalla completa'" />
                 </div>
             </div>
         </div>
+
+        <!-- Alerta de Llamado a Quirófano -->
+        <transition name="surgery-alert">
+            <div v-if="latestCall" class="surgery-call-alert">
+                <div class="alert-content">
+                    <div class="alert-icon">
+                        <i class="pi pi-exclamation-triangle"></i>
+                    </div>
+                    <div class="alert-info">
+                        <h2 class="alert-title">🚨 LLAMADO A QUIRÓFANO</h2>
+                        <div class="alert-details">
+                            <p class="patient-name">{{ latestCall.patient?.name || 'N/A' }}</p>
+                            <div class="alert-meta">
+                                <span class="meta-item">
+                                    <i class="pi pi-hashtag"></i>
+                                    Admisión: {{ latestCall.admission_number || 'N/A' }}
+                                </span>
+                                <span class="meta-item">
+                                    <i class="pi pi-home"></i>
+                                    {{ latestCall.hospital_attention?.bed?.room?.name || 'N/A' }}
+                                </span>
+                                <span class="meta-item">
+                                    <i class="pi pi-th-large"></i>
+                                    {{ latestCall.hospital_attention?.bed?.name || 'N/A' }}
+                                </span>
+                                <span class="meta-item">
+                                    <i class="pi pi-clock"></i>
+                                    {{ formatTime(latestCall.receivedAt) }}
+                                </span>
+                            </div>
+                        </div>
+                    </div>
+                    <Button icon="pi pi-times" @click="latestCall = null" severity="secondary" text rounded class="alert-close" />
+                </div>
+            </div>
+        </transition>
 
         <!-- Loading State -->
         <div v-if="state.isLoading && !state.status" class="display-loading">
@@ -584,6 +618,201 @@ onUnmounted(() => {
     }
     50% {
         opacity: 0.5;
+    }
+}
+
+/* Botón de audio hablando */
+.audio-speaking {
+    animation: audio-pulse 0.8s ease-in-out infinite;
+}
+
+@keyframes audio-pulse {
+    0%,
+    100% {
+        transform: scale(1);
+        opacity: 1;
+    }
+    50% {
+        transform: scale(1.1);
+        opacity: 0.8;
+    }
+}
+
+/* Alerta de Llamado a Quirófano */
+.surgery-call-alert {
+    position: fixed;
+    top: 80px;
+    left: 50%;
+    transform: translateX(-50%);
+    z-index: 10000;
+    width: 90%;
+    max-width: 700px;
+    background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%);
+    border-radius: 12px;
+    box-shadow:
+        0 20px 60px rgba(239, 68, 68, 0.5),
+        0 0 0 4px rgba(255, 255, 255, 0.2);
+    animation:
+        surgery-alert-shake 0.5s ease-in-out,
+        surgery-alert-glow 1.5s ease-in-out infinite;
+    border: 3px solid #ffffff;
+}
+
+.alert-content {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    padding: 1.25rem 1.5rem;
+    position: relative;
+}
+
+.alert-icon {
+    width: 64px;
+    height: 64px;
+    background: rgba(255, 255, 255, 0.25);
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    animation: alert-icon-pulse 1s ease-in-out infinite;
+}
+
+.alert-icon i {
+    font-size: 2rem;
+    color: #ffffff;
+}
+
+@keyframes alert-icon-pulse {
+    0%,
+    100% {
+        transform: scale(1);
+        box-shadow: 0 0 0 0 rgba(255, 255, 255, 0.7);
+    }
+    50% {
+        transform: scale(1.1);
+        box-shadow: 0 0 0 10px rgba(255, 255, 255, 0);
+    }
+}
+
+.alert-info {
+    flex: 1;
+    min-width: 0;
+}
+
+.alert-title {
+    font-size: 1.5rem;
+    font-weight: 800;
+    color: #ffffff;
+    margin: 0 0 0.5rem 0;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.3);
+}
+
+.alert-details {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+}
+
+.patient-name {
+    font-size: 1.25rem;
+    font-weight: 700;
+    color: #ffffff;
+    margin: 0;
+    text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.3);
+}
+
+.alert-meta {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.75rem;
+}
+
+.meta-item {
+    display: flex;
+    align-items: center;
+    gap: 0.375rem;
+    font-size: 0.875rem;
+    font-weight: 600;
+    color: rgba(255, 255, 255, 0.95);
+    background: rgba(255, 255, 255, 0.15);
+    padding: 0.375rem 0.625rem;
+    border-radius: 6px;
+}
+
+.meta-item i {
+    font-size: 0.875rem;
+}
+
+.alert-close {
+    position: absolute;
+    top: 0.5rem;
+    right: 0.5rem;
+    color: #ffffff !important;
+}
+
+.alert-close:hover {
+    background: rgba(255, 255, 255, 0.2) !important;
+}
+
+/* Animaciones de entrada/salida */
+.surgery-alert-enter-active {
+    animation: surgery-alert-enter 0.5s ease-out;
+}
+
+.surgery-alert-leave-active {
+    animation: surgery-alert-leave 0.3s ease-in;
+}
+
+@keyframes surgery-alert-enter {
+    0% {
+        opacity: 0;
+        transform: translateX(-50%) translateY(-100px) scale(0.8);
+    }
+    100% {
+        opacity: 1;
+        transform: translateX(-50%) translateY(0) scale(1);
+    }
+}
+
+@keyframes surgery-alert-leave {
+    0% {
+        opacity: 1;
+        transform: translateX(-50%) translateY(0) scale(1);
+    }
+    100% {
+        opacity: 0;
+        transform: translateX(-50%) translateY(-100px) scale(0.8);
+    }
+}
+
+@keyframes surgery-alert-shake {
+    0%,
+    100% {
+        transform: translateX(-50%) translateY(0);
+    }
+    25% {
+        transform: translateX(calc(-50% - 10px)) translateY(0);
+    }
+    75% {
+        transform: translateX(calc(-50% + 10px)) translateY(0);
+    }
+}
+
+@keyframes surgery-alert-glow {
+    0%,
+    100% {
+        box-shadow:
+            0 20px 60px rgba(239, 68, 68, 0.5),
+            0 0 0 4px rgba(255, 255, 255, 0.2);
+    }
+    50% {
+        box-shadow:
+            0 20px 60px rgba(239, 68, 68, 0.8),
+            0 0 0 6px rgba(255, 255, 255, 0.4),
+            0 0 40px rgba(239, 68, 68, 0.6);
     }
 }
 

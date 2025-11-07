@@ -241,7 +241,9 @@ const handleSaveBed = async (bedData) => {
     align-items: center;
     justify-content: center;
     background: linear-gradient(135deg, #0891b2 0%, #14b8a6 50%, #06b6d4 100%);
-    box-shadow: 0 8px 20px rgba(8, 145, 178, 0.3), 0 4px 12px rgba(20, 184, 166, 0.4);
+    box-shadow:
+        0 8px 20px rgba(8, 145, 178, 0.3),
+        0 4px 12px rgba(20, 184, 166, 0.4);
     animation: pulse 2s ease-in-out infinite;
     position: relative;
     overflow: hidden;
@@ -266,7 +268,9 @@ const handleSaveBed = async (bedData) => {
 
 :global(.dark) .header-icon-wrapper {
     background: linear-gradient(135deg, #22d3ee 0%, #2dd4bf 50%, #06b6d4 100%);
-    box-shadow: 0 8px 20px rgba(34, 211, 238, 0.4), 0 4px 12px rgba(45, 212, 191, 0.5);
+    box-shadow:
+        0 8px 20px rgba(34, 211, 238, 0.4),
+        0 4px 12px rgba(45, 212, 191, 0.5);
 }
 
 .header-content {

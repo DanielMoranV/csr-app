@@ -369,7 +369,11 @@ watch(
                         </div>
 
                         <!-- Due Date Info -->
-                        <div v-if="task.due_date" class="mb-2 px-3 py-2 rounded" :class="{ 'bg-blue-50 border-l-4 border-blue-400': !task.completed_at, 'bg-green-50 border-l-4 border-green-500': task.is_completed_on_time, 'bg-orange-50 border-l-4 border-orange-500': task.is_completed_late }">
+                        <div
+                            v-if="task.due_date"
+                            class="mb-2 px-3 py-2 rounded"
+                            :class="{ 'bg-blue-50 border-l-4 border-blue-400': !task.completed_at, 'bg-green-50 border-l-4 border-green-500': task.is_completed_on_time, 'bg-orange-50 border-l-4 border-orange-500': task.is_completed_late }"
+                        >
                             <div class="flex items-center gap-2 text-sm">
                                 <i class="pi pi-calendar" :class="{ 'text-blue-600': !task.completed_at, 'text-green-600': task.is_completed_on_time, 'text-orange-600': task.is_completed_late }"></i>
                                 <span class="font-medium" :class="{ 'text-blue-900': !task.completed_at, 'text-green-900': task.is_completed_on_time, 'text-orange-900': task.is_completed_late }">Fecha límite:</span>

@@ -171,7 +171,9 @@ const hideDialog = () => {
     align-items: center;
     justify-content: center;
     background: linear-gradient(135deg, #9333ea 0%, #a855f7 50%, #7e22ce 100%);
-    box-shadow: 0 8px 20px rgba(147, 51, 234, 0.3), 0 4px 12px rgba(168, 85, 247, 0.4);
+    box-shadow:
+        0 8px 20px rgba(147, 51, 234, 0.3),
+        0 4px 12px rgba(168, 85, 247, 0.4);
     animation: pulse 2s ease-in-out infinite;
     position: relative;
     overflow: hidden;
@@ -196,7 +198,9 @@ const hideDialog = () => {
 
 :global(.dark) .header-icon-wrapper {
     background: linear-gradient(135deg, #c084fc 0%, #a855f7 50%, #9333ea 100%);
-    box-shadow: 0 8px 20px rgba(192, 132, 252, 0.4), 0 4px 12px rgba(168, 85, 247, 0.5);
+    box-shadow:
+        0 8px 20px rgba(192, 132, 252, 0.4),
+        0 4px 12px rgba(168, 85, 247, 0.5);
 }
 
 .header-content {

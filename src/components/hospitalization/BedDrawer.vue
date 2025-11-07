@@ -463,13 +463,7 @@ watch(
         </div>
 
         <!-- Dialogo de Reserva -->
-        <BedReservationDialog
-            v-model:visible="showReservationDialog"
-            :bed="bed"
-            :reservation="activeReservation"
-            @reservation-created="handleReservationCreated"
-            @save="handleReservationUpdated"
-        />
+        <BedReservationDialog v-model:visible="showReservationDialog" :bed="bed" :reservation="activeReservation" @reservation-created="handleReservationCreated" @save="handleReservationUpdated" />
     </Drawer>
 </template>
 

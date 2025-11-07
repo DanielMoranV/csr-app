@@ -248,7 +248,8 @@ const validateAllFields = () => {
 
     fieldsToValidate.forEach((field) => {
         validateField(field);
-    });    return Object.keys(validationErrors.value).length === 0;
+    });
+    return Object.keys(validationErrors.value).length === 0;
 };
 
 const getFieldError = (fieldName) => {

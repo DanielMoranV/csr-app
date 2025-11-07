@@ -1,21 +1,12 @@
-import { onUnmounted, ref } from 'vue';
 import useEcho from '@/websocket/echo';
+import { onUnmounted, ref } from 'vue';
 
 /**
  * Composable para manejar alertas sonoras de llamados a quirófano
  * Escucha el evento 'patient.called.qx' en el canal 'surgery-calls'
  */
 export function useSurgeryCallAlerts(options = {}) {
-    const {
-        autoStart = true,
-        volume = 1.0,
-        rate = 1.0,
-        pitch = 1.0,
-        lang = 'es-ES',
-        voice = null,
-        repeatCount = 2,
-        enableNotifications = true
-    } = options;
+    const { autoStart = true, volume = 1.0, rate = 1.0, pitch = 1.0, lang = 'es-ES', voice = null, repeatCount = 2, enableNotifications = true } = options;
 
     const isListening = ref(false);
     const isAudioEnabled = ref(true);
@@ -128,7 +119,13 @@ export function useSurgeryCallAlerts(options = {}) {
      * Manejar evento de llamado a quirófano
      */
     const handleSurgeryCall = (data) => {
-        console.log('[SurgeryCallAlerts] 🚨 Evento recibido: patient.called.qx', data);
+        console.log('═══════════════════════════════════════════════════');
+        console.log('[SurgeryCallAlerts] 🚨 EVENTO RECIBIDO: patient.called.qx');
+        console.log('[SurgeryCallAlerts] 🔍 Timestamp:', new Date().toISOString());
+        console.log('[SurgeryCallAlerts] 🔍 Data completa recibida:', JSON.stringify(data, null, 2));
+        console.log('[SurgeryCallAlerts] 🔍 isAudioEnabled:', isAudioEnabled.value);
+        console.log('[SurgeryCallAlerts] 🔍 isListening:', isListening.value);
+        console.log('═══════════════════════════════════════════════════');
 
         // Extraer información del paciente
         const patientName = data.patient?.name || 'Paciente desconocido';
@@ -137,17 +134,27 @@ export function useSurgeryCallAlerts(options = {}) {
         const roomName = data.hospital_attention?.bed?.room?.name || 'Habitación';
         const admissionNumber = data.admission_number;
 
+        console.log('[SurgeryCallAlerts] 🔍 Información extraída:', {
+            patientName,
+            bedName,
+            bedNumber,
+            roomName,
+            admissionNumber
+        });
+
         // Actualizar última llamada
         latestCall.value = {
             ...data,
             receivedAt: new Date().toISOString()
         };
+        console.log('[SurgeryCallAlerts] 🔍 latestCall actualizado:', latestCall.value);
 
         // Agregar al historial
         surgeryCalls.value.unshift({
             ...data,
             receivedAt: new Date().toISOString()
         });
+        console.log('[SurgeryCallAlerts] 🔍 Historial de llamadas:', surgeryCalls.value.length, 'elementos');
 
         // Limitar historial a 50 elementos
         if (surgeryCalls.value.length > 50) {
@@ -155,9 +162,11 @@ export function useSurgeryCallAlerts(options = {}) {
         }
 
         // Reproducir alerta de voz
+        console.log('[SurgeryCallAlerts] 🔊 Intentando reproducir alerta de voz...');
         speakAlert(patientName, bedNumber, roomName);
 
         // Mostrar notificación del navegador
+        console.log('[SurgeryCallAlerts] 🔔 Intentando mostrar notificación...');
         showBrowserNotification(data);
 
         console.log('[SurgeryCallAlerts] ✅ Alerta procesada para:', {
@@ -172,6 +181,9 @@ export function useSurgeryCallAlerts(options = {}) {
      * Iniciar escucha de eventos
      */
     const startListening = () => {
+        console.log('[SurgeryCallAlerts] 🔍 startListening() llamado');
+        console.log('[SurgeryCallAlerts] 🔍 isListening actual:', isListening.value);
+
         if (isListening.value) {
             console.warn('[SurgeryCallAlerts] Ya está escuchando eventos');
             return;
@@ -183,10 +195,13 @@ export function useSurgeryCallAlerts(options = {}) {
         }
 
         try {
+            console.log('[SurgeryCallAlerts] 🔍 useEcho disponible:', !!useEcho);
+
             // Suscribirse al canal surgery-calls
-            channel = useEcho.channel('surgery-calls');
+            channel = useEcho.channel('hospitalizations');
 
             console.log('[SurgeryCallAlerts] 📡 Suscrito al canal: surgery-calls');
+            console.log('[SurgeryCallAlerts] 🔍 Canal creado:', channel);
 
             // Escuchar evento patient.called.qx
             channel.listen('.patient.called.qx', handleSurgeryCall);
@@ -194,8 +209,10 @@ export function useSurgeryCallAlerts(options = {}) {
             isListening.value = true;
 
             console.log('[SurgeryCallAlerts] ✅ Iniciado - Escuchando eventos de llamados a quirófano');
+            console.log('[SurgeryCallAlerts] 🔍 isListening después de iniciar:', isListening.value);
         } catch (error) {
-            console.error('[SurgeryCallAlerts] Error al iniciar:', error);
+            console.error('[SurgeryCallAlerts] ❌ Error al iniciar:', error);
+            console.error('[SurgeryCallAlerts] ❌ Stack:', error.stack);
         }
     };
 
@@ -281,8 +298,11 @@ export function useSurgeryCallAlerts(options = {}) {
 
     // Auto-iniciar si está configurado
     if (autoStart) {
+        console.log('[SurgeryCallAlerts] 🔍 autoStart está activado, iniciando...');
         startListening();
         requestNotificationPermission();
+    } else {
+        console.log('[SurgeryCallAlerts] 🔍 autoStart está desactivado');
     }
 
     // Cleanup automático

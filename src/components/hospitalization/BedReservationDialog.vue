@@ -194,19 +194,15 @@ const closeDialog = () => {
                     </div>
                     <ul class="list-none p-0 m-0 text-blue-600">
                         <li class="mb-1">• La reserva se creará con estado <strong>activa</strong></li>
-                        <li>• Reservada por: <strong>{{ authStore.getUser?.name }}</strong></li>
+                        <li>
+                            • Reservada por: <strong>{{ authStore.getUser?.name }}</strong>
+                        </li>
                     </ul>
                 </div>
 
                 <div class="field">
                     <label for="notes">Notas</label>
-                    <Textarea
-                        id="notes"
-                        v-model="formData.notes"
-                        rows="5"
-                        placeholder="Agregue notas sobre esta reserva (opcional)&#10;Ejemplo: Paciente post-operatorio, requiere monitoreo especial"
-                        fluid
-                    />
+                    <Textarea id="notes" v-model="formData.notes" rows="5" placeholder="Agregue notas sobre esta reserva (opcional)&#10;Ejemplo: Paciente post-operatorio, requiere monitoreo especial" fluid />
                 </div>
             </template>
 
@@ -214,59 +210,25 @@ const closeDialog = () => {
             <template v-else-if="isEditMode">
                 <div class="field">
                     <label for="status">Estado</label>
-                    <Select
-                        id="status"
-                        v-model="formData.status"
-                        :options="availableStatuses"
-                        placeholder="Seleccione un estado"
-                        :disabled="isCompleted"
-                        fluid
-                    />
+                    <Select id="status" v-model="formData.status" :options="availableStatuses" placeholder="Seleccione un estado" :disabled="isCompleted" fluid />
                     <small class="p-hint">
-                        <template v-if="formData.status === 'activa'">
-                            Puede confirmar, completar o cancelar esta reserva
-                        </template>
-                        <template v-else-if="formData.status === 'confirmada'">
-                            Puede completar o cancelar esta reserva
-                        </template>
-                        <template v-else-if="formData.status === 'cancelada'">
-                            Esta reserva está cancelada y no puede ser modificada
-                        </template>
-                        <template v-else-if="formData.status === 'completada'">
-                            Esta reserva está completada y no puede ser modificada
-                        </template>
+                        <template v-if="formData.status === 'activa'"> Puede confirmar, completar o cancelar esta reserva </template>
+                        <template v-else-if="formData.status === 'confirmada'"> Puede completar o cancelar esta reserva </template>
+                        <template v-else-if="formData.status === 'cancelada'"> Esta reserva está cancelada y no puede ser modificada </template>
+                        <template v-else-if="formData.status === 'completada'"> Esta reserva está completada y no puede ser modificada </template>
                     </small>
                 </div>
 
                 <div class="field">
                     <label for="notes">Notas</label>
-                    <Textarea
-                        id="notes"
-                        v-model="formData.notes"
-                        rows="4"
-                        :disabled="isCompleted"
-                        placeholder="Notas sobre la reserva"
-                        fluid
-                    />
+                    <Textarea id="notes" v-model="formData.notes" rows="4" :disabled="isCompleted" placeholder="Notas sobre la reserva" fluid />
                 </div>
             </template>
         </div>
 
         <template #footer>
-            <Button
-                label="Cancelar"
-                icon="pi pi-times"
-                severity="secondary"
-                text
-                @click="closeDialog"
-            />
-            <Button
-                :label="isCreateMode ? 'Reservar' : 'Actualizar'"
-                :icon="isCreateMode ? 'pi pi-calendar-plus' : 'pi pi-check'"
-                @click="submit"
-                :loading="isSaving"
-                :disabled="isCompleted"
-            />
+            <Button label="Cancelar" icon="pi pi-times" severity="secondary" text @click="closeDialog" />
+            <Button :label="isCreateMode ? 'Reservar' : 'Actualizar'" :icon="isCreateMode ? 'pi pi-calendar-plus' : 'pi pi-check'" @click="submit" :loading="isSaving" :disabled="isCompleted" />
         </template>
     </Dialog>
 </template>

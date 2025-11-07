@@ -214,8 +214,7 @@ const scoreFields = [
 
 // Computed para determinar si hay evaluación CUDYR
 const hasCudyrEvaluation = computed(() => {
-    return (currentDetail.value?.cudyr_evaluation || currentDetail.value?.cudyr_evaluation_id) &&
-           localDetails.value?.score_CUDYR > 0;
+    return (currentDetail.value?.cudyr_evaluation || currentDetail.value?.cudyr_evaluation_id) && localDetails.value?.score_CUDYR > 0;
 });
 
 // Computed para validaciones - Solo id_attentions es requerido
@@ -1779,7 +1778,6 @@ const getUserInfo = (userObj) => {
     border-color: var(--primary-color);
     box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
 }
-
 
 .score-header {
     display: flex;

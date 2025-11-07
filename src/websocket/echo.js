@@ -5,7 +5,7 @@ import Pusher from 'pusher-js';
 const api_url = import.meta.env.VITE_API_URL;
 
 window.Pusher = Pusher;
-//Pusher.logToConsole = true;
+Pusher.logToConsole = true;
 
 const broadcaster = import.meta.env.VITE_BROADCAST_DRIVER;
 
@@ -92,9 +92,38 @@ if (broadcaster === 'reverb') {
 
 const useEcho = new Echo(echoConfig);
 
+// Logs de conexión para debugging
+console.log('[Echo] 🔍 Echo inicializado con broadcaster:', broadcaster);
+console.log('[Echo] 🔍 Config:', {
+    broadcaster,
+    wsHost: echoConfig.wsHost,
+    wsPort: echoConfig.wsPort,
+    authEndpoint: echoConfig.authEndpoint
+});
+
 // useEcho.connector.pusher.connection.bind('connected', () => {
 //     const socketId = useEcho.connector.pusher.connection.socket_id;
 //     setSocketId(socketId);
 // });
+
+// Logs adicionales para debugging
+if (useEcho.connector && useEcho.connector.pusher) {
+    useEcho.connector.pusher.connection.bind('connected', () => {
+        console.log('[Echo] ✅ WebSocket conectado');
+        console.log('[Echo] 🔍 Socket ID:', useEcho.connector.pusher.connection.socket_id);
+    });
+
+    useEcho.connector.pusher.connection.bind('disconnected', () => {
+        console.warn('[Echo] ⚠️ WebSocket desconectado');
+    });
+
+    useEcho.connector.pusher.connection.bind('error', (error) => {
+        console.error('[Echo] ❌ Error en WebSocket:', error);
+    });
+
+    useEcho.connector.pusher.connection.bind('state_change', (states) => {
+        console.log('[Echo] 🔄 Estado del WebSocket cambiado:', states);
+    });
+}
 
 export default useEcho;
