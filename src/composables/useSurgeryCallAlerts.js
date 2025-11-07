@@ -31,7 +31,7 @@ export function useSurgeryCallAlerts(options = {}) {
     /**
      * Reproducir alerta de voz con el mensaje de llamado a quirófano
      */
-    const speakAlert = (patientName, bedNumber, roomName) => {
+    const speakAlert = (patientName, bedNumber) => {
         if (!isAudioEnabled.value || !speechSynthesis) {
             return;
         }
@@ -39,7 +39,7 @@ export function useSurgeryCallAlerts(options = {}) {
         // Cancelar cualquier mensaje anterior
         speechSynthesis.cancel();
 
-        const message = `Atención. Paciente ${patientName}, cama ${bedNumber}, ${roomName}, pasar a quirófano. Repito. Paciente ${patientName}, cama ${bedNumber}, pasar a quirófano.`;
+        const message = `Atención. Paciente ${patientName}, cama ${bedNumber}, pasar a quirófano. Repito. Paciente ${patientName}, cama ${bedNumber}, pasar a quirófano.`;
 
         isSpeaking.value = true;
 
@@ -163,7 +163,7 @@ export function useSurgeryCallAlerts(options = {}) {
 
         // Reproducir alerta de voz
         console.log('[SurgeryCallAlerts] 🔊 Intentando reproducir alerta de voz...');
-        speakAlert(patientName, bedNumber, roomName);
+        speakAlert(patientName, bedNumber);
 
         // Mostrar notificación del navegador
         console.log('[SurgeryCallAlerts] 🔔 Intentando mostrar notificación...');
@@ -266,7 +266,7 @@ export function useSurgeryCallAlerts(options = {}) {
      * Reproducir alerta de prueba
      */
     const testAlert = () => {
-        speakAlert('Juan Pérez', '101', 'Habitación 1');
+        speakAlert('Juan Pérez', '101');
     };
 
     /**
