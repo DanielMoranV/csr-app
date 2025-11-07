@@ -242,7 +242,6 @@ const refreshData = async () => {
 
 // Manejar refresh desde componentes hijos (cuando se crean/actualizan/eliminan detalles o tareas)
 const handleRefreshFromChild = async () => {
-    console.log('[HospitalizationStatus] Refreshing data after child action...');
     await refreshData();
 };
 
@@ -253,12 +252,10 @@ onMounted(async () => {
 
     // Start listening for real-time events
     startListening();
-    console.log('[HospitalizationStatus] Started listening for real-time events');
 
     // Auto-refresh every 30 minutes
     refreshInterval.value = setInterval(
         async () => {
-            console.log('[HospitalizationStatus] Auto-refreshing data...');
             await refreshData();
         },
         30 * 60 * 1000
@@ -268,12 +265,10 @@ onMounted(async () => {
 onUnmounted(() => {
     // Stop listening for real-time events
     stopListening();
-    console.log('[HospitalizationStatus] Stopped listening for real-time events');
 
     // Clear auto-refresh interval
     if (refreshInterval.value) {
         clearInterval(refreshInterval.value);
-        console.log('[HospitalizationStatus] Auto-refresh interval cleared.');
     }
 });
 </script>

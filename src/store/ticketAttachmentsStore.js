@@ -31,7 +31,6 @@ export const useTicketAttachmentsStore = defineStore('ticketAttachments', () => 
             throw response;
         } catch (error) {
             state.error = error;
-            console.error(`Error fetching attachments for ticket ${ticketId}:`, error);
             throw error;
         } finally {
             state.isLoading = false;
@@ -54,7 +53,6 @@ export const useTicketAttachmentsStore = defineStore('ticketAttachments', () => 
             throw response;
         } catch (error) {
             state.error = error;
-            console.error(`Error uploading attachment for ticket ${ticketId}:`, error);
             throw error;
         } finally {
             state.isUploading = false;
@@ -78,7 +76,6 @@ export const useTicketAttachmentsStore = defineStore('ticketAttachments', () => 
             return response;
         } catch (error) {
             state.error = error;
-            console.error(`Error downloading attachment ${attachmentId} for ticket ${ticketId}:`, error);
             throw error;
         } finally {
             state.isLoading = false;
@@ -97,7 +94,6 @@ export const useTicketAttachmentsStore = defineStore('ticketAttachments', () => 
             throw response;
         } catch (error) {
             state.error = error;
-            console.error(`Error deleting attachment ${attachmentId} for ticket ${ticketId}:`, error);
             throw error;
         } finally {
             state.isDeleting = false;
@@ -111,7 +107,6 @@ export const useTicketAttachmentsStore = defineStore('ticketAttachments', () => 
             const exists = state.attachments.some((a) => a.id === attachment.id);
             if (!exists) {
                 state.attachments.push(attachment);
-                console.log(`[TicketAttachmentsStore] Attachment added for ticket ${ticketId}:`, attachment);
             }
         }
     };
@@ -122,7 +117,6 @@ export const useTicketAttachmentsStore = defineStore('ticketAttachments', () => 
             const index = state.attachments.findIndex((a) => a.id === attachmentId);
             if (index !== -1) {
                 state.attachments.splice(index, 1);
-                console.log(`[TicketAttachmentsStore] Attachment removed for ticket ${ticketId}:`, attachmentId);
             }
         }
     };

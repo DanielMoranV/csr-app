@@ -351,7 +351,6 @@ const currentDetail = computed(() => {
 
     // details SIEMPRE debe ser un array (nuevo formato)
     if (!Array.isArray(props.details)) {
-        console.error('AttentionDetails: details debe ser un array, recibido:', typeof props.details);
         return null;
     }
 

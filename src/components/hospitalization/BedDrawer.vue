@@ -87,7 +87,6 @@ const currentDetailsArray = computed(() => {
 
     // Validar que sea un array
     if (!Array.isArray(details)) {
-        console.error('details_attention debe ser un array, recibido:', typeof details);
         return [];
     }
 
@@ -128,7 +127,7 @@ const handleCreateTask = async (taskData) => {
         // Emitir evento para refrescar datos de hospitalización
         emit('refresh-data');
     } catch (error) {
-        console.error('Error creating task:', error);
+        // Error handled by store
     }
 };
 
@@ -138,7 +137,7 @@ const handleUpdateTask = async (taskData) => {
         // Emitir evento para refrescar datos de hospitalización
         emit('refresh-data');
     } catch (error) {
-        console.error('Error updating task:', error);
+        // Error handled by store
     }
 };
 
@@ -148,7 +147,7 @@ const handleDeleteTask = async (taskId) => {
         // Emitir evento para refrescar datos de hospitalización
         emit('refresh-data');
     } catch (error) {
-        console.error('Error deleting task:', error);
+        // Error handled by store
     }
 };
 
@@ -158,7 +157,7 @@ const handleCreateDetails = async (detailsData) => {
         // Emitir evento para refrescar datos de hospitalización
         emit('refresh-data');
     } catch (error) {
-        console.error('Error creating details:', error);
+        // Error handled by store
     }
 };
 
@@ -168,7 +167,7 @@ const handleUpdateDetails = async (detailsId, detailsData) => {
         // Emitir evento para refrescar datos de hospitalización
         emit('refresh-data');
     } catch (error) {
-        console.error('Error updating details:', error);
+        // Error handled by store
     }
 };
 
@@ -178,7 +177,7 @@ const handleDeleteDetails = async (detailsId) => {
         // Emitir evento para refrescar datos de hospitalización
         emit('refresh-data');
     } catch (error) {
-        console.error('Error deleting details:', error);
+        // Error handled by store
     }
 };
 
@@ -270,8 +269,6 @@ const handleCancelReservation = async () => {
 
         emit('refresh-data');
     } catch (error) {
-        console.error('Error cancelling reservation:', error);
-
         toast.add({
             severity: 'error',
             summary: 'Error',
@@ -327,6 +324,15 @@ watch(
                             <span class="text-600">{{ attention.tasks.length }}</span>
                             <Tag v-if="attention.tasks.some((t) => t.status === 'pendiente')" value="Pend." severity="warning" class="text-xs py-0" />
                         </div>
+                    </div>
+
+                    <!-- Códigos CIE-10 -->
+                    <div v-if="attention.cie10 && attention.cie10.length > 0" class="flex flex-wrap items-center gap-2 mt-2 pt-2 border-t border-primary-200">
+                        <div class="flex items-center gap-1 text-xs font-semibold text-primary-700">
+                            <i class="pi pi-file-medical"></i>
+                            <span>CIE-10:</span>
+                        </div>
+                        <Tag v-for="(code, index) in attention.cie10" :key="index" :value="code" severity="info" class="text-xs" v-tooltip.top="`Código CIE-10: ${code}`" />
                     </div>
                 </div>
 

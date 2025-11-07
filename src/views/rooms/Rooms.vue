@@ -22,7 +22,6 @@ const currentRoomId = ref(null);
 
 onMounted(async () => {
     await fetchRooms();
-    console.log('Rooms data from backend:', JSON.parse(JSON.stringify(rooms.value)));
 });
 
 // Room Handlers

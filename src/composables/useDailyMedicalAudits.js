@@ -26,7 +26,6 @@ export function useDailyMedicalAudits() {
         } catch (err) {
             error.value = err;
             audits.value = [];
-            console.error('Error fetching audits:', err.message || err);
             throw err;
         } finally {
             isLoading.value = false;
@@ -42,7 +41,6 @@ export function useDailyMedicalAudits() {
             return response;
         } catch (err) {
             error.value = err;
-            console.error('Error fetching audit stats:', err.message || err);
             throw err;
         } finally {
             isLoading.value = false;
@@ -57,7 +55,6 @@ export function useDailyMedicalAudits() {
             return response.data;
         } catch (err) {
             error.value = err;
-            console.error('Error fetching audit by id:', err.message || err);
             throw err;
         } finally {
             isLoading.value = false;
@@ -72,7 +69,6 @@ export function useDailyMedicalAudits() {
             return response.data?.data || response.data || [];
         } catch (err) {
             error.value = err;
-            console.error('Error fetching attention audits:', err.message || err);
             throw err;
         } finally {
             isLoading.value = false;
@@ -87,7 +83,6 @@ export function useDailyMedicalAudits() {
             return response.data;
         } catch (err) {
             error.value = err;
-            console.error('Error fetching attention audit by date:', err.message || err);
             throw err;
         } finally {
             isLoading.value = false;
@@ -107,7 +102,6 @@ export function useDailyMedicalAudits() {
             return response;
         } catch (err) {
             error.value = err;
-            console.error('Error creating audit:', err.message || err);
             throw err;
         } finally {
             isLoading.value = false;
@@ -130,7 +124,6 @@ export function useDailyMedicalAudits() {
             return response;
         } catch (err) {
             error.value = err;
-            console.error('Error updating audit:', err.message || err);
             throw err;
         } finally {
             isLoading.value = false;
@@ -150,7 +143,6 @@ export function useDailyMedicalAudits() {
             return response;
         } catch (err) {
             error.value = err;
-            console.error('Error deleting audit:', err.message || err);
             throw err;
         } finally {
             isLoading.value = false;
@@ -173,7 +165,6 @@ export function useDailyMedicalAudits() {
             return response;
         } catch (err) {
             error.value = err;
-            console.error('Error marking audit as audited:', err.message || err);
             throw err;
         } finally {
             isLoading.value = false;

@@ -1,5 +1,6 @@
 <script setup>
 import { computed, defineEmits, defineProps, ref, watch } from 'vue';
+import Dialog from 'primevue/dialog';
 
 const props = defineProps({
     tasks: {
@@ -21,6 +22,10 @@ const emit = defineEmits(['create-task', 'update-task', 'delete-task']);
 const newTaskDescription = ref('');
 const newTaskDueDate = ref(null);
 const enableDueDate = ref(false);
+
+// Estado para el diálogo de confirmación de eliminación
+const confirmDeleteVisible = ref(false);
+const taskToDelete = ref(null);
 
 // Fecha mínima: ahora + 1 minuto
 const minDate = computed(() => {
@@ -53,9 +58,6 @@ const createTask = () => {
             // Formato ISO sin timezone: Laravel lo interpreta como hora de Lima
             const localIsoString = `${year}-${month}-${day}T${hours}:${minutes}:${seconds}`;
 
-            console.log('[AttentionTasks] Fecha seleccionada:', selectedDate.toLocaleString('es-PE'));
-            console.log('[AttentionTasks] Fecha a enviar (hora Lima):', localIsoString);
-
             taskData.due_date = localIsoString;
         }
 
@@ -72,8 +74,25 @@ const updateTaskStatus = (task, status) => {
     emit('update-task', { ...task, status });
 };
 
-const deleteTask = (task) => {
-    emit('delete-task', task.id);
+// Mostrar diálogo de confirmación de eliminación
+const showDeleteConfirmation = (task) => {
+    taskToDelete.value = task;
+    confirmDeleteVisible.value = true;
+};
+
+// Confirmar eliminación de tarea
+const confirmDeleteTask = () => {
+    if (taskToDelete.value) {
+        emit('delete-task', taskToDelete.value.id);
+        confirmDeleteVisible.value = false;
+        taskToDelete.value = null;
+    }
+};
+
+// Cancelar eliminación de tarea
+const cancelDeleteTask = () => {
+    confirmDeleteVisible.value = false;
+    taskToDelete.value = null;
 };
 
 const getStatusSeverity = (status) => {
@@ -458,7 +477,7 @@ watch(
                     <div v-if="!readOnly" class="flex items-center gap-1 ml-2">
                         <Button v-if="task.status === 'pendiente'" icon="pi pi-check" class="p-button-rounded p-button-success p-button-text p-button-sm" @click="updateTaskStatus(task, 'realizado')" v-tooltip.top="'Marcar como realizado'" />
                         <Button v-if="task.status === 'pendiente'" icon="pi pi-ban" class="p-button-rounded p-button-warning p-button-text p-button-sm" @click="updateTaskStatus(task, 'anulado')" v-tooltip.top="'Anular tarea'" />
-                        <Button icon="pi pi-trash" class="p-button-rounded p-button-danger p-button-text p-button-sm" @click="deleteTask(task)" v-tooltip.top="'Eliminar tarea'" />
+                        <Button icon="pi pi-trash" class="p-button-rounded p-button-danger p-button-text p-button-sm" @click="showDeleteConfirmation(task)" v-tooltip.top="'Eliminar tarea'" />
                     </div>
                 </div>
             </div>
@@ -467,6 +486,27 @@ watch(
             <i class="pi pi-inbox text-2xl mb-2 block"></i>
             No hay tareas asociadas.
         </div>
+
+        <!-- Diálogo de confirmación de eliminación -->
+        <Dialog v-model:visible="confirmDeleteVisible" :modal="true" header="Confirmar eliminación" :style="{ width: '450px' }">
+            <div class="flex items-start gap-3 mb-4">
+                <i class="pi pi-exclamation-triangle text-4xl text-red-500"></i>
+                <div>
+                    <p class="text-base mb-2">¿Estás seguro de que deseas eliminar esta tarea?</p>
+                    <p v-if="taskToDelete" class="text-sm text-gray-600 bg-gray-50 p-3 rounded border-l-4 border-red-500">
+                        <strong>Tarea:</strong> {{ taskToDelete.description }}
+                    </p>
+                    <p class="text-sm text-gray-500 mt-2">
+                        <i class="pi pi-info-circle mr-1"></i>
+                        Esta acción no se puede deshacer.
+                    </p>
+                </div>
+            </div>
+            <template #footer>
+                <Button label="Cancelar" icon="pi pi-times" @click="cancelDeleteTask" severity="secondary" outlined />
+                <Button label="Eliminar" icon="pi pi-trash" @click="confirmDeleteTask" severity="danger" />
+            </template>
+        </Dialog>
     </div>
 </template>
 

@@ -214,30 +214,24 @@ export const useTicketsStore = defineStore('tickets', () => {
         const userPosition = user?.position;
         const token = authStore.getToken;
 
-        console.log('[TicketsStore] Initializing real-time events for user:', userId);
-
         if (!authStore.isLoggedIn) {
-            console.warn('[TicketsStore] User not logged in, skipping Echo initialization');
             return;
         }
 
         if (!token) {
-            console.warn('[TicketsStore] No token available, skipping Echo initialization');
             return;
         }
 
         if (userId) {
-            console.log(`[TicketsStore] Attempting to subscribe to private channel: App.Models.User.${userId}`);
-
             const privateChannel = useEcho.private(`App.Models.User.${userId}`);
 
             // Agregar manejadores de eventos del canal
             privateChannel
                 .subscribed(() => {
-                    console.log(`[TicketsStore] Successfully subscribed to private channel: App.Models.User.${userId}`);
+                    // Successfully subscribed
                 })
                 .error((error) => {
-                    console.error(`[TicketsStore] Error subscribing to private channel: App.Models.User.${userId}`, error);
+                    // Error handled
                 })
                 .listen('.ticket.created', handleTicketCreated)
                 .listen('.ticket.updated', handleTicketUpdated)
@@ -246,33 +240,28 @@ export const useTicketsStore = defineStore('tickets', () => {
                 .listen('.ticket.comment.created', handleTicketCommentCreated)
                 .listen('.ticket.comment.updated', handleTicketCommentUpdated)
                 .listen('.ticket.deleted', handleTicketDeleted);
-
-            console.log(`[TicketsStore] Listening to private user channel: App.Models.User.${userId}`);
-        } else {
-            console.warn('[TicketsStore] No userId found, cannot subscribe to private channel');
         }
 
         if (userPosition) {
             const positionSlug = slugify(userPosition);
-            console.log(`[TicketsStore] Attempting to join presence channel: tickets.position.${positionSlug}`);
 
             const presenceChannel = useEcho.join(`tickets.position.${positionSlug}`);
 
             presenceChannel
                 .subscribed(() => {
-                    console.log(`[TicketsStore] Successfully joined presence channel: tickets.position.${positionSlug}`);
+                    // Successfully subscribed
                 })
                 .error((error) => {
-                    console.error(`[TicketsStore] Error joining presence channel: tickets.position.${positionSlug}`, error);
+                    // Error handled
                 })
                 .here((users) => {
-                    console.log(`[TicketsStore] Users in position channel ${positionSlug}:`, users);
+                    // Users in channel
                 })
                 .joining((user) => {
-                    console.log(`[TicketsStore] ${user.name} joined position channel ${positionSlug}.`);
+                    // User joined
                 })
                 .leaving((user) => {
-                    console.log(`[TicketsStore] ${user.name} left position channel ${positionSlug}.`);
+                    // User left
                 })
                 .listen('.ticket.created', handleTicketCreated)
                 .listen('.ticket.updated', handleTicketUpdated)
@@ -281,10 +270,6 @@ export const useTicketsStore = defineStore('tickets', () => {
                 .listen('.ticket.comment.created', handleTicketCommentCreated)
                 .listen('.ticket.comment.updated', handleTicketCommentUpdated)
                 .listen('.ticket.deleted', handleTicketDeleted);
-
-            console.log(`[TicketsStore] Listening to presence position channel: tickets.position.${positionSlug}`);
-        } else {
-            console.warn('[TicketsStore] No userPosition found, cannot subscribe to presence channel');
         }
     };
 
@@ -295,13 +280,11 @@ export const useTicketsStore = defineStore('tickets', () => {
 
         if (userId) {
             useEcho.leave(`App.Models.User.${userId}`);
-            console.log(`[TicketsStore] Left private user channel: App.Models.User.${userId}`);
         }
 
         if (userPosition) {
             const positionSlug = slugify(userPosition);
             useEcho.leave(`tickets.position.${positionSlug}`);
-            console.log(`[TicketsStore] Left presence position channel: tickets.position.${positionSlug}`);
         }
     };
 
@@ -310,7 +293,6 @@ export const useTicketsStore = defineStore('tickets', () => {
         state.isLoading = true;
         try {
             const response = await TicketService.getTickets(state.filters);
-            console.log('API Response for tickets:', response);
             const responseData = response.data;
 
             // Handle response wrapped in a 'data' object, or as a direct array
@@ -319,7 +301,6 @@ export const useTicketsStore = defineStore('tickets', () => {
             } else if (Array.isArray(responseData)) {
                 state.tickets = responseData;
             } else {
-                console.warn('Unexpected API response structure for tickets:', responseData);
                 state.tickets = [];
             }
 
@@ -331,7 +312,7 @@ export const useTicketsStore = defineStore('tickets', () => {
             };
             state.lastFetch = Date.now();
         } catch (error) {
-            console.error('Error fetching tickets:', error);
+            // Error handled
             toast.add({ severity: 'error', summary: 'Error', detail: 'No se pudieron cargar los tickets.', life: 3000 });
         } finally {
             state.isLoading = false;
@@ -341,12 +322,11 @@ export const useTicketsStore = defineStore('tickets', () => {
     const createTicket = async (ticketData) => {
         state.isSaving = true;
         try {
-            console.log('Creating ticket with data:', ticketData);
             const response = await TicketService.createTicket(ticketData);
             toast.add({ severity: 'success', summary: 'Ticket Creado', detail: `Ticket #${response.id} creado correctamente.`, life: 3000 });
             return response;
         } catch (error) {
-            console.error('Error creating ticket:', error);
+            // Error handled
             throw error;
         } finally {
             state.isSaving = false;
@@ -360,7 +340,7 @@ export const useTicketsStore = defineStore('tickets', () => {
             toast.add({ severity: 'success', summary: 'Ticket Actualizado', detail: `Ticket #${response.id} actualizado correctamente.`, life: 3000 });
             return response;
         } catch (error) {
-            console.error(`Error updating ticket ${id}:`, error);
+            // Error handled
             throw error;
         } finally {
             state.isSaving = false;
@@ -377,7 +357,7 @@ export const useTicketsStore = defineStore('tickets', () => {
                 state.pagination.total--;
             }
         } catch (error) {
-            console.error(`Error deleting ticket ${id}:`, error);
+            // Error handled
             throw error;
         } finally {
             state.isDeleting = false;

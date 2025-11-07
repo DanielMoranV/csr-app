@@ -196,7 +196,6 @@ export function useRealtimeEvents(options = {}) {
                     }
                 })
                 .listen('.task.nearing-due', (e) => {
-                    console.log('[RealtimeEvents] 🟡 Tarea por vencer:', e);
                     // Refrescar datos para obtener el estado actualizado con alert_status
                     if (updateHospitalization) {
                         hospitalizationStore.fetchHospitalizationStatus();
@@ -209,7 +208,6 @@ export function useRealtimeEvents(options = {}) {
                     }
                 })
                 .listen('.task.overdue', (e) => {
-                    console.log('[RealtimeEvents] 🔴 Tarea vencida:', e);
                     // Refrescar datos para obtener el estado actualizado con alert_status
                     if (updateHospitalization) {
                         hospitalizationStore.fetchHospitalizationStatus();
@@ -233,7 +231,7 @@ export function useRealtimeEvents(options = {}) {
             try {
                 useEcho.leave(channelName);
             } catch (error) {
-                console.warn(`[RealtimeEvents] Error leaving channel ${channelName}:`, error);
+                // Error handled
             }
         });
 

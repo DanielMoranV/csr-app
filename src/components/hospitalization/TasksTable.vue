@@ -107,7 +107,6 @@ const getUsersTooltip = (task) => {
 
 const exportExcel = () => {
     if (!tasks.value || tasks.value.length === 0) {
-        console.warn('No hay datos para exportar');
         return;
     }
 

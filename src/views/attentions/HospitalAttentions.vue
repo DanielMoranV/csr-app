@@ -114,13 +114,11 @@ onMounted(async () => {
 
     // Start listening for real-time events
     startListening();
-    console.log('[HospitalAttentions] Started listening for real-time events');
 });
 
 onUnmounted(() => {
     // Stop listening for real-time events
     stopListening();
-    console.log('[HospitalAttentions] Stopped listening for real-time events');
 });
 
 const openDetailsSidebar = (attention) => {
@@ -191,8 +189,7 @@ const handleApproveAttention = async () => {
         isApproveDialogVisible.value = false;
         attentionToApprove.value = null;
     } catch (error) {
-        console.error('Error al aprobar la atención:', error);
-        // Aquí podrías mostrar un mensaje de error con toast o similar
+        // Error handled
     }
 };
 
@@ -285,7 +282,6 @@ const parseCie10Names = (names) => {
             const parsed = JSON.parse(names);
             return Array.isArray(parsed) ? parsed : [];
         } catch (e) {
-            console.error('Error parsing cie10_names:', e);
             return [];
         }
     }
@@ -523,6 +519,11 @@ const exportData = () => {
                             <div class="font-bold">HC: {{ data.patient?.cod_patient }} - {{ data.patient?.name }}</div>
                             <div class="text-sm text-gray-500">{{ data.patient?.document_type }}: {{ data.patient?.number_document }}</div>
                             <div class="text-sm">Edad: {{ formatAge(data.patient?.age_formatted) }}</div>
+                            <!-- Códigos CIE-10 -->
+                            <div v-if="data.cie10 && data.cie10.length > 0" class="flex flex-wrap items-center gap-1 mt-1">
+                                <span class="text-xs font-semibold text-blue-700">CIE-10:</span>
+                                <Tag v-for="(code, index) in data.cie10" :key="index" :value="code" severity="info" class="text-xs" v-tooltip.top="`Código CIE-10: ${code}`" />
+                            </div>
                         </div>
                     </template>
                     <template #filter="{ filterModel }">

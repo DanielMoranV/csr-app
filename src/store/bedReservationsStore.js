@@ -8,10 +8,9 @@ export const useBedReservationsStore = defineStore('bedReservations', () => {
     async function fetchReservations() {
         try {
             const response = await bedReservationsApi.getAll();
-            console.log(response);
             reservations.value = response.data.data || response.data;
         } catch (error) {
-            console.error('Error fetching reservations:', error);
+            // Error handled
         }
     }
 
@@ -20,7 +19,7 @@ export const useBedReservationsStore = defineStore('bedReservations', () => {
             const response = await bedReservationsApi.create(reservationData);
             reservations.value.push(response.data);
         } catch (error) {
-            console.error('Error creating reservation:', error);
+            // Error handled
         }
     }
 
@@ -32,7 +31,7 @@ export const useBedReservationsStore = defineStore('bedReservations', () => {
                 reservations.value[index] = response.data;
             }
         } catch (error) {
-            console.error('Error updating reservation:', error);
+            // Error handled
         }
     }
 
@@ -41,7 +40,6 @@ export const useBedReservationsStore = defineStore('bedReservations', () => {
             await bedReservationsApi.delete(id);
             reservations.value = reservations.value.filter((r) => r.id !== id);
         } catch (error) {
-            console.error('Error deleting reservation:', error);
             throw error;
         }
     }
@@ -55,7 +53,6 @@ export const useBedReservationsStore = defineStore('bedReservations', () => {
             }
             return response;
         } catch (error) {
-            console.error('Error cancelling reservation:', error);
             throw error;
         }
     }

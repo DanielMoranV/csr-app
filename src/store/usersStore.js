@@ -216,7 +216,6 @@ export const useUsersStore = defineStore('users', () => {
                 throw response;
             }
         } catch (error) {
-            console.error('Error fetching users:', error);
             throw error;
         } finally {
             state.isLoading = false;
@@ -242,7 +241,6 @@ export const useUsersStore = defineStore('users', () => {
                 throw response;
             }
         } catch (error) {
-            console.error('Error searching users:', error);
             state.searchResults = [];
             throw error;
         } finally {
@@ -262,7 +260,6 @@ export const useUsersStore = defineStore('users', () => {
                 throw response;
             }
         } catch (error) {
-            console.error('Error fetching user stats:', error);
             throw error;
         }
     };
@@ -304,7 +301,6 @@ export const useUsersStore = defineStore('users', () => {
                 throw response;
             }
         } catch (error) {
-            console.error('Error creating user:', error);
             throw error;
         } finally {
             state.isSaving = false;
@@ -367,7 +363,6 @@ export const useUsersStore = defineStore('users', () => {
                 throw response;
             }
         } catch (error) {
-            console.error('Error updating user:', error);
             throw error;
         } finally {
             state.isSaving = false;
@@ -391,7 +386,6 @@ export const useUsersStore = defineStore('users', () => {
                 throw response;
             }
         } catch (error) {
-            console.error('Error toggling user status:', error);
             throw error;
         } finally {
             state.isSaving = false;
@@ -414,7 +408,6 @@ export const useUsersStore = defineStore('users', () => {
                 throw response;
             }
         } catch (error) {
-            console.error('Error deleting user:', error);
             throw error;
         } finally {
             state.isDeleting = false;

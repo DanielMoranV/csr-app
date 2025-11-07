@@ -17,7 +17,6 @@ const { startListening, stopListening, isListening } = useRealtimeEvents({
 });
 
 // Alertas de llamado a quirófano
-console.log('[HospitalizationDisplay] 🔍 Inicializando useSurgeryCallAlerts...');
 const {
     isListening: isSurgeryAlertsListening,
     isAudioEnabled,
@@ -29,11 +28,6 @@ const {
     autoStart: true,
     enableNotifications: true
 });
-console.log('[HospitalizationDisplay] 🔍 useSurgeryCallAlerts inicializado');
-console.log('[HospitalizationDisplay] 🔍 isSurgeryAlertsListening:', isSurgeryAlertsListening);
-console.log('[HospitalizationDisplay] 🔍 isAudioEnabled:', isAudioEnabled);
-console.log('[HospitalizationDisplay] 🔍 latestCall:', latestCall);
-console.log('[HospitalizationDisplay] 🔍 surgeryCalls:', surgeryCalls);
 
 // Auto-ocultar alerta después de 15 segundos
 let alertTimeout = null;
@@ -50,14 +44,12 @@ watch(
     () => latestCall.value,
     (newCall) => {
         if (newCall) {
-            console.log('[HospitalizationDisplay] 🔍 Nueva alerta recibida, configurando auto-ocultamiento');
             // Limpiar timeout anterior si existe
             if (alertTimeout) {
                 clearTimeout(alertTimeout);
             }
             // Auto-ocultar después de 15 segundos
             alertTimeout = setTimeout(() => {
-                console.log('[HospitalizationDisplay] ⏰ Auto-ocultando alerta después de 15 segundos');
                 dismissAlert();
             }, 15000);
         }
@@ -309,10 +301,6 @@ const refreshData = async () => {
 const refreshInterval = ref(null);
 
 onMounted(async () => {
-    console.log('[HospitalizationDisplay] ✅ Component mounted');
-    console.log('[HospitalizationDisplay] 🔍 isSurgeryAlertsListening en mounted:', isSurgeryAlertsListening.value);
-    console.log('[HospitalizationDisplay] 🔍 isAudioEnabled en mounted:', isAudioEnabled.value);
-
     await store.fetchHospitalizationStatus();
     startListening();
 
@@ -351,8 +339,6 @@ onUnmounted(() => {
             mainContainer.style.marginLeft = '';
         }
     }
-
-    console.log('[HospitalizationDisplay] 🔍 Component unmounted');
 });
 </script>
 

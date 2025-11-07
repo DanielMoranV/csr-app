@@ -21,7 +21,6 @@ export const useHospitalizationStore = defineStore('hospitalization', () => {
         try {
             const response = await hospitalization.getStatus();
 
-            console.log('[HospitalizationStore] Fetched hospitalization STATUS:', response);
             // Assuming getStatus returns the full axios response
             // and you have a utility to check for success and get data.
             // If not, you might need to adjust this part.
@@ -33,7 +32,7 @@ export const useHospitalizationStore = defineStore('hospitalization', () => {
                 throw new Error('Invalid response structure');
             }
         } catch (error) {
-            console.error('Error fetching hospitalization status:', error);
+            // Error handled
             state.error = 'Failed to fetch hospitalization status.';
             // Re-throw the error if you want calling components to be able to catch it too
             throw error;
@@ -44,8 +43,6 @@ export const useHospitalizationStore = defineStore('hospitalization', () => {
 
     // Real-time event handlers
     const handleHospitalizationCreated = (eventData) => {
-        console.log('[HospitalizationStore] Handling hospitalization created:', eventData);
-
         const newHospitalization = eventData.data;
 
         if (newHospitalization && state.status) {
@@ -113,8 +110,6 @@ export const useHospitalizationStore = defineStore('hospitalization', () => {
     };
 
     const handleHospitalizationUpdated = (eventData) => {
-        console.log('[HospitalizationStore] Handling hospitalization updated:', eventData);
-
         const updatedHospitalization = eventData.data;
 
         if (updatedHospitalization && state.status) {
@@ -130,7 +125,6 @@ export const useHospitalizationStore = defineStore('hospitalization', () => {
                             // Clear the old bed since the patient moved
                             bed.attention = null;
                             bed.status = 'free';
-                            console.log(`[HospitalizationStore] Cleared previous bed ${bed.id} for hospitalization ${hospitalizationId}`);
                         }
                     });
                 }
@@ -177,7 +171,6 @@ export const useHospitalizationStore = defineStore('hospitalization', () => {
                                     bed.status = 'free';
                                 }
                                 found = true;
-                                console.log(`[HospitalizationStore] Updated bed ${bed.id} for hospitalization ${hospitalizationId}`);
                             }
                         });
                     }
@@ -195,8 +188,6 @@ export const useHospitalizationStore = defineStore('hospitalization', () => {
     };
 
     const handleHospitalizationDeleted = (eventData) => {
-        console.log('[HospitalizationStore] Handling hospitalization deleted:', eventData);
-
         const deletedHospitalization = eventData.data;
 
         if (deletedHospitalization && state.status) {
@@ -235,7 +226,6 @@ export const useHospitalizationStore = defineStore('hospitalization', () => {
 
     // Task event handlers
     const handleTaskCreated = (eventData) => {
-        console.log('[HospitalizationStore] Handling task created:', eventData);
         const task = eventData.task;
 
         if (!task || !task.hospital_attention) return;
@@ -256,7 +246,6 @@ export const useHospitalizationStore = defineStore('hospitalization', () => {
                         const taskExists = bed.attention.tasks.some((t) => t.id === task.id);
                         if (!taskExists) {
                             bed.attention.tasks.push(task);
-                            console.log(`[HospitalizationStore] Added task ${task.id} to bed ${bed.id}`);
                         }
                     }
                 });
@@ -265,7 +254,6 @@ export const useHospitalizationStore = defineStore('hospitalization', () => {
     };
 
     const handleTaskUpdated = (eventData) => {
-        console.log('[HospitalizationStore] Handling task updated:', eventData);
         const task = eventData.task;
 
         if (!task || !task.hospital_attention) return;
@@ -282,11 +270,9 @@ export const useHospitalizationStore = defineStore('hospitalization', () => {
                             if (taskIndex !== -1) {
                                 // Update the existing task
                                 bed.attention.tasks[taskIndex] = task;
-                                console.log(`[HospitalizationStore] Updated task ${task.id} in bed ${bed.id}`);
                             } else {
                                 // If task not found, add it (could have been filtered out before)
                                 bed.attention.tasks.push(task);
-                                console.log(`[HospitalizationStore] Added task ${task.id} to bed ${bed.id} (was not found during update)`);
                             }
                         }
                     }
@@ -296,7 +282,6 @@ export const useHospitalizationStore = defineStore('hospitalization', () => {
     };
 
     const handleTaskDeleted = (eventData) => {
-        console.log('[HospitalizationStore] Handling task deleted:', eventData);
         const taskId = eventData.task?.id || eventData.id;
         const attentionId = eventData.task?.hospital_attention?.id || eventData.hospital_attention?.id;
 
@@ -311,7 +296,6 @@ export const useHospitalizationStore = defineStore('hospitalization', () => {
                             const taskIndex = bed.attention.tasks.findIndex((t) => t.id === taskId);
                             if (taskIndex !== -1) {
                                 bed.attention.tasks.splice(taskIndex, 1);
-                                console.log(`[HospitalizationStore] Removed task ${taskId} from bed ${bed.id}`);
                             }
                         }
                     }
@@ -322,7 +306,6 @@ export const useHospitalizationStore = defineStore('hospitalization', () => {
 
     // Details event handlers
     const handleDetailsCreated = (eventData) => {
-        console.log('[HospitalizationStore] Handling detail created:', eventData);
         const detail = eventData.detail || eventData.data;
 
         if (!detail || !detail.id_attentions) return;
@@ -343,7 +326,6 @@ export const useHospitalizationStore = defineStore('hospitalization', () => {
                         const detailExists = bed.attention.details.some((d) => d.id === detail.id);
                         if (!detailExists) {
                             bed.attention.details.push(detail);
-                            console.log(`[HospitalizationStore] Added detail ${detail.id} to bed ${bed.id}`);
                         }
                     }
                 });
@@ -352,7 +334,6 @@ export const useHospitalizationStore = defineStore('hospitalization', () => {
     };
 
     const handleDetailsUpdated = (eventData) => {
-        console.log('[HospitalizationStore] Handling detail updated:', eventData);
         const detail = eventData.detail || eventData.data;
 
         if (!detail || !detail.id_attentions) return;
@@ -369,11 +350,9 @@ export const useHospitalizationStore = defineStore('hospitalization', () => {
                             if (detailIndex !== -1) {
                                 // Update the existing detail
                                 bed.attention.details[detailIndex] = detail;
-                                console.log(`[HospitalizationStore] Updated detail ${detail.id} in bed ${bed.id}`);
                             } else {
                                 // If detail not found, add it (could have been filtered out before)
                                 bed.attention.details.push(detail);
-                                console.log(`[HospitalizationStore] Added detail ${detail.id} to bed ${bed.id} (was not found during update)`);
                             }
                         }
                     }
@@ -383,7 +362,6 @@ export const useHospitalizationStore = defineStore('hospitalization', () => {
     };
 
     const handleDetailsDeleted = (eventData) => {
-        console.log('[HospitalizationStore] Handling detail deleted:', eventData);
         const detailId = eventData.detail?.id || eventData.id;
         const attentionId = eventData.detail?.id_attentions || eventData.id_attentions;
 
@@ -398,7 +376,6 @@ export const useHospitalizationStore = defineStore('hospitalization', () => {
                             const detailIndex = bed.attention.details.findIndex((d) => d.id === detailId);
                             if (detailIndex !== -1) {
                                 bed.attention.details.splice(detailIndex, 1);
-                                console.log(`[HospitalizationStore] Removed detail ${detailId} from bed ${bed.id}`);
                             }
                         }
                     }
@@ -409,7 +386,6 @@ export const useHospitalizationStore = defineStore('hospitalization', () => {
 
     // CUDYR Evaluation event handlers
     const handleCudyrEvaluationCreated = (eventData) => {
-        console.log('[HospitalizationStore] Handling CUDYR evaluation created:', eventData);
         const evaluation = eventData.evaluation || eventData.data;
 
         if (!evaluation || !evaluation.id_details_attention) return;
@@ -425,7 +401,6 @@ export const useHospitalizationStore = defineStore('hospitalization', () => {
                         if (detailIndex !== -1) {
                             // Add the cudyr_evaluation to the detail
                             bed.attention.details[detailIndex].cudyr_evaluation = evaluation;
-                            console.log(`[HospitalizationStore] Added CUDYR evaluation to detail ${detailId} in bed ${bed.id}`);
                         }
                     }
                 });
@@ -434,7 +409,6 @@ export const useHospitalizationStore = defineStore('hospitalization', () => {
     };
 
     const handleCudyrEvaluationUpdated = (eventData) => {
-        console.log('[HospitalizationStore] Handling CUDYR evaluation updated:', eventData);
         const evaluation = eventData.evaluation || eventData.data;
 
         if (!evaluation || !evaluation.id_details_attention) return;
@@ -450,7 +424,6 @@ export const useHospitalizationStore = defineStore('hospitalization', () => {
                         if (detailIndex !== -1) {
                             // Update the cudyr_evaluation in the detail
                             bed.attention.details[detailIndex].cudyr_evaluation = evaluation;
-                            console.log(`[HospitalizationStore] Updated CUDYR evaluation for detail ${detailId} in bed ${bed.id}`);
                         }
                     }
                 });
@@ -459,7 +432,6 @@ export const useHospitalizationStore = defineStore('hospitalization', () => {
     };
 
     const handleCudyrEvaluationDeleted = (eventData) => {
-        console.log('[HospitalizationStore] Handling CUDYR evaluation deleted:', eventData);
         const evaluationId = eventData.evaluation?.id || eventData.id;
         const detailId = eventData.evaluation?.id_details_attention || eventData.id_details_attention;
 
@@ -474,7 +446,6 @@ export const useHospitalizationStore = defineStore('hospitalization', () => {
                         if (detailIndex !== -1) {
                             // Remove the cudyr_evaluation from the detail
                             bed.attention.details[detailIndex].cudyr_evaluation = null;
-                            console.log(`[HospitalizationStore] Removed CUDYR evaluation from detail ${detailId} in bed ${bed.id}`);
                         }
                     }
                 });

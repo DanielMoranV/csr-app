@@ -132,7 +132,6 @@ router.beforeEach(async (to, from, next) => {
         }
 
         if (!authStore.isInitialized) {
-            console.error('❌ [ROUTER] Timeout esperando inicialización del AuthStore');
             // Si no se inicializa, asumir no autenticado
             if (to.matched.some((record) => record.meta.requiresAuth)) {
                 return next({ name: 'login' });
@@ -182,8 +181,6 @@ router.beforeEach(async (to, from, next) => {
 
         next();
     } catch (error) {
-        console.error('❌ [ROUTER] Error en navigation guard:', error);
-
         // En caso de error, limpiar autenticación y ir al login
         authStore.clearAuthData();
 

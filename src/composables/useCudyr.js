@@ -55,7 +55,6 @@ export function useCudyr(detailsAttentionId = null) {
 
         try {
             const response = await cudyr.getByDetail(detailId);
-            console.log('[useCudyr] Response from getByDetail:', response);
 
             if (apiUtils.isSuccess(response)) {
                 const data = apiUtils.getData(response);
@@ -73,7 +72,6 @@ export function useCudyr(detailsAttentionId = null) {
             // Error 404 es esperado si no hay evaluación
             if (error.status !== 404) {
                 state.error = apiUtils.getMessage(error);
-                console.error('[useCudyr] Error loading evaluation:', error);
             }
         } finally {
             state.isLoading = false;
@@ -99,7 +97,6 @@ export function useCudyr(detailsAttentionId = null) {
             }
         } catch (error) {
             state.error = apiUtils.getMessage(error);
-            console.error('[useCudyr] Error loading evaluation by id:', error);
         } finally {
             state.isLoading = false;
         }
@@ -189,7 +186,6 @@ export function useCudyr(detailsAttentionId = null) {
         } catch (error) {
             state.error = apiUtils.getMessage(error);
             state.validationErrors = apiUtils.getValidationErrors(error);
-            console.error('[useCudyr] Error creating evaluation:', error);
             return { success: false, error: state.error };
         } finally {
             state.isSaving = false;
@@ -227,7 +223,6 @@ export function useCudyr(detailsAttentionId = null) {
         } catch (error) {
             state.error = apiUtils.getMessage(error);
             state.validationErrors = apiUtils.getValidationErrors(error);
-            console.error('[useCudyr] Error updating evaluation:', error);
             return { success: false, error: state.error };
         } finally {
             state.isSaving = false;
@@ -254,7 +249,6 @@ export function useCudyr(detailsAttentionId = null) {
             }
         } catch (error) {
             state.error = apiUtils.getMessage(error);
-            console.error('[useCudyr] Error deleting evaluation:', error);
             return { success: false, error: state.error };
         } finally {
             state.isSaving = false;
@@ -284,7 +278,6 @@ export function useCudyr(detailsAttentionId = null) {
                 }
             } catch (error) {
                 preview.value = null;
-                console.error('[useCudyr] Error calculating preview:', error);
             } finally {
                 state.isCalculating = false;
             }
@@ -440,7 +433,6 @@ export function useCudyrList() {
             }
         } catch (error) {
             state.error = apiUtils.getMessage(error);
-            console.error('[useCudyrList] Error loading evaluations:', error);
         } finally {
             state.isLoading = false;
         }
@@ -464,7 +456,6 @@ export function useCudyrList() {
             }
         } catch (error) {
             state.error = apiUtils.getMessage(error);
-            console.error('[useCudyrList] Error loading high risk patients:', error);
         } finally {
             state.isLoading = false;
         }
@@ -528,7 +519,6 @@ export function useCudyrStatistics() {
             }
         } catch (error) {
             state.error = apiUtils.getMessage(error);
-            console.error('[useCudyrStatistics] Error loading statistics:', error);
         } finally {
             state.isLoading = false;
         }

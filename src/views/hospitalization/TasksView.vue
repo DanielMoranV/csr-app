@@ -57,14 +57,9 @@ const fetchTasks = () => {
         params.attention_id = attentionId.value.trim();
     }
 
-    console.log('[TasksView] Parámetros de búsqueda:', params);
-    console.log('[TasksView] Endpoint que se usará: GET /tasks/search');
-
     // El endpoint requiere al menos un criterio de búsqueda
     if (Object.keys(params).length > 0) {
         store.fetchTasksByDateRange(params);
-    } else {
-        console.warn('[TasksView] No hay parámetros de búsqueda, no se hará la solicitud');
     }
 };
 

@@ -39,13 +39,11 @@ onMounted(() => {
 
     // Inicializar listeners de eventos en tiempo real
     ticketsStore.initEchoListeners();
-    console.log('[Tickets] Started listening for real-time events');
 });
 
 onUnmounted(() => {
     // Limpiar listeners de eventos en tiempo real
     ticketsStore.leaveEchoChannels();
-    console.log('[Tickets] Stopped listening for real-time events');
 });
 
 // Métodos de gestión de tickets
@@ -88,7 +86,6 @@ const handleSaveTicket = async (ticketData) => {
         // Refrescar la lista de tickets para mostrar los cambios
         await ticketsStore.fetchTickets();
     } catch (error) {
-        console.error('Error al guardar ticket:', error);
         toast.add({
             severity: 'error',
             summary: 'Error al Guardar',
@@ -128,7 +125,6 @@ const handleConfirmAction = async () => {
             // Refrescar la lista de tickets para mostrar los cambios
             await ticketsStore.fetchTickets();
         } catch (error) {
-            console.error('Error en acción confirmada:', error);
             toast.add({
                 severity: 'error',
                 summary: 'Error al Eliminar',

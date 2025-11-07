@@ -178,7 +178,6 @@ watch(
             // Solo actualizar los campos si el ticket ha cambiado
             const hasChanged = JSON.stringify(newTicket) !== JSON.stringify(props.ticket);
             if (hasChanged) {
-                console.log('[TicketDialog] Ticket updated from store, reloading data');
                 loadTicketData(newTicket);
             }
         }
@@ -203,7 +202,7 @@ watch(
                     positionSearchResults.value = initialPositionList.value;
                 }
             } catch (error) {
-                console.error('Error fetching initial client/position lists:', error);
+                // Error handled
             }
 
             if (props.ticket) {
@@ -439,7 +438,7 @@ const addComment = async () => {
             scrollToBottom();
         });
     } catch (error) {
-        console.error('Error adding comment:', error);
+        // Error handled
     }
 };
 

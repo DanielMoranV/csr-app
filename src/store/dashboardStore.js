@@ -60,7 +60,6 @@ export const useDashboardStore = defineStore('dashboard', () => {
             hospitalizationStatus.value = hospitalizationResponse.data || {};
         } catch (err) {
             error.value = err;
-            console.error('Error fetching dashboard stats:', err.message || err);
         } finally {
             isLoading.value = false;
         }
@@ -71,7 +70,7 @@ export const useDashboardStore = defineStore('dashboard', () => {
             const response = await hospitalAttentions.getStats();
             hospitalStats.value = response.data || {};
         } catch (err) {
-            console.error('Error fetching hospital stats:', err);
+            // Error handled
         }
     }
 
@@ -80,7 +79,7 @@ export const useDashboardStore = defineStore('dashboard', () => {
             const response = await users.getStats();
             userStats.value = response.data || {};
         } catch (err) {
-            console.error('Error fetching user stats:', err);
+            // Error handled
         }
     }
 
@@ -89,7 +88,7 @@ export const useDashboardStore = defineStore('dashboard', () => {
             const response = await patients.getStats();
             patientStats.value = response.data || {};
         } catch (err) {
-            console.error('Error fetching patient stats:', err);
+            // Error handled
         }
     }
 
@@ -98,7 +97,7 @@ export const useDashboardStore = defineStore('dashboard', () => {
             const response = await hospitalAttentions.getTaskStats();
             taskStats.value = response.data || {};
         } catch (err) {
-            console.error('Error fetching task stats:', err);
+            // Error handled
         }
     }
 
@@ -107,7 +106,7 @@ export const useDashboardStore = defineStore('dashboard', () => {
             const response = await TicketService.getTickets({ per_page: 5, status: 'ABIERTO' });
             recentTickets.value = response.data?.data || [];
         } catch (err) {
-            console.error('Error fetching recent tickets:', err);
+            // Error handled
         }
     }
 
@@ -116,7 +115,7 @@ export const useDashboardStore = defineStore('dashboard', () => {
             const response = await hospitalization.getStatus();
             hospitalizationStatus.value = response.data || {};
         } catch (err) {
-            console.error('Error fetching hospitalization status:', err);
+            // Error handled
         }
     }
 

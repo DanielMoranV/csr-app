@@ -141,7 +141,6 @@ const downloadAttachment = async (attachment) => {
 
         toast.add({ severity: 'success', summary: '¡Éxito!', detail: 'La descarga ha comenzado.', life: 3000 });
     } catch (error) {
-        console.error('Error downloading attachment:', error);
         toast.add({
             severity: 'error',
             summary: 'Error en la descarga',
@@ -164,7 +163,6 @@ const deleteAttachment = async () => {
             confirmDeleteDialogVisible.value = false;
             selectedAttachment.value = null;
         } catch (error) {
-            console.error('Error deleting attachment:', error);
             toast.add({ severity: 'error', summary: 'Error', detail: error.message || 'No se pudo eliminar el adjunto', life: 3000 });
         }
     }

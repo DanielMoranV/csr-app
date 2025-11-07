@@ -68,7 +68,6 @@ export const useRoomsStore = defineStore('rooms', () => {
             }
             throw response;
         } catch (error) {
-            console.error('Error fetching rooms:', error);
             throw error;
         } finally {
             state.isLoading = false;
@@ -85,7 +84,6 @@ export const useRoomsStore = defineStore('rooms', () => {
             }
             throw response;
         } catch (error) {
-            console.error('Error fetching beds:', error);
             throw error;
         } finally {
             state.isLoading = false;
@@ -103,7 +101,6 @@ export const useRoomsStore = defineStore('rooms', () => {
             }
             throw response;
         } catch (error) {
-            console.error('Error creating room:', error);
             throw error;
         } finally {
             state.isSaving = false;
@@ -124,7 +121,6 @@ export const useRoomsStore = defineStore('rooms', () => {
             }
             throw response;
         } catch (error) {
-            console.error('Error updating room:', error);
             throw error;
         } finally {
             state.isSaving = false;
@@ -144,7 +140,6 @@ export const useRoomsStore = defineStore('rooms', () => {
             }
             throw response;
         } catch (error) {
-            console.error('Error deleting room:', error);
             throw error;
         } finally {
             state.isDeleting = false;
@@ -165,7 +160,6 @@ export const useRoomsStore = defineStore('rooms', () => {
             }
             throw response;
         } catch (error) {
-            console.error('Error toggling room status:', error);
             throw error;
         } finally {
             state.isSaving = false;
@@ -187,7 +181,6 @@ export const useRoomsStore = defineStore('rooms', () => {
             }
             throw response;
         } catch (error) {
-            console.error('Error creating bed:', error);
             throw error;
         } finally {
             state.isSaving = false;
@@ -211,7 +204,6 @@ export const useRoomsStore = defineStore('rooms', () => {
             }
             throw response;
         } catch (error) {
-            console.error('Error updating bed:', error);
             throw error;
         } finally {
             state.isSaving = false;
@@ -231,7 +223,6 @@ export const useRoomsStore = defineStore('rooms', () => {
             }
             throw response;
         } catch (error) {
-            console.error('Error deleting bed:', error);
             throw error;
         } finally {
             state.isDeleting = false;
@@ -255,7 +246,6 @@ export const useRoomsStore = defineStore('rooms', () => {
             }
             throw response;
         } catch (error) {
-            console.error('Error toggling bed status:', error);
             throw error;
         } finally {
             state.isSaving = false;

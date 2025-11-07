@@ -27,7 +27,7 @@ export const useTasksStore = defineStore('tasks', () => {
                 pagination.value = pag;
             }
         } catch (error) {
-            console.error('Error fetching tasks:', error);
+            // Error handled
         } finally {
             loading.value = false;
         }
@@ -36,21 +36,16 @@ export const useTasksStore = defineStore('tasks', () => {
     const fetchTasksByDateRange = async (params) => {
         loading.value = true;
         try {
-            console.log('[TasksStore] Buscando tareas con parámetros:', params);
             const response = await findTasks(params);
-            console.log('[TasksStore] Respuesta completa del composable:', response);
 
             // El composable devuelve { success, message, data }
             if (response && response.data) {
                 tasks.value = response.data;
-                console.log('[TasksStore] Tareas asignadas:', response.data);
-                console.log('[TasksStore] Total de tareas encontradas:', response.data.length);
             } else {
-                console.warn('[TasksStore] No se encontró el campo data en la respuesta:', response);
                 tasks.value = [];
             }
         } catch (error) {
-            console.error('[TasksStore] Error fetching tasks by date range:', error);
+            // Error handled
             tasks.value = [];
         } finally {
             loading.value = false;
@@ -63,7 +58,7 @@ export const useTasksStore = defineStore('tasks', () => {
             await storeTask(taskData);
             await fetchTasks(); // Refresh list
         } catch (error) {
-            console.error('Error creating task:', error);
+            // Error handled
         } finally {
             loading.value = false;
         }
@@ -75,7 +70,7 @@ export const useTasksStore = defineStore('tasks', () => {
             await modifyTask(id, taskData);
             await fetchTasks(); // Refresh list
         } catch (error) {
-            console.error('Error updating task:', error);
+            // Error handled
         } finally {
             loading.value = false;
         }
@@ -87,7 +82,7 @@ export const useTasksStore = defineStore('tasks', () => {
             await destroyTask(id);
             await fetchTasks(); // Refresh list
         } catch (error) {
-            console.error('Error deleting task:', error);
+            // Error handled
         } finally {
             loading.value = false;
         }
@@ -98,7 +93,7 @@ export const useTasksStore = defineStore('tasks', () => {
             const response = await fetchTaskStats();
             stats.value = response.data;
         } catch (error) {
-            console.error('Error fetching stats:', error);
+            // Error handled
         }
     };
 

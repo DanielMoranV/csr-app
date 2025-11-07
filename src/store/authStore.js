@@ -257,8 +257,7 @@ export const useAuthStore = defineStore('auth', () => {
             }
         } catch (error) {
             clearAuthData();
-
-            // Mejorar el mensaje de error según el tipo
+            // Error handling
             if (apiUtils.isConnectionError(error)) {
                 throw {
                     ...error,
@@ -341,8 +340,7 @@ export const useAuthStore = defineStore('auth', () => {
                 await api.post('/auth/logout');
             }
         } catch (error) {
-            // Log del error pero continuar con logout local
-            console.warn('Error en logout del servidor:', error);
+            // Error handled
         } finally {
             // Limpiar datos locales siempre
             const ticketsStore = useTicketsStore();

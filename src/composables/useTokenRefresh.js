@@ -39,9 +39,6 @@ export function useTokenRefresh() {
 
         // Verificar que haya token y expiración
         if (!authStore.state.tokenExpiresAt || !authStore.state.isAuthenticated) {
-            if (import.meta.env.DEV) {
-                console.log('[TokenRefresh] No hay token o no está autenticado, cancelando schedule');
-            }
             return;
         }
 
@@ -51,9 +48,6 @@ export function useTokenRefresh() {
 
         // Si el token ya expiró, no programar refresh
         if (timeUntilExpiry <= 0) {
-            if (import.meta.env.DEV) {
-                console.warn('[TokenRefresh] Token ya expirado, limpiando sesión');
-            }
             authStore.clearAuthData();
             return;
         }
@@ -63,19 +57,11 @@ export function useTokenRefresh() {
 
         // Si ya estamos dentro de la ventana de refresh, refrescar inmediatamente
         if (refreshTime <= 0) {
-            if (import.meta.env.DEV) {
-                console.log('[TokenRefresh] Token cerca de expirar, refrescando inmediatamente');
-            }
             performRefresh();
             return;
         }
 
         // Programar refresh
-        const refreshDate = new Date(now + refreshTime);
-        if (import.meta.env.DEV) {
-            console.log(`[TokenRefresh] Programado para: ${refreshDate.toLocaleTimeString()}`);
-            console.log(`[TokenRefresh] Token expira en: ${Math.round(timeUntilExpiry / 60000)} minutos`);
-        }
 
         refreshTimeout = setTimeout(async () => {
             performRefresh();
@@ -87,20 +73,11 @@ export function useTokenRefresh() {
      */
     async function performRefresh() {
         try {
-            if (import.meta.env.DEV) {
-                console.log('[TokenRefresh] Ejecutando refresh preventivo...');
-            }
-
             await authStore.refreshToken();
-
-            if (import.meta.env.DEV) {
-                console.log('[TokenRefresh] ✅ Token refrescado exitosamente');
-            }
 
             // Reprogramar el siguiente refresh
             scheduleRefresh();
         } catch (error) {
-            console.error('[TokenRefresh] ❌ Error al refrescar token:', error);
 
             // Si falla el refresh, limpiar sesión
             authStore.clearAuthData();
@@ -119,19 +96,12 @@ export function useTokenRefresh() {
         if (refreshTimeout) {
             clearTimeout(refreshTimeout);
             refreshTimeout = null;
-
-            if (import.meta.env.DEV) {
-                console.log('[TokenRefresh] Schedule cancelado');
-            }
         }
     }
 
     // Programar refresh cuando se monta el componente
     onMounted(() => {
         if (authStore.state.isAuthenticated) {
-            if (import.meta.env.DEV) {
-                console.log('[TokenRefresh] Iniciando auto-refresh preventivo');
-            }
             scheduleRefresh();
         }
     });

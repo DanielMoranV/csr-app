@@ -187,8 +187,6 @@ const handleSave = async () => {
         closeDialog();
         updateLocalAudits();
     } catch (error) {
-        console.error('Error en handleSave:', error);
-
         // Mostrar mensaje específico del backend si está disponible
         let errorMessage = 'Error al guardar la auditoría';
 

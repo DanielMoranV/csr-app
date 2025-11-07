@@ -22,14 +22,11 @@ export const useHospitalAttentionsStore = defineStore('hospitalAttentions', () =
             const response = await hospitalAttentionsApi.list(); // Cargar todo, sin paginar
             // Asumimos una estructura de respuesta { success: true, data: { data: [...] } }
 
-            console.log(response);
-
             attentions.value = response.data?.data || [];
         } catch (err) {
             // El interceptor de axios rechaza la promesa con un objeto de error estandarizado.
             error.value = err;
             attentions.value = [];
-            console.error('Error fetching hospital attentions:', err.message || err);
         } finally {
             isLoading.value = false;
         }
@@ -44,7 +41,6 @@ export const useHospitalAttentionsStore = defineStore('hospitalAttentions', () =
             stats.value = response.data || {};
         } catch (err) {
             error.value = err;
-            console.error('Error fetching hospital stats:', err.message || err);
         } finally {
             isLoading.value = false;
         }
@@ -55,7 +51,6 @@ export const useHospitalAttentionsStore = defineStore('hospitalAttentions', () =
             await hospitalAttentionsApi.create(attentionData);
             await fetchAttentions(); // Refresh list after creating
         } catch (e) {
-            console.error('Error creating attention:', e);
             throw e; // Re-throw to be handled in the component
         }
     }
@@ -65,7 +60,6 @@ export const useHospitalAttentionsStore = defineStore('hospitalAttentions', () =
             await hospitalAttentionsApi.update(id, attentionData);
             await fetchAttentions(); // Refresh list after updating
         } catch (e) {
-            console.error('Error updating attention:', e);
             throw e;
         }
     }
@@ -75,7 +69,6 @@ export const useHospitalAttentionsStore = defineStore('hospitalAttentions', () =
             await hospitalAttentionsApi.delete(id);
             await fetchAttentions(); // Refresh list after deleting
         } catch (e) {
-            console.error('Error deleting attention:', e);
             throw e;
         }
     }
@@ -85,7 +78,6 @@ export const useHospitalAttentionsStore = defineStore('hospitalAttentions', () =
             await hospitalAttentionsApi.createTask(taskData);
             await fetchAttentions(); // Refresh list
         } catch (e) {
-            console.error('Error creating task:', e);
             throw e;
         }
     }
@@ -95,7 +87,6 @@ export const useHospitalAttentionsStore = defineStore('hospitalAttentions', () =
             await hospitalAttentionsApi.updateTask(id, taskData);
             await fetchAttentions(); // Refresh list
         } catch (e) {
-            console.error('Error updating task:', e);
             throw e;
         }
     }
@@ -105,7 +96,6 @@ export const useHospitalAttentionsStore = defineStore('hospitalAttentions', () =
             await hospitalAttentionsApi.deleteTask(id);
             await fetchAttentions(); // Refresh list
         } catch (e) {
-            console.error('Error deleting task:', e);
             throw e;
         }
     }
@@ -115,7 +105,6 @@ export const useHospitalAttentionsStore = defineStore('hospitalAttentions', () =
             await hospitalAttentionsApi.createDetails(detailsData);
             await fetchAttentions(); // Refresh list
         } catch (e) {
-            console.error('Error creating details:', e);
             throw e;
         }
     }
@@ -125,7 +114,6 @@ export const useHospitalAttentionsStore = defineStore('hospitalAttentions', () =
             await hospitalAttentionsApi.updateDetails(id, detailsData);
             await fetchAttentions(); // Refresh list
         } catch (e) {
-            console.error('Error updating details:', e);
             throw e;
         }
     }
@@ -135,7 +123,6 @@ export const useHospitalAttentionsStore = defineStore('hospitalAttentions', () =
             await hospitalAttentionsApi.deleteDetails(id);
             await fetchAttentions(); // Refresh list
         } catch (e) {
-            console.error('Error deleting details:', e);
             throw e;
         }
     }
@@ -146,7 +133,6 @@ export const useHospitalAttentionsStore = defineStore('hospitalAttentions', () =
             await fetchAttentions(); // Refresh list
             return response;
         } catch (e) {
-            console.error('Error approving attention:', e);
             throw e;
         }
     }
@@ -157,7 +143,6 @@ export const useHospitalAttentionsStore = defineStore('hospitalAttentions', () =
             await hospitalAttentionsApi.createAudit(auditData);
             await fetchAttentions(); // Refresh list
         } catch (e) {
-            console.error('Error creating audit:', e);
             throw e;
         }
     }
@@ -167,7 +152,6 @@ export const useHospitalAttentionsStore = defineStore('hospitalAttentions', () =
             await hospitalAttentionsApi.updateAudit(id, auditData);
             await fetchAttentions(); // Refresh list
         } catch (e) {
-            console.error('Error updating audit:', e);
             throw e;
         }
     }
@@ -177,7 +161,6 @@ export const useHospitalAttentionsStore = defineStore('hospitalAttentions', () =
             await hospitalAttentionsApi.deleteAudit(id);
             await fetchAttentions(); // Refresh list
         } catch (e) {
-            console.error('Error deleting audit:', e);
             throw e;
         }
     }
@@ -187,14 +170,12 @@ export const useHospitalAttentionsStore = defineStore('hospitalAttentions', () =
             await hospitalAttentionsApi.markAuditAsAudited(id);
             await fetchAttentions(); // Refresh list
         } catch (e) {
-            console.error('Error marking audit as audited:', e);
             throw e;
         }
     }
 
     // Real-time event handlers
     function handleHospitalizationCreated(eventData) {
-        console.log('Handling hospitalization created:', eventData);
         // Add new attention to the list
         const newAttention = eventData.data;
         if (newAttention && !attentions.value.find((att) => att.id === newAttention.id)) {
@@ -205,7 +186,6 @@ export const useHospitalAttentionsStore = defineStore('hospitalAttentions', () =
     }
 
     function handleHospitalizationUpdated(eventData) {
-        console.log('Handling hospitalization updated:', eventData);
         const updatedAttention = eventData.data;
 
         if (updatedAttention) {
@@ -223,7 +203,6 @@ export const useHospitalAttentionsStore = defineStore('hospitalAttentions', () =
     }
 
     function handleHospitalizationDeleted(eventData) {
-        console.log('Handling hospitalization deleted:', eventData);
         const deletedId = eventData.data?.id || eventData.id;
 
         if (deletedId) {
@@ -238,7 +217,6 @@ export const useHospitalAttentionsStore = defineStore('hospitalAttentions', () =
 
     // Details event handlers
     function handleDetailsCreated(eventData) {
-        console.log('Handling details created:', eventData);
         const detail = eventData.detail || eventData.data;
 
         if (!detail || !detail.id_attentions) return;
@@ -262,7 +240,6 @@ export const useHospitalAttentionsStore = defineStore('hospitalAttentions', () =
     }
 
     function handleDetailsUpdated(eventData) {
-        console.log('Handling details updated:', eventData);
         const detail = eventData.detail || eventData.data;
 
         if (!detail || !detail.id_attentions) return;
@@ -283,7 +260,6 @@ export const useHospitalAttentionsStore = defineStore('hospitalAttentions', () =
     }
 
     function handleDetailsDeleted(eventData) {
-        console.log('Handling details deleted:', eventData);
         const detailId = eventData.detail?.id || eventData.id;
         const attentionId = eventData.detail?.id_attentions || eventData.id_attentions;
 
@@ -303,7 +279,6 @@ export const useHospitalAttentionsStore = defineStore('hospitalAttentions', () =
 
     // Audit event handlers
     function handleAuditCreated(eventData) {
-        console.log('Handling audit created:', eventData);
         const audit = eventData.audit || eventData.data;
 
         if (!audit || !audit.id_attentions) return;
@@ -327,7 +302,6 @@ export const useHospitalAttentionsStore = defineStore('hospitalAttentions', () =
     }
 
     function handleAuditUpdated(eventData) {
-        console.log('Handling audit updated:', eventData);
         const audit = eventData.audit || eventData.data;
 
         if (!audit || !audit.id_attentions) return;
@@ -348,7 +322,6 @@ export const useHospitalAttentionsStore = defineStore('hospitalAttentions', () =
     }
 
     function handleAuditDeleted(eventData) {
-        console.log('Handling audit deleted:', eventData);
         const auditId = eventData.audit?.id || eventData.id;
         const attentionId = eventData.audit?.id_attentions || eventData.id_attentions;
 
@@ -368,7 +341,6 @@ export const useHospitalAttentionsStore = defineStore('hospitalAttentions', () =
 
     // Task event handlers
     function handleTaskCreated(eventData) {
-        console.log('Handling task created:', eventData);
         const task = eventData.task;
 
         if (!task || !task.id_attentions) return;
@@ -391,7 +363,6 @@ export const useHospitalAttentionsStore = defineStore('hospitalAttentions', () =
     }
 
     function handleTaskUpdated(eventData) {
-        console.log('Handling task updated:', eventData);
         const task = eventData.task;
 
         if (!task || !task.id_attentions) return;
@@ -412,7 +383,6 @@ export const useHospitalAttentionsStore = defineStore('hospitalAttentions', () =
     }
 
     function handleTaskDeleted(eventData) {
-        console.log('Handling task deleted:', eventData);
         const taskId = eventData.task?.id || eventData.id;
         const attentionId = eventData.task?.id_attentions || eventData.id_attentions;
 

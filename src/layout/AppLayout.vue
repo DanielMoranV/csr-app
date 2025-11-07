@@ -83,11 +83,9 @@ onMounted(() => {
                 useEcho
                     .private(`App.Models.User.${userId}`)
                     .listen('.ticket.created', (e) => {
-                        console.log('Event received: ticket.created for me', e.ticket);
                         ticketsStore.handleTicketCreated(e.ticket);
                     })
                     .listen('.ticket.updated', (e) => {
-                        console.log('Event received: ticket.updated for me', e.ticket);
                         ticketsStore.handleTicketUpdated(e.ticket);
                     });
 
@@ -97,20 +95,18 @@ onMounted(() => {
                     useEcho
                         .join(`tickets.position.${positionSlug}`)
                         .here((users) => {
-                            console.log('Connected to position channel. Users here:', users);
+                            // Connected to position channel
                         })
                         .joining((user) => {
-                            console.log(user.name, 'joined position channel.');
+                            // User joined position channel
                         })
                         .leaving((user) => {
-                            console.log(user.name, 'left position channel.');
+                            // User left position channel
                         })
                         .listen('.ticket.created', (e) => {
-                            console.log('Event received: ticket.created for my position', e.ticket);
                             ticketsStore.handleTicketCreated(e.ticket);
                         })
                         .listen('.ticket.updated', (e) => {
-                            console.log('Event received: ticket.updated for my position', e.ticket);
                             ticketsStore.handleTicketUpdated(e.ticket);
                         });
                 }

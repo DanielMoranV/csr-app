@@ -40,7 +40,6 @@ export const useRecurrenceRulesStore = defineStore('recurrenceRules', () => {
             }
             throw response;
         } catch (error) {
-            console.error('Error fetching recurrence rules:', error);
             throw error;
         } finally {
             state.isLoading = false;
@@ -57,7 +56,6 @@ export const useRecurrenceRulesStore = defineStore('recurrenceRules', () => {
             }
             throw response;
         } catch (error) {
-            console.error(`Error fetching rule ${id}:`, error);
             throw error;
         } finally {
             state.isLoading = false;
@@ -75,7 +73,6 @@ export const useRecurrenceRulesStore = defineStore('recurrenceRules', () => {
             }
             throw response;
         } catch (error) {
-            console.error('Error creating rule:', error);
             throw error;
         } finally {
             state.isSaving = false;
@@ -99,7 +96,6 @@ export const useRecurrenceRulesStore = defineStore('recurrenceRules', () => {
             }
             throw response;
         } catch (error) {
-            console.error(`Error updating rule ${id}:`, error);
             throw error;
         } finally {
             state.isSaving = false;
@@ -119,7 +115,6 @@ export const useRecurrenceRulesStore = defineStore('recurrenceRules', () => {
             }
             throw response;
         } catch (error) {
-            console.error(`Error deleting rule ${id}:`, error);
             throw error;
         } finally {
             state.isDeleting = false;

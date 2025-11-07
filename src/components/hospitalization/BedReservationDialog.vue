@@ -151,8 +151,6 @@ const submit = async () => {
 
         closeDialog();
     } catch (error) {
-        console.error('Error saving reservation:', error);
-
         // Manejo de errores específicos de la API
         let errorMessage = 'Error al guardar la reserva';
 
