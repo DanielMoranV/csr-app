@@ -4,7 +4,7 @@ import { useSurgeryCallAlerts } from '@/composables/useSurgeryCallAlerts';
 import { useHospitalizationStore } from '@/store/hospitalizationStore';
 import { storeToRefs } from 'pinia';
 import Button from 'primevue/button';
-import { computed, onMounted, onUnmounted, ref } from 'vue';
+import { computed, onMounted, onUnmounted, ref, watch } from 'vue';
 
 const store = useHospitalizationStore();
 const { state } = storeToRefs(store);
@@ -34,6 +34,36 @@ console.log('[HospitalizationDisplay] 🔍 isSurgeryAlertsListening:', isSurgery
 console.log('[HospitalizationDisplay] 🔍 isAudioEnabled:', isAudioEnabled);
 console.log('[HospitalizationDisplay] 🔍 latestCall:', latestCall);
 console.log('[HospitalizationDisplay] 🔍 surgeryCalls:', surgeryCalls);
+
+// Auto-ocultar alerta después de 15 segundos
+let alertTimeout = null;
+const dismissAlert = () => {
+    if (alertTimeout) {
+        clearTimeout(alertTimeout);
+        alertTimeout = null;
+    }
+    latestCall.value = null;
+};
+
+// Observar cambios en latestCall para auto-ocultar
+watch(
+    () => latestCall.value,
+    (newCall) => {
+        if (newCall) {
+            console.log('[HospitalizationDisplay] 🔍 Nueva alerta recibida, configurando auto-ocultamiento');
+            // Limpiar timeout anterior si existe
+            if (alertTimeout) {
+                clearTimeout(alertTimeout);
+            }
+            // Auto-ocultar después de 15 segundos
+            alertTimeout = setTimeout(() => {
+                console.log('[HospitalizationDisplay] ⏰ Auto-ocultando alerta después de 15 segundos');
+                dismissAlert();
+            }, 15000);
+        }
+    },
+    { deep: true }
+);
 
 // Estado de pantalla completa
 const isFullscreen = ref(false);
@@ -303,6 +333,11 @@ onUnmounted(() => {
         clearInterval(refreshInterval.value);
     }
 
+    // Clear alert timeout
+    if (alertTimeout) {
+        clearTimeout(alertTimeout);
+    }
+
     // Asegurarse de restaurar el layout si se desmonta el componente
     if (isFullscreen.value) {
         const sidebar = document.querySelector('.layout-sidebar');
@@ -383,12 +418,8 @@ onUnmounted(() => {
                                     Admisión: {{ latestCall.admission_number || 'N/A' }}
                                 </span>
                                 <span class="meta-item">
-                                    <i class="pi pi-home"></i>
-                                    {{ latestCall.hospital_attention?.bed?.room?.name || 'N/A' }}
-                                </span>
-                                <span class="meta-item">
                                     <i class="pi pi-th-large"></i>
-                                    {{ latestCall.hospital_attention?.bed?.name || 'N/A' }}
+                                    Cama: {{ latestCall.hospital_attention?.bed?.name || 'N/A' }}
                                 </span>
                                 <span class="meta-item">
                                     <i class="pi pi-clock"></i>
@@ -397,7 +428,7 @@ onUnmounted(() => {
                             </div>
                         </div>
                     </div>
-                    <Button icon="pi pi-times" @click="latestCall = null" severity="secondary" text rounded class="alert-close" />
+                    <Button icon="pi pi-times" @click="dismissAlert" severity="secondary" text rounded class="alert-close" />
                 </div>
             </div>
         </transition>
