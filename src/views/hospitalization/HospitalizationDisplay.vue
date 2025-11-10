@@ -262,6 +262,26 @@ const tableData = computed(() => {
     return rows;
 });
 
+// Número de filas que caben en una columna (ajustable según la altura de pantalla)
+const rowsPerColumn = ref(12); // Valor por defecto: 12 filas por columna
+
+// Dividir datos en dos columnas para vista vertical en pantallas grandes
+// Llena completamente la columna 1 antes de pasar a la columna 2
+const tableDataColumns = computed(() => {
+    const data = tableData.value;
+    const maxRowsCol1 = rowsPerColumn.value;
+
+    return {
+        column1: data.slice(0, maxRowsCol1),
+        column2: data.slice(maxRowsCol1)
+    };
+});
+
+// Determinar si se debe mostrar en una sola columna
+const showSingleColumn = computed(() => {
+    return tableData.value.length <= rowsPerColumn.value;
+});
+
 // Toggle pantalla completa solo del componente
 const toggleFullscreen = () => {
     isFullscreen.value = !isFullscreen.value;
@@ -442,32 +462,88 @@ onUnmounted(() => {
 
         <!-- Vista Vertical - Optimizada para pantallas verticales -->
         <div v-else-if="viewMode === 'vertical'" class="vertical-view">
-            <div class="vertical-table">
-                <div class="vertical-header">
-                    <div class="vh-bed">Cama</div>
-                    <div class="vh-patient">Paciente</div>
-                    <div class="vh-date">F. Ingreso</div>
-                    <div class="vh-days">Días</div>
-                </div>
-                <div class="vertical-body">
-                    <div v-for="(bed, index) in tableData" :key="index" class="vertical-row" :style="{ backgroundColor: bed.room_color }">
-                        <div class="vr-bed">
-                            <span class="bed-number">{{ bed.bed_number }}</span>
-                            <span
-                                class="room-type-badge"
-                                v-if="bed.room_type_formatted"
-                                v-tooltip.top="bed.room_type"
-                                :style="{
-                                    backgroundColor: getRoomTypeColor(bed.room_type).bg,
-                                    color: getRoomTypeColor(bed.room_type).text
-                                }"
-                            >
-                                {{ bed.room_type_formatted }}
-                            </span>
+            <!-- Pantallas horizontales grandes: 2 columnas -->
+            <div class="vertical-columns-wrapper" :class="{ 'single-column-mode': showSingleColumn }">
+                <!-- Columna 1 -->
+                <div class="vertical-table vertical-column">
+                    <div class="vertical-header">
+                        <div class="vh-bed">Cama</div>
+                        <div class="vh-patient">Paciente</div>
+                        <div class="vh-date">F. Ingreso</div>
+                        <div class="vh-days">Días</div>
+                    </div>
+                    <div class="vertical-body">
+                        <!-- En modo portrait, mostrar TODOS los datos en columna 1 -->
+                        <div v-for="(bed, index) in tableDataColumns.column1" :key="`col1-${index}`" class="vertical-row vertical-row-col1" :style="{ backgroundColor: bed.room_color }">
+                            <div class="vr-bed">
+                                <span class="bed-number">{{ bed.bed_number }}</span>
+                                <span
+                                    class="room-type-badge"
+                                    v-if="bed.room_type_formatted"
+                                    v-tooltip.top="bed.room_type"
+                                    :style="{
+                                        backgroundColor: getRoomTypeColor(bed.room_type).bg,
+                                        color: getRoomTypeColor(bed.room_type).text
+                                    }"
+                                >
+                                    {{ bed.room_type_formatted }}
+                                </span>
+                            </div>
+                            <div class="vr-patient">{{ bed.patient_name }}</div>
+                            <div class="vr-date">{{ bed.entry_date_formatted }}</div>
+                            <div class="vr-days">{{ bed.days }}</div>
                         </div>
-                        <div class="vr-patient">{{ bed.patient_name }}</div>
-                        <div class="vr-date">{{ bed.entry_date_formatted }}</div>
-                        <div class="vr-days">{{ bed.days }}</div>
+                        <!-- En modo portrait, también mostrar los datos de columna 2 en columna 1 -->
+                        <div v-for="(bed, index) in tableDataColumns.column2" :key="`col1-extra-${index}`" class="vertical-row vertical-row-col2-in-col1" :style="{ backgroundColor: bed.room_color }">
+                            <div class="vr-bed">
+                                <span class="bed-number">{{ bed.bed_number }}</span>
+                                <span
+                                    class="room-type-badge"
+                                    v-if="bed.room_type_formatted"
+                                    v-tooltip.top="bed.room_type"
+                                    :style="{
+                                        backgroundColor: getRoomTypeColor(bed.room_type).bg,
+                                        color: getRoomTypeColor(bed.room_type).text
+                                    }"
+                                >
+                                    {{ bed.room_type_formatted }}
+                                </span>
+                            </div>
+                            <div class="vr-patient">{{ bed.patient_name }}</div>
+                            <div class="vr-date">{{ bed.entry_date_formatted }}</div>
+                            <div class="vr-days">{{ bed.days }}</div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Columna 2 -->
+                <div class="vertical-table vertical-column">
+                    <div class="vertical-header">
+                        <div class="vh-bed">Cama</div>
+                        <div class="vh-patient">Paciente</div>
+                        <div class="vh-date">F. Ingreso</div>
+                        <div class="vh-days">Días</div>
+                    </div>
+                    <div class="vertical-body">
+                        <div v-for="(bed, index) in tableDataColumns.column2" :key="`col2-${index}`" class="vertical-row" :style="{ backgroundColor: bed.room_color }">
+                            <div class="vr-bed">
+                                <span class="bed-number">{{ bed.bed_number }}</span>
+                                <span
+                                    class="room-type-badge"
+                                    v-if="bed.room_type_formatted"
+                                    v-tooltip.top="bed.room_type"
+                                    :style="{
+                                        backgroundColor: getRoomTypeColor(bed.room_type).bg,
+                                        color: getRoomTypeColor(bed.room_type).text
+                                    }"
+                                >
+                                    {{ bed.room_type_formatted }}
+                                </span>
+                            </div>
+                            <div class="vr-patient">{{ bed.patient_name }}</div>
+                            <div class="vr-date">{{ bed.entry_date_formatted }}</div>
+                            <div class="vr-days">{{ bed.days }}</div>
+                        </div>
                     </div>
                 </div>
             </div>
@@ -1177,6 +1253,98 @@ onUnmounted(() => {
     border-radius: 8px;
     overflow: hidden;
     box-shadow: var(--card-shadow);
+}
+
+/* Wrapper para las columnas */
+.vertical-columns-wrapper {
+    display: flex;
+    flex-direction: column;
+    height: 100%;
+    overflow: hidden;
+    gap: 0;
+    padding: 0;
+}
+
+/* Por defecto (portrait): Ocultar la segunda columna y mostrar todo en la primera */
+.vertical-column:nth-child(2) {
+    display: none;
+}
+
+/* En modo portrait, mostrar las filas extras de columna 2 en columna 1 */
+.vertical-row-col2-in-col1 {
+    display: grid;
+}
+
+/* Modo una sola columna: la columna 1 ocupa todo el ancho */
+.vertical-columns-wrapper.single-column-mode .vertical-column:nth-child(2) {
+    display: none !important;
+}
+
+.vertical-columns-wrapper.single-column-mode .vertical-column:nth-child(1) {
+    width: 100%;
+    max-width: 100%;
+}
+
+/* En pantallas horizontales grandes (landscape), mostrar 2 columnas */
+@media (min-width: 1024px) and (orientation: landscape) {
+    .vertical-columns-wrapper {
+        flex-direction: row;
+        gap: 0.5rem;
+        padding: 0.5rem;
+    }
+
+    .vertical-column {
+        flex: 1;
+        min-width: 0;
+        background: var(--surface-card);
+        border-radius: 8px;
+        overflow: hidden;
+        box-shadow: var(--card-shadow);
+        display: flex !important; /* Mostrar ambas columnas */
+    }
+
+    .vertical-column:nth-child(2) {
+        display: flex !important; /* Asegurar que la segunda columna se muestre */
+    }
+
+    /* En landscape, ocultar las filas extras de columna 2 que están en columna 1 */
+    .vertical-row-col2-in-col1 {
+        display: none !important;
+    }
+
+    /* EXCEPCIÓN: Si está en modo single-column, mantener una sola columna incluso en landscape */
+    .vertical-columns-wrapper.single-column-mode {
+        flex-direction: column !important;
+        gap: 0 !important;
+        padding: 0 !important;
+    }
+
+    .vertical-columns-wrapper.single-column-mode .vertical-column:nth-child(2) {
+        display: none !important;
+    }
+
+    .vertical-columns-wrapper.single-column-mode .vertical-column:nth-child(1) {
+        width: 100%;
+        max-width: 100%;
+    }
+}
+
+/* Forzar 1 columna en orientación vertical (portrait), sin importar el ancho */
+@media (orientation: portrait) {
+    .vertical-columns-wrapper {
+        flex-direction: column !important;
+        gap: 0 !important;
+        padding: 0 !important;
+    }
+
+    .vertical-column:nth-child(2) {
+        display: none !important;
+    }
+
+    /* En portrait, mostrar todas las filas en columna 1 */
+    .vertical-row-col2-in-col1 {
+        display: grid !important;
+    }
 }
 
 .vertical-table {
