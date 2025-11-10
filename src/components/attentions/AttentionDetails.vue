@@ -365,6 +365,33 @@ const currentDetail = computed(() => {
     return props.details[0];
 });
 
+// Computed para obtener el detalle del día anterior más reciente
+const previousDayDetail = computed(() => {
+    if (!props.details || !Array.isArray(props.details) || props.details.length === 0) return null;
+
+    // Obtener la fecha actual en formato de comparación
+    const currentDateStr = convertDateToString(localDetails.value.attention_date) || getTodayDate();
+
+    // Filtrar detalles de días anteriores y ordenar por fecha descendente
+    const previousDetails = props.details
+        .filter((d) => {
+            const detailDateStr = typeof d.attention_date === 'string' ? d.attention_date : convertDateToString(d.attention_date);
+            return detailDateStr < currentDateStr;
+        })
+        .sort((a, b) => {
+            const dateA = typeof a.attention_date === 'string' ? a.attention_date : convertDateToString(a.attention_date);
+            const dateB = typeof b.attention_date === 'string' ? b.attention_date : convertDateToString(b.attention_date);
+            return dateB.localeCompare(dateA);
+        });
+
+    return previousDetails.length > 0 ? previousDetails[0] : null;
+});
+
+// Computed para verificar si se puede copiar del día anterior
+const canCopyFromPreviousDay = computed(() => {
+    return isEditing.value && !props.readOnly && previousDayDetail.value !== null;
+});
+
 // Watch para sincronizar props
 watch(
     () => currentDetail.value,
@@ -701,6 +728,55 @@ const cancelEditing = () => {
     }
 };
 
+const copyFromPreviousDay = () => {
+    if (!previousDayDetail.value) return;
+
+    confirm.require({
+        message: `¿Desea copiar los datos del registro del ${formatAuditDate(previousDayDetail.value.attention_date)}?`,
+        header: 'Copiar del Día Anterior',
+        icon: 'pi pi-copy',
+        rejectClass: 'p-button-secondary p-button-outlined',
+        rejectLabel: 'Cancelar',
+        acceptLabel: 'Copiar',
+        acceptClass: 'p-button-info',
+        accept: () => {
+            // Copiar campos clínicos
+            localDetails.value.ram = previousDayDetail.value.ram || '';
+            localDetails.value.images_exams = previousDayDetail.value.images_exams || '';
+            localDetails.value.laboratory_exams = previousDayDetail.value.laboratory_exams || '';
+            localDetails.value.interconsultation = previousDayDetail.value.interconsultation || '';
+            localDetails.value.medical_order = previousDayDetail.value.medical_order || '';
+            localDetails.value.intercurrences = previousDayDetail.value.intercurrences || '';
+
+            // Copiar scores de riesgo
+            localDetails.value.thrombosis_risk_score = previousDayDetail.value.thrombosis_risk_score || 0;
+            localDetails.value.bleeding_risk_score = previousDayDetail.value.bleeding_risk_score || 0;
+            localDetails.value.score_CUDYR = previousDayDetail.value.score_CUDYR || 0;
+
+            // Copiar evaluación CUDYR si existe
+            if (previousDayDetail.value.cudyr_evaluation) {
+                includeCudyr.value = true;
+                const mappedData = mapCudyrEvaluationToForm(previousDayDetail.value.cudyr_evaluation);
+                if (mappedData) {
+                    cudyrData.value = mappedData;
+                    cudyrPreview.value = calculateCudyrScores();
+                }
+            } else if (previousDayDetail.value.cudyr_evaluation_id) {
+                // Si solo existe el ID, cargar la evaluación
+                includeCudyr.value = true;
+                fetchCudyrEvaluation(previousDayDetail.value.cudyr_evaluation_id);
+            }
+
+            toast.add({
+                severity: 'success',
+                summary: 'Datos Copiados',
+                detail: `Se copiaron los datos del ${formatAuditDate(previousDayDetail.value.attention_date)} exitosamente`,
+                life: 3000
+            });
+        }
+    });
+};
+
 const getRiskSeverity = (score, maxScore) => {
     const percentage = (score / maxScore) * 100;
     if (percentage >= 70) return 'danger';
@@ -962,6 +1038,24 @@ const getUserInfo = (userObj) => {
                 <i class="pi pi-info-circle"></i>
                 <span>{{ currentDetail ? 'Editando detalles médicos' : 'Creando nuevos detalles médicos' }}</span>
                 <small>Fecha: {{ convertDateToString(localDetails.attention_date) || 'Hoy' }}</small>
+            </div>
+
+            <!-- Botón para copiar del día anterior -->
+            <div v-if="canCopyFromPreviousDay" class="copy-from-previous-container">
+                <Button
+                    label="Copiar del Día Anterior"
+                    icon="pi pi-copy"
+                    severity="info"
+                    outlined
+                    size="small"
+                    v-tooltip.top="'Copiar datos del registro del ' + formatAuditDate(previousDayDetail.attention_date)"
+                    @click="copyFromPreviousDay"
+                    :disabled="isLoading"
+                />
+                <span class="copy-helper-text">
+                    <i class="pi pi-info-circle"></i>
+                    Disponible: registro del {{ formatAuditDate(previousDayDetail.attention_date) }}
+                </span>
             </div>
 
             <div class="edit-content">
@@ -2033,6 +2127,43 @@ const getUserInfo = (userObj) => {
 .edit-info small {
     color: var(--blue-700);
     margin-left: auto;
+}
+
+/* Contenedor para copiar del día anterior */
+.copy-from-previous-container {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    padding: 0.875rem 1rem;
+    background: linear-gradient(135deg, var(--primary-50) 0%, var(--blue-50) 100%);
+    border: 1px solid var(--primary-200);
+    border-radius: 8px;
+    animation: slideDown 0.3s ease-out;
+}
+
+@keyframes slideDown {
+    from {
+        opacity: 0;
+        transform: translateY(-10px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+.copy-helper-text {
+    display: flex;
+    align-items: center;
+    gap: 0.4rem;
+    font-size: 0.85rem;
+    color: var(--primary-700);
+    font-weight: 500;
+}
+
+.copy-helper-text i {
+    color: var(--primary-600);
+    font-size: 0.9rem;
 }
 
 .edit-content {
