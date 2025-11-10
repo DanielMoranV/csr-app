@@ -400,17 +400,6 @@ const hasPendingTasks = (bed) => {
                                 <span class="sub-info-item" :title="getSexLabel(bed.attention.patient.sex)"> <i :class="`pi ${getSexIcon(bed.attention.patient.sex)}`"></i> {{ bed.attention.patient.sex }} </span>
                                 <span class="sub-info-item" title="Edad"> <i class="pi pi-calendar-plus"></i> {{ formatAge(bed.attention.patient.age) }} </span>
                             </div>
-
-                            <!-- Códigos CIE-10 -->
-                            <div v-if="bed.attention.cie10 && bed.attention.cie10.length > 0" class="cie10-codes">
-                                <div class="cie10-label">
-                                    <i class="pi pi-file-medical"></i>
-                                    <span>CIE-10:</span>
-                                </div>
-                                <div class="cie10-tags">
-                                    <Tag v-for="(code, index) in bed.attention.cie10" :key="index" :value="code" severity="contrast" class="cie10-tag" v-tooltip.top="`Código CIE-10: ${code}`" />
-                                </div>
-                            </div>
                         </div>
 
                         <!-- Indicadores médicos importantes -->
@@ -1087,59 +1076,6 @@ const hasPendingTasks = (bed) => {
 
 .sex-icon--f {
     color: #db2777;
-}
-
-/* CIE-10 Codes */
-.cie10-codes {
-    display: flex;
-    align-items: center;
-    gap: 0.4rem;
-    margin-top: 0.3rem;
-    padding: 0.3rem 0.4rem;
-    background: linear-gradient(135deg, #f0f9ff 0%, #e0f2fe 100%);
-    border-radius: 6px;
-    border-left: 3px solid #0284c7;
-}
-
-.cie10-label {
-    display: flex;
-    align-items: center;
-    gap: 0.25rem;
-    font-size: 0.65rem;
-    font-weight: 600;
-    color: #0c4a6e;
-    white-space: nowrap;
-    flex-shrink: 0;
-}
-
-.cie10-label i {
-    font-size: 0.7rem;
-    color: #0284c7;
-}
-
-.cie10-tags {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 0.25rem;
-    align-items: center;
-}
-
-.cie10-tag {
-    font-size: 0.65rem !important;
-    padding: 0.15rem 0.4rem !important;
-    border-radius: 4px;
-    font-weight: 600 !important;
-    background: linear-gradient(135deg, #0284c7, #0369a1) !important;
-    color: white !important;
-    border: none !important;
-    box-shadow: 0 1px 3px rgba(2, 132, 199, 0.3);
-    transition: all 0.2s ease;
-    cursor: help;
-}
-
-.cie10-tag:hover {
-    transform: translateY(-1px);
-    box-shadow: 0 2px 6px rgba(2, 132, 199, 0.4);
 }
 
 /* Medical Indicators */

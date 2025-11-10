@@ -67,6 +67,8 @@ const attention = computed(() => {
         hospital_attention_id: bedAttention.hospital_attention_id,
         patient: bedAttention.patient,
         entry_date: bedAttention.entry_date,
+        number: bedAttention.number,
+        cie10: bedAttention.cie10 || [],
         details_attention: bedAttention.details || [],
         tasks: bedAttention.tasks || [],
         // Campos adicionales necesarios para compatibilidad
@@ -113,6 +115,47 @@ const formatDate = (value) => {
         hour: '2-digit',
         minute: '2-digit'
     });
+};
+
+// Función para sanitizar el número de admisión (quitar ceros a la izquierda)
+const sanitizeAdmissionNumber = (number) => {
+    if (!number) return '---';
+    // Convertir a string y quitar ceros a la izquierda
+    const sanitized = String(number).replace(/^0+/, '');
+    // Si después de quitar los ceros queda vacío, retornar '0'
+    return sanitized || '0';
+};
+
+// Función para copiar al portapapeles
+const copyToClipboard = (text) => {
+    navigator.clipboard
+        .writeText(text)
+        .then(() => {
+            toast.add({ severity: 'success', summary: 'Copiado', detail: 'Número de admisión copiado al portapapeles', life: 3000 });
+        })
+        .catch((err) => {
+            toast.add({ severity: 'error', summary: 'Error', detail: 'No se pudo copiar el texto', life: 3000 });
+        });
+};
+
+// Función para formatear la edad del paciente
+const formatAge = (age) => {
+    if (!age) return 'N/A';
+    return `${Math.floor(age)} años`;
+};
+
+// Función para obtener el ícono según el sexo
+const getSexIcon = (sex) => {
+    if (sex === 'M') return 'pi-mars';
+    if (sex === 'F') return 'pi-venus';
+    return 'pi-question';
+};
+
+// Función para obtener el label del sexo
+const getSexLabel = (sex) => {
+    if (sex === 'M') return 'Masculino';
+    if (sex === 'F') return 'Femenino';
+    return 'No especificado';
 };
 
 // Obtener severidad del estado de la cama
@@ -188,6 +231,60 @@ const handleDateSelected = (date) => {
 const handleCreateNewDetail = (date) => {
     selectedDate.value = date;
 };
+
+// Función para verificar si una fecha es hoy
+const isToday = (date) => {
+    if (!date) return false;
+    const today = new Date();
+    const checkDate = new Date(date);
+    return (
+        checkDate.getDate() === today.getDate() &&
+        checkDate.getMonth() === today.getMonth() &&
+        checkDate.getFullYear() === today.getFullYear()
+    );
+};
+
+// Función para seleccionar automáticamente la fecha más reciente o la de hoy
+const selectInitialDate = () => {
+    if (!currentDetailsArray.value || currentDetailsArray.value.length === 0) {
+        selectedDate.value = null;
+        return;
+    }
+
+    // Ordenar detalles por fecha descendente (más reciente primero)
+    const sortedDetails = [...currentDetailsArray.value].sort((a, b) => {
+        const dateA = new Date(a.attention_date || a.created_at || 0);
+        const dateB = new Date(b.attention_date || b.created_at || 0);
+        return dateB - dateA;
+    });
+
+    // Buscar si hay un detalle de hoy
+    const todayDetail = sortedDetails.find(detail =>
+        isToday(detail.attention_date || detail.created_at)
+    );
+
+    // Si existe un detalle de hoy, seleccionarlo
+    if (todayDetail) {
+        selectedDate.value = todayDetail.attention_date || todayDetail.created_at;
+    } else {
+        // Si no hay detalle de hoy, seleccionar el más reciente
+        const mostRecent = sortedDetails[0];
+        selectedDate.value = mostRecent.attention_date || mostRecent.created_at;
+    }
+};
+
+// Watcher para reiniciar la fecha seleccionada cuando se abre el drawer o cambia la cama
+watch(
+    () => [props.visible, props.bed?.id],
+    ([visible, bedId]) => {
+        if (visible && bedId) {
+            selectInitialDate();
+        } else {
+            selectedDate.value = null;
+        }
+    },
+    { immediate: true }
+);
 
 // Computed para determinar si la cama está reservada
 const isReserved = computed(() => {
@@ -301,7 +398,12 @@ watch(
                         <h3 class="text-lg font-bold m-0">Cama {{ bed.bed_number }}</h3>
                         <Tag :value="bed.status === 'occupied' ? 'OCUPADA' : 'LIBRE'" :severity="getBedStatusSeverity(bed.status)" class="text-xs" />
                     </div>
-                    <span v-if="bed.status === 'occupied' && attention.number" class="text-xs text-500">Admisión: {{ attention.number }}</span>
+                    <!-- Número de admisión prominente con icono de copiar -->
+                    <div v-if="bed.status === 'occupied' && attention.number" class="flex items-center gap-1 bg-primary-100 px-2 py-1 border-round">
+                        <i class="pi pi-hashtag text-primary text-xs"></i>
+                        <span class="text-sm font-semibold text-primary">{{ sanitizeAdmissionNumber(attention.number) }}</span>
+                        <i class="pi pi-copy text-primary text-xs cursor-pointer hover:text-primary-600 transition-colors" @click="copyToClipboard(attention.number)" v-tooltip.top="'Copiar número de admisión'"></i>
+                    </div>
                 </div>
 
                 <!-- Información del paciente compacta -->
@@ -314,6 +416,14 @@ watch(
                         <div class="flex items-center gap-1 text-600">
                             <i class="pi pi-id-card text-xs"></i>
                             <span>{{ attention.patient.document_number }}</span>
+                        </div>
+                        <div class="flex items-center gap-1 text-600">
+                            <i :class="`pi ${getSexIcon(attention.patient.sex)} text-xs`"></i>
+                            <span>{{ getSexLabel(attention.patient.sex) }}</span>
+                        </div>
+                        <div class="flex items-center gap-1 text-600">
+                            <i class="pi pi-calendar-plus text-xs"></i>
+                            <span>{{ formatAge(attention.patient.age) }}</span>
                         </div>
                         <div class="flex items-center gap-1 text-600">
                             <i class="pi pi-calendar text-xs"></i>
@@ -332,7 +442,7 @@ watch(
                             <i class="pi pi-file-medical"></i>
                             <span>CIE-10:</span>
                         </div>
-                        <Tag v-for="(code, index) in attention.cie10" :key="index" :value="code" severity="info" class="text-xs" v-tooltip.top="`Código CIE-10: ${code}`" />
+                        <Tag v-for="(code, index) in attention.cie10" :key="index" :value="code" severity="contrast" class="text-xs font-semibold cie10-drawer-tag" v-tooltip.top="`Código CIE-10: ${code}`" />
                     </div>
                 </div>
 
@@ -521,6 +631,23 @@ watch(
 .details-sidebar-right {
     overflow-y: auto;
     max-height: calc(100vh - 280px);
+}
+
+/* CIE-10 Tags Styling */
+.cie10-drawer-tag {
+    background: linear-gradient(135deg, #0284c7, #0369a1) !important;
+    color: white !important;
+    border: none !important;
+    padding: 0.25rem 0.5rem !important;
+    border-radius: 4px;
+    box-shadow: 0 1px 3px rgba(2, 132, 199, 0.3);
+    transition: all 0.2s ease;
+    cursor: help;
+}
+
+.cie10-drawer-tag:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 2px 6px rgba(2, 132, 199, 0.4);
 }
 
 /* Responsive adjustments */
