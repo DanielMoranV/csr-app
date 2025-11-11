@@ -287,7 +287,7 @@ const hasPendingTasks = (bed) => {
     <div class="room-card" :class="{ 'room-card--alert': hasAlerts }">
         <!-- Room Header -->
         <div class="room-card__header">
-            <!-- First row: Room info and alert -->
+            <!-- First row: Room info -->
             <div class="flex justify-content-between align-items-center mb-2">
                 <div class="flex align-items-center gap-2">
                     <i class="pi pi-home text-xl text-primary"></i>
@@ -297,7 +297,6 @@ const hasPendingTasks = (bed) => {
                         <span>{{ formatRoomType(room.beds) }}</span>
                     </div>
                 </div>
-                <Badge v-if="hasAlerts" value="!" severity="danger" />
             </div>
 
             <!-- Second row: Compact stats in single horizontal line -->
@@ -310,11 +309,6 @@ const hasPendingTasks = (bed) => {
                 <div class="stat-item-compact">
                     <span class="stat-value-compact text-green-500">{{ roomStats.freeBeds }}</span>
                     <span class="stat-label-compact">Libres</span>
-                </div>
-                <span class="stat-separator">•</span>
-                <div class="stat-item-compact">
-                    <Tag :value="`${roomStats.occupancyRate}%`" :severity="getRoomStatusSeverity" class="stat-tag-compact" />
-                    <span class="stat-label-compact">Ocupación</span>
                 </div>
                 <template v-if="totalPendingTasks > 0">
                     <span class="stat-separator">•</span>
@@ -397,7 +391,9 @@ const hasPendingTasks = (bed) => {
                                     <i class="pi pi-copy copy-icon" @click.stop="copyToClipboard(bed.attention.number)" v-tooltip.top="'Copiar número de admisión'"></i>
                                 </span>
                                 <span class="sub-info-item" :title="bed.attention.patient.document_number"> <i class="pi pi-id-card"></i> {{ bed.attention.patient.document_number }} </span>
-                                <span class="sub-info-item" :title="getSexLabel(bed.attention.patient.sex)"> <i :class="`pi ${getSexIcon(bed.attention.patient.sex)}`"></i> {{ bed.attention.patient.sex }} </span>
+                                <span class="sub-info-item" :class="{ 'sex-item--male': bed.attention.patient.sex === 'M', 'sex-item--female': bed.attention.patient.sex === 'F' }" :title="getSexLabel(bed.attention.patient.sex)">
+                                    <i :class="`pi ${getSexIcon(bed.attention.patient.sex)}`"></i> {{ bed.attention.patient.sex }}
+                                </span>
                                 <span class="sub-info-item" title="Edad"> <i class="pi pi-calendar-plus"></i> {{ formatAge(bed.attention.patient.age) }} </span>
                             </div>
                         </div>
@@ -726,27 +722,27 @@ const hasPendingTasks = (bed) => {
     border-color: #22d3ee;
 }
 
-/* Diferenciación por sexo del paciente */
+/* Diferenciación por sexo del paciente - solo clases para mantener compatibilidad */
 .bed-indicator--occupied-male {
-    background: linear-gradient(135deg, #dbeafe 0%, #e0f2fe 100%);
-    border: 2px solid #60a5fa;
-    color: #1e40af;
+    background-color: #ecfeff;
+    border: 2px solid #67e8f9;
+    color: #0e7490;
 }
 
 .bed-indicator--occupied-male:hover {
-    background: linear-gradient(135deg, #bfdbfe 0%, #dbeafe 100%);
-    border-color: #3b82f6;
+    background-color: #cffafe;
+    border-color: #22d3ee;
 }
 
 .bed-indicator--occupied-female {
-    background: linear-gradient(135deg, #fce7f3 0%, #fce4ec 100%);
-    border: 2px solid #f472b6;
-    color: #be185d;
+    background-color: #ecfeff;
+    border: 2px solid #67e8f9;
+    color: #0e7490;
 }
 
 .bed-indicator--occupied-female:hover {
-    background: linear-gradient(135deg, #fbcfe8 0%, #fce7f3 100%);
-    border-color: #ec4899;
+    background-color: #cffafe;
+    border-color: #22d3ee;
 }
 
 .bed-indicator--reserved {
@@ -1053,6 +1049,16 @@ const hasPendingTasks = (bed) => {
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
+}
+
+.sex-item--male {
+    color: #2563eb;
+    font-weight: 600;
+}
+
+.sex-item--female {
+    color: #db2777;
+    font-weight: 600;
 }
 
 .copy-icon {
