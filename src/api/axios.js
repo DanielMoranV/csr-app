@@ -8,8 +8,7 @@ const instance = axios.create({
     timeout: 90000000, // 30 segundos (reducido de 90000000)
     headers: {
         'Content-Type': 'application/json',
-        Accept: 'application/json',
-        'Accept-Encoding': 'gzip' // Para compresión automática
+        Accept: 'application/json'
     }
 });
 
