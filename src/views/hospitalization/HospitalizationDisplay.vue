@@ -2,12 +2,17 @@
 import { useRealtimeEvents } from '@/composables/useRealtimeEvents';
 import { useSurgeryCallAlerts } from '@/composables/useSurgeryCallAlerts';
 import { useHospitalizationStore } from '@/store/hospitalizationStore';
+import cache from '@/utils/cache';
 import { storeToRefs } from 'pinia';
 import Button from 'primevue/button';
 import { computed, onMounted, onUnmounted, ref, watch } from 'vue';
 
 const store = useHospitalizationStore();
 const { state } = storeToRefs(store);
+
+// Keys para el cache
+const CACHE_KEY_FULLSCREEN = 'hospitalization_display_fullscreen';
+const CACHE_KEY_VIEW_MODE = 'hospitalization_display_view_mode';
 
 // Real-time events
 const { startListening, stopListening, isListening } = useRealtimeEvents({
@@ -57,11 +62,11 @@ watch(
     { deep: true }
 );
 
-// Estado de pantalla completa
-const isFullscreen = ref(false);
+// Estado de pantalla completa - Cargar desde cache
+const isFullscreen = ref(cache.getItem(CACHE_KEY_FULLSCREEN) ?? false);
 
-// Estado de vista (cards o vertical)
-const viewMode = ref('vertical'); // 'cards' o 'vertical' (optimizado para pantallas verticales)
+// Estado de vista (cards o vertical) - Cargar desde cache
+const viewMode = ref(cache.getItem(CACHE_KEY_VIEW_MODE) ?? 'vertical'); // 'cards' o 'vertical' (optimizado para pantallas verticales)
 
 // Habitaciones con atenciones abiertas (filtrado)
 const activeRooms = computed(() => {
@@ -147,6 +152,7 @@ const formatTime = (dateString) => {
 // Alternar entre vistas (ciclo: vertical -> cards)
 const toggleViewMode = () => {
     viewMode.value = viewMode.value === 'vertical' ? 'cards' : 'vertical';
+    cache.setItem(CACHE_KEY_VIEW_MODE, viewMode.value);
 };
 
 // Paleta de colores para habitaciones
@@ -285,6 +291,7 @@ const showSingleColumn = computed(() => {
 // Toggle pantalla completa solo del componente
 const toggleFullscreen = () => {
     isFullscreen.value = !isFullscreen.value;
+    cache.setItem(CACHE_KEY_FULLSCREEN, isFullscreen.value);
 
     if (isFullscreen.value) {
         // Ocultar sidebar, topbar y footer
@@ -323,6 +330,20 @@ const refreshInterval = ref(null);
 onMounted(async () => {
     await store.fetchHospitalizationStatus();
     startListening();
+
+    // Aplicar estado de pantalla completa desde cache
+    if (isFullscreen.value) {
+        const sidebar = document.querySelector('.layout-sidebar');
+        const topbar = document.querySelector('.layout-topbar');
+        const mainContainer = document.querySelector('.layout-main-container');
+
+        if (sidebar) sidebar.style.display = 'none';
+        if (topbar) topbar.style.display = 'none';
+        if (mainContainer) {
+            mainContainer.style.padding = '0';
+            mainContainer.style.marginLeft = '0';
+        }
+    }
 
     // Auto-refresh every 30 minutes
     refreshInterval.value = setInterval(

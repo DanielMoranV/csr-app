@@ -1194,6 +1194,38 @@ const hasPendingTasks = (bed) => {
     color: #93c5fd !important;
 }
 
+/* Modo oscuro - Ajustar hover de las tarjetas de habitación */
+.app-dark .room-card:hover {
+    background: var(--surface-800);
+    border-color: #60a5fa;
+    box-shadow: 0 4px 16px rgba(96, 165, 250, 0.2);
+}
+
+/* Modo oscuro - Ajustar hover de los indicadores de cama */
+.app-dark .bed-indicator:hover {
+    background: var(--surface-700) !important;
+    box-shadow: 0 4px 12px rgba(96, 165, 250, 0.25);
+    transform: translateY(-2px);
+}
+
+/* Modo oscuro - Hover para camas ocupadas */
+.app-dark .bed-indicator--occupied:hover {
+    background-color: rgba(6, 182, 212, 0.2) !important;
+    border-color: #22d3ee;
+}
+
+/* Modo oscuro - Hover para camas reservadas */
+.app-dark .bed-indicator--reserved:hover {
+    background: linear-gradient(135deg, hsl(45, 50%, 30%) 0%, hsl(45, 55%, 35%) 100%) !important;
+    border-color: #fbbf24;
+}
+
+/* Modo oscuro - Hover para camas libres */
+.app-dark .bed-indicator--free:hover {
+    background-color: rgba(34, 197, 94, 0.1) !important;
+    border-color: #22c55e;
+}
+
 /* Medical Indicators */
 .medical-indicators {
     display: flex;

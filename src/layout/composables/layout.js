@@ -1,15 +1,24 @@
-import { computed, reactive } from 'vue';
+import { computed, reactive, watch } from 'vue';
+import cache from '@/utils/cache';
+
+// Keys para el cache
+const CACHE_KEY_DARK_MODE = 'layout_dark_mode';
+const CACHE_KEY_MENU_DESKTOP_INACTIVE = 'layout_menu_desktop_inactive';
+
+// Cargar configuración desde cache
+const savedDarkMode = cache.getItem(CACHE_KEY_DARK_MODE) ?? false;
+const savedMenuDesktopInactive = cache.getItem(CACHE_KEY_MENU_DESKTOP_INACTIVE) ?? false;
 
 const layoutConfig = reactive({
     preset: 'Aura',
     primary: 'emerald',
     surface: null,
-    darkTheme: false,
+    darkTheme: savedDarkMode,
     menuMode: 'static'
 });
 
 const layoutState = reactive({
-    staticMenuDesktopInactive: false,
+    staticMenuDesktopInactive: savedMenuDesktopInactive,
     overlayMenuActive: false,
     profileSidebarVisible: false,
     configSidebarVisible: false,
@@ -17,6 +26,26 @@ const layoutState = reactive({
     menuHoverActive: false,
     activeMenuItem: null
 });
+
+// Aplicar modo oscuro al iniciar si está guardado
+if (savedDarkMode) {
+    document.documentElement.classList.add('app-dark');
+}
+
+// Watchers para guardar en cache cuando cambien los valores
+watch(
+    () => layoutConfig.darkTheme,
+    (newValue) => {
+        cache.setItem(CACHE_KEY_DARK_MODE, newValue);
+    }
+);
+
+watch(
+    () => layoutState.staticMenuDesktopInactive,
+    (newValue) => {
+        cache.setItem(CACHE_KEY_MENU_DESKTOP_INACTIVE, newValue);
+    }
+);
 
 export function useLayout() {
     const setActiveMenuItem = (item) => {

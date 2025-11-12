@@ -650,6 +650,76 @@ watch(
     box-shadow: 0 2px 6px rgba(2, 132, 199, 0.4);
 }
 
+/* Modo oscuro - Mejorar contraste de la información del paciente en el header */
+.app-dark .bg-primary-50 {
+    background: hsl(210, 30%, 20%) !important;
+}
+
+.app-dark .bg-primary-100 {
+    background: hsl(210, 30%, 25%) !important;
+}
+
+.app-dark .text-primary {
+    color: #60a5fa !important;
+}
+
+.app-dark .border-primary-500 {
+    border-color: #3b82f6 !important;
+}
+
+.app-dark .text-600 {
+    color: #d1d5db !important;
+}
+
+/* Modo oscuro - Información del número de admisión */
+.app-dark .bg-primary-100.px-2.py-1 {
+    background: hsl(210, 30%, 25%) !important;
+    border: 1px solid #3b82f6;
+}
+
+/* Modo oscuro - Estado de cama reservada */
+.app-dark .bg-yellow-50 {
+    background: hsl(45, 30%, 20%) !important;
+}
+
+.app-dark .border-yellow-500 {
+    border-color: #eab308 !important;
+}
+
+.app-dark .text-yellow-800 {
+    color: #fde047 !important;
+}
+
+.app-dark .text-yellow-600 {
+    color: #facc15 !important;
+}
+
+/* Modo oscuro - Estado de cama libre */
+.app-dark .bg-green-50 {
+    background: hsl(150, 30%, 20%) !important;
+}
+
+.app-dark .border-green-500 {
+    border-color: #22c55e !important;
+}
+
+.app-dark .text-green-800 {
+    color: #86efac !important;
+}
+
+.app-dark .text-green-600 {
+    color: #4ade80 !important;
+}
+
+/* Modo oscuro - Border de CIE-10 */
+.app-dark .border-primary-200 {
+    border-color: rgba(59, 130, 246, 0.3) !important;
+}
+
+.app-dark .text-primary-700 {
+    color: #93c5fd !important;
+}
+
 /* Responsive adjustments */
 @media (max-width: 768px) {
     .bed-drawer-tabs :deep(.p-tablist) {
