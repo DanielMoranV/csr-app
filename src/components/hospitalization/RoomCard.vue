@@ -698,7 +698,7 @@ const hasPendingTasks = (bed) => {
     position: relative;
     transition: all 0.2s ease;
     cursor: pointer;
-    border: 2px solid #cbd5e1;
+    border: 1px solid #e2e8f0;
     overflow: hidden;
     min-height: 120px;
     display: flex;
@@ -713,7 +713,7 @@ const hasPendingTasks = (bed) => {
 
 .bed-indicator--occupied {
     background-color: #ecfeff;
-    border: 2px solid #67e8f9;
+    border: 1px solid #67e8f9;
     color: #0e7490;
 }
 
@@ -725,7 +725,7 @@ const hasPendingTasks = (bed) => {
 /* Diferenciación por sexo del paciente - solo clases para mantener compatibilidad */
 .bed-indicator--occupied-male {
     background-color: #ecfeff;
-    border: 2px solid #67e8f9;
+    border: 1px solid #67e8f9;
     color: #0e7490;
 }
 
@@ -736,7 +736,7 @@ const hasPendingTasks = (bed) => {
 
 .bed-indicator--occupied-female {
     background-color: #ecfeff;
-    border: 2px solid #67e8f9;
+    border: 1px solid #67e8f9;
     color: #0e7490;
 }
 
@@ -747,7 +747,7 @@ const hasPendingTasks = (bed) => {
 
 .bed-indicator--reserved {
     background: linear-gradient(135deg, #fef3c7 0%, #fde68a 100%);
-    border: 2px solid #fbbf24;
+    border: 1px solid #fbbf24;
     color: #92400e;
 }
 
@@ -757,14 +757,14 @@ const hasPendingTasks = (bed) => {
 }
 
 .bed-indicator--free {
-    background-color: #f0fdf4;
-    border: 2px solid #86efac;
+    background-color: transparent;
+    border: 1px solid #e2e8f0;
     color: #15803d;
 }
 
 .bed-indicator--free:hover {
-    background-color: #dcfce7;
-    border-color: #4ade80;
+    background-color: #f8fafc;
+    border-color: #cbd5e1;
 }
 
 .bed-indicator--alert {
