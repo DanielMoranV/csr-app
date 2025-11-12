@@ -191,31 +191,40 @@ export const useHospitalizationStore = defineStore('hospitalization', () => {
         const deletedHospitalization = eventData.data;
 
         if (deletedHospitalization && state.status) {
-            // Find and update the specific bed/room that was affected
-            const bedId = deletedHospitalization.id_beds || deletedHospitalization.id;
+            // Extract identifiers for matching
+            const deletedId = deletedHospitalization.id;
+            const deletedNumber = deletedHospitalization.number;
+            const bedInfo = deletedHospitalization.bed;
 
-            if (bedId) {
-                // Look for the bed in all rooms and clear its attention
-                let found = false;
-                state.status.forEach((room) => {
-                    if (room.beds) {
-                        room.beds.forEach((bed) => {
-                            if (bed.id === bedId || (bed.attention && bed.attention.hospital_attention_id === deletedHospitalization.id)) {
-                                // Clear the bed's attention information
-                                bed.attention = null;
-                                bed.status = 'free';
-                                found = true;
-                            }
-                        });
-                    }
-                });
+            // Look for the bed in all rooms and clear its attention
+            let found = false;
+            state.status.forEach((room) => {
+                if (room.beds) {
+                    room.beds.forEach((bed) => {
+                        // Match by multiple criteria:
+                        // 1. Bed ID from event bed data
+                        // 2. Attention hospital_attention_id matching deleted ID
+                        // 3. Attention number matching deleted number (primary match)
+                        const matchesBedId = bedInfo && bed.id === bedInfo.id;
+                        const matchesAttentionId = bed.attention && bed.attention.hospital_attention_id === deletedId;
+                        const matchesNumber = bed.attention && bed.attention.number === deletedNumber;
 
-                if (!found) {
-                    // If the bed wasn't found, refresh all data
-                    fetchHospitalizationStatus();
+                        if (matchesBedId || matchesAttentionId || matchesNumber) {
+                            // Clear the bed's attention information and mark as free
+                            bed.attention = null;
+                            bed.status = 'free';
+                            bed.is_reserved = false;
+                            found = true;
+
+                            console.log(`Bed freed: Room ${room.room_number}, Bed ${bed.name} - Admission #${deletedNumber} deleted`);
+                        }
+                    });
                 }
-            } else {
-                // If no bed ID is provided, refresh all data
+            });
+
+            if (!found) {
+                console.warn(`Bed not found for deleted hospitalization #${deletedNumber} (ID: ${deletedId}). Refreshing all data.`);
+                // If the bed wasn't found, refresh all data
                 fetchHospitalizationStatus();
             }
         } else {
