@@ -745,6 +745,22 @@ const hasPendingTasks = (bed) => {
     border-color: #22d3ee;
 }
 
+/* Estilos para tareas vencidas - Parpadeo rojo - DEBE IR DESPUÉS DE OCCUPIED */
+.bed-indicator--overdue {
+    animation: overdue-blink 1.5s ease-in-out infinite !important;
+    border: 2px solid hsl(0, 70%, 50%) !important;
+    position: relative;
+    background: hsl(0, 80%, 90%) !important;
+}
+
+/* Estilos para tareas pendientes - Parpadeo naranja - DEBE IR DESPUÉS DE OCCUPIED */
+.bed-indicator--pending {
+    animation: pending-blink 2s ease-in-out infinite !important;
+    border: 2px solid hsl(30, 90%, 50%) !important;
+    position: relative;
+    background: hsl(30, 90%, 85%) !important;
+}
+
 .bed-indicator--reserved {
     background: linear-gradient(135deg, #fef3c7 0%, #fde68a 100%);
     border: 1px solid #fbbf24;
@@ -785,54 +801,94 @@ const hasPendingTasks = (bed) => {
     }
 }
 
-/* Estilos para tareas vencidas - Parpadeo rojo */
-.bed-indicator--overdue {
-    animation: overdue-blink 1.5s ease-in-out infinite !important;
-    border-color: var(--red-600) !important;
-    position: relative;
-}
-
+/* Keyframes para tareas vencidas */
 @keyframes overdue-blink {
     0%,
     100% {
-        background-color: #fee2e2;
-        border-color: var(--red-600);
+        background: hsl(0, 80%, 90%) !important;
+        border-color: hsl(0, 70%, 50%);
         box-shadow:
-            0 0 0 0 rgba(239, 68, 68, 0.7),
-            0 4px 12px rgba(239, 68, 68, 0.3);
+            0 0 0 0 hsla(0, 70%, 50%, 0.7),
+            0 4px 12px hsla(0, 70%, 50%, 0.3);
     }
     50% {
-        background-color: #fca5a5;
-        border-color: var(--red-700);
+        background: hsl(0, 85%, 65%) !important;
+        border-color: hsl(0, 75%, 40%);
         box-shadow:
-            0 0 0 12px rgba(239, 68, 68, 0),
-            0 8px 20px rgba(239, 68, 68, 0.5);
+            0 0 0 12px hsla(0, 70%, 50%, 0),
+            0 8px 20px hsla(0, 70%, 50%, 0.5);
     }
 }
 
-/* Estilos para tareas pendientes - Parpadeo naranja */
-.bed-indicator--pending {
-    animation: pending-blink 2s ease-in-out infinite !important;
-    border-color: var(--orange-500) !important;
-    position: relative;
-}
-
+/* Keyframes para tareas pendientes */
 @keyframes pending-blink {
     0%,
     100% {
-        background-color: #ffedd5;
-        border-color: var(--orange-500);
+        background: hsl(30, 90%, 85%) !important;
+        border-color: hsl(30, 90%, 50%);
         box-shadow:
-            0 0 0 0 rgba(249, 115, 22, 0.6),
-            0 4px 12px rgba(249, 115, 22, 0.2);
+            0 0 0 0 hsla(30, 90%, 50%, 0.6),
+            0 4px 12px hsla(30, 90%, 50%, 0.2);
     }
     50% {
-        background-color: #fed7aa;
-        border-color: var(--orange-600);
+        background: hsl(30, 95%, 65%) !important;
+        border-color: hsl(30, 95%, 45%);
         box-shadow:
-            0 0 0 10px rgba(249, 115, 22, 0),
-            0 6px 16px rgba(249, 115, 22, 0.4);
+            0 0 0 10px hsla(30, 90%, 50%, 0),
+            0 6px 16px hsla(30, 90%, 50%, 0.4);
     }
+}
+
+/* Keyframes para modo oscuro - tareas vencidas */
+@keyframes overdue-blink-dark {
+    0%,
+    100% {
+        background: hsl(0, 60%, 35%) !important;
+        border-color: hsl(0, 70%, 60%);
+        box-shadow:
+            0 0 0 0 hsla(0, 70%, 60%, 0.7),
+            0 4px 12px hsla(0, 70%, 60%, 0.3);
+    }
+    50% {
+        background: hsl(0, 70%, 50%) !important;
+        border-color: hsl(0, 80%, 70%);
+        box-shadow:
+            0 0 0 12px hsla(0, 70%, 60%, 0),
+            0 8px 20px hsla(0, 70%, 60%, 0.5);
+    }
+}
+
+/* Keyframes para modo oscuro - tareas pendientes */
+@keyframes pending-blink-dark {
+    0%,
+    100% {
+        background: hsl(35, 85%, 40%) !important;
+        border-color: hsl(35, 90%, 65%);
+        box-shadow:
+            0 0 0 0 hsla(35, 90%, 65%, 0.6),
+            0 4px 12px hsla(35, 90%, 65%, 0.2);
+    }
+    50% {
+        background: hsl(35, 90%, 55%) !important;
+        border-color: hsl(35, 95%, 75%);
+        box-shadow:
+            0 0 0 10px hsla(35, 90%, 65%, 0),
+            0 6px 16px hsla(35, 90%, 65%, 0.4);
+    }
+}
+
+/* Modo oscuro para tareas vencidas */
+.app-dark .bed-indicator--overdue {
+    animation: overdue-blink-dark 1.5s ease-in-out infinite !important;
+    background: hsl(0, 60%, 35%) !important;
+    border-color: hsl(0, 70%, 60%) !important;
+}
+
+/* Modo oscuro para tareas pendientes */
+.app-dark .bed-indicator--pending {
+    animation: pending-blink-dark 2s ease-in-out infinite !important;
+    background: hsl(35, 85%, 40%) !important;
+    border-color: hsl(35, 90%, 65%) !important;
 }
 
 /* Estilos para tareas por vencer */
@@ -1082,6 +1138,60 @@ const hasPendingTasks = (bed) => {
 
 .sex-icon--f {
     color: #db2777;
+}
+
+/* Modo oscuro - Mejorar contraste de información de paciente */
+.app-dark .patient-name {
+    color: #ffffff !important;
+}
+
+.app-dark .doctor-name {
+    color: #d1d5db !important;
+}
+
+.app-dark .doctor-name i {
+    color: #d1d5db !important;
+}
+
+.app-dark .patient-sub-info {
+    color: #d1d5db !important;
+}
+
+.app-dark .sub-info-item {
+    color: #d1d5db !important;
+}
+
+.app-dark .sub-info-item i {
+    color: #d1d5db !important;
+}
+
+.app-dark .sex-item--male {
+    color: #60a5fa !important;
+}
+
+.app-dark .sex-item--female {
+    color: #f472b6 !important;
+}
+
+.app-dark .sex-icon--m {
+    color: #60a5fa !important;
+}
+
+.app-dark .sex-icon--f {
+    color: #f472b6 !important;
+}
+
+.app-dark .entry-time {
+    color: #d1d5db !important;
+    background: rgba(0, 0, 0, 0.3) !important;
+}
+
+.app-dark .copy-icon {
+    color: #60a5fa !important;
+}
+
+.app-dark .copy-icon:hover {
+    color: #93c5fd !important;
 }
 
 /* Medical Indicators */
