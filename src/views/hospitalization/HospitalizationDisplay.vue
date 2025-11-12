@@ -510,7 +510,13 @@ onUnmounted(() => {
                                     {{ bed.room_type_formatted }}
                                 </span>
                             </div>
-                            <div class="vr-patient">{{ bed.patient_name }}</div>
+                            <div class="vr-patient">
+                                <div class="vr-patient-name">{{ bed.patient_name }}</div>
+                                <div class="vr-patient-doctor" v-if="bed.doctor">
+                                    <i class="pi pi-user-md"></i>
+                                    {{ bed.doctor }}
+                                </div>
+                            </div>
                             <div class="vr-date">{{ bed.entry_date_formatted }}</div>
                             <div class="vr-days">{{ bed.days }}</div>
                         </div>
@@ -530,7 +536,13 @@ onUnmounted(() => {
                                     {{ bed.room_type_formatted }}
                                 </span>
                             </div>
-                            <div class="vr-patient">{{ bed.patient_name }}</div>
+                            <div class="vr-patient">
+                                <div class="vr-patient-name">{{ bed.patient_name }}</div>
+                                <div class="vr-patient-doctor" v-if="bed.doctor">
+                                    <i class="pi pi-user-md"></i>
+                                    {{ bed.doctor }}
+                                </div>
+                            </div>
                             <div class="vr-date">{{ bed.entry_date_formatted }}</div>
                             <div class="vr-days">{{ bed.days }}</div>
                         </div>
@@ -561,7 +573,13 @@ onUnmounted(() => {
                                     {{ bed.room_type_formatted }}
                                 </span>
                             </div>
-                            <div class="vr-patient">{{ bed.patient_name }}</div>
+                            <div class="vr-patient">
+                                <div class="vr-patient-name">{{ bed.patient_name }}</div>
+                                <div class="vr-patient-doctor" v-if="bed.doctor">
+                                    <i class="pi pi-user-md"></i>
+                                    {{ bed.doctor }}
+                                </div>
+                            </div>
                             <div class="vr-date">{{ bed.entry_date_formatted }}</div>
                             <div class="vr-days">{{ bed.days }}</div>
                         </div>
@@ -1467,13 +1485,45 @@ onUnmounted(() => {
 }
 
 .vr-patient {
+    display: flex;
+    flex-direction: column;
+    gap: 0.125rem;
+    padding-left: 0.5rem;
+    min-width: 0;
+    flex: 1;
+    justify-content: center;
+    align-items: flex-start;
+}
+
+.vr-patient-name {
     font-weight: 700;
     font-size: 1.125rem;
     color: var(--text-color);
-    padding-left: 0.5rem;
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
+    line-height: 1.2;
+    text-align: left;
+    width: 100%;
+}
+
+.vr-patient-doctor {
+    display: flex;
+    align-items: center;
+    gap: 0.25rem;
+    font-size: 0.75rem;
+    font-weight: 500;
+    color: var(--text-color-secondary);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    text-align: left;
+    width: 100%;
+}
+
+.vr-patient-doctor i {
+    font-size: 0.688rem;
+    flex-shrink: 0;
 }
 
 .vr-date {
@@ -1506,8 +1556,12 @@ onUnmounted(() => {
         padding: 0.625rem 0.875rem;
     }
 
-    .vr-patient {
+    .vr-patient-name {
         font-size: 1.25rem;
+    }
+
+    .vr-patient-doctor {
+        font-size: 0.813rem;
     }
 
     .vr-date {
@@ -1536,8 +1590,12 @@ onUnmounted(() => {
         font-size: 1.125rem;
     }
 
-    .vr-patient {
+    .vr-patient-name {
         font-size: 1.125rem;
+    }
+
+    .vr-patient-doctor {
+        font-size: 0.75rem;
     }
 
     .vr-date {
@@ -1562,8 +1620,12 @@ onUnmounted(() => {
         padding: 0.375rem 0.625rem;
     }
 
-    .vr-patient {
+    .vr-patient-name {
         font-size: 1rem;
+    }
+
+    .vr-patient-doctor {
+        font-size: 0.688rem;
     }
 
     .vr-date {
@@ -1598,8 +1660,12 @@ onUnmounted(() => {
         padding: 0.25rem 0.5rem;
     }
 
-    .vr-patient {
+    .vr-patient-name {
         font-size: 0.938rem;
+    }
+
+    .vr-patient-doctor {
+        font-size: 0.625rem;
     }
 
     .vr-date {
