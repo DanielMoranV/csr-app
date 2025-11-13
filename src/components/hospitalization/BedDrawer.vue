@@ -355,7 +355,11 @@ const handleCancelReservation = async () => {
     isLoadingReservation.value = true;
 
     try {
-        await reservationsStore.cancelReservation(activeReservation.value.id);
+        // Pasar los datos completos de la reserva para que el backend tenga todos los campos requeridos
+        await reservationsStore.cancelReservation(activeReservation.value.id, {
+            id_beds: activeReservation.value.id_beds,
+            id_users: activeReservation.value.id_users
+        });
 
         toast.add({
             severity: 'success',
@@ -447,15 +451,15 @@ watch(
                 </div>
 
                 <!-- Estado cuando la cama está reservada -->
-                <div v-else-if="isReserved && activeReservation" class="bg-yellow-50 p-2 border-round border-l-3 border-yellow-500">
+                <div v-else-if="isReserved && activeReservation" class="reservation-header-badge">
                     <div class="flex items-center justify-between gap-2 mb-2">
                         <div class="flex items-center gap-2">
-                            <i class="pi pi-calendar-plus text-yellow-600 text-sm"></i>
-                            <span class="text-yellow-800 text-sm font-semibold">Cama Reservada</span>
+                            <i class="pi pi-calendar-plus reservation-icon"></i>
+                            <span class="reservation-title">Cama Reservada</span>
                         </div>
                         <Tag value="RESERVADA" severity="warn" class="text-xs" />
                     </div>
-                    <div class="text-xs text-600 flex flex-col gap-1">
+                    <div class="text-xs reservation-details flex flex-col gap-1">
                         <div v-if="activeReservation.user" class="flex items-center gap-1">
                             <i class="pi pi-user"></i>
                             <span>Por: {{ activeReservation.user.name }}</span>
@@ -528,38 +532,38 @@ watch(
 
             <!-- Estado cuando la cama está reservada -->
             <div v-else-if="isReserved && activeReservation" class="flex flex-col items-center justify-center h-full text-center py-8">
-                <i class="pi pi-calendar-plus text-6xl text-yellow-400 mb-4"></i>
-                <h3 class="text-xl font-semibold text-gray-700 mb-2">Cama Reservada</h3>
-                <p class="text-gray-600 mb-4">Esta cama tiene una reserva activa.</p>
+                <i class="pi pi-calendar-plus reservation-main-icon mb-4"></i>
+                <h3 class="text-xl font-semibold reservation-main-title mb-2">Cama Reservada</h3>
+                <p class="reservation-main-subtitle mb-4">Esta cama tiene una reserva activa.</p>
 
                 <!-- Información de la reserva -->
-                <div class="bg-yellow-50 border-1 border-yellow-200 border-round-md p-4 mb-4 max-w-md w-full text-left">
-                    <div class="flex flex-col gap-2 text-sm">
-                        <div v-if="activeReservation.user" class="flex items-start gap-2">
-                            <i class="pi pi-user text-yellow-600 mt-1"></i>
-                            <div>
-                                <div class="font-semibold text-gray-700">Reservado por:</div>
-                                <div class="text-gray-600">{{ activeReservation.user.name }}</div>
+                <div class="reservation-info-card">
+                    <div class="flex flex-col gap-3 text-sm">
+                        <div v-if="activeReservation.user" class="flex items-start gap-3">
+                            <i class="pi pi-user reservation-info-icon"></i>
+                            <div class="flex-1">
+                                <div class="font-semibold reservation-info-label">Reservado por:</div>
+                                <div class="reservation-info-value">{{ activeReservation.user.name }}</div>
                             </div>
                         </div>
-                        <div v-if="activeReservation.notes" class="flex items-start gap-2">
-                            <i class="pi pi-comment text-yellow-600 mt-1"></i>
-                            <div>
-                                <div class="font-semibold text-gray-700">Notas:</div>
-                                <div class="text-gray-600">{{ activeReservation.notes }}</div>
+                        <div v-if="activeReservation.notes" class="flex items-start gap-3">
+                            <i class="pi pi-comment reservation-info-icon"></i>
+                            <div class="flex-1">
+                                <div class="font-semibold reservation-info-label">Notas:</div>
+                                <div class="reservation-info-value">{{ activeReservation.notes }}</div>
                             </div>
                         </div>
-                        <div v-if="activeReservation.created_at" class="flex items-start gap-2">
-                            <i class="pi pi-clock text-yellow-600 mt-1"></i>
-                            <div>
-                                <div class="font-semibold text-gray-700">Creada:</div>
-                                <div class="text-gray-600">{{ formatDate(activeReservation.created_at) }}</div>
+                        <div v-if="activeReservation.created_at" class="flex items-start gap-3">
+                            <i class="pi pi-clock reservation-info-icon"></i>
+                            <div class="flex-1">
+                                <div class="font-semibold reservation-info-label">Creada:</div>
+                                <div class="reservation-info-value">{{ formatDate(activeReservation.created_at) }}</div>
                             </div>
                         </div>
                     </div>
                 </div>
 
-                <div class="flex gap-2">
+                <div class="flex gap-2 flex-wrap justify-center">
                     <Button label="Editar Reserva" icon="pi pi-pencil" @click="handleEditReservation" severity="primary" />
                     <Button label="Cancelar Reserva" icon="pi pi-times-circle" @click="handleCancelReservation" :loading="isLoadingReservation" severity="danger" outlined />
                     <Button label="Cerrar" icon="pi pi-times" @click="drawerVisible = false" severity="secondary" outlined />
@@ -677,21 +681,120 @@ watch(
     border: 1px solid #3b82f6;
 }
 
+/* Reservation Header Badge - Modo claro */
+.reservation-header-badge {
+    background: linear-gradient(135deg, #fef3c7 0%, #fde68a 100%);
+    padding: 0.5rem;
+    border-radius: 8px;
+    border-left: 3px solid #f59e0b;
+    box-shadow: 0 1px 3px rgba(245, 158, 11, 0.1);
+}
+
+.reservation-icon {
+    color: #d97706;
+    font-size: 0.875rem;
+}
+
+.reservation-title {
+    color: #92400e;
+    font-size: 0.875rem;
+    font-weight: 600;
+}
+
+.reservation-details {
+    color: #78716c;
+}
+
+/* Reservation Main Content - Modo claro */
+.reservation-main-icon {
+    font-size: 3.75rem;
+    color: #fbbf24;
+    filter: drop-shadow(0 4px 8px rgba(251, 191, 36, 0.3));
+}
+
+.reservation-main-title {
+    color: #78716c;
+}
+
+.reservation-main-subtitle {
+    color: #a8a29e;
+}
+
+.reservation-info-card {
+    background: linear-gradient(135deg, #fef3c7 0%, #fde68a 100%);
+    border: 1px solid #fcd34d;
+    border-radius: 12px;
+    padding: 1.5rem;
+    margin-bottom: 1.5rem;
+    max-width: 28rem;
+    width: 100%;
+    text-align: left;
+    box-shadow: 0 4px 12px rgba(245, 158, 11, 0.15);
+}
+
+.reservation-info-icon {
+    color: #d97706;
+    margin-top: 0.25rem;
+    font-size: 1rem;
+}
+
+.reservation-info-label {
+    color: #92400e;
+    margin-bottom: 0.25rem;
+}
+
+.reservation-info-value {
+    color: #78716c;
+}
+
 /* Modo oscuro - Estado de cama reservada */
-.app-dark .bg-yellow-50 {
-    background: hsl(45, 30%, 20%) !important;
+.app-dark .reservation-header-badge {
+    background: linear-gradient(135deg, hsl(45, 40%, 15%) 0%, hsl(45, 35%, 18%) 100%);
+    border-left-color: #f59e0b;
+    box-shadow: 0 1px 3px rgba(245, 158, 11, 0.2);
 }
 
-.app-dark .border-yellow-500 {
-    border-color: #eab308 !important;
+.app-dark .reservation-icon {
+    color: #fbbf24;
 }
 
-.app-dark .text-yellow-800 {
-    color: #fde047 !important;
+.app-dark .reservation-title {
+    color: #fde047;
 }
 
-.app-dark .text-yellow-600 {
-    color: #facc15 !important;
+.app-dark .reservation-details {
+    color: #d6d3d1;
+}
+
+.app-dark .reservation-main-icon {
+    color: #fbbf24;
+    filter: drop-shadow(0 4px 8px rgba(251, 191, 36, 0.4));
+}
+
+.app-dark .reservation-main-title {
+    color: #e7e5e4;
+}
+
+.app-dark .reservation-main-subtitle {
+    color: #a8a29e;
+}
+
+.app-dark .reservation-info-card {
+    background: linear-gradient(135deg, hsl(45, 40%, 15%) 0%, hsl(45, 35%, 18%) 100%);
+    border: 1px solid rgba(251, 191, 36, 0.3);
+    box-shadow: 0 4px 12px rgba(245, 158, 11, 0.2);
+}
+
+.app-dark .reservation-info-icon {
+    color: #fbbf24;
+}
+
+.app-dark .reservation-info-label {
+    color: #fde047;
+}
+
+.app-dark .reservation-info-value {
+    color: #d6d3d1;
 }
 
 /* Modo oscuro - Estado de cama libre */

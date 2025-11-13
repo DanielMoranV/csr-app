@@ -44,9 +44,15 @@ export const useBedReservationsStore = defineStore('bedReservations', () => {
         }
     }
 
-    async function cancelReservation(id) {
+    async function cancelReservation(id, reservationData = {}) {
         try {
-            const response = await bedReservationsApi.update(id, { status: 'cancelada' });
+            // Construir el payload con los datos de la reserva y el status cancelada
+            const payload = {
+                ...reservationData,
+                status: 'cancelada'
+            };
+
+            const response = await bedReservationsApi.update(id, payload);
             const index = reservations.value.findIndex((r) => r.id === id);
             if (index !== -1) {
                 reservations.value[index] = response.data;

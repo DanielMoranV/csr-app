@@ -1612,4 +1612,48 @@ const hasPendingTasks = (bed) => {
         min-height: 120px;
     }
 }
+
+/* Modo oscuro - Camas reservadas */
+.app-dark .bed-content--reserved-minimal {
+    background: linear-gradient(135deg, hsl(45, 40%, 15%) 0%, hsl(45, 35%, 18%) 100%);
+}
+
+.app-dark .reservation-status-minimal {
+    color: #fde047;
+}
+
+.app-dark .reservation-status-minimal i {
+    color: #fbbf24;
+}
+
+.app-dark .reservation-detail-minimal {
+    color: #facc15;
+}
+
+.app-dark .reservation-detail-minimal i {
+    color: #fbbf24;
+}
+
+.app-dark .bed-notes-minimal {
+    background: rgba(0, 0, 0, 0.3);
+    border-top-color: rgba(251, 191, 36, 0.4);
+}
+
+.app-dark .bed-notes-minimal .note-item {
+    color: #fde047;
+}
+
+.app-dark .bed-notes-minimal .note-label {
+    color: #fbbf24;
+}
+
+.app-dark .bed-indicator--reserved {
+    background: linear-gradient(135deg, hsl(45, 40%, 15%) 0%, hsl(45, 35%, 18%) 100%);
+    border-color: rgba(251, 191, 36, 0.3);
+}
+
+.app-dark .bed-indicator--reserved:hover {
+    border-color: #fbbf24;
+    box-shadow: 0 2px 8px rgba(251, 191, 36, 0.25);
+}
 </style>
