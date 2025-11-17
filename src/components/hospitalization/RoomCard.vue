@@ -307,14 +307,6 @@ const hasPendingTasks = (bed) => {
     return attention.tasks.some((task) => task.status === 'pendiente' && (!task.alert_status || task.alert_status === 'normal'));
 };
 
-// Función para obtener el severity del tipo de atención
-const getTypeAttentionSeverity = (typeAttention) => {
-    if (!typeAttention) return null;
-    const type = String(typeAttention).toLowerCase();
-    if (type === 'p') return 'info'; // Azul para programado
-    if (type === 's') return 'danger'; // Rojo para SOP/servicio
-    return 'secondary'; // Por defecto
-};
 </script>
 
 <template>
@@ -393,7 +385,7 @@ const getTypeAttentionSeverity = (typeAttention) => {
                                 <Tag
                                     v-if="getAttentionType(bed.attention)"
                                     :value="getAttentionTypeLabel(getAttentionType(bed.attention))"
-                                    :severity="getAttentionType(bed.attention) === 'particular' ? 'contrast' : 'secondary'"
+                                    :severity="getAttentionType(bed.attention) === 'particular' ? 'info' : 'danger'"
                                     class="attention-type-tag"
                                     v-tooltip.top="getAttentionTypeTooltip(getAttentionType(bed.attention))"
                                 />
@@ -449,13 +441,6 @@ const getTypeAttentionSeverity = (typeAttention) => {
                                 :show-icon="true"
                                 :show-label="false"
                                 v-tooltip.top="`Evaluación CUDYR: ${getCudyrCategory(bed.attention.details)}`"
-                            />
-                            <Tag
-                                v-if="bed.attention.type_attention"
-                                :value="bed.attention.type_attention.toUpperCase()"
-                                :severity="getTypeAttentionSeverity(bed.attention.type_attention)"
-                                class="indicator-tag type-attention-tag"
-                                v-tooltip.top="`Tipo de atención: ${bed.attention.type_attention === 'p' ? 'Programado' : bed.attention.type_attention === 's' ? 'SOP' : bed.attention.type_attention}`"
                             />
                             <Tag v-if="hasDetailField(bed.attention.details, 'ram')" value="RAM" severity="warn" class="indicator-tag" v-tooltip.top="getLatestDetails(bed.attention.details)?.ram || 'Reacciones Alérgicas a Medicamentos'" />
                             <Tag
@@ -1287,32 +1272,6 @@ const getTypeAttentionSeverity = (typeAttention) => {
     font-size: 0.625rem !important;
     padding: 0.125rem 0.375rem !important;
     border-radius: 4px;
-}
-
-/* Estilos personalizados para tags de tipo de atención */
-.type-attention-tag.p-tag-info {
-    background: #3b82f6 !important;
-    color: white !important;
-    border: none !important;
-    font-weight: 600 !important;
-}
-
-.type-attention-tag.p-tag-danger {
-    background: #ef4444 !important;
-    color: white !important;
-    border: none !important;
-    font-weight: 600 !important;
-}
-
-/* Modo oscuro - Tags de tipo de atención */
-.app-dark .type-attention-tag.p-tag-info {
-    background: #60a5fa !important;
-    color: #1e3a8a !important;
-}
-
-.app-dark .type-attention-tag.p-tag-danger {
-    background: #f87171 !important;
-    color: #7f1d1d !important;
 }
 
 /* Bed Footer */
