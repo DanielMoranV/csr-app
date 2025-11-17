@@ -433,6 +433,10 @@ watch(
                             <i class="pi pi-calendar text-xs"></i>
                             <span>{{ formatDate(attention.entry_date) }}</span>
                         </div>
+                        <div v-if="bed.attention.insurance" class="flex items-center gap-1 text-600">
+                            <i class="pi pi-shield text-xs"></i>
+                            <span>{{ bed.attention.insurance }}</span>
+                        </div>
                         <div v-if="attention.tasks && attention.tasks.length > 0" class="flex items-center gap-1">
                             <i class="pi pi-list-check text-orange-500 text-xs"></i>
                             <span class="text-600">{{ attention.tasks.length }}</span>

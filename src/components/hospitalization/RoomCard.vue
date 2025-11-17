@@ -179,6 +179,31 @@ const getDaysInHospital = (entryDate) => {
     }
 };
 
+// Función para determinar el tipo de atención (Particular o Seguros)
+const getAttentionType = (attention) => {
+    if (!attention) return null;
+    // Si code_insurance es 90, es atención particular
+    if (attention.code_insurance === 90 || attention.code_insurance === '90') {
+        return 'particular';
+    }
+    // Cualquier otro caso es de seguros
+    return 'seguros';
+};
+
+// Función para obtener el label del tipo de atención
+const getAttentionTypeLabel = (type) => {
+    if (type === 'particular') return 'P';
+    if (type === 'seguros') return 'S';
+    return '';
+};
+
+// Función para obtener el tooltip del tipo de atención
+const getAttentionTypeTooltip = (type) => {
+    if (type === 'particular') return 'Atención Particular';
+    if (type === 'seguros') return 'Atención de Seguros';
+    return '';
+};
+
 // Función para formatear fecha de reserva
 const formatReservationDate = (dateString) => {
     if (!dateString) return '';
@@ -355,6 +380,14 @@ const hasPendingTasks = (bed) => {
                                     <i class="pi pi-clock mr-1"></i>
                                     {{ getDaysInHospital(bed.attention.entry_date) }}
                                 </small>
+                                <!-- Indicador discreto de tipo de atención -->
+                                <Tag
+                                    v-if="getAttentionType(bed.attention)"
+                                    :value="getAttentionTypeLabel(getAttentionType(bed.attention))"
+                                    :severity="getAttentionType(bed.attention) === 'particular' ? 'contrast' : 'secondary'"
+                                    class="attention-type-tag"
+                                    v-tooltip.top="getAttentionTypeTooltip(getAttentionType(bed.attention))"
+                                />
                             </div>
                             <div class="bed-alerts">
                                 <i v-if="bed.notes" class="pi pi-file-edit text-info" title="Tiene notas"></i>
@@ -1256,6 +1289,15 @@ const hasPendingTasks = (bed) => {
     background: var(--surface-100);
     padding: 0.25rem 0.5rem;
     border-radius: 4px;
+}
+
+/* Attention Type Tag - Discreto */
+.attention-type-tag {
+    font-size: 0.6rem !important;
+    padding: 0.15rem 0.35rem !important;
+    border-radius: 3px;
+    font-weight: 700;
+    letter-spacing: 0.5px;
 }
 
 /* Free Bed Indicator */
