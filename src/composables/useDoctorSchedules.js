@@ -1,0 +1,364 @@
+import { useDoctorSchedulesStore } from '@/store/doctorSchedulesStore';
+import { useToast } from 'primevue/usetoast';
+import { computed, ref } from 'vue';
+import { apiUtils } from '@/api/axios.js';
+
+export function useDoctorSchedules() {
+    const schedulesStore = useDoctorSchedulesStore();
+    const toast = useToast();
+
+    const operationInProgress = ref(false);
+
+    // Store state - Schedules
+    const schedules = computed(() => schedulesStore.filteredSchedules);
+    const allSchedules = computed(() => schedulesStore.allSchedules);
+    const upcomingSchedules = computed(() => schedulesStore.upcomingSchedules);
+    const todaySchedules = computed(() => schedulesStore.todaySchedules);
+    const activeSchedules = computed(() => schedulesStore.activeSchedules);
+    const currentSchedule = computed(() => schedulesStore.state.currentSchedule);
+    const isLoading = computed(() => schedulesStore.state.isLoading);
+    const isSaving = computed(() => schedulesStore.state.isSaving);
+
+    // Store state - Absences
+    const absences = computed(() => schedulesStore.allAbsences);
+    const upcomingAbsences = computed(() => schedulesStore.upcomingAbsences);
+    const activeAbsences = computed(() => schedulesStore.activeAbsences);
+
+    // Store state - Medical Shifts
+    const medicalShifts = computed(() => schedulesStore.allMedicalShifts);
+
+    // Filter options
+    const categoryOptions = computed(() => [
+        { label: 'Emergencia', value: 'emergency' },
+        { label: 'Ambulatorio', value: 'ambulatory' },
+        { label: 'Hospitalario', value: 'hospitable' }
+    ]);
+
+    const statusOptions = computed(() => [
+        { label: 'Pendiente', value: 'pending' },
+        { label: 'Confirmado', value: 'confirmed' },
+        { label: 'Cancelado', value: 'cancelled' },
+        { label: 'Completado', value: 'completed' }
+    ]);
+
+    // Actions - Schedules
+    const fetchSchedules = async (params = {}) => {
+        try {
+            await schedulesStore.fetchSchedules(params);
+        } catch (error) {
+            handleError(error, 'Error al cargar los horarios');
+        }
+    };
+
+    const fetchScheduleById = async (id) => {
+        try {
+            return await schedulesStore.fetchScheduleById(id);
+        } catch (error) {
+            handleError(error, 'Error al cargar el horario');
+            throw error;
+        }
+    };
+
+    const createSchedule = async (scheduleData) => {
+        operationInProgress.value = true;
+        try {
+            const response = await schedulesStore.createSchedule(scheduleData);
+            toast.add({
+                severity: 'success',
+                summary: 'Éxito',
+                detail: 'Horario creado correctamente',
+                life: 3000
+            });
+            return response;
+        } catch (error) {
+            handleError(error, 'Error al crear el horario');
+            throw error;
+        } finally {
+            operationInProgress.value = false;
+        }
+    };
+
+    const updateSchedule = async (id, scheduleData) => {
+        operationInProgress.value = true;
+        try {
+            const response = await schedulesStore.updateSchedule(id, scheduleData);
+            toast.add({
+                severity: 'success',
+                summary: 'Éxito',
+                detail: 'Horario actualizado correctamente',
+                life: 3000
+            });
+            return response;
+        } catch (error) {
+            handleError(error, 'Error al actualizar el horario');
+            throw error;
+        } finally {
+            operationInProgress.value = false;
+        }
+    };
+
+    const deleteSchedule = async (id) => {
+        operationInProgress.value = true;
+        try {
+            await schedulesStore.deleteSchedule(id);
+            toast.add({
+                severity: 'success',
+                summary: 'Éxito',
+                detail: 'Horario eliminado correctamente',
+                life: 3000
+            });
+        } catch (error) {
+            handleError(error, 'Error al eliminar el horario');
+            throw error;
+        } finally {
+            operationInProgress.value = false;
+        }
+    };
+
+    const confirmSchedule = async (id) => {
+        operationInProgress.value = true;
+        try {
+            await schedulesStore.confirmSchedule(id);
+            toast.add({
+                severity: 'info',
+                summary: 'Confirmado',
+                detail: 'Horario confirmado correctamente',
+                life: 3000
+            });
+        } catch (error) {
+            handleError(error, 'Error al confirmar el horario');
+            throw error;
+        } finally {
+            operationInProgress.value = false;
+        }
+    };
+
+    const cancelSchedule = async (id, reason) => {
+        operationInProgress.value = true;
+        try {
+            await schedulesStore.cancelSchedule(id, reason);
+            toast.add({
+                severity: 'warn',
+                summary: 'Cancelado',
+                detail: 'Horario cancelado correctamente',
+                life: 3000
+            });
+        } catch (error) {
+            handleError(error, 'Error al cancelar el horario');
+            throw error;
+        } finally {
+            operationInProgress.value = false;
+        }
+    };
+
+    const completeSchedule = async (id) => {
+        operationInProgress.value = true;
+        try {
+            await schedulesStore.completeSchedule(id);
+            toast.add({
+                severity: 'success',
+                summary: 'Completado',
+                detail: 'Horario marcado como completado',
+                life: 3000
+            });
+        } catch (error) {
+            handleError(error, 'Error al completar el horario');
+            throw error;
+        } finally {
+            operationInProgress.value = false;
+        }
+    };
+
+    const fetchScheduleStats = async () => {
+        try {
+            return await schedulesStore.fetchScheduleStats();
+        } catch (error) {
+            handleError(error, 'Error al cargar estadísticas de horarios');
+            throw error;
+        }
+    };
+
+    // Actions - Absences
+    const fetchAbsences = async (params = {}) => {
+        try {
+            await schedulesStore.fetchAbsences(params);
+        } catch (error) {
+            handleError(error, 'Error al cargar las ausencias');
+        }
+    };
+
+    const createAbsence = async (absenceData) => {
+        operationInProgress.value = true;
+        try {
+            const response = await schedulesStore.createAbsence(absenceData);
+            toast.add({
+                severity: 'success',
+                summary: 'Éxito',
+                detail: 'Ausencia registrada correctamente',
+                life: 3000
+            });
+            return response;
+        } catch (error) {
+            handleError(error, 'Error al registrar la ausencia');
+            throw error;
+        } finally {
+            operationInProgress.value = false;
+        }
+    };
+
+    const updateAbsence = async (id, absenceData) => {
+        operationInProgress.value = true;
+        try {
+            const response = await schedulesStore.updateAbsence(id, absenceData);
+            toast.add({
+                severity: 'success',
+                summary: 'Éxito',
+                detail: 'Ausencia actualizada correctamente',
+                life: 3000
+            });
+            return response;
+        } catch (error) {
+            handleError(error, 'Error al actualizar la ausencia');
+            throw error;
+        } finally {
+            operationInProgress.value = false;
+        }
+    };
+
+    const deleteAbsence = async (id) => {
+        operationInProgress.value = true;
+        try {
+            await schedulesStore.deleteAbsence(id);
+            toast.add({
+                severity: 'success',
+                summary: 'Éxito',
+                detail: 'Ausencia eliminada correctamente',
+                life: 3000
+            });
+        } catch (error) {
+            handleError(error, 'Error al eliminar la ausencia');
+            throw error;
+        } finally {
+            operationInProgress.value = false;
+        }
+    };
+
+    const fetchAbsenceStats = async () => {
+        try {
+            return await schedulesStore.fetchAbsenceStats();
+        } catch (error) {
+            handleError(error, 'Error al cargar estadísticas de ausencias');
+            throw error;
+        }
+    };
+
+    // Actions - Medical Shifts
+    const fetchMedicalShifts = async () => {
+        try {
+            await schedulesStore.fetchMedicalShifts();
+        } catch (error) {
+            handleError(error, 'Error al cargar los turnos médicos');
+        }
+    };
+
+    // Filters
+    const setDoctorFilter = (value) => schedulesStore.setFilter('doctor_id', value);
+    const setDateFilter = (value) => schedulesStore.setFilter('date', value);
+    const setCategoryFilter = (value) => schedulesStore.setFilter('category', value);
+    const setStatusFilter = (value) => schedulesStore.setFilter('status', value);
+    const setUpcomingFilter = (value) => schedulesStore.setFilter('upcoming', value);
+    const setTodayFilter = (value) => schedulesStore.setFilter('today', value);
+    const clearFilters = () => schedulesStore.clearFilters();
+
+    // Error handler
+    const handleError = (error, defaultMessage) => {
+        // Verificar si hay errores de validación específicos (422)
+        if (error?.response?.status === 422 && error?.response?.data?.errors) {
+            const errors = error.response.data.errors;
+
+            // Mostrar cada error de validación
+            Object.keys(errors).forEach((field) => {
+                const fieldErrors = errors[field];
+                if (Array.isArray(fieldErrors)) {
+                    fieldErrors.forEach((errorMsg) => {
+                        toast.add({
+                            severity: 'warn',
+                            summary: 'Error de validación',
+                            detail: errorMsg,
+                            life: 5000
+                        });
+                    });
+                }
+            });
+            return;
+        }
+
+        // Verificar conflictos de horarios o ausencias
+        if (error?.response?.status === 422) {
+            const message = error?.response?.data?.message;
+
+            if (message && (message.includes('conflicto') || message.includes('superpone'))) {
+                toast.add({
+                    severity: 'error',
+                    summary: 'Conflicto de horario',
+                    detail: message,
+                    life: 7000
+                });
+                return;
+            }
+        }
+
+        // Manejo de errores genéricos
+        const message = apiUtils.getMessage(error) || defaultMessage;
+        toast.add({
+            severity: 'error',
+            summary: 'Error',
+            detail: message,
+            life: 5000
+        });
+    };
+
+    return {
+        // Schedules
+        schedules,
+        allSchedules,
+        upcomingSchedules,
+        todaySchedules,
+        activeSchedules,
+        currentSchedule,
+        isLoading,
+        isSaving,
+        operationInProgress,
+        categoryOptions,
+        statusOptions,
+        fetchSchedules,
+        fetchScheduleById,
+        createSchedule,
+        updateSchedule,
+        deleteSchedule,
+        confirmSchedule,
+        cancelSchedule,
+        completeSchedule,
+        fetchScheduleStats,
+        // Absences
+        absences,
+        upcomingAbsences,
+        activeAbsences,
+        fetchAbsences,
+        createAbsence,
+        updateAbsence,
+        deleteAbsence,
+        fetchAbsenceStats,
+        // Medical Shifts
+        medicalShifts,
+        fetchMedicalShifts,
+        // Filters
+        setDoctorFilter,
+        setDateFilter,
+        setCategoryFilter,
+        setStatusFilter,
+        setUpcomingFilter,
+        setTodayFilter,
+        clearFilters
+    };
+}

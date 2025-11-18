@@ -195,6 +195,53 @@ export const MODULE_PERMISSIONS = {
         icon: 'pi pi-fw pi-sync',
         menuSection: 'Soporte Técnico',
         showInMenu: false // No mostrar en menú, es una subpágina
+    },
+
+    // Gestión de Médicos
+    doctors: {
+        name: 'doctors',
+        path: '/medicos',
+        positions: [
+            POSITIONS.SISTEMAS,
+            POSITIONS.DIRECTOR_MEDICO,
+            POSITIONS.ADMINISTRACION,
+            POSITIONS.RRHH,
+            POSITIONS.MEDICOS,
+            POSITIONS.EMERGENCIA,
+            POSITIONS.HOSPITALIZACION
+        ],
+        label: 'Médicos',
+        icon: 'pi pi-fw pi-user-md',
+        menuSection: 'Personal Médico'
+    },
+
+    // Gestión de Especialidades Médicas
+    medicalSpecialties: {
+        name: 'medical-specialties',
+        path: '/especialidades-medicas',
+        positions: [POSITIONS.SISTEMAS, POSITIONS.DIRECTOR_MEDICO, POSITIONS.ADMINISTRACION, POSITIONS.RRHH],
+        label: 'Especialidades',
+        icon: 'pi pi-fw pi-heart',
+        menuSection: 'Personal Médico'
+    },
+
+    // Gestión de Horarios de Médicos
+    doctorSchedules: {
+        name: 'doctor-schedules',
+        path: '/horarios-medicos',
+        positions: [
+            POSITIONS.SISTEMAS,
+            POSITIONS.DIRECTOR_MEDICO,
+            POSITIONS.ADMINISTRACION,
+            POSITIONS.RRHH,
+            POSITIONS.MEDICOS,
+            POSITIONS.EMERGENCIA,
+            POSITIONS.HOSPITALIZACION,
+            POSITIONS.QUIROFANO
+        ],
+        label: 'Horarios',
+        icon: 'pi pi-fw pi-calendar',
+        menuSection: 'Personal Médico'
     }
 };
 
@@ -248,7 +295,7 @@ export function generateMenuStructure() {
     });
 
     // Convertir a array en el orden deseado
-    const sectionOrder = ['Principal', 'Mi Cuenta', 'Administración', 'Hospitalización', 'SISCLIN', 'Soporte Técnico'];
+    const sectionOrder = ['Principal', 'Mi Cuenta', 'Administración', 'Personal Médico', 'Hospitalización', 'SISCLIN', 'Soporte Técnico'];
 
     return sectionOrder
         .filter((section) => sections[section])

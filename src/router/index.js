@@ -82,6 +82,24 @@ const router = createRouter({
                     name: MODULE_PERMISSIONS.hospitalTasks.name,
                     component: () => import('@/views/hospitalization/TasksView.vue'),
                     meta: { requiresAuth: true, positions: MODULE_PERMISSIONS.hospitalTasks.positions }
+                },
+                {
+                    path: MODULE_PERMISSIONS.doctors.path,
+                    name: MODULE_PERMISSIONS.doctors.name,
+                    component: () => import('@/views/doctors/Doctors.vue'),
+                    meta: { requiresAuth: true, positions: MODULE_PERMISSIONS.doctors.positions }
+                },
+                {
+                    path: MODULE_PERMISSIONS.medicalSpecialties.path,
+                    name: MODULE_PERMISSIONS.medicalSpecialties.name,
+                    component: () => import('@/views/doctors/MedicalSpecialties.vue'),
+                    meta: { requiresAuth: true, positions: MODULE_PERMISSIONS.medicalSpecialties.positions }
+                },
+                {
+                    path: MODULE_PERMISSIONS.doctorSchedules.path,
+                    name: MODULE_PERMISSIONS.doctorSchedules.name,
+                    component: () => import('@/views/doctors/DoctorSchedules.vue'),
+                    meta: { requiresAuth: true, positions: MODULE_PERMISSIONS.doctorSchedules.positions }
                 }
             ]
         },
