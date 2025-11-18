@@ -278,7 +278,7 @@ const hasActiveFilters = computed(() => {
 .header-icon-wrapper {
     display: flex;
     align-items: center;
-    justify-center;
+    justify-content: center;
     width: 70px;
     height: 70px;
     background: rgba(255, 255, 255, 0.2);
