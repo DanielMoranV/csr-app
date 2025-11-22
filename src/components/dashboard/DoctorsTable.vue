@@ -62,7 +62,7 @@ const formatStayDays = (days) => {
                 </template>
             </Column>
 
-            <Column field="total_attentions" header="Atenciones" :sortable="true" headerStyle="width: 150px">
+            <Column field="total_attentions" header="Atenciones" :sortable="true" headerStyle="width: 120px">
                 <template #body="{ data }">
                     <div class="attentions-cell">
                         <Badge :value="data.total_attentions" severity="success" size="large" />
@@ -70,14 +70,32 @@ const formatStayDays = (days) => {
                 </template>
             </Column>
 
-            <Column field="avg_stay_days" header="Estancia Promedio" :sortable="true" headerStyle="width: 180px">
+            <Column field="total_discharges" header="Egresos" :sortable="true" headerStyle="width: 110px">
                 <template #body="{ data }">
-                    <div class="stay-cell">
-                        <i class="pi pi-clock text-gray-400 mr-2"></i>
-                        <span>{{ formatStayDays(data.avg_stay_days) }}</span>
+                    <div class="discharges-cell">
+                        <Badge :value="data.total_discharges || 0" severity="info" />
                     </div>
                 </template>
             </Column>
+
+            <Column field="avg_length_of_stay" header="PP" :sortable="true" headerStyle="width: 100px">
+                <template #body="{ data }">
+                    <div class="stay-cell">
+                        <i class="pi pi-calendar-times text-purple-400 mr-1"></i>
+                        <span class="font-semibold">{{ formatStayDays(data.avg_length_of_stay) }}</span>
+                    </div>
+                </template>
+            </Column>
+
+            <!-- Columna: Estancia Promedio (Comentado - Incluye hospitalizaciones activas con NOW()) -->
+            <!-- <Column field="avg_stay_days" header="Estancia Prom." :sortable="true" headerStyle="width: 130px">
+                <template #body="{ data }">
+                    <div class="stay-cell">
+                        <i class="pi pi-clock text-gray-400 mr-1"></i>
+                        <span class="text-sm">{{ formatStayDays(data.avg_stay_days) }}</span>
+                    </div>
+                </template>
+            </Column> -->
         </DataTable>
     </div>
 </template>
@@ -135,6 +153,12 @@ const formatStayDays = (days) => {
 }
 
 .attentions-cell {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.discharges-cell {
     display: flex;
     align-items: center;
     justify-content: center;

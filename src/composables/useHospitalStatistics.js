@@ -227,6 +227,66 @@ export function useHospitalStatistics() {
         }
     };
 
+    // Limpiar caché de estadísticas
+    const clearCache = async (params) => {
+        loading.value = true;
+        error.value = null;
+
+        try {
+            const response = await hospitalStatistics.clearCache(params);
+
+            console.log('🧹 [HOSPITAL STATS] Caché limpiado:', response);
+
+            if (response.success) {
+                return response;
+            } else {
+                throw new Error(response.message || 'Error al limpiar caché');
+            }
+        } catch (err) {
+            error.value = err.message || 'Error al limpiar caché';
+            console.error('Error clearing cache:', err);
+            throw err;
+        } finally {
+            loading.value = false;
+        }
+    };
+
+    // Refrescar dashboard (limpiar caché + volver a cargar)
+    const refreshDashboard = async (params = {}) => {
+        loading.value = true;
+        error.value = null;
+
+        try {
+            const dateRange = params.start_date && params.end_date ? params : getDefaultDateRange();
+
+            console.log('🔄 [HOSPITAL STATS] Iniciando refresco del dashboard...');
+            console.log('🔄 [HOSPITAL STATS] Parámetros:', dateRange);
+
+            // Paso 1: Limpiar caché
+            console.log('🧹 [HOSPITAL STATS] Paso 1: Limpiando caché...');
+            const clearResponse = await clearCache(dateRange);
+            console.log('✅ [HOSPITAL STATS] Caché limpiado exitosamente:', clearResponse.data);
+
+            // Paso 2: Obtener estadísticas frescas
+            console.log('📊 [HOSPITAL STATS] Paso 2: Obteniendo estadísticas frescas...');
+            const dashboardData = await fetchDashboard(dateRange);
+            console.log('✅ [HOSPITAL STATS] Dashboard refrescado exitosamente');
+
+            return {
+                success: true,
+                message: 'Dashboard refrescado exitosamente',
+                clearData: clearResponse.data,
+                dashboardData: dashboardData
+            };
+        } catch (err) {
+            error.value = err.message || 'Error al refrescar dashboard';
+            console.error('❌ [HOSPITAL STATS] Error al refrescar dashboard:', err);
+            throw err;
+        } finally {
+            loading.value = false;
+        }
+    };
+
     // Computed properties
     const hasData = computed(() => dashboard.value !== null);
 
@@ -266,6 +326,8 @@ export function useHospitalStatistics() {
         fetchInsuranceStats,
         fetchTopDiagnoses,
         generateStats,
+        clearCache,
+        refreshDashboard,
         getDefaultDateRange,
 
         // Computed

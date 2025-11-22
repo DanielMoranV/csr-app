@@ -13,12 +13,24 @@ const props = defineProps({
     }
 });
 
-const chartData = computed(() => {
-    if (!props.diagnoses || Object.keys(props.diagnoses).length === 0) return null;
+// Obtener la lista de diagnósticos del objeto top_diagnoses
+const topDiagnosesList = computed(() => {
+    if (!props.diagnoses || !props.diagnoses.top_list || props.diagnoses.top_list.length === 0) {
+        return [];
+    }
+    return props.diagnoses.top_list;
+});
 
-    const entries = Object.entries(props.diagnoses);
-    const labels = entries.map(([code]) => code);
-    const data = entries.map(([, count]) => count);
+const chartData = computed(() => {
+    if (topDiagnosesList.value.length === 0) return null;
+
+    // Crear etiquetas con código y nombre truncado
+    const labels = topDiagnosesList.value.map((d) => {
+        const name = d.name.length > 30 ? d.name.substring(0, 30) + '...' : d.name;
+        return `${d.code} - ${name}`;
+    });
+
+    const data = topDiagnosesList.value.map((d) => d.count);
 
     // Colores vibrantes para cada diagnóstico
     const backgroundColors = [
@@ -66,10 +78,17 @@ const chartOptions = {
             displayColors: true,
             callbacks: {
                 label: function (context) {
-                    return `Casos: ${context.parsed.x}`;
+                    const index = context.dataIndex;
+                    const diagnosis = topDiagnosesList.value[index];
+                    return [
+                        `Casos: ${diagnosis.count}`,
+                        `Porcentaje: ${diagnosis.percentage}%`
+                    ];
                 },
                 title: function (context) {
-                    return `CIE-10: ${context[0].label}`;
+                    const index = context[0].dataIndex;
+                    const diagnosis = topDiagnosesList.value[index];
+                    return [`CIE-10: ${diagnosis.code}`, diagnosis.name];
                 }
             }
         }
@@ -98,26 +117,34 @@ const chartOptions = {
             },
             ticks: {
                 font: {
-                    size: 12,
-                    weight: 'bold'
-                }
+                    size: 11,
+                    weight: '600'
+                },
+                autoSkip: false
             }
         }
     }
 };
 
-// Lista de diagnósticos con conteo
-const diagnosesList = computed(() => {
-    if (!props.diagnoses) return [];
-
-    return Object.entries(props.diagnoses)
-        .map(([code, count]) => ({ code, count }))
-        .sort((a, b) => b.count - a.count);
-});
+// Estadísticas generales
+const totalDiagnoses = computed(() => props.diagnoses?.total_diagnoses || 0);
+const totalCases = computed(() => props.diagnoses?.total_cases || 0);
 </script>
 
 <template>
     <div class="diagnoses-chart-container">
+        <!-- Estadísticas generales -->
+        <div v-if="totalDiagnoses > 0" class="stats-summary">
+            <div class="stat-item">
+                <span class="stat-label">Total de diagnósticos únicos:</span>
+                <span class="stat-value">{{ totalDiagnoses }}</span>
+            </div>
+            <div class="stat-item">
+                <span class="stat-label">Total de casos:</span>
+                <span class="stat-value">{{ totalCases }}</span>
+            </div>
+        </div>
+
         <!-- Gráfico de barras horizontales -->
         <div class="chart-wrapper">
             <Chart v-if="chartData" type="bar" :data="chartData" :options="chartOptions" class="diagnoses-chart" />
@@ -127,14 +154,18 @@ const diagnosesList = computed(() => {
             </div>
         </div>
 
-        <!-- Lista alternativa (opcional, para referencia) -->
-        <div v-if="diagnosesList.length > 0" class="diagnoses-list">
-            <div v-for="(diagnosis, index) in diagnosesList" :key="diagnosis.code" class="diagnosis-item">
+        <!-- Lista detallada de diagnósticos -->
+        <div v-if="topDiagnosesList.length > 0" class="diagnoses-list">
+            <div v-for="(diagnosis, index) in topDiagnosesList" :key="diagnosis.code" class="diagnosis-item">
                 <div class="diagnosis-rank">
                     <span class="rank-number">{{ index + 1 }}</span>
                 </div>
                 <div class="diagnosis-info">
-                    <span class="diagnosis-code">{{ diagnosis.code }}</span>
+                    <div class="diagnosis-header">
+                        <span class="diagnosis-code">{{ diagnosis.code }}</span>
+                        <span class="diagnosis-percentage">{{ diagnosis.percentage }}%</span>
+                    </div>
+                    <span class="diagnosis-name">{{ diagnosis.name }}</span>
                     <span class="diagnosis-count">{{ diagnosis.count }} casos</span>
                 </div>
             </div>
@@ -150,9 +181,36 @@ const diagnosesList = computed(() => {
     gap: 1.5rem;
 }
 
+.stats-summary {
+    display: flex;
+    gap: 2rem;
+    padding: 1rem;
+    background: var(--surface-50);
+    border-radius: 8px;
+    border: 1px solid var(--surface-200);
+}
+
+.stat-item {
+    display: flex;
+    flex-direction: column;
+    gap: 0.25rem;
+}
+
+.stat-label {
+    font-size: 0.875rem;
+    color: var(--text-color-secondary);
+    font-weight: 500;
+}
+
+.stat-value {
+    font-size: 1.5rem;
+    font-weight: 700;
+    color: var(--primary-color);
+}
+
 .chart-wrapper {
     width: 100%;
-    height: 400px;
+    height: 450px;
     position: relative;
 }
 
@@ -172,15 +230,16 @@ const diagnosesList = computed(() => {
 
 .diagnoses-list {
     display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+    grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
     gap: 0.75rem;
+    margin-top: 0.5rem;
 }
 
 .diagnosis-item {
     display: flex;
-    align-items: center;
+    align-items: flex-start;
     gap: 0.75rem;
-    padding: 0.75rem;
+    padding: 1rem;
     background: var(--surface-50);
     border-radius: 8px;
     border: 1px solid var(--surface-200);
@@ -190,13 +249,15 @@ const diagnosesList = computed(() => {
 .diagnosis-item:hover {
     background: var(--surface-100);
     border-color: var(--primary-300);
+    transform: translateY(-2px);
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
 }
 
 .diagnosis-rank {
-    width: 32px;
-    height: 32px;
+    width: 36px;
+    height: 36px;
     border-radius: 50%;
-    background: var(--primary-500);
+    background: linear-gradient(135deg, var(--primary-500) 0%, var(--primary-600) 100%);
     color: white;
     display: flex;
     align-items: center;
@@ -204,25 +265,51 @@ const diagnosesList = computed(() => {
     font-weight: 700;
     font-size: 0.875rem;
     flex-shrink: 0;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
 }
 
 .diagnosis-info {
     display: flex;
     flex-direction: column;
-    gap: 0.25rem;
+    gap: 0.35rem;
     flex: 1;
     min-width: 0;
 }
 
+.diagnosis-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 0.5rem;
+}
+
 .diagnosis-code {
     font-weight: 700;
+    color: var(--primary-color);
+    font-size: 0.95rem;
+    font-family: 'Courier New', monospace;
+}
+
+.diagnosis-percentage {
+    font-weight: 700;
     color: var(--text-color);
-    font-size: 0.9rem;
+    font-size: 0.875rem;
+    background: var(--primary-100);
+    padding: 0.125rem 0.5rem;
+    border-radius: 12px;
+}
+
+.diagnosis-name {
+    font-size: 0.8125rem;
+    color: var(--text-color);
+    font-weight: 500;
+    line-height: 1.4;
 }
 
 .diagnosis-count {
     font-size: 0.75rem;
     color: var(--text-color-secondary);
+    font-weight: 600;
 }
 
 @media (max-width: 768px) {
@@ -232,6 +319,11 @@ const diagnosesList = computed(() => {
 
     .diagnoses-list {
         grid-template-columns: 1fr;
+    }
+
+    .stats-summary {
+        flex-direction: column;
+        gap: 1rem;
     }
 }
 </style>

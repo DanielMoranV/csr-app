@@ -59,5 +59,12 @@ export const hospitalStatistics = {
      * @param {Object} data - { start_date: string, end_date: string } (REQUERIDO)
      * @returns {Promise} Confirmación de generación
      */
-    generateStats: (data) => axios.post('/hospital-statistics/generate', data)
+    generateStats: (data) => axios.post('/hospital-statistics/generate', data),
+
+    /**
+     * Limpia estadísticas en caché para forzar regeneración
+     * @param {Object} data - { start_date: string, end_date: string } (REQUERIDO)
+     * @returns {Promise} Confirmación de limpieza con número de registros eliminados
+     */
+    clearCache: (data) => axios.post('/hospital-statistics/clear', data)
 };

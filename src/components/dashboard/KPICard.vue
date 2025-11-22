@@ -113,45 +113,45 @@ const colorClasses = computed(() => {
 
 <style scoped>
 .kpi-card {
-    border-radius: 12px;
-    padding: 1.5rem;
-    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+    border-radius: 10px;
+    padding: 1rem;
+    box-shadow: 0 1px 4px rgba(0, 0, 0, 0.08);
     transition: all 0.3s ease;
     border: 1px solid;
     height: 100%;
 }
 
 .kpi-card:hover {
-    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.12);
+    box-shadow: 0 3px 12px rgba(0, 0, 0, 0.12);
     transform: translateY(-2px);
 }
 
 .kpi-content {
     display: flex;
     flex-direction: column;
-    gap: 1rem;
+    gap: 0.75rem;
 }
 
 .kpi-header {
     display: flex;
     align-items: flex-start;
-    gap: 1rem;
+    gap: 0.875rem;
 }
 
 .kpi-icon-container {
-    width: 48px;
-    height: 48px;
-    border-radius: 12px;
+    width: 40px;
+    height: 40px;
+    border-radius: 10px;
     display: flex;
     align-items: center;
     justify-content: center;
     flex-shrink: 0;
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
 }
 
 .kpi-icon {
     color: white;
-    font-size: 1.5rem;
+    font-size: 1.25rem;
 }
 
 .kpi-info {
@@ -160,25 +160,26 @@ const colorClasses = computed(() => {
 }
 
 .kpi-title {
-    font-size: 0.875rem;
+    font-size: 0.75rem;
     font-weight: 600;
     color: var(--text-color-secondary);
-    margin: 0 0 0.5rem 0;
+    margin: 0 0 0.375rem 0;
     text-transform: uppercase;
     letter-spacing: 0.5px;
 }
 
 .kpi-value {
-    font-size: 2rem;
+    font-size: 1.5rem;
     font-weight: 700;
     margin: 0;
-    line-height: 1;
+    line-height: 1.1;
 }
 
 .kpi-subtitle {
-    font-size: 0.75rem;
+    font-size: 0.6875rem;
     color: var(--text-color-secondary);
-    margin: 0.5rem 0 0 0;
+    margin: 0.375rem 0 0 0;
+    line-height: 1.3;
 }
 
 .kpi-trend {
@@ -198,20 +199,28 @@ const colorClasses = computed(() => {
 /* Responsive */
 @media (max-width: 768px) {
     .kpi-card {
-        padding: 1rem;
+        padding: 0.875rem;
     }
 
     .kpi-value {
-        font-size: 1.5rem;
+        font-size: 1.25rem;
     }
 
     .kpi-icon-container {
-        width: 40px;
-        height: 40px;
+        width: 36px;
+        height: 36px;
     }
 
     .kpi-icon {
-        font-size: 1.25rem;
+        font-size: 1.125rem;
+    }
+
+    .kpi-title {
+        font-size: 0.6875rem;
+    }
+
+    .kpi-subtitle {
+        font-size: 0.625rem;
     }
 }
 </style>
