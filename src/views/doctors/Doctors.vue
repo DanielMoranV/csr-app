@@ -2,32 +2,19 @@
 import DoctorDialog from '@/components/doctors/DoctorDialog.vue';
 import DoctorTable from '@/components/doctors/DoctorTable.vue';
 import ScheduleDialog from '@/components/doctors/ScheduleDialog.vue';
-import ConfirmDialog from 'primevue/confirmdialog';
-import { useConfirm } from 'primevue/useconfirm';
 import { useDoctors } from '@/composables/useDoctors';
 import { useDoctorSchedules } from '@/composables/useDoctorSchedules';
 import { usePermissions } from '@/composables/usePermissions';
-import { onMounted, ref, computed } from 'vue';
 import Button from 'primevue/button';
-import InputText from 'primevue/inputtext';
-import Select from 'primevue/select';
+import ConfirmDialog from 'primevue/confirmdialog';
 import IconField from 'primevue/iconfield';
 import InputIcon from 'primevue/inputicon';
+import InputText from 'primevue/inputtext';
+import Select from 'primevue/select';
+import { useConfirm } from 'primevue/useconfirm';
+import { computed, onMounted, ref } from 'vue';
 
-const {
-    doctors,
-    isLoading,
-    fetchDoctors,
-    createDoctor,
-    updateDoctor,
-    deleteDoctor,
-    documentTypeOptions,
-    paymentPayrollOptions,
-    setGlobalFilter,
-    setDocumentTypeFilter,
-    setPaymentPayrollFilter,
-    clearFilters
-} = useDoctors();
+const { doctors, isLoading, fetchDoctors, createDoctor, updateDoctor, deleteDoctor, documentTypeOptions, paymentPayrollOptions, setGlobalFilter, setDocumentTypeFilter, setPaymentPayrollFilter, clearFilters } = useDoctors();
 
 const { medicalShifts, fetchMedicalShifts } = useDoctorSchedules();
 
@@ -150,54 +137,40 @@ const hasActiveFilters = computed(() => {
                 <Button label="Nuevo Médico" icon="pi pi-plus" class="add-button" @click="openNewDoctor" />
             </div>
 
+            <!-- Table Header con búsqueda -->
+            <div class="table-header-modern">
+                <div class="header-left">
+                    <div class="header-icon-badge">
+                        <i class="pi pi-table"></i>
+                    </div>
+                    <div class="header-info">
+                        <span class="header-title-small">Registro de Médicos</span>
+                        <span class="header-count" v-if="doctors"> {{ doctors.length }} {{ doctors.length === 1 ? 'médico' : 'médicos' }} </span>
+                    </div>
+                </div>
+                <div class="header-actions-modern">
+                    <IconField iconPosition="left" class="search-field">
+                        <InputIcon>
+                            <i class="pi pi-search" />
+                        </InputIcon>
+                        <InputText v-model="globalFilter" placeholder="Buscar médicos..." class="search-input-modern" @input="handleGlobalFilter" />
+                    </IconField>
+                </div>
+            </div>
+
             <!-- Filtros -->
             <div class="filters-section">
                 <div class="filters-grid">
-                    <IconField>
-                        <InputIcon class="pi pi-search" />
-                        <InputText
-                            v-model="globalFilter"
-                            placeholder="Buscar por nombre, código, CMP o documento..."
-                            class="w-full"
-                            @input="handleGlobalFilter"
-                        />
-                    </IconField>
+                    <Select v-model="documentTypeFilter" :options="documentTypeOptions" optionLabel="label" optionValue="value" placeholder="Tipo de Documento" class="w-full" @change="handleDocumentTypeFilter($event.value)" showClear />
 
-                    <Select
-                        v-model="documentTypeFilter"
-                        :options="documentTypeOptions"
-                        optionLabel="label"
-                        optionValue="value"
-                        placeholder="Tipo de Documento"
-                        class="w-full"
-                        @change="handleDocumentTypeFilter($event.value)"
-                        showClear
-                    />
-
-                    <Select
-                        v-model="paymentPayrollFilter"
-                        :options="paymentPayrollOptions"
-                        optionLabel="label"
-                        optionValue="value"
-                        placeholder="Tipo de Pago"
-                        class="w-full"
-                        @change="handlePaymentPayrollFilter($event.value)"
-                        showClear
-                    />
+                    <Select v-model="paymentPayrollFilter" :options="paymentPayrollOptions" optionLabel="label" optionValue="value" placeholder="Tipo de Pago" class="w-full" @change="handlePaymentPayrollFilter($event.value)" showClear />
 
                     <Button v-if="hasActiveFilters" label="Limpiar Filtros" icon="pi pi-filter-slash" severity="secondary" outlined @click="handleClearFilters" />
                 </div>
             </div>
 
             <!-- Tabla de Médicos -->
-            <DoctorTable
-                :doctors="doctors"
-                :loading="isLoading"
-                @edit-doctor="editDoctor"
-                @delete-doctor="confirmDeleteDoctor"
-                @manage-schedules="manageSchedules"
-                @manage-specialties="manageSpecialties"
-            />
+            <DoctorTable :doctors="doctors" :loading="isLoading" @edit-doctor="editDoctor" @delete-doctor="confirmDeleteDoctor" @manage-schedules="manageSchedules" @manage-specialties="manageSpecialties" />
         </div>
 
         <!-- Diálogos -->
@@ -234,6 +207,42 @@ const hasActiveFilters = computed(() => {
     }
 }
 
+@keyframes pulse {
+    0%,
+    100% {
+        transform: scale(1);
+    }
+    50% {
+        transform: scale(1.05);
+    }
+}
+
+@keyframes gradientShift {
+    0%,
+    100% {
+        background-position: 0% 50%;
+    }
+    50% {
+        background-position: 100% 50%;
+    }
+}
+
+@keyframes iconPulse {
+    0%,
+    100% {
+        transform: scale(1);
+        box-shadow:
+            0 4px 12px rgba(59, 130, 246, 0.3),
+            0 2px 8px rgba(37, 99, 235, 0.2);
+    }
+    50% {
+        transform: scale(1.05);
+        box-shadow:
+            0 6px 16px rgba(59, 130, 246, 0.4),
+            0 3px 10px rgba(37, 99, 235, 0.3);
+    }
+}
+
 /* ============================================================================
    MAIN CONTAINER
    ============================================================================ */
@@ -246,8 +255,27 @@ const hasActiveFilters = computed(() => {
     background: linear-gradient(145deg, var(--surface-section), var(--surface-card));
     border: 1px solid var(--surface-border);
     border-radius: 16px;
-    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+    padding: 2rem;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+    position: relative;
     overflow: hidden;
+}
+
+.main-card::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 3px;
+    background: linear-gradient(90deg, #3b82f6, #2563eb, #3b82f6, #1d4ed8);
+    background-size: 200% 100%;
+    animation: gradientShift 3s ease infinite;
+}
+
+:global(.dark) .main-card {
+    background: linear-gradient(145deg, #1e293b, #0f172a);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
 }
 
 /* ============================================================================
@@ -256,95 +284,359 @@ const hasActiveFilters = computed(() => {
 .header-section {
     display: flex;
     align-items: center;
-    justify-content: space-between;
-    padding: 2rem;
-    background: linear-gradient(135deg, var(--primary-color) 0%, var(--primary-600) 100%);
-    color: white;
+    gap: 1.5rem;
+    margin-bottom: 2rem;
+}
+
+.header-icon-wrapper {
+    width: 64px;
+    height: 64px;
+    border-radius: 16px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: linear-gradient(135deg, #3b82f6 0%, #2563eb 50%, #1d4ed8 100%);
+    box-shadow:
+        0 8px 20px rgba(59, 130, 246, 0.3),
+        0 4px 12px rgba(37, 99, 235, 0.4);
+    animation: pulse 2s ease-in-out infinite;
     position: relative;
     overflow: hidden;
 }
 
-.header-section::before {
+.header-icon-wrapper::before {
     content: '';
     position: absolute;
-    top: 0;
-    left: 0;
-    right: 0;
-    bottom: 0;
-    background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.1), transparent);
+    top: -50%;
+    left: -50%;
+    width: 200%;
+    height: 200%;
+    background: linear-gradient(135deg, transparent, rgba(255, 255, 255, 0.2), transparent);
     animation: shimmer 3s infinite;
 }
 
-.header-icon-wrapper {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    width: 70px;
-    height: 70px;
-    background: rgba(255, 255, 255, 0.2);
-    backdrop-filter: blur(10px);
-    border-radius: 50%;
+.header-icon-wrapper i {
     font-size: 2rem;
-    position: relative;
+    color: #ffffff;
     z-index: 1;
+}
+
+:global(.dark) .header-icon-wrapper {
+    background: linear-gradient(135deg, #60a5fa 0%, #3b82f6 50%, #2563eb 100%);
+    box-shadow:
+        0 8px 20px rgba(96, 165, 250, 0.4),
+        0 4px 12px rgba(59, 130, 246, 0.5);
 }
 
 .header-content {
     flex: 1;
-    margin-left: 1.5rem;
-    position: relative;
-    z-index: 1;
 }
 
 .header-title {
     font-size: 1.75rem;
     font-weight: 700;
-    margin: 0;
-    text-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+    margin: 0 0 0.5rem 0;
+    background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+}
+
+:global(.dark) .header-title {
+    background: linear-gradient(135deg, #60a5fa 0%, #3b82f6 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
 }
 
 .header-subtitle {
-    margin: 0.5rem 0 0 0;
-    opacity: 0.95;
-    font-size: 0.95rem;
+    color: var(--text-color-secondary);
+    font-size: 1rem;
     display: flex;
     align-items: center;
+    margin: 0;
 }
 
 .add-button {
-    position: relative;
-    z-index: 1;
-    background: white;
-    color: var(--primary-color);
-    border: none;
+    background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%) !important;
+    border: none !important;
+    color: white !important;
     font-weight: 600;
-    transition: all 0.3s ease;
+    padding: 0.75rem 1.5rem !important;
+    border-radius: 10px !important;
+    box-shadow:
+        0 4px 12px rgba(59, 130, 246, 0.3),
+        0 2px 8px rgba(37, 99, 235, 0.2) !important;
+    transition: all 0.3s ease !important;
+    position: relative;
+    overflow: hidden;
+}
+
+.add-button::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(135deg, transparent 0%, rgba(255, 255, 255, 0.2) 50%, transparent 100%);
+    transform: translateX(-100%);
+    transition: transform 0.6s ease;
+}
+
+.add-button:hover::before {
+    transform: translateX(100%);
 }
 
 .add-button:hover {
-    transform: translateY(-2px);
-    box-shadow: 0 5px 15px rgba(0, 0, 0, 0.2);
+    transform: translateY(-2px) !important;
+    box-shadow:
+        0 6px 16px rgba(59, 130, 246, 0.4),
+        0 3px 10px rgba(37, 99, 235, 0.3) !important;
+    background: linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%) !important;
+}
+
+:global(.dark) .add-button {
+    background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%) !important;
+    box-shadow:
+        0 4px 12px rgba(59, 130, 246, 0.4),
+        0 2px 8px rgba(37, 99, 235, 0.3) !important;
+}
+
+:global(.dark) .add-button:hover {
+    background: linear-gradient(135deg, #60a5fa 0%, #3b82f6 100%) !important;
+    box-shadow:
+        0 6px 16px rgba(59, 130, 246, 0.5),
+        0 3px 10px rgba(37, 99, 235, 0.4) !important;
+}
+
+/* ============================================================================
+   TABLE HEADER
+   ============================================================================ */
+.table-header-modern {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 1.25rem 1.5rem;
+    background: linear-gradient(135deg, var(--surface-section) 0%, var(--surface-card) 100%);
+    border-bottom: 2px solid color-mix(in srgb, var(--primary-color) 20%, var(--surface-border));
+    gap: 1rem;
+    position: relative;
+}
+
+.table-header-modern::after {
+    content: '';
+    position: absolute;
+    bottom: -2px;
+    left: 0;
+    right: 0;
+    height: 2px;
+    background: linear-gradient(90deg, #3b82f6, #2563eb, #3b82f6);
+    background-size: 200% 100%;
+    animation: gradientShift 3s ease infinite;
+}
+
+:global(.dark) .table-header-modern {
+    background: linear-gradient(135deg, var(--surface-section) 0%, var(--surface-card) 100%);
+}
+
+.header-left {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+}
+
+.header-icon-badge {
+    width: 48px;
+    height: 48px;
+    border-radius: 12px;
+    background: linear-gradient(135deg, #3b82f6 0%, #2563eb 50%, #1d4ed8 100%);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    box-shadow:
+        0 4px 12px rgba(59, 130, 246, 0.3),
+        0 2px 8px rgba(37, 99, 235, 0.2);
+    position: relative;
+    overflow: hidden;
+    animation: iconPulse 2s ease-in-out infinite;
+}
+
+.header-icon-badge::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(135deg, transparent 0%, rgba(255, 255, 255, 0.15) 50%, transparent 100%);
+    animation: shimmer 3s ease-in-out infinite;
+}
+
+.header-icon-badge i {
+    font-size: 1.5rem;
+    color: white;
+    position: relative;
+    z-index: 1;
+    filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.2));
+}
+
+:global(.dark) .header-icon-badge {
+    background: linear-gradient(135deg, #60a5fa 0%, #3b82f6 50%, #2563eb 100%);
+    box-shadow:
+        0 4px 12px rgba(96, 165, 250, 0.4),
+        0 2px 8px rgba(59, 130, 246, 0.3);
+}
+
+:global(.dark) .header-icon-badge::before {
+    background: linear-gradient(135deg, transparent 0%, rgba(255, 255, 255, 0.2) 50%, transparent 100%);
+}
+
+.header-info {
+    display: flex;
+    flex-direction: column;
+    gap: 0.25rem;
+}
+
+.header-title-small {
+    font-size: 1.125rem;
+    font-weight: 700;
+    color: var(--text-color);
+    letter-spacing: -0.015em;
+}
+
+.header-count {
+    font-size: 0.813rem;
+    font-weight: 600;
+    color: #2563eb;
+    background: linear-gradient(135deg, #dbeafe 0%, #eff6ff 100%);
+    padding: 0.188rem 0.625rem;
+    border-radius: 6px;
+    display: inline-block;
+    width: fit-content;
+    border: 1px solid #93c5fd;
+    box-shadow: 0 2px 4px rgba(59, 130, 246, 0.1);
+}
+
+:global(.dark) .header-count {
+    color: #93c5fd;
+    background: linear-gradient(135deg, #1e3a8a 0%, #1e40af 100%);
+    border: 1px solid #60a5fa;
+}
+
+.header-actions-modern {
+    display: flex;
+    gap: 0.75rem;
+    align-items: center;
+}
+
+.search-field {
+    width: 280px;
+}
+
+.search-input-modern {
+    border-radius: 10px;
+    border: 2px solid var(--surface-border);
+    padding: 0.625rem 0.875rem 0.625rem 2.5rem;
+    font-size: 0.875rem;
+    transition: all 0.3s ease;
+    background: var(--surface-ground);
+    color: var(--text-color);
+}
+
+.search-input-modern:hover {
+    border-color: #cbd5e1;
+}
+
+.search-input-modern:focus {
+    border-color: #3b82f6;
+    box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
 }
 
 /* ============================================================================
    FILTERS SECTION
    ============================================================================ */
 .filters-section {
-    padding: 1.5rem 2rem;
-    background: var(--surface-ground);
+    padding: 1.5rem 1.5rem;
+    background: var(--surface-card);
     border-bottom: 1px solid var(--surface-border);
+}
+
+:global(.dark) .filters-section {
+    background: var(--surface-ground);
 }
 
 .filters-grid {
     display: grid;
-    grid-template-columns: 2fr 1fr 1fr auto;
+    grid-template-columns: 1fr 1fr auto;
     gap: 1rem;
     align-items: center;
 }
 
+/* ============================================================================
+   RESPONSIVE DESIGN
+   ============================================================================ */
 @media (max-width: 1024px) {
     .filters-grid {
         grid-template-columns: 1fr 1fr;
+    }
+
+    .table-header-modern {
+        flex-direction: column;
+        align-items: stretch;
+        gap: 1rem;
+    }
+
+    .header-actions-modern {
+        flex-direction: column;
+        width: 100%;
+    }
+
+    .search-field {
+        width: 100%;
+    }
+}
+
+@media (max-width: 768px) {
+    .doctors-view {
+        padding: 0.5rem;
+    }
+
+    .main-card {
+        padding: 1rem;
+        border-radius: 12px;
+    }
+
+    .header-section {
+        gap: 1rem;
+    }
+
+    .header-icon-wrapper {
+        width: 48px;
+        height: 48px;
+    }
+
+    .header-icon-wrapper i {
+        font-size: 1.5rem;
+    }
+
+    .header-title {
+        font-size: 1.25rem;
+    }
+
+    .header-subtitle {
+        font-size: 0.875rem;
+    }
+
+    .table-header-modern {
+        padding: 1rem;
+    }
+
+    .header-icon-badge {
+        width: 40px;
+        height: 40px;
+    }
+
+    .header-icon-badge i {
+        font-size: 1.25rem;
+    }
+
+    .header-title-small {
+        font-size: 1rem;
     }
 }
 
@@ -360,11 +652,15 @@ const hasActiveFilters = computed(() => {
     }
 
     .header-content {
-        margin-left: 0;
+        text-align: center;
+    }
+
+    .header-subtitle {
+        justify-content: center;
     }
 
     .add-button {
-        width: 100%;
+        width: 100% !important;
     }
 }
 </style>

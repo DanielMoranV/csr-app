@@ -1,7 +1,7 @@
+import { apiUtils } from '@/api/axios.js';
+import { doctors as doctorsApi } from '@/api/doctors';
 import { defineStore } from 'pinia';
 import { computed, reactive } from 'vue';
-import { doctors as doctorsApi } from '@/api/doctors';
-import { apiUtils } from '@/api/axios.js';
 
 export const useDoctorsStore = defineStore('doctors', () => {
     // State
@@ -43,8 +43,9 @@ export const useDoctorsStore = defineStore('doctors', () => {
                 (doctor) =>
                     doctor.name.toLowerCase().includes(searchTerm) ||
                     doctor.code.toLowerCase().includes(searchTerm) ||
-                    doctor.cmp.toLowerCase().includes(searchTerm) ||
-                    doctor.document_number.toLowerCase().includes(searchTerm)
+                    (doctor.numero_colegiatura && doctor.numero_colegiatura.toLowerCase().includes(searchTerm)) ||
+                    doctor.document_number.toLowerCase().includes(searchTerm) ||
+                    (doctor.rne && doctor.rne.toLowerCase().includes(searchTerm))
             );
         }
 
@@ -78,7 +79,9 @@ export const useDoctorsStore = defineStore('doctors', () => {
     const fetchDoctors = async (params = {}) => {
         state.isLoading = true;
         try {
-            const response = await doctorsApi.getAll({ ...state.filters, ...params });
+            // No enviamos filtros al backend, solo parámetros adicionales si los hay
+            const response = await doctorsApi.getAll(params);
+            console.log('fetchDoctors response:', response);
             if (apiUtils.isSuccess(response)) {
                 const data = apiUtils.getData(response);
                 state.doctors = Array.isArray(data) ? data : data.data || [];
@@ -87,7 +90,7 @@ export const useDoctorsStore = defineStore('doctors', () => {
             }
             throw response;
         } catch (error) {
-            throw error;
+            // throw error;
         } finally {
             state.isLoading = false;
         }
@@ -103,7 +106,7 @@ export const useDoctorsStore = defineStore('doctors', () => {
             }
             throw response;
         } catch (error) {
-            throw error;
+            // throw error;
         } finally {
             state.isLoading = false;
         }
@@ -119,7 +122,7 @@ export const useDoctorsStore = defineStore('doctors', () => {
             }
             throw response;
         } catch (error) {
-            throw error;
+            //throw error;
         } finally {
             state.isLoading = false;
         }
@@ -136,7 +139,7 @@ export const useDoctorsStore = defineStore('doctors', () => {
             }
             throw response;
         } catch (error) {
-            throw error;
+            //throw error;
         } finally {
             state.isSaving = false;
         }
@@ -159,7 +162,7 @@ export const useDoctorsStore = defineStore('doctors', () => {
             }
             throw response;
         } catch (error) {
-            throw error;
+            // throw error;
         } finally {
             state.isSaving = false;
         }
@@ -181,7 +184,7 @@ export const useDoctorsStore = defineStore('doctors', () => {
             }
             throw response;
         } catch (error) {
-            throw error;
+            //  throw error;
         } finally {
             state.isDeleting = false;
         }
@@ -196,7 +199,7 @@ export const useDoctorsStore = defineStore('doctors', () => {
             }
             throw response;
         } catch (error) {
-            throw error;
+            // throw error;
         } finally {
             state.isLoading = false;
         }
@@ -212,7 +215,7 @@ export const useDoctorsStore = defineStore('doctors', () => {
             }
             throw response;
         } catch (error) {
-            throw error;
+            //  throw error;
         } finally {
             state.isLoading = false;
         }
@@ -232,7 +235,7 @@ export const useDoctorsStore = defineStore('doctors', () => {
             }
             throw response;
         } catch (error) {
-            throw error;
+            // throw error;
         } finally {
             state.isSaving = false;
         }
@@ -252,7 +255,7 @@ export const useDoctorsStore = defineStore('doctors', () => {
             }
             throw response;
         } catch (error) {
-            throw error;
+            // throw error;
         } finally {
             state.isSaving = false;
         }
@@ -264,7 +267,7 @@ export const useDoctorsStore = defineStore('doctors', () => {
             const response = await doctorsApi.getLinkedUser(doctorId);
             return response;
         } catch (error) {
-            throw error;
+            // throw error;
         } finally {
             state.isLoading = false;
         }

@@ -201,17 +201,9 @@ export const MODULE_PERMISSIONS = {
     doctors: {
         name: 'doctors',
         path: '/medicos',
-        positions: [
-            POSITIONS.SISTEMAS,
-            POSITIONS.DIRECTOR_MEDICO,
-            POSITIONS.ADMINISTRACION,
-            POSITIONS.RRHH,
-            POSITIONS.MEDICOS,
-            POSITIONS.EMERGENCIA,
-            POSITIONS.HOSPITALIZACION
-        ],
+        positions: [POSITIONS.SISTEMAS, POSITIONS.DIRECTOR_MEDICO, POSITIONS.ADMINISTRACION, POSITIONS.RRHH, POSITIONS.MEDICOS, POSITIONS.EMERGENCIA, POSITIONS.HOSPITALIZACION],
         label: 'Médicos',
-        icon: 'pi pi-fw pi-user-md',
+        icon: 'pi pi-fw pi-heart-fill',
         menuSection: 'Personal Médico'
     },
 
@@ -229,16 +221,7 @@ export const MODULE_PERMISSIONS = {
     doctorSchedules: {
         name: 'doctor-schedules',
         path: '/horarios-medicos',
-        positions: [
-            POSITIONS.SISTEMAS,
-            POSITIONS.DIRECTOR_MEDICO,
-            POSITIONS.ADMINISTRACION,
-            POSITIONS.RRHH,
-            POSITIONS.MEDICOS,
-            POSITIONS.EMERGENCIA,
-            POSITIONS.HOSPITALIZACION,
-            POSITIONS.QUIROFANO
-        ],
+        positions: [POSITIONS.SISTEMAS, POSITIONS.DIRECTOR_MEDICO, POSITIONS.ADMINISTRACION, POSITIONS.RRHH, POSITIONS.MEDICOS, POSITIONS.EMERGENCIA, POSITIONS.HOSPITALIZACION, POSITIONS.QUIROFANO],
         label: 'Horarios',
         icon: 'pi pi-fw pi-calendar',
         menuSection: 'Personal Médico'

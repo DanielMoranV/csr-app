@@ -64,6 +64,35 @@ const getPaymentPayrollSeverity = (type) => {
     return severityMap[type] || 'secondary';
 };
 
+const getTypeLabel = (type) => {
+    const labels = {
+        medico: 'Médico',
+        odontologo: 'Odontólogo',
+        obstetriz: 'Obstetriz',
+        enfermero: 'Enfermero',
+        nutricionista: 'Nutricionista',
+        psicologo: 'Psicólogo',
+        tecnologo_medico: 'Tecnólogo Médico',
+        quimico_farmaceutico: 'Químico Farmacéutico',
+        biologo: 'Biólogo'
+    };
+    return labels[type] || type;
+};
+
+const getColegioLabel = (colegio) => {
+    const labels = {
+        cmp: 'CMP',
+        cop: 'COP',
+        cqfp: 'CQFP',
+        cbp: 'CBP',
+        cobp: 'COBP',
+        cep: 'CEP',
+        csp: 'CSP',
+        cnp: 'CNP'
+    };
+    return labels[colegio] || colegio.toUpperCase();
+};
+
 const copyToClipboard = async (text) => {
     try {
         await navigator.clipboard.writeText(text);
@@ -119,8 +148,8 @@ const handleManageSchedules = (doctor) => {
         stripedRows
         class="p-datatable-sm"
     >
-        <!-- Médico -->
-        <Column field="name" header="Médico" :sortable="true" style="min-width: 250px">
+        <!-- Profesional -->
+        <Column field="name" header="Profesional" :sortable="true" style="min-width: 280px">
             <template #body="{ data }">
                 <div class="flex items-center gap-3">
                     <div class="flex items-center justify-center w-10 h-10 rounded-full bg-primary text-white font-semibold">
@@ -128,7 +157,8 @@ const handleManageSchedules = (doctor) => {
                     </div>
                     <div class="flex flex-col">
                         <span class="font-semibold">{{ data.name }}</span>
-                        <span class="text-sm text-muted">Código: {{ data.code }}</span>
+                        <span class="text-sm text-muted">{{ getTypeLabel(data.type) }}</span>
+                        <span class="text-xs text-muted">Código: {{ data.code }}</span>
                     </div>
                 </div>
             </template>
@@ -144,20 +174,23 @@ const handleManageSchedules = (doctor) => {
             </template>
         </Column>
 
-        <!-- CMP -->
-        <Column field="cmp" header="CMP" :sortable="true" style="min-width: 120px">
+        <!-- Colegio y N° Colegiatura -->
+        <Column header="Colegio" :sortable="true" sortField="numero_colegiatura" style="min-width: 150px">
             <template #body="{ data }">
-                <div class="flex items-center gap-2">
-                    <span class="font-medium">{{ data.cmp }}</span>
-                    <Button
-                        icon="pi pi-copy"
-                        size="small"
-                        text
-                        rounded
-                        class="p-button-sm"
-                        @click="copyToClipboard(data.cmp)"
-                        v-tooltip.top="'Copiar CMP'"
-                    />
+                <div class="flex flex-col">
+                    <div class="flex items-center gap-2">
+                        <span class="font-medium">{{ data.numero_colegiatura }}</span>
+                        <Button
+                            icon="pi pi-copy"
+                            size="small"
+                            text
+                            rounded
+                            class="p-button-sm"
+                            @click="copyToClipboard(data.numero_colegiatura)"
+                            v-tooltip.top="'Copiar número'"
+                        />
+                    </div>
+                    <span class="text-xs text-muted">{{ getColegioLabel(data.colegio) }}</span>
                 </div>
             </template>
         </Column>
@@ -178,12 +211,12 @@ const handleManageSchedules = (doctor) => {
         </Column>
 
         <!-- Especialidades -->
-        <Column header="Especialidades" style="min-width: 150px">
+        <Column header="Especialidades" style="min-width: 250px">
             <template #body="{ data }">
-                <div class="flex items-center gap-2">
-                    <Tag v-if="data.specialties_count > 0" :value="`${data.specialties_count} esp.`" severity="info" />
-                    <span v-else class="text-muted text-sm">Sin especialidades</span>
+                <div v-if="data.specialties && data.specialties.length > 0" class="flex flex-wrap gap-1">
+                    <Tag v-for="specialty in data.specialties" :key="specialty.id" :value="specialty.name" severity="info" class="text-xs" />
                 </div>
+                <span v-else class="text-muted text-sm">Sin especialidades</span>
             </template>
         </Column>
 

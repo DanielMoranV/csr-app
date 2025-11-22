@@ -30,10 +30,33 @@ export function useDoctors() {
         { label: 'Ninguno', value: 'none' }
     ]);
 
+    const typeOptions = computed(() => [
+        { label: 'Médico', value: 'medico' },
+        { label: 'Odontólogo', value: 'odontologo' },
+        { label: 'Obstetriz', value: 'obstetriz' },
+        { label: 'Enfermero', value: 'enfermero' },
+        { label: 'Nutricionista', value: 'nutricionista' },
+        { label: 'Psicólogo', value: 'psicologo' },
+        { label: 'Tecnólogo Médico', value: 'tecnologo_medico' },
+        { label: 'Químico Farmacéutico', value: 'quimico_farmaceutico' },
+        { label: 'Biólogo', value: 'biologo' }
+    ]);
+
+    const colegioOptions = computed(() => [
+        { label: 'CMP - Colegio Médico del Perú', value: 'cmp' },
+        { label: 'COP - Colegio Odontológico del Perú', value: 'cop' },
+        { label: 'CQFP - Colegio Químico Farmacéutico del Perú', value: 'cqfp' },
+        { label: 'CBP - Colegio de Biólogos del Perú', value: 'cbp' },
+        { label: 'COBP - Colegio de Obstetras del Perú', value: 'cobp' },
+        { label: 'CEP - Colegio de Enfermeros del Perú', value: 'cep' },
+        { label: 'CSP - Colegio de Sociólogos del Perú', value: 'csp' },
+        { label: 'CNP - Colegio de Nutricionistas del Perú', value: 'cnp' }
+    ]);
+
     const sortOptions = computed(() => [
         { label: 'Nombre', value: 'name' },
         { label: 'Código', value: 'code' },
-        { label: 'CMP', value: 'cmp' },
+        { label: 'Número de Colegiatura', value: 'numero_colegiatura' },
         { label: 'Fecha de creación', value: 'created_at' }
     ]);
 
@@ -250,6 +273,8 @@ export function useDoctors() {
         operationInProgress,
         documentTypeOptions,
         paymentPayrollOptions,
+        typeOptions,
+        colegioOptions,
         sortOptions,
         fetchDoctors,
         fetchDoctorById,

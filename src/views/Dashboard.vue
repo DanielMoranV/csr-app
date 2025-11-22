@@ -45,17 +45,28 @@ const onDateRangeChange = async () => {
 
         // Validar que ambas fechas estén seleccionadas
         if (!start || !end) {
+            console.log('⚠️ [DASHBOARD] Fechas incompletas:', { start, end });
             return;
         }
 
+        const params = {
+            start_date: start.toISOString().split('T')[0],
+            end_date: end.toISOString().split('T')[0]
+        };
+
+        console.log('📅 [DASHBOARD] Cambio de fechas detectado:', {
+            'Fecha inicio': params.start_date,
+            'Fecha fin': params.end_date,
+            'Objetos Date': { start, end }
+        });
+
         try {
-            await fetchDashboard({
-                start_date: start.toISOString().split('T')[0],
-                end_date: end.toISOString().split('T')[0]
-            });
+            await fetchDashboard(params);
         } catch (err) {
-            console.error('Error al cambiar el rango de fechas:', err);
+            console.error('❌ [DASHBOARD] Error al cambiar el rango de fechas:', err);
         }
+    } else {
+        console.log('⚠️ [DASHBOARD] Rango de fechas inválido:', dateRange.value);
     }
 };
 
@@ -78,16 +89,22 @@ const pieChartOptions = ref({
 });
 
 onMounted(async () => {
+    console.log('🚀 [DASHBOARD] Iniciando Dashboard...');
+
     initializeDateRange();
+    console.log('📅 [DASHBOARD] Rango de fechas inicializado:', dateRange.value);
 
     // Cargar estadísticas del dashboard con filtro de fechas
     try {
+        console.log('📊 [DASHBOARD] Cargando datos iniciales...');
         await fetchDashboard();
+        console.log('✅ [DASHBOARD] Datos cargados exitosamente');
     } catch (err) {
-        console.error('Error loading dashboard data:', err);
+        console.error('❌ [DASHBOARD] Error loading dashboard data:', err);
     }
 
     // Start listening for real-time events
+    console.log('🔊 [DASHBOARD] Iniciando escucha de eventos en tiempo real...');
     startListening();
 });
 

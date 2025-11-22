@@ -31,7 +31,16 @@ export function useHospitalStatistics() {
         try {
             const dateRange = params.start_date && params.end_date ? params : getDefaultDateRange();
 
+            // 🔍 DEBUG: Log detallado del request
+            console.log('🔍 [DASHBOARD DEBUG] Parámetros recibidos:', params);
+            console.log('🔍 [DASHBOARD DEBUG] Date range a enviar:', dateRange);
+            console.log('🔍 [DASHBOARD DEBUG] URL completa:', `${import.meta.env.VITE_API_URL}/hospital-statistics/dashboard?start_date=${dateRange.start_date}&end_date=${dateRange.end_date}`);
+
             const response = await hospitalStatistics.getDashboard(dateRange);
+
+            // 🔍 DEBUG: Log de la respuesta
+            console.log('✅ [DASHBOARD DEBUG] Respuesta recibida:', response);
+            console.log('📊 [DASHBOARD DEBUG] Datos del dashboard:', response.data);
 
             if (response.success) {
                 dashboard.value = response.data;
