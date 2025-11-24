@@ -27,20 +27,6 @@ export function useDoctorSchedules() {
     // Store state - Medical Shifts
     const medicalShifts = computed(() => schedulesStore.allMedicalShifts);
 
-    // Filter options
-    const categoryOptions = computed(() => [
-        { label: 'Emergencia', value: 'emergency' },
-        { label: 'Ambulatorio', value: 'ambulatory' },
-        { label: 'Hospitalario', value: 'hospitable' }
-    ]);
-
-    const statusOptions = computed(() => [
-        { label: 'Pendiente', value: 'pending' },
-        { label: 'Confirmado', value: 'confirmed' },
-        { label: 'Cancelado', value: 'cancelled' },
-        { label: 'Completado', value: 'completed' }
-    ]);
-
     // Actions - Schedules
     const fetchSchedules = async (params = {}) => {
         try {
@@ -263,12 +249,15 @@ export function useDoctorSchedules() {
 
     // Filters
     const setDoctorFilter = (value) => schedulesStore.setFilter('doctor_id', value);
-    const setDateFilter = (value) => schedulesStore.setFilter('date', value);
-    const setCategoryFilter = (value) => schedulesStore.setFilter('category', value);
-    const setStatusFilter = (value) => schedulesStore.setFilter('status', value);
-    const setUpcomingFilter = (value) => schedulesStore.setFilter('upcoming', value);
-    const setTodayFilter = (value) => schedulesStore.setFilter('today', value);
-    const clearFilters = () => schedulesStore.clearFilters();
+    const setStartDateFilter = (value) => schedulesStore.setFilter('start_date', value); // New filter
+    const setEndDateFilter = (value) => schedulesStore.setFilter('end_date', value);   // New filter
+
+    const clearFilters = () => {
+        schedulesStore.setFilter('doctor_id', null);
+        schedulesStore.setFilter('start_date', null);
+        schedulesStore.setFilter('end_date', null);
+        // Do not clear other filters (upcoming, past, today) as they are used elsewhere
+    };
 
     // Error handler
     const handleError = (error, defaultMessage) => {
@@ -329,8 +318,6 @@ export function useDoctorSchedules() {
         isLoading,
         isSaving,
         operationInProgress,
-        categoryOptions,
-        statusOptions,
         fetchSchedules,
         fetchScheduleById,
         createSchedule,
@@ -354,11 +341,8 @@ export function useDoctorSchedules() {
         fetchMedicalShifts,
         // Filters
         setDoctorFilter,
-        setDateFilter,
-        setCategoryFilter,
-        setStatusFilter,
-        setUpcomingFilter,
-        setTodayFilter,
+        setStartDateFilter, // New filter
+        setEndDateFilter,   // New filter
         clearFilters
     };
 }

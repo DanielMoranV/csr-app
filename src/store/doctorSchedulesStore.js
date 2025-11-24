@@ -20,7 +20,8 @@ export const useDoctorSchedulesStore = defineStore('doctorSchedules', () => {
         stats: null,
         filters: {
             doctor_id: null,
-            date: null,
+            start_date: null, // New filter for start date
+            end_date: null,   // New filter for end date
             category: null,
             status: null,
             upcoming: false,
@@ -55,9 +56,8 @@ export const useDoctorSchedulesStore = defineStore('doctorSchedules', () => {
             filtered = filtered.filter((schedule) => schedule.id_doctors === state.filters.doctor_id);
         }
 
-        if (state.filters.date) {
-            filtered = filtered.filter((schedule) => schedule.date === state.filters.date);
-        }
+        // The date range filtering will primarily be handled by the API when fetchSchedules is called.
+        // Client-side filtering for date range is not needed here if API handles it.
 
         if (state.filters.category) {
             filtered = filtered.filter((schedule) => schedule.category === state.filters.category);

@@ -1,25 +1,25 @@
 <script setup>
-import Button from 'primevue/button';
-import Column from 'primevue/column';
-import DataTable from 'primevue/datatable';
-import Tag from 'primevue/tag';
-import Select from 'primevue/select';
-import DatePicker from 'primevue/datepicker';
-import IconField from 'primevue/iconfield';
-import InputIcon from 'primevue/inputicon';
-import ConfirmDialog from 'primevue/confirmdialog';
-import { useConfirm } from 'primevue/useconfirm';
 import ScheduleDialog from '@/components/doctors/ScheduleDialog.vue';
 import { useDoctorSchedules } from '@/composables/useDoctorSchedules';
 import { useDoctors } from '@/composables/useDoctors';
-import { onMounted, ref, computed } from 'vue';
+import { useMedicalSpecialties } from '@/composables/useMedicalSpecialties'; // New import for medical specialties
+import Button from 'primevue/button';
+import ConfirmDialog from 'primevue/confirmdialog';
+import DatePicker from 'primevue/datepicker';
+import Select from 'primevue/select';
+import { useConfirm } from 'primevue/useconfirm';
+import { computed, onMounted, ref, watch } from 'vue';
+
+// FullCalendar Imports
+import FullCalendar from '@fullcalendar/vue3';
+import dayGridPlugin from '@fullcalendar/daygrid';
+import timeGridPlugin from '@fullcalendar/timegrid';
+import interactionPlugin from '@fullcalendar/interaction';
 
 const {
     schedules,
     isLoading,
     isSaving,
-    categoryOptions,
-    statusOptions,
     medicalShifts,
     fetchSchedules,
     fetchMedicalShifts,
@@ -31,12 +31,11 @@ const {
     completeSchedule,
     setDoctorFilter,
     setDateFilter,
-    setCategoryFilter,
-    setStatusFilter,
     clearFilters
 } = useDoctorSchedules();
 
 const { doctors, fetchDoctors } = useDoctors();
+const { medicalSpecialties, fetchMedicalSpecialties } = useMedicalSpecialties();
 
 const confirm = useConfirm();
 
@@ -45,20 +44,43 @@ const scheduleDialogVisible = ref(false);
 const selectedSchedule = ref(null);
 const isEditingSchedule = ref(false);
 
-// Filtros
+// Filters
+const specialtyFilter = ref(null); // New ref for specialty filter
 const doctorFilter = ref(null);
-const dateFilter = ref(null);
-const categoryFilter = ref(null);
-const statusFilter = ref(null);
+const monthFilter = ref(null); // New ref for month filter (Date object)
+
+// Computed property for filtered doctors based on selected specialty
+const filteredDoctors = computed(() => {
+    if (!specialtyFilter.value) {
+        return doctors.value;
+    }
+    return doctors.value.filter(doctor => doctor.medical_specialty_id === specialtyFilter.value);
+});
+
+watch(specialtyFilter, (newVal) => {
+    // Clear doctorFilter if the selected specialty no longer contains the previously selected doctor
+    if (doctorFilter.value && !filteredDoctors.value.some(d => d.id === doctorFilter.value)) {
+        doctorFilter.value = null;
+        setDoctorFilter(null);
+    }
+});
 
 onMounted(async () => {
-    await Promise.all([fetchSchedules(), fetchDoctors(), fetchMedicalShifts()]);
+    // Initialize date filters for the current month/view
+    const today = new Date();
+    const firstDayOfMonth = new Date(today.getFullYear(), today.getMonth(), 1);
+    const lastDayOfMonth = new Date(today.getFullYear(), today.getMonth() + 1, 0);
+
+    setStartDateFilter(firstDayOfMonth.toISOString().split('T')[0]);
+    setEndDateFilter(lastDayOfMonth.toISOString().split('T')[0]);
+
+    await Promise.all([fetchSchedules(), fetchDoctors(), fetchMedicalShifts(), fetchMedicalSpecialties()]);
 });
 
 // Schedule Handlers
 const openNewSchedule = () => {
     selectedSchedule.value = null;
-    isEditingSchedule.value = false;
+    isEditingSchedule.value = true; // For creating new, dialog should be in creation mode
     scheduleDialogVisible.value = true;
 };
 
@@ -70,7 +92,7 @@ const editSchedule = (schedule) => {
 
 const handleSaveSchedule = async (scheduleData) => {
     try {
-        if (isEditingSchedule.value) {
+        if (selectedSchedule.value?.id) { // Check for ID to determine if editing
             await updateSchedule(selectedSchedule.value.id, scheduleData);
         } else {
             await createSchedule(scheduleData);
@@ -135,71 +157,115 @@ const handleCancelSchedule = (schedule) => {
     });
 };
 
-// Filtros
+// Filters Handlers
+const handleSpecialtyFilter = (value) => {
+    specialtyFilter.value = value;
+    // No direct filter in composable, as it only affects doctor options
+};
+
 const handleDoctorFilter = (value) => {
     doctorFilter.value = value;
-    setDoctorFilter(value);
+    setDoctorFilter(value); // This will still filter schedules
 };
 
-const handleDateFilter = (value) => {
-    dateFilter.value = value;
-    const dateStr = value ? value.toISOString().split('T')[0] : null;
-    setDateFilter(dateStr);
-};
-
-const handleCategoryFilter = (value) => {
-    categoryFilter.value = value;
-    setCategoryFilter(value);
-};
-
-const handleStatusFilter = (value) => {
-    statusFilter.value = value;
-    setStatusFilter(value);
+const handleMonthFilter = (value) => {
+    monthFilter.value = value;
+    // FullCalendar will handle the date range based on the month,
+    // so we don't directly call setDateFilter here.
+    // We will update the calendar's initialDate based on this.
 };
 
 const handleClearFilters = () => {
+    specialtyFilter.value = null;
     doctorFilter.value = null;
-    dateFilter.value = null;
-    categoryFilter.value = null;
-    statusFilter.value = null;
-    clearFilters();
+    monthFilter.value = null;
+    clearFilters(); // This will clear doctor and date filters in the composable
 };
 
 const hasActiveFilters = computed(() => {
-    return doctorFilter.value || dateFilter.value || categoryFilter.value || statusFilter.value;
+    return specialtyFilter.value || doctorFilter.value || monthFilter.value;
 });
 
-// Helpers
-const getCategorySeverity = (category) => {
-    const severityMap = {
-        emergency: 'danger',
-        ambulatory: 'info',
-        hospitable: 'success'
-    };
-    return severityMap[category] || 'secondary';
-};
+// FullCalendar Options
+const calendarOptions = ref({
+    plugins: [dayGridPlugin, timeGridPlugin, interactionPlugin],
+    initialView: 'dayGridMonth',
+    headerToolbar: {
+        left: 'prev,next today',
+        center: 'title',
+        right: 'dayGridMonth,timeGridWeek,timeGridDay'
+    },
+    editable: true,
+    selectable: true,
+    weekends: true,
+    select: (arg) => {
+        // Handle date selection for new schedule
+        selectedSchedule.value = {
+            date: arg.startStr,
+            start_time: '08:00:00', // Default start time
+            end_time: '09:00:00',   // Default end time
+            doctor_id: doctorFilter.value // Pre-fill with selected doctor if any
+        };
+        isEditingSchedule.value = false; // Indicate creation mode
+        scheduleDialogVisible.value = true;
+    },
+    eventClick: (arg) => {
+        // Handle event click for editing schedule
+        // FullCalendar event object doesn't contain all original schedule properties directly.
+        // We need to find the original schedule from our 'schedules' array using the event id.
+        const originalSchedule = schedules.value.find(s => s.id == arg.event.id);
+        if (originalSchedule) {
+            editSchedule(originalSchedule);
+        }
+    },
+    eventDrop: async (arg) => {
+        // Handle event drag-and-drop to update schedule
+        const updatedScheduleData = {
+            date: arg.event.startStr.split('T')[0],
+            start_time: arg.event.startStr.split('T')[1]?.substring(0, 5) || '08:00',
+            end_time: arg.event.endStr.split('T')[1]?.substring(0, 5) || '09:00',
+            // Preserve other properties from the original schedule
+            ...arg.event.extendedProps
+        };
+        try {
+            await updateSchedule(arg.event.id, updatedScheduleData);
+            // Re-fetch schedules to ensure data consistency after update
+            fetchSchedules();
+        } catch (error) {
+            // If update fails, revert the event's position on the calendar
+            arg.revert();
+        }
+    },
+    events: computed(() => {
+        // Transform schedules into FullCalendar events
+        return schedules.value.map(schedule => ({
+            id: schedule.id,
+            title: `${schedule.doctor?.name} - ${schedule.medical_shift?.description}`,
+            start: `${schedule.date}T${schedule.start_time}`,
+            end: `${schedule.date}T${schedule.end_time}`,
+            // Add other properties as needed for styling or data
+            extendedProps: {
+                doctor: schedule.doctor,
+                medical_shift: schedule.medical_shift,
+                status: schedule.status,
+                category: schedule.category,
+                // Pass all original schedule properties for easy access in eventDrop/eventClick
+                ...schedule
+            },
+            color: schedule.doctor?.medical_specialty?.color || '#3788d8' // Use specialty color or a default
+        }));
+    }),
+    datesSet: (dateInfo) => {
+        // This callback is fired when the calendar's date range changes (e.g., prev/next, view change)
+        const startDate = dateInfo.startStr.split('T')[0];
+        const endDate = dateInfo.endStr.split('T')[0];
+        setStartDateFilter(startDate);
+        setEndDateFilter(endDate);
+        // We re-fetch schedules when the date range changes
+        fetchSchedules();
+    }
+});
 
-const getStatusSeverity = (status) => {
-    const severityMap = {
-        pending: 'warn',
-        confirmed: 'success',
-        cancelled: 'danger',
-        completed: 'secondary'
-    };
-    return severityMap[status] || 'secondary';
-};
-
-const formatDate = (dateString) => {
-    return new Date(dateString).toLocaleDateString('es-PE', {
-        day: '2-digit',
-        month: '2-digit',
-        year: 'numeric'
-    });
-};
-
-const formatTime = (timeString) => {
-    return timeString?.substring(0, 5) || '';
-};
 </script>
 
 <template>
@@ -220,200 +286,21 @@ const formatTime = (timeString) => {
                 <Button label="Nuevo Horario" icon="pi pi-plus" class="add-button" @click="openNewSchedule" />
             </div>
 
-            <!-- Table Header -->
-            <div class="table-header-modern">
-                <div class="header-left">
-                    <div class="header-icon-badge">
-                        <i class="pi pi-table"></i>
-                    </div>
-                    <div class="header-info">
-                        <span class="header-title-small">Registro de Horarios</span>
-                        <span class="header-count" v-if="schedules">
-                            {{ schedules.length }} {{ schedules.length === 1 ? 'horario' : 'horarios' }}
-                        </span>
-                    </div>
-                </div>
-            </div>
-
             <!-- Filtros -->
             <div class="filters-section">
                 <div class="filters-grid">
-                    <Select
-                        v-model="doctorFilter"
-                        :options="doctors"
-                        optionLabel="name"
-                        optionValue="id"
-                        placeholder="Filtrar por Médico"
-                        class="w-full"
-                        @change="handleDoctorFilter($event.value)"
-                        showClear
-                        filter
-                    />
+                    <Select v-model="specialtyFilter" :options="medicalSpecialties" optionLabel="name" optionValue="id" placeholder="Filtrar por Especialidad" class="w-full" @change="handleSpecialtyFilter($event.value)" showClear filter />
 
-                    <DatePicker
-                        v-model="dateFilter"
-                        dateFormat="dd/mm/yy"
-                        placeholder="Filtrar por Fecha"
-                        class="w-full"
-                        @update:modelValue="handleDateFilter"
-                        showIcon
-                        showButtonBar
-                    />
+                    <Select v-model="doctorFilter" :options="filteredDoctors" :optionLabel="(option) => option.name + (option.medical_specialty ? ` (${option.medical_specialty.name})` : '')" optionValue="id" placeholder="Filtrar por Médico" class="w-full" @change="handleDoctorFilter($event.value)" showClear filter />
 
-                    <Select
-                        v-model="categoryFilter"
-                        :options="categoryOptions"
-                        optionLabel="label"
-                        optionValue="value"
-                        placeholder="Categoría"
-                        class="w-full"
-                        @change="handleCategoryFilter($event.value)"
-                        showClear
-                    />
+                    <DatePicker v-model="monthFilter" view="month" dateFormat="mm/yy" placeholder="Filtrar por Mes" class="w-full" @update:modelValue="handleMonthFilter" showIcon showButtonBar />
 
-                    <Select
-                        v-model="statusFilter"
-                        :options="statusOptions"
-                        optionLabel="label"
-                        optionValue="value"
-                        placeholder="Estado"
-                        class="w-full"
-                        @change="handleStatusFilter($event.value)"
-                        showClear
-                    />
-
-                    <Button
-                        v-if="hasActiveFilters"
-                        label="Limpiar"
-                        icon="pi pi-filter-slash"
-                        severity="secondary"
-                        outlined
-                        @click="handleClearFilters"
-                    />
+                    <Button v-if="hasActiveFilters" label="Limpiar Filtros" icon="pi pi-filter-slash" severity="secondary" outlined @click="handleClearFilters" />
                 </div>
             </div>
 
-            <!-- Tabla de Horarios -->
-            <DataTable
-                :value="schedules"
-                :loading="isLoading"
-                :rows="25"
-                :paginator="schedules.length > 25"
-                :rowsPerPageOptions="[10, 25, 50, 100]"
-                paginatorTemplate="FirstPageLink PrevPageLink PageLinks NextPageLink LastPageLink CurrentPageReport RowsPerPageDropdown"
-                currentPageReportTemplate="Mostrando {first} a {last} de {totalRecords} horarios"
-                responsiveLayout="scroll"
-                emptyMessage="No se encontraron horarios"
-                stripedRows
-                class="p-datatable-sm"
-            >
-                <!-- Médico -->
-                <Column field="doctor.name" header="Médico" :sortable="true" style="min-width: 200px">
-                    <template #body="{ data }">
-                        <div class="flex items-center gap-2">
-                            <i class="pi pi-user text-primary"></i>
-                            <span class="font-semibold">{{ data.doctor?.name || 'N/A' }}</span>
-                        </div>
-                    </template>
-                </Column>
-
-                <!-- Fecha -->
-                <Column field="date" header="Fecha" :sortable="true" style="min-width: 120px">
-                    <template #body="{ data }">
-                        {{ formatDate(data.date) }}
-                    </template>
-                </Column>
-
-                <!-- Horario -->
-                <Column header="Horario" style="min-width: 150px">
-                    <template #body="{ data }">
-                        <div class="flex flex-col">
-                            <span class="font-medium">{{ formatTime(data.start_time) }} - {{ formatTime(data.end_time) }}</span>
-                            <span v-if="data.medical_shift" class="text-sm text-muted">
-                                {{ data.medical_shift.description }}
-                            </span>
-                        </div>
-                    </template>
-                </Column>
-
-                <!-- Categoría -->
-                <Column field="category" header="Categoría" :sortable="true" style="min-width: 130px">
-                    <template #body="{ data }">
-                        <Tag :value="data.category_label" :severity="getCategorySeverity(data.category)" />
-                    </template>
-                </Column>
-
-                <!-- Estado -->
-                <Column field="status" header="Estado" :sortable="true" style="min-width: 130px">
-                    <template #body="{ data }">
-                        <Tag :value="data.status_label" :severity="getStatusSeverity(data.status)" />
-                    </template>
-                </Column>
-
-                <!-- Pago -->
-                <Column field="is_payment_payroll" header="Planilla" style="min-width: 100px">
-                    <template #body="{ data }">
-                        <i v-if="data.is_payment_payroll" class="pi pi-check-circle text-green-500" v-tooltip="'Incluido en planilla'"></i>
-                        <i v-else class="pi pi-times-circle text-gray-400" v-tooltip="'No en planilla'"></i>
-                    </template>
-                </Column>
-
-                <!-- Acciones -->
-                <Column header="Acciones" style="min-width: 200px">
-                    <template #body="{ data }">
-                        <div class="flex gap-1">
-                            <Button
-                                v-if="data.status === 'pending'"
-                                icon="pi pi-check"
-                                size="small"
-                                rounded
-                                severity="success"
-                                outlined
-                                v-tooltip.top="'Confirmar'"
-                                @click="handleConfirmSchedule(data)"
-                            />
-                            <Button
-                                v-if="data.status === 'confirmed'"
-                                icon="pi pi-check-circle"
-                                size="small"
-                                rounded
-                                severity="info"
-                                outlined
-                                v-tooltip.top="'Completar'"
-                                @click="handleCompleteSchedule(data)"
-                            />
-                            <Button
-                                v-if="data.status === 'pending' || data.status === 'confirmed'"
-                                icon="pi pi-times"
-                                size="small"
-                                rounded
-                                severity="warning"
-                                outlined
-                                v-tooltip.top="'Cancelar'"
-                                @click="handleCancelSchedule(data)"
-                            />
-                            <Button
-                                icon="pi pi-pencil"
-                                size="small"
-                                rounded
-                                severity="success"
-                                outlined
-                                v-tooltip.top="'Editar'"
-                                @click="editSchedule(data)"
-                            />
-                            <Button
-                                icon="pi pi-trash"
-                                size="small"
-                                rounded
-                                severity="danger"
-                                outlined
-                                v-tooltip.top="'Eliminar'"
-                                @click="confirmDeleteSchedule(data)"
-                            />
-                        </div>
-                    </template>
-                </Column>
-            </DataTable>
+            <!-- FullCalendar Component -->
+            <FullCalendar :options="calendarOptions" class="mt-4" />
         </div>
 
         <!-- Diálogos -->
@@ -424,6 +311,7 @@ const formatTime = (timeString) => {
             :medical-shifts="medicalShifts"
             :saving="isSaving"
             @save-schedule="handleSaveSchedule"
+            @delete-schedule="confirmDeleteSchedule"
         />
 
         <ConfirmDialog />
@@ -878,5 +766,125 @@ const formatTime = (timeString) => {
 
 :deep(.p-datatable-sm .p-datatable-tbody > tr > td) {
     padding: 0.75rem;
+}
+
+/* FullCalendar Specific Styles */
+.fc {
+    font-family: var(--font-family);
+    border-radius: 12px;
+    background-color: var(--surface-card);
+    padding: 1.5rem;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+}
+
+.fc .fc-toolbar-title {
+    font-size: 1.5rem;
+    font-weight: 700;
+    color: var(--text-color);
+}
+
+.fc .fc-button {
+    background-color: var(--primary-color);
+    color: var(--primary-color-text);
+    border: 1px solid var(--primary-color);
+    border-radius: var(--border-radius);
+    padding: 0.5rem 1rem;
+    font-size: 0.875rem;
+    transition: all 0.2s;
+}
+
+.fc .fc-button:hover {
+    background-color: var(--primary-400);
+    border-color: var(--primary-400);
+}
+
+.fc .fc-button-active {
+    background-color: var(--primary-darker-color);
+    border-color: var(--primary-darker-color);
+}
+
+.fc .fc-daygrid-event {
+    border-radius: var(--border-radius);
+    padding: 0.25rem 0.5rem;
+    margin-bottom: 2px;
+    font-size: 0.8rem;
+    background-color: var(--primary-color); /* Default event color */
+    border: none;
+    color: var(--primary-color-text);
+    white-space: normal;
+}
+
+.fc .fc-timegrid-event {
+    border-radius: var(--border-radius);
+    padding: 0.25rem;
+    font-size: 0.8rem;
+    background-color: var(--primary-color); /* Default event color */
+    border: none;
+    color: var(--primary-color-text);
+}
+
+.fc-event-title {
+    font-weight: 600;
+}
+
+.fc-event-time {
+    font-weight: 400;
+}
+
+/* Dark theme adjustments */
+:global(.dark) .fc {
+    background-color: var(--surface-ground);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+}
+
+:global(.dark) .fc .fc-toolbar-title {
+    color: var(--surface-0);
+}
+
+:global(.dark) .fc .fc-button {
+    background-color: var(--primary-color);
+    border-color: var(--primary-color);
+    color: var(--primary-color-text);
+}
+:global(.dark) .fc .fc-button:hover {
+    background-color: var(--primary-darker-color);
+    border-color: var(--primary-darker-color);
+}
+:global(.dark) .fc .fc-button-active {
+    background-color: var(--primary-lighter-color);
+    border-color: var(--primary-lighter-color);
+}
+
+/* Day/Week headers */
+.fc .fc-col-header-cell,
+.fc .fc-timegrid-slot-label {
+    background-color: var(--surface-hover);
+    color: var(--text-color);
+}
+
+.fc .fc-daygrid-day.fc-day-today {
+    background-color: var(--primary-50);
+}
+
+:global(.dark) .fc .fc-daygrid-day.fc-day-today {
+    background-color: var(--surface-800);
+}
+
+.fc .fc-daygrid-day-number {
+    color: var(--text-color-secondary);
+}
+
+/* Border styling for calendar cells */
+.fc .fc-daygrid-body-unbalanced .fc-daygrid-day > .fc-daygrid-day-frame {
+    border: 1px solid var(--surface-border);
+}
+
+.fc-theme-standard td,
+.fc-theme-standard th {
+    border-color: var(--surface-border);
+}
+
+.fc .fc-scrollgrid-sync-table {
+    border-collapse: collapse;
 }
 </style>

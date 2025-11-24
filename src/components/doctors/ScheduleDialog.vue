@@ -31,7 +31,7 @@ const props = defineProps({
     }
 });
 
-const emit = defineEmits(['update:visible', 'save-schedule', 'close']);
+const emit = defineEmits(['update:visible', 'save-schedule', 'close', 'delete-schedule']); // Added 'delete-schedule'
 
 // Estado del diálogo
 const dialogVisible = computed({
@@ -266,6 +266,11 @@ const handleSave = () => {
     emit('save-schedule', scheduleData);
 };
 
+// Eliminar
+const handleDelete = () => {
+    emit('delete-schedule', props.schedule.id);
+};
+
 // Cerrar diálogo
 const handleClose = () => {
     emit('close');
@@ -428,9 +433,20 @@ const handleClose = () => {
         </div>
 
         <template #footer>
-            <div class="flex justify-end gap-2">
-                <Button label="Cancelar" severity="secondary" @click="handleClose" :disabled="saving" />
-                <Button :label="isEditing ? 'Actualizar' : 'Guardar'" :loading="saving" :disabled="!isFormValid || saving" @click="handleSave" />
+            <div class="flex justify-between w-full">
+                <Button
+                    v-if="isEditing"
+                    label="Eliminar"
+                    icon="pi pi-trash"
+                    severity="danger"
+                    outlined
+                    @click="handleDelete"
+                    :disabled="saving"
+                />
+                <div class="flex justify-end gap-2" :class="{ 'w-full': !isEditing }">
+                    <Button label="Cancelar" severity="secondary" @click="handleClose" :disabled="saving" />
+                    <Button :label="isEditing ? 'Actualizar' : 'Guardar'" :loading="saving" :disabled="!isFormValid || saving" @click="handleSave" />
+                </div>
             </div>
         </template>
     </Dialog>
