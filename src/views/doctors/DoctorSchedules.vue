@@ -30,7 +30,8 @@ const {
     cancelSchedule,
     completeSchedule,
     setDoctorFilter,
-    setDateFilter,
+    setStartDateFilter, // Added
+    setEndDateFilter,   // Added
     clearFilters
 } = useDoctorSchedules();
 
