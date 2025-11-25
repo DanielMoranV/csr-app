@@ -1,9 +1,9 @@
+import { absences as absencesApi } from '@/api/absences';
+import { apiUtils } from '@/api/axios.js';
+import { doctorSchedules as schedulesApi } from '@/api/doctorSchedules';
+import { medicalShifts as shiftsApi } from '@/api/medicalShifts';
 import { defineStore } from 'pinia';
 import { computed, reactive } from 'vue';
-import { doctorSchedules as schedulesApi } from '@/api/doctorSchedules';
-import { absences as absencesApi } from '@/api/absences';
-import { medicalShifts as shiftsApi } from '@/api/medicalShifts';
-import { apiUtils } from '@/api/axios.js';
 
 export const useDoctorSchedulesStore = defineStore('doctorSchedules', () => {
     // State
@@ -199,6 +199,32 @@ export const useDoctorSchedulesStore = defineStore('doctorSchedules', () => {
         return await updateSchedule(id, { status: 'completed' });
     };
 
+    const createScheduleBatch = async (schedulesArray) => {
+        state.isSaving = true;
+        try {
+            const response = await schedulesApi.createBatch(schedulesArray);
+            if (apiUtils.isSuccess(response)) {
+                const results = apiUtils.getData(response);
+                
+                // Add successful schedules to state
+                if (results.successful && results.successful.length > 0) {
+                    results.successful.forEach(item => {
+                        if (item.schedule) {
+                            state.schedules.push(item.schedule);
+                        }
+                    });
+                }
+                
+                return results;
+            }
+            throw response;
+        } catch (error) {
+            throw error;
+        } finally {
+            state.isSaving = false;
+        }
+    };
+
     const fetchScheduleStats = async () => {
         state.isLoading = true;
         try {
@@ -353,6 +379,7 @@ export const useDoctorSchedulesStore = defineStore('doctorSchedules', () => {
         fetchSchedules,
         fetchScheduleById,
         createSchedule,
+        createScheduleBatch,
         updateSchedule,
         deleteSchedule,
         confirmSchedule,

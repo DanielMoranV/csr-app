@@ -360,7 +360,7 @@ const handleClose = () => {
                         placeholder="HH:MM"
                         class="w-full"
                         :class="{ 'p-invalid': touchedFields.start_time && validationErrors.start_time }"
-                        :disabled="saving || (!useCustomTime && scheduleForm.id_medical_shift)"
+                        :disabled="saving || (!useCustomTime && !!scheduleForm.id_medical_shift)"
                         @blur="validateField('start_time')"
                     />
                     <small v-if="touchedFields.start_time && validationErrors.start_time" class="p-error">
@@ -377,7 +377,7 @@ const handleClose = () => {
                         placeholder="HH:MM"
                         class="w-full"
                         :class="{ 'p-invalid': touchedFields.end_time && validationErrors.end_time }"
-                        :disabled="saving || (!useCustomTime && scheduleForm.id_medical_shift)"
+                        :disabled="saving || (!useCustomTime && !!scheduleForm.id_medical_shift)"
                         @blur="validateField('end_time')"
                     />
                     <small v-if="touchedFields.end_time && validationErrors.end_time" class="p-error">

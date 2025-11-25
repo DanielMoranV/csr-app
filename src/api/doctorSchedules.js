@@ -25,6 +25,13 @@ export const doctorSchedules = {
     create: (scheduleData) => axios.post('/doctor-schedules', scheduleData),
 
     /**
+     * Creates multiple doctor schedules in batch.
+     * @param {array} schedulesArray - Array of schedule data objects
+     * @returns {Promise} - Returns { successful: [], failed: [], total: number }
+     */
+    createBatch: (schedulesArray) => axios.post('/doctor-schedules/batch', { schedules: schedulesArray }),
+
+    /**
      * Retrieves a specific doctor schedule by ID.
      * @param {number} id - Schedule ID
      * @returns {Promise}

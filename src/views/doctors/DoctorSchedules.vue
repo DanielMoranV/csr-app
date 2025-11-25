@@ -1,20 +1,24 @@
 <script setup>
 import ScheduleDialog from '@/components/doctors/ScheduleDialog.vue';
+import QuickFillPanel from '@/components/doctors/QuickFillPanel.vue';
+import BatchProgressDialog from '@/components/doctors/BatchProgressDialog.vue';
 import { useDoctorSchedules } from '@/composables/useDoctorSchedules';
 import { useDoctors } from '@/composables/useDoctors';
-import { useMedicalSpecialties } from '@/composables/useMedicalSpecialties'; // New import for medical specialties
+import { useMedicalSpecialties } from '@/composables/useMedicalSpecialties';
 import Button from 'primevue/button';
+import Checkbox from 'primevue/checkbox';
 import ConfirmDialog from 'primevue/confirmdialog';
 import DatePicker from 'primevue/datepicker';
 import Select from 'primevue/select';
 import { useConfirm } from 'primevue/useconfirm';
-import { computed, onMounted, ref, watch } from 'vue';
+import { computed, onMounted, ref, reactive, watch } from 'vue';
 
 // FullCalendar Imports
 import FullCalendar from '@fullcalendar/vue3';
 import dayGridPlugin from '@fullcalendar/daygrid';
 import timeGridPlugin from '@fullcalendar/timegrid';
 import interactionPlugin from '@fullcalendar/interaction';
+import esLocale from '@fullcalendar/core/locales/es';
 
 const {
     schedules,
@@ -24,19 +28,20 @@ const {
     fetchSchedules,
     fetchMedicalShifts,
     createSchedule,
+    createScheduleBatch,
     updateSchedule,
     deleteSchedule,
     confirmSchedule,
     cancelSchedule,
     completeSchedule,
     setDoctorFilter,
-    setStartDateFilter, // Added
-    setEndDateFilter,   // Added
+    setStartDateFilter,
+    setEndDateFilter,
     clearFilters
 } = useDoctorSchedules();
 
 const { doctors, fetchDoctors } = useDoctors();
-const { medicalSpecialties, fetchMedicalSpecialties } = useMedicalSpecialties();
+const { specialties: medicalSpecialties, fetchSpecialties } = useMedicalSpecialties();
 
 const confirm = useConfirm();
 
@@ -46,16 +51,44 @@ const selectedSchedule = ref(null);
 const isEditingSchedule = ref(false);
 
 // Filters
-const specialtyFilter = ref(null); // New ref for specialty filter
+const specialtyFilter = ref(null);
 const doctorFilter = ref(null);
-const monthFilter = ref(null); // New ref for month filter (Date object)
+const monthFilter = ref(null);
+
+// Quick Fill Mode
+const quickFillMode = ref(false);
+const quickFillConfig = reactive({
+    shiftId: null,
+    category: 'ambulatory',
+    status: 'pending',
+    isPaymentPayroll: true,
+    notes: ''
+});
+const selectedDays = ref([]); // Structure: { date, hasConflict, doctorId, doctorName, shiftIds: [], shiftDisplay }
+const batchProgressVisible = ref(false);
+const batchResults = ref({
+    successful: [],
+    failed: [],
+    total: 0
+});
+const isSendingBatch = ref(false);
 
 // Computed property for filtered doctors based on selected specialty
 const filteredDoctors = computed(() => {
     if (!specialtyFilter.value) {
         return doctors.value;
     }
-    return doctors.value.filter(doctor => doctor.medical_specialty_id === specialtyFilter.value);
+    
+    // Filter doctors that have the selected specialty in their specialties array
+    return doctors.value.filter(doctor => {
+        // Check if doctor has specialties array
+        if (!doctor.specialties || !Array.isArray(doctor.specialties)) {
+            return false;
+        }
+        
+        // Check if any specialty in the array matches the selected specialty
+        return doctor.specialties.some(specialty => specialty.id === specialtyFilter.value);
+    });
 });
 
 watch(specialtyFilter, (newVal) => {
@@ -75,13 +108,13 @@ onMounted(async () => {
     setStartDateFilter(firstDayOfMonth.toISOString().split('T')[0]);
     setEndDateFilter(lastDayOfMonth.toISOString().split('T')[0]);
 
-    await Promise.all([fetchSchedules(), fetchDoctors(), fetchMedicalShifts(), fetchMedicalSpecialties()]);
+    await Promise.all([fetchSchedules(), fetchDoctors(), fetchMedicalShifts(), fetchSpecialties()]);
 });
 
 // Schedule Handlers
 const openNewSchedule = () => {
     selectedSchedule.value = null;
-    isEditingSchedule.value = true; // For creating new, dialog should be in creation mode
+    isEditingSchedule.value = true;
     scheduleDialogVisible.value = true;
 };
 
@@ -93,7 +126,7 @@ const editSchedule = (schedule) => {
 
 const handleSaveSchedule = async (scheduleData) => {
     try {
-        if (selectedSchedule.value?.id) { // Check for ID to determine if editing
+        if (selectedSchedule.value?.id) {
             await updateSchedule(selectedSchedule.value.id, scheduleData);
         } else {
             await createSchedule(scheduleData);
@@ -161,31 +194,56 @@ const handleCancelSchedule = (schedule) => {
 // Filters Handlers
 const handleSpecialtyFilter = (value) => {
     specialtyFilter.value = value;
-    // No direct filter in composable, as it only affects doctor options
 };
 
 const handleDoctorFilter = (value) => {
     doctorFilter.value = value;
-    setDoctorFilter(value); // This will still filter schedules
+    setDoctorFilter(value);
 };
 
 const handleMonthFilter = (value) => {
     monthFilter.value = value;
-    // FullCalendar will handle the date range based on the month,
-    // so we don't directly call setDateFilter here.
-    // We will update the calendar's initialDate based on this.
 };
 
 const handleClearFilters = () => {
     specialtyFilter.value = null;
     doctorFilter.value = null;
     monthFilter.value = null;
-    clearFilters(); // This will clear doctor and date filters in the composable
+    clearFilters();
 };
 
 const hasActiveFilters = computed(() => {
     return specialtyFilter.value || doctorFilter.value || monthFilter.value;
 });
+
+// Helper Functions for Shift Display
+const getShiftAbbreviation = (shiftDescription) => {
+    if (!shiftDescription) return '';
+    const desc = shiftDescription.toLowerCase();
+    if (desc.includes('mañana') || desc.includes('morning')) return 'M';
+    if (desc.includes('tarde') || desc.includes('afternoon')) return 'T';
+    if (desc.includes('noche') || desc.includes('night')) return 'N';
+    return null; // Custom shift
+};
+
+const getShiftDisplay = (shiftId) => {
+    const shift = medicalShifts.value.find(s => s.id === shiftId);
+    if (!shift) return '';
+    
+    const abbrev = getShiftAbbreviation(shift.description);
+    if (abbrev) {
+        return abbrev; // Return M, T, or N
+    }
+    
+    // For custom shifts, return time range
+    const startTime = shift.start_time?.substring(0, 5) || '';
+    const endTime = shift.end_time?.substring(0, 5) || '';
+    return `${startTime}-${endTime}`;
+};
+
+const getDoctorById = (doctorId) => {
+    return doctors.value.find(d => d.id === doctorId);
+};
 
 // FullCalendar Options
 const calendarOptions = ref({
@@ -199,71 +257,261 @@ const calendarOptions = ref({
     editable: true,
     selectable: true,
     weekends: true,
+    locale: esLocale,
+    height: '600px',
     select: (arg) => {
-        // Handle date selection for new schedule
-        selectedSchedule.value = {
-            date: arg.startStr,
-            start_time: '08:00:00', // Default start time
-            end_time: '09:00:00',   // Default end time
-            doctor_id: doctorFilter.value // Pre-fill with selected doctor if any
-        };
-        isEditingSchedule.value = false; // Indicate creation mode
-        scheduleDialogVisible.value = true;
+        if (quickFillMode.value) {
+            // Quick fill mode: Add day to queue
+            handleQuickDateSelect(arg);
+        } else {
+            // Normal mode: Open dialog
+            selectedSchedule.value = {
+                date: arg.startStr,
+                start_time: '08:00:00',
+                end_time: '09:00:00',
+                doctor_id: doctorFilter.value
+            };
+            isEditingSchedule.value = false;
+            scheduleDialogVisible.value = true;
+        }
     },
     eventClick: (arg) => {
-        // Handle event click for editing schedule
-        // FullCalendar event object doesn't contain all original schedule properties directly.
-        // We need to find the original schedule from our 'schedules' array using the event id.
         const originalSchedule = schedules.value.find(s => s.id == arg.event.id);
         if (originalSchedule) {
             editSchedule(originalSchedule);
         }
     },
     eventDrop: async (arg) => {
-        // Handle event drag-and-drop to update schedule
         const updatedScheduleData = {
             date: arg.event.startStr.split('T')[0],
             start_time: arg.event.startStr.split('T')[1]?.substring(0, 5) || '08:00',
             end_time: arg.event.endStr.split('T')[1]?.substring(0, 5) || '09:00',
-            // Preserve other properties from the original schedule
             ...arg.event.extendedProps
         };
         try {
             await updateSchedule(arg.event.id, updatedScheduleData);
-            // Re-fetch schedules to ensure data consistency after update
             fetchSchedules();
         } catch (error) {
-            // If update fails, revert the event's position on the calendar
             arg.revert();
         }
     },
+    dayCellContent: (arg) => {
+        // Custom day cell content to show selected days in Quick Fill mode
+        const dateStr = arg.date.toISOString().split('T')[0];
+        const selectedDaysForDate = selectedDays.value.filter(d => d.date === dateStr);
+        
+        if (selectedDaysForDate.length > 0 && quickFillMode.value) {
+            // Combine all shift displays for this date
+            const shiftsDisplay = selectedDaysForDate.map(d => d.shiftDisplay).join('');
+            const doctorName = selectedDaysForDate[0].doctorName;
+            const hasConflict = selectedDaysForDate.some(d => d.hasConflict);
+            
+            return {
+                html: `
+                    <div class="fc-daygrid-day-number">${arg.dayNumberText}</div>
+                    <div class="quick-fill-indicator ${hasConflict ? 'has-conflict' : ''}">
+                        <div class="doctor-name">${doctorName}</div>
+                        <div class="shift-display">${shiftsDisplay}</div>
+                    </div>
+                `
+            };
+        }
+        
+        // Return undefined to use default rendering
+        return undefined;
+    },
     events: computed(() => {
-        // Transform schedules into FullCalendar events
         return schedules.value.map(schedule => ({
             id: schedule.id,
             title: `${schedule.doctor?.name} - ${schedule.medical_shift?.description}`,
             start: `${schedule.date}T${schedule.start_time}`,
             end: `${schedule.date}T${schedule.end_time}`,
-            // Add other properties as needed for styling or data
             extendedProps: {
                 doctor: schedule.doctor,
                 medical_shift: schedule.medical_shift,
                 status: schedule.status,
                 category: schedule.category,
-                // Pass all original schedule properties for easy access in eventDrop/eventClick
                 ...schedule
             },
-            color: schedule.doctor?.medical_specialty?.color || '#3788d8' // Use specialty color or a default
+            color: schedule.doctor?.medical_specialty?.color || '#3788d8'
         }));
     }),
     datesSet: (dateInfo) => {
-        // This callback is fired when the calendar's date range changes (e.g., prev/next, view change)
         const startDate = dateInfo.startStr.split('T')[0];
         const endDate = dateInfo.endStr.split('T')[0];
         setStartDateFilter(startDate);
         setEndDateFilter(endDate);
-        // We re-fetch schedules when the date range changes
         fetchSchedules();
+    }
+});
+
+// Quick Fill Handlers
+const handleQuickDateSelect = (dateInfo) => {
+    if (!doctorFilter.value) {
+        confirm.require({
+            message: 'Debe seleccionar un médico antes de agregar días',
+            header: 'Médico Requerido',
+            icon: 'pi pi-exclamation-triangle',
+            acceptLabel: 'Entendido',
+            rejectLabel: null,
+            rejectClass: 'hidden'
+        });
+        return;
+    }
+
+    if (!quickFillConfig.shiftId) {
+        confirm.require({
+            message: 'Debe seleccionar un turno antes de agregar días',
+            header: 'Turno Requerido',
+            icon: 'pi pi-exclamation-triangle',
+            acceptLabel: 'Entendido',
+            rejectLabel: null,
+            rejectClass: 'hidden'
+        });
+        return;
+    }
+
+    const dateStr = dateInfo.startStr.split('T')[0];
+    
+    // Check if this exact day+shift combination already exists
+    const existingDayShift = selectedDays.value.find(
+        d => d.date === dateStr && d.shiftIds.includes(quickFillConfig.shiftId)
+    );
+    
+    if (existingDayShift) {
+        // This exact day+shift is already selected, ignore
+        return;
+    }
+
+    // Detect conflicts
+    const hasConflict = detectConflict(dateStr, quickFillConfig.shiftId);
+    
+    // Get doctor information
+    const doctor = getDoctorById(doctorFilter.value);
+    const doctorName = doctor?.name || '';
+    
+    // Get shift display
+    const shiftDisplay = getShiftDisplay(quickFillConfig.shiftId);
+
+    selectedDays.value.push({
+        date: dateStr,
+        hasConflict,
+        doctorId: doctorFilter.value,
+        doctorName: doctorName,
+        shiftIds: [quickFillConfig.shiftId],
+        shiftDisplay: shiftDisplay
+    });
+};
+
+const detectConflict = (date, shiftId) => {
+    if (!specialtyFilter.value) return false;
+
+    const shift = medicalShifts.value.find(s => s.id === shiftId);
+    if (!shift) return false;
+
+    return schedules.value.some(schedule => {
+        if (schedule.date !== date) return false;
+        
+        const doctorHasSpecialty = schedule.doctor?.specialties?.some(
+            specialty => specialty.id === specialtyFilter.value
+        );
+        
+        if (!doctorHasSpecialty) return false;
+        
+        const scheduleStart = schedule.start_time;
+        const scheduleEnd = schedule.end_time;
+        const shiftStart = shift.start_time;
+        const shiftEnd = shift.end_time;
+
+        return (shiftStart < scheduleEnd && shiftEnd > scheduleStart);
+    });
+};
+
+const conflicts = computed(() => {
+    return selectedDays.value.filter(day => day.hasConflict).map(day => ({
+        date: day.date
+    }));
+});
+
+const handleRemoveDay = (date) => {
+    const index = selectedDays.value.findIndex(d => d.date === date);
+    if (index !== -1) {
+        selectedDays.value.splice(index, 1);
+    }
+};
+
+const handleClearAllDays = () => {
+    selectedDays.value = [];
+};
+
+const handleUpdateQuickConfig = (newConfig) => {
+    Object.assign(quickFillConfig, newConfig);
+};
+
+const handleSendBatch = async () => {
+    if (selectedDays.value.length === 0) {
+        return;
+    }
+
+    if (!doctorFilter.value) {
+        return;
+    }
+
+    // Build schedules array - each day with multiple shifts creates multiple records
+    const schedulesArray = [];
+    
+    for (const day of selectedDays.value) {
+        // Iterate through each shift for this day
+        for (const shiftId of day.shiftIds) {
+            const shift = medicalShifts.value.find(s => s.id === shiftId);
+            if (!shift) continue;
+            
+            schedulesArray.push({
+                id_doctors: day.doctorId,
+                id_medical_shift: shiftId,
+                date: day.date,
+                start_time: shift.start_time,
+                end_time: shift.end_time,
+                category: quickFillConfig.category,
+                status: quickFillConfig.status,
+                is_payment_payroll: quickFillConfig.isPaymentPayroll,
+                notes: quickFillConfig.notes || null
+            });
+        }
+    }
+
+    try {
+        isSendingBatch.value = true;
+        batchProgressVisible.value = true;
+        
+        const results = await createScheduleBatch(schedulesArray);
+        
+        batchResults.value = results;
+        
+        // Clear selected days on success
+        if (results.successful.length > 0) {
+            selectedDays.value = [];
+        }
+    } catch (error) {
+        console.error('Error sending batch:', error);
+    } finally {
+        isSendingBatch.value = false;
+    }
+};
+
+const handleCloseBatchProgress = () => {
+    batchProgressVisible.value = false;
+    batchResults.value = {
+        successful: [],
+        failed: [],
+        total: 0
+    };
+};
+
+// Watch for quick fill mode changes
+watch(quickFillMode, (newValue) => {
+    if (!newValue) {
+        selectedDays.value = [];
     }
 });
 
@@ -296,9 +544,31 @@ const calendarOptions = ref({
 
                     <DatePicker v-model="monthFilter" view="month" dateFormat="mm/yy" placeholder="Filtrar por Mes" class="w-full" @update:modelValue="handleMonthFilter" showIcon showButtonBar />
 
+                    <div class="flex items-center gap-2">
+                        <Checkbox v-model="quickFillMode" inputId="quickFillMode" binary />
+                        <label for="quickFillMode" class="cursor-pointer font-semibold">
+                            <i class="pi pi-bolt mr-2"></i>
+                            Modo Llenado Rápido
+                        </label>
+                    </div>
+
                     <Button v-if="hasActiveFilters" label="Limpiar Filtros" icon="pi pi-filter-slash" severity="secondary" outlined @click="handleClearFilters" />
                 </div>
             </div>
+
+            <!-- Quick Fill Panel -->
+            <QuickFillPanel
+                v-if="quickFillMode"
+                :config="quickFillConfig"
+                :selectedDays="selectedDays"
+                :medicalShifts="medicalShifts"
+                :conflicts="conflicts"
+                :disabled="isSendingBatch"
+                @update:config="handleUpdateQuickConfig"
+                @remove-day="handleRemoveDay"
+                @clear-all="handleClearAllDays"
+                @send-batch="handleSendBatch"
+            />
 
             <!-- FullCalendar Component -->
             <FullCalendar :options="calendarOptions" class="mt-4" />
@@ -313,6 +583,13 @@ const calendarOptions = ref({
             :saving="isSaving"
             @save-schedule="handleSaveSchedule"
             @delete-schedule="confirmDeleteSchedule"
+        />
+
+        <BatchProgressDialog
+            v-model:visible="batchProgressVisible"
+            :results="batchResults"
+            :loading="isSendingBatch"
+            @close="handleCloseBatchProgress"
         />
 
         <ConfirmDialog />
@@ -545,117 +822,6 @@ const calendarOptions = ref({
 }
 
 /* ============================================================================
-   TABLE HEADER
-   ============================================================================ */
-.table-header-modern {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    padding: 1.25rem 1.5rem;
-    background: linear-gradient(135deg, var(--surface-section) 0%, var(--surface-card) 100%);
-    border-bottom: 2px solid color-mix(in srgb, #0ea5e9 20%, var(--surface-border));
-    gap: 1rem;
-    position: relative;
-}
-
-.table-header-modern::after {
-    content: '';
-    position: absolute;
-    bottom: -2px;
-    left: 0;
-    right: 0;
-    height: 2px;
-    background: linear-gradient(90deg, #0ea5e9, #0284c7, #0ea5e9);
-    background-size: 200% 100%;
-    animation: gradientShift 3s ease infinite;
-}
-
-:global(.dark) .table-header-modern {
-    background: linear-gradient(135deg, var(--surface-section) 0%, var(--surface-card) 100%);
-}
-
-.header-left {
-    display: flex;
-    align-items: center;
-    gap: 1rem;
-}
-
-.header-icon-badge {
-    width: 48px;
-    height: 48px;
-    border-radius: 12px;
-    background: linear-gradient(135deg, #0ea5e9 0%, #0284c7 50%, #0369a1 100%);
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    box-shadow:
-        0 4px 12px rgba(14, 165, 233, 0.3),
-        0 2px 8px rgba(2, 132, 199, 0.2);
-    position: relative;
-    overflow: hidden;
-    animation: iconPulse 2s ease-in-out infinite;
-}
-
-.header-icon-badge::before {
-    content: '';
-    position: absolute;
-    inset: 0;
-    background: linear-gradient(135deg, transparent 0%, rgba(255, 255, 255, 0.15) 50%, transparent 100%);
-    animation: shimmer 3s ease-in-out infinite;
-}
-
-.header-icon-badge i {
-    font-size: 1.5rem;
-    color: white;
-    position: relative;
-    z-index: 1;
-    filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.2));
-}
-
-:global(.dark) .header-icon-badge {
-    background: linear-gradient(135deg, #38bdf8 0%, #0ea5e9 50%, #0284c7 100%);
-    box-shadow:
-        0 4px 12px rgba(56, 189, 248, 0.4),
-        0 2px 8px rgba(14, 165, 233, 0.3);
-}
-
-:global(.dark) .header-icon-badge::before {
-    background: linear-gradient(135deg, transparent 0%, rgba(255, 255, 255, 0.2) 50%, transparent 100%);
-}
-
-.header-info {
-    display: flex;
-    flex-direction: column;
-    gap: 0.25rem;
-}
-
-.header-title-small {
-    font-size: 1.125rem;
-    font-weight: 700;
-    color: var(--text-color);
-    letter-spacing: -0.015em;
-}
-
-.header-count {
-    font-size: 0.813rem;
-    font-weight: 600;
-    color: #0284c7;
-    background: linear-gradient(135deg, #e0f2fe 0%, #f0f9ff 100%);
-    padding: 0.188rem 0.625rem;
-    border-radius: 6px;
-    display: inline-block;
-    width: fit-content;
-    border: 1px solid #7dd3fc;
-    box-shadow: 0 2px 4px rgba(14, 165, 233, 0.1);
-}
-
-:global(.dark) .header-count {
-    color: #7dd3fc;
-    background: linear-gradient(135deg, #075985 0%, #0c4a6e 100%);
-    border: 1px solid #38bdf8;
-}
-
-/* ============================================================================
    FILTERS SECTION
    ============================================================================ */
 .filters-section {
@@ -680,96 +846,8 @@ const calendarOptions = ref({
 }
 
 /* ============================================================================
-   RESPONSIVE DESIGN
+   FULLCALENDAR CUSTOMIZATION
    ============================================================================ */
-@media (max-width: 1024px) {
-    .table-header-modern {
-        padding: 1rem;
-    }
-
-    .filters-grid {
-        grid-template-columns: repeat(2, 1fr);
-    }
-}
-
-@media (max-width: 768px) {
-    .schedules-view {
-        padding: 0.5rem;
-    }
-
-    .main-card {
-        padding: 1rem;
-        border-radius: 12px;
-    }
-
-    .header-section {
-        gap: 1rem;
-    }
-
-    .header-icon-wrapper {
-        width: 48px;
-        height: 48px;
-    }
-
-    .header-icon-wrapper i {
-        font-size: 1.5rem;
-    }
-
-    .header-title {
-        font-size: 1.25rem;
-    }
-
-    .header-subtitle {
-        font-size: 0.875rem;
-    }
-
-    .table-header-modern {
-        padding: 1rem;
-    }
-
-    .header-icon-badge {
-        width: 40px;
-        height: 40px;
-    }
-
-    .header-icon-badge i {
-        font-size: 1.25rem;
-    }
-
-    .header-title-small {
-        font-size: 1rem;
-    }
-}
-
-@media (max-width: 640px) {
-    .filters-grid {
-        grid-template-columns: 1fr;
-    }
-
-    .header-section {
-        flex-direction: column;
-        text-align: center;
-        gap: 1rem;
-    }
-
-    .header-content {
-        text-align: center;
-    }
-
-    .header-subtitle {
-        justify-content: center;
-    }
-
-    .add-button {
-        width: 100% !important;
-    }
-}
-
-:deep(.p-datatable-sm .p-datatable-tbody > tr > td) {
-    padding: 0.75rem;
-}
-
-/* FullCalendar Specific Styles */
 .fc {
     font-family: var(--font-family);
     border-radius: 12px;
@@ -809,7 +887,7 @@ const calendarOptions = ref({
     padding: 0.25rem 0.5rem;
     margin-bottom: 2px;
     font-size: 0.8rem;
-    background-color: var(--primary-color); /* Default event color */
+    background-color: var(--primary-color);
     border: none;
     color: var(--primary-color-text);
     white-space: normal;
@@ -819,7 +897,7 @@ const calendarOptions = ref({
     border-radius: var(--border-radius);
     padding: 0.25rem;
     font-size: 0.8rem;
-    background-color: var(--primary-color); /* Default event color */
+    background-color: var(--primary-color);
     border: none;
     color: var(--primary-color-text);
 }
@@ -830,6 +908,46 @@ const calendarOptions = ref({
 
 .fc-event-time {
     font-weight: 400;
+}
+
+/* Quick Fill Indicator Styles */
+:deep(.quick-fill-indicator) {
+    background: linear-gradient(135deg, #e0f2fe 0%, #bae6fd 100%);
+    border: 2px solid #0ea5e9;
+    border-radius: 6px;
+    padding: 0.25rem;
+    margin-top: 0.25rem;
+    font-size: 0.7rem;
+    text-align: center;
+}
+
+:deep(.quick-fill-indicator.has-conflict) {
+    background: linear-gradient(135deg, #fed7aa 0%, #fdba74 100%);
+    border-color: #fb923c;
+}
+
+:deep(.quick-fill-indicator .doctor-name) {
+    font-weight: 700;
+    color: #0369a1;
+    font-size: 0.65rem;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+:deep(.quick-fill-indicator.has-conflict .doctor-name) {
+    color: #9a3412;
+}
+
+:deep(.quick-fill-indicator .shift-display) {
+    font-weight: 600;
+    color: #0284c7;
+    font-size: 0.75rem;
+    margin-top: 0.125rem;
+}
+
+:deep(.quick-fill-indicator.has-conflict .shift-display) {
+    color: #c2410c;
 }
 
 /* Dark theme adjustments */
@@ -847,16 +965,17 @@ const calendarOptions = ref({
     border-color: var(--primary-color);
     color: var(--primary-color-text);
 }
+
 :global(.dark) .fc .fc-button:hover {
     background-color: var(--primary-darker-color);
     border-color: var(--primary-darker-color);
 }
+
 :global(.dark) .fc .fc-button-active {
     background-color: var(--primary-lighter-color);
     border-color: var(--primary-lighter-color);
 }
 
-/* Day/Week headers */
 .fc .fc-col-header-cell,
 .fc .fc-timegrid-slot-label {
     background-color: var(--surface-hover);
@@ -875,7 +994,6 @@ const calendarOptions = ref({
     color: var(--text-color-secondary);
 }
 
-/* Border styling for calendar cells */
 .fc .fc-daygrid-body-unbalanced .fc-daygrid-day > .fc-daygrid-day-frame {
     border: 1px solid var(--surface-border);
 }
@@ -887,5 +1005,97 @@ const calendarOptions = ref({
 
 .fc .fc-scrollgrid-sync-table {
     border-collapse: collapse;
+}
+
+:global(.dark) :deep(.quick-fill-indicator) {
+    background: linear-gradient(135deg, rgba(14, 165, 233, 0.2) 0%, rgba(14, 165, 233, 0.3) 100%);
+    border-color: #38bdf8;
+}
+
+:global(.dark) :deep(.quick-fill-indicator .doctor-name) {
+    color: #7dd3fc;
+}
+
+:global(.dark) :deep(.quick-fill-indicator .shift-display) {
+    color: #38bdf8;
+}
+
+:global(.dark) :deep(.quick-fill-indicator.has-conflict) {
+    background: linear-gradient(135deg, rgba(251, 146, 60, 0.2) 0%, rgba(251, 146, 60, 0.3) 100%);
+    border-color: #fb923c;
+}
+
+:global(.dark) :deep(.quick-fill-indicator.has-conflict .doctor-name),
+:global(.dark) :deep(.quick-fill-indicator.has-conflict .shift-display) {
+    color: #fdba74;
+}
+
+/* ============================================================================
+   RESPONSIVE DESIGN
+   ============================================================================ */
+@media (max-width: 1024px) {
+    .filters-grid {
+        grid-template-columns: repeat(2, 1fr);
+    }
+}
+
+@media (max-width: 768px) {
+    .schedules-view {
+        padding: 0.5rem;
+    }
+
+    .main-card {
+        padding: 1rem;
+        border-radius: 12px;
+    }
+
+    .header-section {
+        gap: 1rem;
+    }
+
+    .header-icon-wrapper {
+        width: 48px;
+        height: 48px;
+    }
+
+    .header-icon-wrapper i {
+        font-size: 1.5rem;
+    }
+
+    .header-title {
+        font-size: 1.25rem;
+    }
+
+    .header-subtitle {
+        font-size: 0.875rem;
+    }
+}
+
+@media (max-width: 640px) {
+    .filters-grid {
+        grid-template-columns: 1fr;
+    }
+
+    .header-section {
+        flex-direction: column;
+        text-align: center;
+        gap: 1rem;
+    }
+
+    .header-content {
+        text-align: center;
+    }
+
+    .header-subtitle {
+        justify-content: center;
+    }
+
+    .add-button {
+        width: 100% !important;
+    }
+}
+
+:deep(.p-datatable-sm .p-datatable-tbody > tr > td) {
+    padding: 0.75rem;
 }
 </style>

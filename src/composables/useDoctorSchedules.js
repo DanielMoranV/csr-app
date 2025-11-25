@@ -1,7 +1,7 @@
+import { apiUtils } from '@/api/axios.js';
 import { useDoctorSchedulesStore } from '@/store/doctorSchedulesStore';
 import { useToast } from 'primevue/usetoast';
 import { computed, ref } from 'vue';
-import { apiUtils } from '@/api/axios.js';
 
 export function useDoctorSchedules() {
     const schedulesStore = useDoctorSchedulesStore();
@@ -149,6 +149,44 @@ export function useDoctorSchedules() {
             });
         } catch (error) {
             handleError(error, 'Error al completar el horario');
+            throw error;
+        } finally {
+            operationInProgress.value = false;
+        }
+    };
+
+    const createScheduleBatch = async (schedulesArray) => {
+        operationInProgress.value = true;
+        try {
+            const response = await schedulesStore.createScheduleBatch(schedulesArray);
+            
+            // Response structure: { successful: [], failed: [], total: number }
+            const results = response;
+            
+            if (results.successful.length > 0) {
+                toast.add({
+                    severity: 'success',
+                    summary: 'Horarios Creados',
+                    detail: `${results.successful.length} de ${results.total} horarios creados exitosamente`,
+                    life: 5000
+                });
+            }
+            
+            if (results.failed.length > 0) {
+                toast.add({
+                    severity: 'warn',
+                    summary: 'Algunos Horarios Fallaron',
+                    detail: `${results.failed.length} horarios no pudieron ser creados`,
+                    life: 5000
+                });
+            }
+            
+            // Refresh schedules after batch creation
+            await fetchSchedules();
+            
+            return results;
+        } catch (error) {
+            handleError(error, 'Error en creación masiva de horarios');
             throw error;
         } finally {
             operationInProgress.value = false;
@@ -321,6 +359,7 @@ export function useDoctorSchedules() {
         fetchSchedules,
         fetchScheduleById,
         createSchedule,
+        createScheduleBatch,
         updateSchedule,
         deleteSchedule,
         confirmSchedule,
