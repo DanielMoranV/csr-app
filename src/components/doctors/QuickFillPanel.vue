@@ -23,6 +23,10 @@ const props = defineProps({
         type: Array,
         default: () => []
     },
+    doctorColorMap: {
+        type: Object,
+        default: () => ({})
+    },
     disabled: {
         type: Boolean,
         default: false
@@ -65,11 +69,31 @@ const conflictDays = computed(() => {
 
 const formatDate = (dateStr) => {
     const date = new Date(dateStr + 'T00:00:00');
-    return date.toLocaleDateString('es-ES', { 
-        weekday: 'short', 
-        day: 'numeric', 
-        month: 'short' 
+    return date.toLocaleDateString('es-ES', {
+        weekday: 'short',
+        day: 'numeric',
+        month: 'short'
     });
+};
+
+const truncateDoctorName = (name, maxLength = 15) => {
+    if (!name) return '';
+    if (name.length <= maxLength) return name;
+    return name.substring(0, maxLength) + '...';
+};
+
+const getDoctorColorClass = (doctorId) => {
+    const colorIndex = props.doctorColorMap[doctorId] || 0;
+    return `doctor-color-${colorIndex}`;
+};
+
+// Extract plain text from HTML shift display (remove span tags)
+const getPlainShiftDisplay = (shiftDisplay) => {
+    if (!shiftDisplay) return '';
+    // Remove HTML tags to get just the text content
+    const div = document.createElement('div');
+    div.innerHTML = shiftDisplay;
+    return div.textContent || div.innerText || '';
 };
 </script>
 
@@ -213,15 +237,27 @@ const formatDate = (dateStr) => {
                 <Chip
                     v-for="day in selectedDays"
                     :key="day.date"
-                    :label="`${formatDate(day.date)}${day.doctorName ? ' - ' + day.doctorName : ''}${day.shiftDisplay ? ' (' + day.shiftDisplay + ')' : ''}`"
-                    :class="{ 'conflict-chip': day.hasConflict }"
+                    :class="[
+                        'day-chip',
+                        { 'conflict-chip': day.hasConflict },
+                        day.doctorId ? getDoctorColorClass(day.doctorId) : ''
+                    ]"
                     removable
                     @remove="emit('remove-day', day.date)"
                 >
                     <template #icon>
-                        <i v-if="day.hasConflict" class="pi pi-exclamation-circle text-orange-500"></i>
+                        <i v-if="day.hasConflict" class="pi pi-exclamation-circle"></i>
                         <i v-else class="pi pi-calendar"></i>
                     </template>
+                    <span class="chip-content">
+                        <span class="chip-date">{{ formatDate(day.date) }}</span>
+                        <span v-if="day.doctorName" class="chip-doctor" :title="day.doctorName">
+                            {{ truncateDoctorName(day.doctorName, 12) }}
+                        </span>
+                        <span v-if="day.shiftDisplay" class="chip-shift">
+                            {{ getPlainShiftDisplay(day.shiftDisplay) }}
+                        </span>
+                    </span>
                 </Chip>
             </div>
 
@@ -466,35 +502,185 @@ const formatDate = (dateStr) => {
 }
 
 .days-list :deep(.p-chip) {
-    background: #e0f2fe;
-    color: #0369a1;
-    border: 1px solid #7dd3fc;
+    font-size: 0.75rem;
+    padding: 0.35rem 0.65rem;
     font-weight: 500;
     transition: all 0.2s ease;
 }
 
 .days-list :deep(.p-chip:hover) {
-    background: #bae6fd;
     transform: translateY(-2px);
-    box-shadow: 0 2px 8px rgba(14, 165, 233, 0.2);
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
 }
 
-.days-list :deep(.conflict-chip) {
-    background: #fed7aa;
+.chip-content {
+    display: flex;
+    align-items: center;
+    gap: 0.4rem;
+    font-size: 0.75rem;
+}
+
+.chip-date {
+    font-weight: 600;
+}
+
+.chip-doctor {
+    font-weight: 700;
+    padding: 0.1rem 0.4rem;
+    border-radius: 4px;
+    background: rgba(0, 0, 0, 0.1);
+}
+
+.chip-shift {
+    font-weight: 500;
+    opacity: 0.9;
+}
+
+/* Doctor Color Classes */
+.days-list :deep(.doctor-color-0) {
+    background: linear-gradient(135deg, #dbeafe 0%, #bfdbfe 100%);
+    border: 1.5px solid #3b82f6;
+    color: #1e3a8a;
+}
+
+.days-list :deep(.doctor-color-0 .chip-doctor) {
+    color: #1e40af;
+    background: rgba(59, 130, 246, 0.15);
+}
+
+.days-list :deep(.doctor-color-1) {
+    background: linear-gradient(135deg, #fae8ff 0%, #f0abfc 100%);
+    border: 1.5px solid #d946ef;
+    color: #701a75;
+}
+
+.days-list :deep(.doctor-color-1 .chip-doctor) {
+    color: #86198f;
+    background: rgba(217, 70, 239, 0.15);
+}
+
+.days-list :deep(.doctor-color-2) {
+    background: linear-gradient(135deg, #d1fae5 0%, #a7f3d0 100%);
+    border: 1.5px solid #10b981;
+    color: #065f46;
+}
+
+.days-list :deep(.doctor-color-2 .chip-doctor) {
+    color: #047857;
+    background: rgba(16, 185, 129, 0.15);
+}
+
+.days-list :deep(.doctor-color-3) {
+    background: linear-gradient(135deg, #fed7aa 0%, #fdba74 100%);
+    border: 1.5px solid #f97316;
+    color: #7c2d12;
+}
+
+.days-list :deep(.doctor-color-3 .chip-doctor) {
     color: #9a3412;
-    border-color: #fb923c;
+    background: rgba(249, 115, 22, 0.15);
 }
 
-:global(.dark) .days-list :deep(.p-chip) {
-    background: rgba(14, 165, 233, 0.2);
-    color: #7dd3fc;
-    border-color: #0ea5e9;
+.days-list :deep(.doctor-color-4) {
+    background: linear-gradient(135deg, #fce7f3 0%, #fbcfe8 100%);
+    border: 1.5px solid #f43f5e;
+    color: #881337;
+}
+
+.days-list :deep(.doctor-color-4 .chip-doctor) {
+    color: #9f1239;
+    background: rgba(244, 63, 94, 0.15);
+}
+
+.days-list :deep(.doctor-color-5) {
+    background: linear-gradient(135deg, #f3e8ff 0%, #e9d5ff 100%);
+    border: 1.5px solid #a855f7;
+    color: #581c87;
+}
+
+.days-list :deep(.doctor-color-5 .chip-doctor) {
+    color: #6b21a8;
+    background: rgba(168, 85, 247, 0.15);
+}
+
+/* Conflict Chip Override */
+.days-list :deep(.conflict-chip) {
+    background: #fed7aa !important;
+    color: #9a3412 !important;
+    border-color: #fb923c !important;
+}
+
+/* Dark Mode */
+:global(.dark) .days-list :deep(.doctor-color-0) {
+    background: linear-gradient(135deg, rgba(59, 130, 246, 0.2) 0%, rgba(59, 130, 246, 0.3) 100%);
+    border-color: #60a5fa;
+    color: #93c5fd;
+}
+
+:global(.dark) .days-list :deep(.doctor-color-0 .chip-doctor) {
+    color: #93c5fd;
+    background: rgba(59, 130, 246, 0.25);
+}
+
+:global(.dark) .days-list :deep(.doctor-color-1) {
+    background: linear-gradient(135deg, rgba(217, 70, 239, 0.2) 0%, rgba(217, 70, 239, 0.3) 100%);
+    border-color: #e879f9;
+    color: #f0abfc;
+}
+
+:global(.dark) .days-list :deep(.doctor-color-1 .chip-doctor) {
+    color: #f0abfc;
+    background: rgba(217, 70, 239, 0.25);
+}
+
+:global(.dark) .days-list :deep(.doctor-color-2) {
+    background: linear-gradient(135deg, rgba(16, 185, 129, 0.2) 0%, rgba(16, 185, 129, 0.3) 100%);
+    border-color: #34d399;
+    color: #6ee7b7;
+}
+
+:global(.dark) .days-list :deep(.doctor-color-2 .chip-doctor) {
+    color: #6ee7b7;
+    background: rgba(16, 185, 129, 0.25);
+}
+
+:global(.dark) .days-list :deep(.doctor-color-3) {
+    background: linear-gradient(135deg, rgba(249, 115, 22, 0.2) 0%, rgba(249, 115, 22, 0.3) 100%);
+    border-color: #fb923c;
+    color: #fdba74;
+}
+
+:global(.dark) .days-list :deep(.doctor-color-3 .chip-doctor) {
+    color: #fdba74;
+    background: rgba(249, 115, 22, 0.25);
+}
+
+:global(.dark) .days-list :deep(.doctor-color-4) {
+    background: linear-gradient(135deg, rgba(244, 63, 94, 0.2) 0%, rgba(244, 63, 94, 0.3) 100%);
+    border-color: #fb7185;
+    color: #fda4af;
+}
+
+:global(.dark) .days-list :deep(.doctor-color-4 .chip-doctor) {
+    color: #fda4af;
+    background: rgba(244, 63, 94, 0.25);
+}
+
+:global(.dark) .days-list :deep(.doctor-color-5) {
+    background: linear-gradient(135deg, rgba(168, 85, 247, 0.2) 0%, rgba(168, 85, 247, 0.3) 100%);
+    border-color: #c084fc;
+    color: #d8b4fe;
+}
+
+:global(.dark) .days-list :deep(.doctor-color-5 .chip-doctor) {
+    color: #d8b4fe;
+    background: rgba(168, 85, 247, 0.25);
 }
 
 :global(.dark) .days-list :deep(.conflict-chip) {
-    background: rgba(251, 146, 60, 0.2);
-    color: #fdba74;
-    border-color: #fb923c;
+    background: rgba(251, 146, 60, 0.2) !important;
+    color: #fdba74 !important;
+    border-color: #fb923c !important;
 }
 
 /* ============================================================================

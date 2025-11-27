@@ -158,35 +158,69 @@ export function useDoctorSchedules() {
     const createScheduleBatch = async (schedulesArray) => {
         operationInProgress.value = true;
         try {
+            // Validate input
+            if (!Array.isArray(schedulesArray) || schedulesArray.length === 0) {
+                throw new Error('Debe proporcionar al menos un horario para crear');
+            }
+
             const response = await schedulesStore.createScheduleBatch(schedulesArray);
-            
+
+            console.log('🎯 [useDoctorSchedules] Respuesta del store:', {
+                response,
+                type: typeof response,
+                keys: response ? Object.keys(response) : null,
+                successful: response?.successful,
+                failed: response?.failed,
+                total: response?.total
+            });
+
             // Response structure: { successful: [], failed: [], total: number }
             const results = response;
-            
-            if (results.successful.length > 0) {
+
+            // Show success toast
+            if (results.successful && results.successful.length > 0) {
+                const successRate = Math.round((results.successful.length / results.total) * 100);
                 toast.add({
                     severity: 'success',
                     summary: 'Horarios Creados',
-                    detail: `${results.successful.length} de ${results.total} horarios creados exitosamente`,
+                    detail: `${results.successful.length} de ${results.total} horarios creados exitosamente (${successRate}%)`,
                     life: 5000
                 });
             }
-            
-            if (results.failed.length > 0) {
+
+            // Show warning toast if there are failures (but not all failed)
+            if (results.failed && results.failed.length > 0 && results.failed.length < results.total) {
                 toast.add({
                     severity: 'warn',
                     summary: 'Algunos Horarios Fallaron',
-                    detail: `${results.failed.length} horarios no pudieron ser creados`,
-                    life: 5000
+                    detail: `${results.failed.length} de ${results.total} horarios no pudieron ser creados. Revise el detalle en el diálogo.`,
+                    life: 7000
                 });
             }
-            
-            // Refresh schedules after batch creation
-            await fetchSchedules();
-            
+
+            // Show complete failure toast if all failed
+            if (results.failed && results.failed.length === results.total) {
+                toast.add({
+                    severity: 'error',
+                    summary: 'Error en Creación Masiva',
+                    detail: 'Ningún horario pudo ser creado. Verifique los datos y conflictos.',
+                    life: 7000
+                });
+            }
+
+            // Refresh schedules after batch creation (only if some succeeded)
+            if (results.successful && results.successful.length > 0) {
+                await fetchSchedules();
+            }
+
             return results;
         } catch (error) {
-            handleError(error, 'Error en creación masiva de horarios');
+            // Check if it's a validation error (422)
+            if (error?.response?.status === 422) {
+                handleError(error, 'Error de validación en los datos de horarios');
+            } else {
+                handleError(error, 'Error en creación masiva de horarios');
+            }
             throw error;
         } finally {
             operationInProgress.value = false;
@@ -287,11 +321,13 @@ export function useDoctorSchedules() {
 
     // Filters
     const setDoctorFilter = (value) => schedulesStore.setFilter('doctor_id', value);
+    const setSpecialtyFilter = (value) => schedulesStore.setFilter('id_medical_specialty', value); // Specialty filter
     const setStartDateFilter = (value) => schedulesStore.setFilter('start_date', value); // New filter
     const setEndDateFilter = (value) => schedulesStore.setFilter('end_date', value);   // New filter
 
     const clearFilters = () => {
         schedulesStore.setFilter('doctor_id', null);
+        schedulesStore.setFilter('id_medical_specialty', null);
         schedulesStore.setFilter('start_date', null);
         schedulesStore.setFilter('end_date', null);
         // Do not clear other filters (upcoming, past, today) as they are used elsewhere
@@ -380,6 +416,7 @@ export function useDoctorSchedules() {
         fetchMedicalShifts,
         // Filters
         setDoctorFilter,
+        setSpecialtyFilter, // Specialty filter
         setStartDateFilter, // New filter
         setEndDateFilter,   // New filter
         clearFilters

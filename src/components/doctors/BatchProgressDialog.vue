@@ -51,11 +51,47 @@ const successRate = computed(() => {
 
 const formatDate = (dateStr) => {
     const date = new Date(dateStr + 'T00:00:00');
-    return date.toLocaleDateString('es-ES', { 
-        weekday: 'short', 
-        day: 'numeric', 
-        month: 'short' 
+    return date.toLocaleDateString('es-ES', {
+        weekday: 'short',
+        day: 'numeric',
+        month: 'short'
     });
+};
+
+// Group errors by error message
+const groupedErrors = computed(() => {
+    const groups = {};
+
+    props.results.failed.forEach(item => {
+        const errorKey = item.error || 'Error desconocido';
+        if (!groups[errorKey]) {
+            groups[errorKey] = {
+                message: errorKey,
+                count: 0,
+                items: []
+            };
+        }
+        groups[errorKey].count++;
+        groups[errorKey].items.push(item);
+    });
+
+    return Object.values(groups);
+});
+
+// Get doctor name from schedule_data
+const getDoctorInfo = (scheduleData) => {
+    if (!scheduleData) return 'N/A';
+    // The doctor info might be in different places depending on backend response
+    return scheduleData.doctor_name || scheduleData.id_doctors || 'N/A';
+};
+
+// Get shift info from schedule_data
+const getShiftInfo = (scheduleData) => {
+    if (!scheduleData) return '';
+    if (scheduleData.start_time && scheduleData.end_time) {
+        return `${scheduleData.start_time.substring(0, 5)} - ${scheduleData.end_time.substring(0, 5)}`;
+    }
+    return '';
 };
 
 const handleClose = () => {
@@ -154,15 +190,41 @@ const handleClose = () => {
                         Horarios Fallidos ({{ results.failed.length }})
                     </h4>
                     <div class="results-list error-list">
-                        <div 
-                            v-for="(item, index) in results.failed" 
-                            :key="'failed-' + index"
-                            class="result-item error-item"
+                        <!-- Grouped by error type -->
+                        <div
+                            v-for="(group, groupIndex) in groupedErrors"
+                            :key="'error-group-' + groupIndex"
+                            class="error-group"
                         >
-                            <i class="pi pi-times"></i>
-                            <div class="error-content">
-                                <span class="error-date">{{ formatDate(item.date) }}</span>
-                                <span class="error-message">{{ item.error || 'Error desconocido' }}</span>
+                            <div class="error-group-header">
+                                <i class="pi pi-exclamation-circle"></i>
+                                <div class="error-group-info">
+                                    <span class="error-group-message">{{ group.message }}</span>
+                                    <span class="error-group-count">{{ group.count }} caso(s)</span>
+                                </div>
+                            </div>
+                            <div class="error-group-items">
+                                <div
+                                    v-for="(item, itemIndex) in group.items"
+                                    :key="'error-item-' + itemIndex"
+                                    class="error-detail-item"
+                                >
+                                    <i class="pi pi-calendar"></i>
+                                    <div class="error-detail-content">
+                                        <div class="error-detail-row">
+                                            <span class="error-detail-label">Fecha:</span>
+                                            <span class="error-detail-value">{{ formatDate(item.date) }}</span>
+                                        </div>
+                                        <div v-if="item.schedule_data" class="error-detail-row">
+                                            <span class="error-detail-label">Turno:</span>
+                                            <span class="error-detail-value">{{ getShiftInfo(item.schedule_data) }}</span>
+                                        </div>
+                                        <div v-if="item.schedule_data && item.schedule_data.id_doctors" class="error-detail-row">
+                                            <span class="error-detail-label">Médico ID:</span>
+                                            <span class="error-detail-value">{{ item.schedule_data.id_doctors }}</span>
+                                        </div>
+                                    </div>
+                                </div>
                             </div>
                         </div>
                     </div>
@@ -469,6 +531,125 @@ const handleClose = () => {
 .error-message {
     font-size: 0.813rem;
     color: var(--text-color-secondary);
+}
+
+/* ============================================================================
+   ERROR GROUPS
+   ============================================================================ */
+.error-group {
+    margin-bottom: 1rem;
+    border: 1px solid var(--surface-border);
+    border-radius: 8px;
+    overflow: hidden;
+    background: var(--surface-card);
+}
+
+.error-group:last-child {
+    margin-bottom: 0;
+}
+
+.error-group-header {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    padding: 0.75rem 1rem;
+    background: linear-gradient(135deg, #fef2f2 0%, #fee2e2 100%);
+    border-bottom: 1px solid #fecaca;
+}
+
+:global(.dark) .error-group-header {
+    background: linear-gradient(135deg, rgba(239, 68, 68, 0.1) 0%, rgba(239, 68, 68, 0.15) 100%);
+    border-bottom-color: rgba(239, 68, 68, 0.3);
+}
+
+.error-group-header i {
+    color: #ef4444;
+    font-size: 1.125rem;
+    flex-shrink: 0;
+}
+
+.error-group-info {
+    display: flex;
+    flex-direction: column;
+    gap: 0.25rem;
+    flex: 1;
+}
+
+.error-group-message {
+    font-weight: 600;
+    font-size: 0.875rem;
+    color: #991b1b;
+    line-height: 1.4;
+}
+
+:global(.dark) .error-group-message {
+    color: #fca5a5;
+}
+
+.error-group-count {
+    font-size: 0.75rem;
+    color: #dc2626;
+    font-weight: 500;
+}
+
+:global(.dark) .error-group-count {
+    color: #f87171;
+}
+
+.error-group-items {
+    padding: 0.5rem;
+}
+
+.error-detail-item {
+    display: flex;
+    align-items: flex-start;
+    gap: 0.75rem;
+    padding: 0.75rem;
+    border-radius: 6px;
+    background: var(--surface-ground);
+    margin-bottom: 0.5rem;
+    transition: all 0.2s ease;
+}
+
+.error-detail-item:last-child {
+    margin-bottom: 0;
+}
+
+.error-detail-item:hover {
+    background: var(--surface-hover);
+    transform: translateX(4px);
+}
+
+.error-detail-item > i {
+    color: #ef4444;
+    font-size: 0.875rem;
+    margin-top: 0.2rem;
+    flex-shrink: 0;
+}
+
+.error-detail-content {
+    display: flex;
+    flex-direction: column;
+    gap: 0.35rem;
+    flex: 1;
+}
+
+.error-detail-row {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    font-size: 0.813rem;
+}
+
+.error-detail-label {
+    font-weight: 600;
+    color: var(--text-color-secondary);
+    min-width: 70px;
+}
+
+.error-detail-value {
+    color: var(--text-color);
+    font-weight: 500;
 }
 
 /* ============================================================================

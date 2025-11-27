@@ -20,6 +20,7 @@ export const useDoctorSchedulesStore = defineStore('doctorSchedules', () => {
         stats: null,
         filters: {
             doctor_id: null,
+            id_medical_specialty: null, // Filter by medical specialty
             start_date: null, // New filter for start date
             end_date: null,   // New filter for end date
             category: null,
@@ -100,15 +101,51 @@ export const useDoctorSchedulesStore = defineStore('doctorSchedules', () => {
     const fetchSchedules = async (params = {}) => {
         state.isLoading = true;
         try {
-            const response = await schedulesApi.getAll({ ...state.filters, ...params });
+            const requestParams = { ...state.filters, ...params };
+            console.log('📅 [fetchSchedules] Solicitando horarios con parámetros:', requestParams);
+
+            const response = await schedulesApi.getAll(requestParams);
+
             if (apiUtils.isSuccess(response)) {
                 const data = apiUtils.getData(response);
-                state.schedules = Array.isArray(data) ? data : data.data || [];
+
+                console.log('🔍 [fetchSchedules] Procesando respuesta:', {
+                    rawResponse: response,
+                    extractedData: data,
+                    isArray: Array.isArray(data),
+                    hasDataProperty: data?.data !== undefined,
+                    dataContent: data?.data,
+                    isDataArray: Array.isArray(data?.data),
+                    finalSchedules: Array.isArray(data) ? data : (Array.isArray(data?.data) ? data.data : (Array.isArray(data?.data?.data) ? data.data.data : []))
+                });
+
+                // Handle different response structures:
+                // 1. Direct array: data = [...]
+                // 2. Wrapped in data: data = { data: [...] }
+                // 3. Paginated: data = { data: { data: [...], pagination: {...} } }
+                if (Array.isArray(data)) {
+                    state.schedules = data;
+                } else if (Array.isArray(data?.data)) {
+                    state.schedules = data.data;
+                } else if (Array.isArray(data?.data?.data)) {
+                    // Paginated response
+                    state.schedules = data.data.data;
+                } else {
+                    state.schedules = [];
+                }
+
+                console.log('✅ [fetchSchedules] Horarios recibidos del backend:', {
+                    total: state.schedules.length,
+                    schedules: state.schedules,
+                    filters: state.filters
+                });
+
                 state.lastFetch = Date.now();
                 return response;
             }
             throw response;
         } catch (error) {
+            console.error('❌ [fetchSchedules] Error al cargar horarios:', error);
             throw error;
         } finally {
             state.isLoading = false;
@@ -203,22 +240,50 @@ export const useDoctorSchedulesStore = defineStore('doctorSchedules', () => {
         state.isSaving = true;
         try {
             const response = await schedulesApi.createBatch(schedulesArray);
+
+            console.log('📦 [createScheduleBatch] Respuesta del backend:', {
+                response,
+                isSuccess: apiUtils.isSuccess(response),
+                data: apiUtils.getData(response)
+            });
+
+            // Special handling for batch endpoint which doesn't follow standard format
+            // It returns { successful, failed, total, message } directly without "success" field
+            let results;
+
             if (apiUtils.isSuccess(response)) {
-                const results = apiUtils.getData(response);
-                
-                // Add successful schedules to state
-                if (results.successful && results.successful.length > 0) {
-                    results.successful.forEach(item => {
-                        if (item.schedule) {
-                            state.schedules.push(item.schedule);
-                        }
-                    });
-                }
-                
-                return results;
+                // Standard format: { success: true, data: { successful, failed, ... } }
+                results = apiUtils.getData(response);
+            } else if (response && typeof response === 'object' &&
+                       'successful' in response && 'failed' in response && 'total' in response) {
+                // Batch format: { successful, failed, total, message } (no "success" field)
+                results = response;
+                console.log('⚠️ [createScheduleBatch] Respuesta en formato batch (sin "success" field)');
+            } else {
+                // Unknown format - throw error
+                throw response;
             }
-            throw response;
+
+            console.log('✅ [createScheduleBatch] Resultados extraídos:', {
+                results,
+                hasSuccessful: !!results.successful,
+                hasFailed: !!results.failed,
+                successfulLength: results.successful?.length,
+                failedLength: results.failed?.length
+            });
+
+            // Add successful schedules to state
+            if (results.successful && results.successful.length > 0) {
+                results.successful.forEach(item => {
+                    if (item.schedule) {
+                        state.schedules.push(item.schedule);
+                    }
+                });
+            }
+
+            return results;
         } catch (error) {
+            console.error('❌ [createScheduleBatch] Error:', error);
             throw error;
         } finally {
             state.isSaving = false;

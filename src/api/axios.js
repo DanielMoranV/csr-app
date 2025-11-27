@@ -9,6 +9,21 @@ const instance = axios.create({
     headers: {
         'Content-Type': 'application/json',
         Accept: 'application/json'
+    },
+    paramsSerializer: {
+        serialize: (params) => {
+            // Filter out null, undefined, and empty string values
+            const filteredParams = Object.entries(params).reduce((acc, [key, value]) => {
+                // Only include the parameter if it's not null, undefined, or empty string
+                if (value !== null && value !== undefined && value !== '') {
+                    acc[key] = value;
+                }
+                return acc;
+            }, {});
+            
+            // Use URLSearchParams to serialize the filtered params
+            return new URLSearchParams(filteredParams).toString();
+        }
     }
 });
 
@@ -45,8 +60,20 @@ instance.interceptors.request.use(
 
         // Log para debugging (remover en producción)
         if (import.meta.env.DEV) {
-            console.log(`[API] ${config.method?.toUpperCase()} ${config.url}`, {
+            // Build full URL with params for GET requests
+            let fullUrl = config.url;
+            if (config.params && Object.keys(config.params).length > 0) {
+                // The paramsSerializer will have already filtered the params
+                const queryString = config.paramsSerializer?.serialize 
+                    ? config.paramsSerializer.serialize(config.params)
+                    : new URLSearchParams(config.params).toString();
+                fullUrl = `${config.url}?${queryString}`;
+            }
+
+            console.log(`[API] ${config.method?.toUpperCase()} ${fullUrl}`, {
+                baseURL: config.baseURL,
                 headers: config.headers,
+                params: config.params,
                 data: config.data
             });
         }
@@ -76,8 +103,23 @@ instance.interceptors.response.use(
             }
 
             // Log para debugging (remover en producción)
-            if (import.meta.env.DEV && data.success === false) {
-                console.warn('[API] Backend error response:', data);
+            if (import.meta.env.DEV) {
+                if (data.success === false) {
+                    console.warn('[API] Backend error response:', data);
+                }
+                // Log específico para doctor-schedules
+                if (response.config.url?.includes('/doctor-schedules')) {
+                    console.log(`[API Response] ${response.config.url}`, {
+                        success: data.success,
+                        message: data.message,
+                        dataType: typeof data.data,
+                        isArray: Array.isArray(data.data),
+                        dataCount: Array.isArray(data.data) ? data.data.length : (data.data ? 1 : 0),
+                        dataKeys: data.data ? Object.keys(data.data) : null,
+                        firstItem: Array.isArray(data.data) && data.data.length > 0 ? data.data[0] : null,
+                        fullResponse: data
+                    });
+                }
             }
         }
 
