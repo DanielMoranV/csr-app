@@ -4,7 +4,7 @@ import { useToast } from 'primevue/usetoast';
 import { onMounted, reactive, ref } from 'vue';
 
 // Componentes modulares
-import ConfirmDialog from '@/components/users/ConfirmDialog.vue';
+import ConfirmActionDialog from '@/components/users/ConfirmActionDialog.vue';
 import UserDialog from '@/components/users/UserDialog.vue';
 import UserFilters from '@/components/users/UserFilters.vue';
 import UserStats from '@/components/users/UserStats.vue';
@@ -379,7 +379,7 @@ const convertToCSV = (data) => {
         <UserDialog v-model:visible="userDialogVisible" :user="selectedUser" :position-options="positionOptions" :saving="isSaving" @save-user="handleSaveUser" @close="closeUserDialog" />
 
         <!-- Diálogo de confirmación -->
-        <ConfirmDialog
+        <ConfirmActionDialog
             v-model:visible="confirmDialogVisible"
             :title="confirmData.title"
             :message="confirmData.message"

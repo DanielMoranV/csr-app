@@ -268,7 +268,7 @@ const handleSave = () => {
 
 // Eliminar
 const handleDelete = () => {
-    emit('delete-schedule', props.schedule.id);
+    emit('delete-schedule', props.schedule);
 };
 
 // Cerrar diálogo

@@ -2,6 +2,7 @@
 import DoctorDialog from '@/components/doctors/DoctorDialog.vue';
 import DoctorTable from '@/components/doctors/DoctorTable.vue';
 import ScheduleDialog from '@/components/doctors/ScheduleDialog.vue';
+import SpecialtyAssignmentDialog from '@/components/doctors/SpecialtyAssignmentDialog.vue';
 import { useDoctors } from '@/composables/useDoctors';
 import { useDoctorSchedules } from '@/composables/useDoctorSchedules';
 import { usePermissions } from '@/composables/usePermissions';
@@ -24,8 +25,10 @@ const confirm = useConfirm();
 // Estado de diálogos
 const doctorDialogVisible = ref(false);
 const scheduleDialogVisible = ref(false);
+const specialtyDialogVisible = ref(false);
 const selectedDoctor = ref(null);
 const isEditingDoctor = ref(false);
+const isDeletingDoctor = ref(false);
 
 // Filtros
 const globalFilter = ref('');
@@ -87,8 +90,13 @@ const manageSchedules = (doctor) => {
 };
 
 const manageSpecialties = (doctor) => {
-    // TODO: Implementar gestión de especialidades
-    console.log('Gestionar especialidades de:', doctor.name);
+    selectedDoctor.value = doctor;
+    specialtyDialogVisible.value = true;
+};
+
+const handleSpecialtiesUpdated = async () => {
+    // Recargar la lista de médicos para ver los cambios
+    await fetchDoctors();
 };
 
 // Filtros
@@ -177,6 +185,8 @@ const hasActiveFilters = computed(() => {
         <DoctorDialog v-model:visible="doctorDialogVisible" :doctor="selectedDoctor" @save-doctor="handleSaveDoctor" />
 
         <ScheduleDialog v-model:visible="scheduleDialogVisible" :doctors="doctors" :medical-shifts="medicalShifts" />
+
+        <SpecialtyAssignmentDialog v-model:visible="specialtyDialogVisible" :doctor="selectedDoctor" @updated="handleSpecialtiesUpdated" />
 
         <ConfirmDialog />
     </div>

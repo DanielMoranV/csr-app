@@ -47,6 +47,7 @@ const handleSaveRoom = async (roomData) => {
 };
 
 const roomToDelete = ref(null);
+const isDeletingRoom = ref(false);
 const confirmDeleteRoom = (room) => {
     roomToDelete.value = room;
     confirmDialogVisible.value = true;
@@ -54,13 +55,21 @@ const confirmDeleteRoom = (room) => {
 
 const handleDeleteRoom = async () => {
     if (roomToDelete.value) {
-        await deleteRoom(roomToDelete.value.id);
-        confirmDialogVisible.value = false;
-        roomToDelete.value = null;
+        try {
+            isDeletingRoom.value = true;
+            await deleteRoom(roomToDelete.value.id);
+            confirmDialogVisible.value = false;
+            roomToDelete.value = null;
+        } catch (error) {
+            // El error ya se maneja en el composable
+        } finally {
+            isDeletingRoom.value = false;
+        }
     }
 };
 
 const bedToDelete = ref(null);
+const isDeletingBed = ref(false);
 const confirmDeleteBed = (bed) => {
     bedToDelete.value = bed;
     confirmBedDialogVisible.value = true;
@@ -68,9 +77,16 @@ const confirmDeleteBed = (bed) => {
 
 const handleDeleteBed = async () => {
     if (bedToDelete.value) {
-        await deleteBed(bedToDelete.value.id, bedToDelete.value.id_rooms);
-        confirmBedDialogVisible.value = false;
-        bedToDelete.value = null;
+        try {
+            isDeletingBed.value = true;
+            await deleteBed(bedToDelete.value.id, bedToDelete.value.id_rooms);
+            confirmBedDialogVisible.value = false;
+            bedToDelete.value = null;
+        } catch (error) {
+            // El error ya se maneja en el composable
+        } finally {
+            isDeletingBed.value = false;
+        }
     }
 };
 
@@ -135,9 +151,9 @@ const handleSaveBed = async (bedData) => {
 
         <BedDialog v-model:visible="bedDialogVisible" :bed="selectedBed" :editing="isEditingBed" :room-id="currentRoomId" @save="handleSaveBed" />
 
-        <ConfirmDeleteDialog v-model:visible="confirmDialogVisible" type="room" :room="roomToDelete" @confirm="handleDeleteRoom" />
+        <ConfirmDeleteDialog v-model:visible="confirmDialogVisible" type="room" :room="roomToDelete" :loading="isDeletingRoom" @confirm="handleDeleteRoom" />
 
-        <ConfirmDeleteDialog v-model:visible="confirmBedDialogVisible" type="bed" :bed="bedToDelete" @confirm="handleDeleteBed" />
+        <ConfirmDeleteDialog v-model:visible="confirmBedDialogVisible" type="bed" :bed="bedToDelete" :loading="isDeletingBed" @confirm="handleDeleteBed" />
     </div>
 </template>
 

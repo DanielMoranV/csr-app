@@ -4,7 +4,7 @@ import { useToast } from 'primevue/usetoast';
 import { onMounted, onUnmounted, reactive, ref } from 'vue';
 
 // Componentes modulares
-import ConfirmDialog from '@/components/tickets/ConfirmDialog.vue';
+import ConfirmActionDialog from '@/components/tickets/ConfirmActionDialog.vue';
 import TicketDialog from '@/components/tickets/TicketDialog.vue';
 import TicketFilters from '@/components/tickets/TicketFilters.vue';
 import TicketTable from '@/components/tickets/TicketTable.vue';
@@ -318,7 +318,7 @@ const getPrioritySeverity = (priority) => {
         <TicketDialog v-model:visible="ticketDialogVisible" :ticket="selectedTicket" :saving="ticketsStore.isSaving" @save-ticket="handleSaveTicket" @close="closeTicketDialog" />
 
         <!-- Diálogo de confirmación -->
-        <ConfirmDialog
+        <ConfirmActionDialog
             v-model:visible="confirmDialogVisible"
             :title="confirmData.title"
             :message="confirmData.message"

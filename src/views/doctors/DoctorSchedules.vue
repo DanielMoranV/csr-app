@@ -54,6 +54,7 @@ const calendarRef = ref(null);
 const scheduleDialogVisible = ref(false);
 const selectedSchedule = ref(null);
 const isEditingSchedule = ref(false);
+const isDeleting = ref(false);
 
 // Filters
 const specialtyFilter = ref(null);
@@ -154,9 +155,15 @@ const confirmDeleteSchedule = (schedule) => {
         acceptClass: 'p-button-danger',
         accept: async () => {
             try {
+                isDeleting.value = true;
                 await deleteSchedule(schedule.id);
+                // Close the dialog on successful deletion
+                scheduleDialogVisible.value = false;
+                selectedSchedule.value = null;
             } catch (error) {
                 // El error ya se maneja en el composable
+            } finally {
+                isDeleting.value = false;
             }
         }
     });
