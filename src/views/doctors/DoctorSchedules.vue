@@ -5,12 +5,14 @@ import BatchProgressDialog from '@/components/doctors/BatchProgressDialog.vue';
 import { useDoctorSchedules } from '@/composables/useDoctorSchedules';
 import { useDoctors } from '@/composables/useDoctors';
 import { useMedicalSpecialties } from '@/composables/useMedicalSpecialties';
+import { usePdfScheduleExport } from '@/composables/usePdfScheduleExport';
 import Button from 'primevue/button';
 import Checkbox from 'primevue/checkbox';
 import ConfirmDialog from 'primevue/confirmdialog';
 import DatePicker from 'primevue/datepicker';
 import Select from 'primevue/select';
 import { useConfirm } from 'primevue/useconfirm';
+import { useToast } from 'primevue/usetoast';
 import { computed, onMounted, ref, reactive, watch } from 'vue';
 import { isHoliday, getHolidayInfo } from '@/data/holidays-pe';
 
@@ -44,8 +46,10 @@ const {
 
 const { doctors, fetchDoctors } = useDoctors();
 const { specialties: medicalSpecialties, fetchSpecialties } = useMedicalSpecialties();
+const { generatePDF } = usePdfScheduleExport();
 
 const confirm = useConfirm();
+const toast = useToast();
 
 // Referencia al calendario para forzar re-render
 const calendarRef = ref(null);
@@ -60,6 +64,7 @@ const isDeleting = ref(false);
 const specialtyFilter = ref(null);
 const doctorFilter = ref(null);
 const monthFilter = ref(null);
+const enableDoctorFilter = ref(false); // Control if doctor filter is applied to backend
 
 // Quick Fill Mode
 const quickFillMode = ref(false);
@@ -217,10 +222,35 @@ const handleSpecialtyFilter = (value) => {
 
 const handleDoctorFilter = (value) => {
     doctorFilter.value = value;
-    // Don't apply doctor filter to the store - we want to see all doctors from the specialty
-    // The doctor filter is only used for UI purposes (quick fill mode selection)
-    // This allows users to see schedules from other doctors in the same specialty
-    // to avoid conflicts when creating new schedules
+    
+    // Apply doctor filter to backend only if enabled
+    if (enableDoctorFilter.value && value) {
+        setDoctorFilter(value);
+        fetchSchedules();
+    } else if (!enableDoctorFilter.value) {
+        // Clear doctor filter from backend if not enabled
+        setDoctorFilter(null);
+        if (specialtyFilter.value) {
+            fetchSchedules();
+        }
+    }
+};
+
+// Handle enable/disable doctor filter
+const handleToggleDoctorFilter = (enabled) => {
+    enableDoctorFilter.value = enabled;
+    
+    if (enabled && doctorFilter.value) {
+        // Enable: apply doctor filter to backend
+        setDoctorFilter(doctorFilter.value);
+        fetchSchedules();
+    } else {
+        // Disable: clear doctor filter from backend, keep specialty filter
+        setDoctorFilter(null);
+        if (specialtyFilter.value) {
+            fetchSchedules();
+        }
+    }
 };
 
 const handleMonthFilter = (value) => {
@@ -231,14 +261,63 @@ const handleClearFilters = () => {
     specialtyFilter.value = null;
     doctorFilter.value = null;
     monthFilter.value = null;
+    enableDoctorFilter.value = false;
     clearFilters();
     // Refresh schedules to show all doctors
     fetchSchedules();
 };
 
 const hasActiveFilters = computed(() => {
-    return specialtyFilter.value || doctorFilter.value || monthFilter.value;
+    return specialtyFilter.value || (enableDoctorFilter.value && doctorFilter.value) || monthFilter.value;
 });
+
+// PDF Export Handler
+const isExportingPDF = ref(false);
+
+const handleExportPDF = async () => {
+    if (!specialtyFilter.value) {
+        toast.add({
+            severity: 'warn',
+            summary: 'Especialidad Requerida',
+            detail: 'Debe seleccionar una especialidad antes de exportar',
+            life: 3000
+        });
+        return;
+    }
+
+    try {
+        isExportingPDF.value = true;
+        
+        // Get current month and year from calendar
+        const calendarApi = calendarRef.value?.getApi();
+        const currentDate = calendarApi?.getDate() || new Date();
+        const month = currentDate.getMonth() + 1; // 0-indexed
+        const year = currentDate.getFullYear();
+        
+        // Get selected specialty object
+        const specialty = medicalSpecialties.value.find(s => s.id === specialtyFilter.value);
+        
+        // Generate PDF
+        const fileName = generatePDF(schedules.value, specialty, month, year, medicalShifts.value);
+        
+        toast.add({
+            severity: 'success',
+            summary: 'PDF Generado',
+            detail: `El archivo ${fileName} se ha descargado correctamente`,
+            life: 5000
+        });
+    } catch (error) {
+        console.error('Error al generar PDF:', error);
+        toast.add({
+            severity: 'error',
+            summary: 'Error al Generar PDF',
+            detail: error.message || 'Ocurrió un error al generar el PDF',
+            life: 5000
+        });
+    } finally {
+        isExportingPDF.value = false;
+    }
+};
 
 // Helper Functions for Shift Display
 const getShiftAbbreviation = (shiftDescription) => {
@@ -378,6 +457,7 @@ const calendarOptions = ref({
         const doctorName = extendedProps.doctor?.name || arg.event.title;
         const shiftCode = extendedProps.shiftCode || '';
         const status = extendedProps.status || 'pending';
+        const isReten = extendedProps.is_payment_payroll === false;
 
         // Don't truncate - let CSS handle it dynamically with text-overflow: ellipsis
         // This way the name will adapt to the available space automatically
@@ -396,7 +476,20 @@ const calendarOptions = ref({
         const nameDiv = document.createElement('div');
         nameDiv.className = 'event-doctor-name';
         nameDiv.title = doctorName; // Full name on hover
-        nameDiv.textContent = doctorName; // Full name, CSS will truncate if needed
+        
+        // Add retén indicator BEFORE the name if applicable
+        if (isReten) {
+            const retenBadge = document.createElement('span');
+            retenBadge.className = 'reten-badge';
+            retenBadge.textContent = 'R';
+            retenBadge.title = 'Turno Retén';
+            nameDiv.appendChild(retenBadge);
+        }
+        
+        // Add doctor name text
+        const nameText = document.createTextNode(doctorName);
+        nameDiv.appendChild(nameText);
+        
         container.appendChild(nameDiv);
 
         // Shift display div
@@ -883,7 +976,31 @@ onMounted(() => {
                 <div class="filters-grid">
                     <Select v-model="specialtyFilter" :options="medicalSpecialties" optionLabel="name" optionValue="id" placeholder="Filtrar por Especialidad" class="w-full" @change="handleSpecialtyFilter($event.value)" showClear filter />
 
-                    <Select v-model="doctorFilter" :options="filteredDoctors" :optionLabel="(option) => option.name + (option.medical_specialty ? ` (${option.medical_specialty.name})` : '')" optionValue="id" placeholder="Filtrar por Médico" class="w-full" @change="handleDoctorFilter($event.value)" showClear filter />
+                    <div class="flex flex-col gap-2 w-full">
+                        <Select 
+                            v-model="doctorFilter" 
+                            :options="filteredDoctors" 
+                            :optionLabel="(option) => option.name + (option.medical_specialty ? ` (${option.medical_specialty.name})` : '')" 
+                            optionValue="id" 
+                            placeholder="Filtrar por Médico" 
+                            class="w-full" 
+                            :disabled="!specialtyFilter"
+                            @change="handleDoctorFilter($event.value)" 
+                            showClear 
+                            filter 
+                        />
+                        <div class="flex items-center gap-2" v-if="doctorFilter">
+                            <Checkbox 
+                                v-model="enableDoctorFilter" 
+                                inputId="enableDoctorFilter" 
+                                binary 
+                                @update:modelValue="handleToggleDoctorFilter"
+                            />
+                            <label for="enableDoctorFilter" class="cursor-pointer text-sm">
+                                Aplicar filtro de médico
+                            </label>
+                        </div>
+                    </div>
 
                     <DatePicker v-model="monthFilter" view="month" dateFormat="mm/yy" placeholder="Filtrar por Mes" class="w-full" @update:modelValue="handleMonthFilter" showIcon showButtonBar />
 
@@ -895,7 +1012,23 @@ onMounted(() => {
                         </label>
                     </div>
 
-                    <Button v-if="hasActiveFilters" label="Limpiar Filtros" icon="pi pi-filter-slash" severity="secondary" outlined @click="handleClearFilters" />
+                    <Button 
+                        v-if="hasActiveFilters" 
+                        label="Limpiar Filtros" 
+                        icon="pi pi-filter-slash" 
+                        severity="secondary" 
+                        outlined 
+                        @click="handleClearFilters" 
+                    />
+                    
+                    <Button 
+                        label="Exportar PDF" 
+                        icon="pi pi-file-pdf" 
+                        severity="help" 
+                        :disabled="!specialtyFilter || isExportingPDF" 
+                        :loading="isExportingPDF"
+                        @click="handleExportPDF" 
+                    />
                 </div>
             </div>
 
@@ -1914,6 +2047,64 @@ onMounted(() => {
 :deep(.status-icon) {
     font-size: 0.6rem;
     opacity: 0.85;
+}
+
+/* Retén badge styling */
+:deep(.reten-badge) {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 14px;
+    height: 14px;
+    background-color: #dc2626;
+    color: white;
+    border-radius: 50%;
+    font-size: 0.55rem;
+    font-weight: 700;
+    margin-right: 4px;
+    flex-shrink: 0;
+    vertical-align: middle;
+}
+
+/* Month view: Smaller badge */
+:deep(.fc-dayGridMonth-view .reten-badge) {
+    width: 12px;
+    height: 12px;
+    font-size: 0.5rem;
+    margin-right: 3px;
+}
+
+/* Week and Day views: Larger, more visible badge */
+:deep(.fc-timeGridWeek-view .reten-badge),
+:deep(.fc-timeGridDay-view .reten-badge) {
+    width: 16px;
+    height: 16px;
+    font-size: 0.6rem;
+    margin-right: 5px;
+}
+
+/* Ensure event-doctor-name displays inline with badge */
+:deep(.event-doctor-name) {
+    display: flex;
+    align-items: center;
+    font-size: 0.7rem;
+    font-weight: 600;
+    padding: 0.15rem 0.35rem;
+    border-radius: 4px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    flex: 1 1 auto;
+    min-width: 0;
+    max-width: 100%;
+    line-height: 1.3;
+}
+
+/* Week and Day views: Larger text */
+:deep(.fc-timeGridWeek-view .event-doctor-name),
+:deep(.fc-timeGridDay-view .event-doctor-name) {
+    font-size: 0.8rem;
+    padding: 0.2rem 0.4rem;
 }
 
 /* Shift type colors with background for better contrast */

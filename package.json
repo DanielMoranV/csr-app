@@ -17,6 +17,8 @@
         "axios": "^1.11.0",
         "chart.js": "3.3.2",
         "date-fns": "^3.6.0",
+        "jspdf": "^3.0.4",
+        "jspdf-autotable": "^5.0.2",
         "laravel-echo": "^2.2.0",
         "pinia": "^3.0.3",
         "postcss-nesting": "^13.0.2",
