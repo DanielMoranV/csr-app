@@ -149,6 +149,25 @@ const formatTime = (dateString) => {
     return `${hours}:${minutes}`;
 };
 
+// Formatear hora de ingreso
+const formatEntryTime = (dateString) => {
+    if (!dateString) return 'N/A';
+    const date = new Date(dateString);
+    const hours = String(date.getHours()).padStart(2, '0');
+    const minutes = String(date.getMinutes()).padStart(2, '0');
+    return `${hours}:${minutes}`;
+};
+
+// Obtener indicador de seguro (P = Particular, S = Seguro)
+const getInsuranceIndicator = (codeInsurance) => {
+    // Si es código 90 o 28, es Particular (P)
+    if (codeInsurance === '90' || codeInsurance === '28') {
+        return { label: 'P', color: '#3b82f6' }; // Azul para Particular
+    }
+    // Caso contrario es Seguro (S)
+    return { label: 'S', color: '#ef4444' }; // Rojo para Seguro
+};
+
 // Alternar entre vistas (ciclo: vertical -> cards)
 const toggleViewMode = () => {
     viewMode.value = viewMode.value === 'vertical' ? 'cards' : 'vertical';
@@ -246,6 +265,7 @@ const tableData = computed(() => {
 
         room.beds.forEach((bed) => {
             if (bed.attention) {
+                const insuranceInfo = getInsuranceIndicator(bed.attention.code_insurance);
                 rows.push({
                     room_number: room.room_number,
                     room_type: roomType, // Usar el tipo de habitación calculado
@@ -259,8 +279,13 @@ const tableData = computed(() => {
                     doctor: bed.attention.doctor,
                     entry_date: bed.attention.entry_date,
                     entry_date_formatted: formatEntryDate(bed.attention.entry_date),
+                    entry_time_formatted: formatEntryTime(bed.attention.entry_date),
                     days: calculateHospitalizationDays(bed.attention.entry_date),
-                    room_color: roomColorMap[room.room_number]
+                    room_color: roomColorMap[room.room_number],
+                    insurance_label: insuranceInfo.label,
+                    insurance_color: insuranceInfo.color,
+                    insurance_name: bed.attention.insurance,
+                    code_insurance: bed.attention.code_insurance
                 });
             }
         });
@@ -511,13 +536,25 @@ onUnmounted(() => {
                                 </span>
                             </div>
                             <div class="vr-patient">
-                                <div class="vr-patient-name">{{ bed.patient_name }}</div>
+                                <div class="vr-patient-name">
+                                    {{ bed.patient_name }}
+                                    <span 
+                                        class="insurance-badge-inline" 
+                                        :style="{ backgroundColor: bed.insurance_color }"
+                                        v-tooltip.top="`${bed.insurance_name} (${bed.code_insurance})`"
+                                    >
+                                        {{ bed.insurance_label }}
+                                    </span>
+                                </div>
                                 <div class="vr-patient-doctor" v-if="bed.doctor">
                                     <i class="pi pi-user-md"></i>
                                     {{ bed.doctor }}
                                 </div>
                             </div>
-                            <div class="vr-date">{{ bed.entry_date_formatted }}</div>
+                            <div class="vr-date">
+                                <div>{{ bed.entry_date_formatted }}</div>
+                                <div class="vr-time">{{ bed.entry_time_formatted }}</div>
+                            </div>
                             <div class="vr-days">{{ bed.days }}</div>
                         </div>
                         <!-- En modo portrait, también mostrar los datos de columna 2 en columna 1 -->
@@ -537,13 +574,25 @@ onUnmounted(() => {
                                 </span>
                             </div>
                             <div class="vr-patient">
-                                <div class="vr-patient-name">{{ bed.patient_name }}</div>
+                                <div class="vr-patient-name">
+                                    {{ bed.patient_name }}
+                                    <span 
+                                        class="insurance-badge-inline" 
+                                        :style="{ backgroundColor: bed.insurance_color }"
+                                        v-tooltip.top="`${bed.insurance_name} (${bed.code_insurance})`"
+                                    >
+                                        {{ bed.insurance_label }}
+                                    </span>
+                                </div>
                                 <div class="vr-patient-doctor" v-if="bed.doctor">
                                     <i class="pi pi-user-md"></i>
                                     {{ bed.doctor }}
                                 </div>
                             </div>
-                            <div class="vr-date">{{ bed.entry_date_formatted }}</div>
+                            <div class="vr-date">
+                                <div>{{ bed.entry_date_formatted }}</div>
+                                <div class="vr-time">{{ bed.entry_time_formatted }}</div>
+                            </div>
                             <div class="vr-days">{{ bed.days }}</div>
                         </div>
                     </div>
@@ -574,13 +623,25 @@ onUnmounted(() => {
                                 </span>
                             </div>
                             <div class="vr-patient">
-                                <div class="vr-patient-name">{{ bed.patient_name }}</div>
+                                <div class="vr-patient-name">
+                                    {{ bed.patient_name }}
+                                    <span 
+                                        class="insurance-badge-inline" 
+                                        :style="{ backgroundColor: bed.insurance_color }"
+                                        v-tooltip.top="`${bed.insurance_name} (${bed.code_insurance})`"
+                                    >
+                                        {{ bed.insurance_label }}
+                                    </span>
+                                </div>
                                 <div class="vr-patient-doctor" v-if="bed.doctor">
                                     <i class="pi pi-user-md"></i>
                                     {{ bed.doctor }}
                                 </div>
                             </div>
-                            <div class="vr-date">{{ bed.entry_date_formatted }}</div>
+                            <div class="vr-date">
+                                <div>{{ bed.entry_date_formatted }}</div>
+                                <div class="vr-time">{{ bed.entry_time_formatted }}</div>
+                            </div>
                             <div class="vr-days">{{ bed.days }}</div>
                         </div>
                     </div>
@@ -605,13 +666,25 @@ onUnmounted(() => {
                         {{ bed.room_type_formatted }}
                     </span>
                 </div>
-                <div class="bed-card-patient">{{ bed.patient_name }}</div>
+                <div class="bed-card-patient">
+                    {{ bed.patient_name }}
+                    <span 
+                        class="insurance-badge-inline-card" 
+                        :style="{ backgroundColor: bed.insurance_color }"
+                        v-tooltip.top="`${bed.insurance_name} (${bed.code_insurance})`"
+                    >
+                        {{ bed.insurance_label }}
+                    </span>
+                </div>
                 <div class="bed-card-doctor" v-if="bed.doctor">
                     <i class="pi pi-user-md"></i>
                     <span>{{ bed.doctor }}</span>
                 </div>
                 <div class="bed-card-footer">
-                    <span class="bed-card-date">{{ bed.entry_date_formatted }}</span>
+                    <div class="bed-card-date-time">
+                        <span class="bed-card-date">{{ bed.entry_date_formatted }}</span>
+                        <span class="bed-card-time">{{ bed.entry_time_formatted }}</span>
+                    </div>
                     <span class="bed-card-days">{{ bed.days }}d</span>
                 </div>
             </div>
@@ -1098,9 +1171,15 @@ onUnmounted(() => {
     display: flex;
     justify-content: space-between;
     align-items: center;
-    gap: 0.25rem;
+    gap: 0.375rem;
     padding-top: 0.25rem;
     border-top: 1px solid rgba(0, 0, 0, 0.08);
+}
+
+.bed-card-date-time {
+    display: flex;
+    flex-direction: column;
+    gap: 0.125rem;
 }
 
 .bed-card-date {
@@ -1109,10 +1188,37 @@ onUnmounted(() => {
     color: var(--text-color-secondary);
 }
 
+.bed-card-time {
+    font-size: 0.625rem;
+    font-weight: 500;
+    color: var(--text-color-secondary);
+}
+
 .bed-card-days {
     font-size: 0.813rem;
     font-weight: 800;
     color: var(--primary-color);
+}
+
+.bed-card-insurance {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 24px;
+    height: 24px;
+    border-radius: 50%;
+    color: #ffffff;
+    font-weight: 800;
+    font-size: 0.75rem;
+    letter-spacing: 0.5px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    flex-shrink: 0;
+}
+
+.bed-card-insurance:hover {
+    transform: scale(1.1);
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
 }
 
 /* Room Card Compacto */
@@ -1428,12 +1534,12 @@ onUnmounted(() => {
     display: grid;
     grid-template-columns: 80px 1fr 130px 80px;
     gap: 0.5rem;
-    padding: 0.625rem 0.75rem;
+    padding: 0.375rem 0.75rem;
     border-radius: 6px;
     margin-bottom: 0.25rem;
     border-left: 4px solid rgba(0, 0, 0, 0.15);
     transition: all 0.2s ease;
-    min-height: 52px;
+    min-height: 44px;
     align-items: center;
 }
 
@@ -1452,7 +1558,7 @@ onUnmounted(() => {
 .vr-bed {
     background: rgba(0, 0, 0, 0.08);
     color: var(--text-color);
-    padding: 0.5rem 0.625rem;
+    padding: 0.375rem 0.5rem;
     border-radius: 6px;
     font-weight: 800;
     font-size: 1.125rem;
@@ -1505,6 +1611,9 @@ onUnmounted(() => {
     line-height: 1.2;
     text-align: left;
     width: 100%;
+    display: flex;
+    align-items: center;
+    gap: 0.375rem;
 }
 
 .vr-patient-doctor {
@@ -1532,6 +1641,15 @@ onUnmounted(() => {
     color: var(--text-color);
     justify-content: center;
     text-align: center;
+    display: flex;
+    flex-direction: column;
+    gap: 0.125rem;
+}
+
+.vr-time {
+    font-size: 0.75rem;
+    font-weight: 500;
+    color: var(--text-color-secondary);
 }
 
 .vr-days {
@@ -1542,13 +1660,78 @@ onUnmounted(() => {
     text-align: center;
 }
 
+.insurance-badge {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 28px;
+    height: 28px;
+    border-radius: 50%;
+    color: #ffffff;
+    font-weight: 800;
+    font-size: 0.875rem;
+    letter-spacing: 0.5px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.insurance-badge:hover {
+    transform: scale(1.1);
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+}
+
+.insurance-badge-inline {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 22px;
+    height: 22px;
+    padding: 0 0.25rem;
+    border-radius: 50%;
+    color: #ffffff;
+    font-weight: 800;
+    font-size: 0.75rem;
+    letter-spacing: 0.5px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    flex-shrink: 0;
+}
+
+.insurance-badge-inline:hover {
+    transform: scale(1.05);
+    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.2);
+}
+
+.insurance-badge-inline-card {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 18px;
+    height: 18px;
+    padding: 0 0.2rem;
+    border-radius: 50%;
+    color: #ffffff;
+    font-weight: 800;
+    font-size: 0.625rem;
+    letter-spacing: 0.5px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    flex-shrink: 0;
+    margin-left: 0.25rem;
+}
+
+.insurance-badge-inline-card:hover {
+    transform: scale(1.05);
+    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.2);
+}
+
 /* Responsive - Optimización para pantallas verticales */
 /* Pantallas 4K verticales o muy altas (1080p+ altura) */
 @media (min-height: 1400px) {
     .vertical-row {
-        min-height: 58px;
-        padding: 0.75rem 0.875rem;
-        margin-bottom: 0.5rem;
+        min-height: 52px;
+        padding: 0.5rem 0.875rem;
+        margin-bottom: 0.375rem;
     }
 
     .vr-bed {
@@ -1581,9 +1764,9 @@ onUnmounted(() => {
 /* Pantallas Full HD verticales (1080px altura) */
 @media (min-height: 1080px) and (max-height: 1399px) {
     .vertical-row {
-        min-height: 50px;
-        padding: 0.625rem 0.75rem;
-        margin-bottom: 0.375rem;
+        min-height: 46px;
+        padding: 0.5rem 0.75rem;
+        margin-bottom: 0.25rem;
     }
 
     .vr-bed {
@@ -1610,8 +1793,8 @@ onUnmounted(() => {
 /* Pantallas medianas (720p - 900p altura) */
 @media (max-height: 1079px) and (min-height: 720px) {
     .vertical-row {
-        min-height: 44px;
-        padding: 0.5rem 0.625rem;
+        min-height: 40px;
+        padding: 0.375rem 0.625rem;
         margin-bottom: 0.25rem;
     }
 
@@ -1650,8 +1833,8 @@ onUnmounted(() => {
 /* Pantallas pequeñas (menor a 720px altura) */
 @media (max-height: 719px) {
     .vertical-row {
-        min-height: 38px;
-        padding: 0.375rem 0.5rem;
+        min-height: 36px;
+        padding: 0.25rem 0.5rem;
         margin-bottom: 0.25rem;
     }
 
