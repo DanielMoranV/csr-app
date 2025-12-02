@@ -31,5 +31,17 @@ export const TicketService = {
     async deleteTicket(id) {
         const response = await api.delete(`/tickets/${id}`);
         return response;
+    },
+
+    async updateTicketStatus(id, status) {
+        const response = await api.patch(`/tickets/${id}/status`, { status });
+        return response;
+    },
+
+    async getTicketWithHistory(id) {
+        const response = await api.get(`/tickets/${id}`, {
+            params: { include: 'status_histories,status_histories.user' }
+        });
+        return response;
     }
 };

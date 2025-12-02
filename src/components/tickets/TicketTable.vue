@@ -1,5 +1,6 @@
 <script setup>
 import { useAuthStore } from '@/store/authStore';
+import TicketStatusChanger from './TicketStatusChanger.vue';
 import Badge from 'primevue/badge';
 import Button from 'primevue/button';
 import Column from 'primevue/column';
@@ -32,7 +33,7 @@ const props = defineProps({
     }
 });
 
-const emit = defineEmits(['view-ticket', 'edit-ticket', 'create-ticket', 'delete-ticket', 'refresh', 'row-select', 'row-unselect']);
+const emit = defineEmits(['view-ticket', 'edit-ticket', 'create-ticket', 'delete-ticket', 'refresh', 'row-select', 'row-unselect', 'status-changed']);
 
 const toast = useToast();
 const authStore = useAuthStore();
@@ -190,22 +191,22 @@ const getActionItems = (ticketData) => {
             label: 'Ver detalles',
             icon: 'pi pi-eye',
             command: () => handleViewTicket(ticketData)
-        },
-        {
-            label: 'Editar ticket',
-            icon: 'pi pi-pencil',
-            command: () => handleEditTicket(ticketData)
-        },
-        {
-            separator: true
         }
     ];
 
-    const currentUser = authStore.authUser;
+    const currentUser = authStore.getUser;
     const isCreator = currentUser && currentUser.id === ticketData.creator_user_id;
-    const isAssignee = currentUser && currentUser.id === ticketData.assignee_user_id;
 
-    if (isCreator || isAssignee) {
+    // Solo el creador puede editar y eliminar
+    if (isCreator) {
+        items.push({
+            label: 'Editar ticket',
+            icon: 'pi pi-pencil',
+            command: () => handleEditTicket(ticketData)
+        });
+        
+        items.push({ separator: true });
+        
         items.push({
             label: 'Eliminar ticket',
             icon: 'pi pi-trash',
@@ -215,6 +216,11 @@ const getActionItems = (ticketData) => {
     }
 
     return items;
+};
+
+// Manejar cambio de estado
+const handleStatusChanged = (data) => {
+    emit('status-changed', data);
 };
 </script>
 
@@ -332,11 +338,9 @@ const getActionItems = (ticketData) => {
             </Column>
 
             <!-- Estado - Oculta en móvil (se muestra en título) -->
-            <Column field="status" header="Estado" :sortable="true" style="min-width: 100px; text-align: center" class="column-status">
+            <Column field="status" header="Estado" :sortable="true" style="min-width: 180px; text-align: center" class="column-status">
                 <template #body="{ data }">
-                    <Tag v-tooltip.top="data.status" :severity="getStatusSeverity(data.status)" class="ticket-status-tag" rounded>
-                        <i :class="getStatusIcon(data.status)"></i>
-                    </Tag>
+                    <TicketStatusChanger :ticket="data" @status-changed="handleStatusChanged" />
                 </template>
             </Column>
 

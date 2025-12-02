@@ -1,8 +1,9 @@
 <script setup>
 import Card from 'primevue/card';
 import Timeline from 'primevue/timeline';
-import { computed } from 'vue';
+import { computed, onMounted, ref } from 'vue';
 import { useTicketsStore } from '@/store/ticketsStore';
+import { TicketService } from '@/api/tickets';
 
 const props = defineProps({
     ticket: {
@@ -12,9 +13,31 @@ const props = defineProps({
 });
 
 const ticketsStore = useTicketsStore();
+const isLoading = ref(false);
+const ticketWithHistory = ref(null);
 
-// Get current ticket from store for real-time updates
+// Load ticket with history on mount
+onMounted(async () => {
+    if (props.ticket?.id) {
+        isLoading.value = true;
+        try {
+            const response = await TicketService.getTicketWithHistory(props.ticket.id);
+            ticketWithHistory.value = response.data;
+        } catch (error) {
+            console.error('Error loading ticket history:', error);
+        } finally {
+            isLoading.value = false;
+        }
+    }
+});
+
+// Get current ticket from store for real-time updates, or use loaded ticket with history
 const currentTicket = computed(() => {
+    // If we have loaded history, use that
+    if (ticketWithHistory.value) {
+        return ticketWithHistory.value;
+    }
+    // Otherwise try to get from store
     return ticketsStore.tickets.find((t) => t.id === props.ticket?.id) || props.ticket;
 });
 
@@ -71,7 +94,13 @@ const historyEvents = computed(() => {
 <template>
     <div class="ticket-status-history-container">
         <h3 class="history-title">Historial de Estados</h3>
-        <Timeline :value="historyEvents" class="customized-timeline">
+        
+        <div v-if="isLoading" class="text-center p-4">
+            <i class="pi pi-spin pi-spinner text-2xl text-primary"></i>
+            <p class="mt-2 text-600">Cargando historial...</p>
+        </div>
+
+        <Timeline v-else-if="historyEvents.length" :value="historyEvents" class="customized-timeline">
             <template #marker="{ item }">
                 <span class="custom-marker p-shadow-2" :style="{ backgroundColor: item.color }">
                     <i :class="item.icon"></i>
@@ -95,7 +124,7 @@ const historyEvents = computed(() => {
                 </Card>
             </template>
         </Timeline>
-        <div v-if="!historyEvents.length" class="p-message p-message-info mt-3">
+        <div v-if="!isLoading && !historyEvents.length" class="p-message p-message-info mt-3">
             <div class="p-message-wrapper">
                 <span class="p-message-icon pi pi-info-circle"></span>
                 <div class="p-message-text">No hay historial de estados disponible para este ticket.</div>

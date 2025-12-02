@@ -1,6 +1,6 @@
 import { TicketService } from '@/api/tickets';
-import useEcho from '@/websocket/echo';
 import { slugify } from '@/utils/pusher-helpers';
+import useEcho from '@/websocket/echo';
 import { defineStore } from 'pinia';
 import { useToast } from 'primevue/usetoast';
 import { computed, reactive } from 'vue';
@@ -364,6 +364,53 @@ export const useTicketsStore = defineStore('tickets', () => {
         }
     };
 
+    const updateTicketStatus = async (ticketId, newStatus) => {
+        state.isSaving = true;
+        try {
+            const response = await TicketService.updateTicketStatus(ticketId, newStatus);
+            
+            // Actualizar ticket en la lista local
+            const index = state.tickets.findIndex((t) => t.id === ticketId);
+            if (index !== -1) {
+                state.tickets[index] = response.data;
+            }
+            
+            // Actualizar ticket actual si está seleccionado
+            if (state.currentTicket && state.currentTicket.id === ticketId) {
+                state.currentTicket = response.data;
+            }
+            
+            toast.add({
+                severity: 'success',
+                summary: 'Estado Actualizado',
+                detail: `Estado cambiado a: ${newStatus}`,
+                life: 3000
+            });
+            
+            return response;
+        } catch (error) {
+            // Manejar errores específicos
+            if (error.status === 403) {
+                toast.add({
+                    severity: 'error',
+                    summary: 'Sin Permiso',
+                    detail: error.message || 'No tienes permiso para cambiar el estado de este ticket',
+                    life: 5000
+                });
+            } else {
+                toast.add({
+                    severity: 'error',
+                    summary: 'Error',
+                    detail: 'No se pudo actualizar el estado del ticket',
+                    life: 3000
+                });
+            }
+            throw error;
+        } finally {
+            state.isSaving = false;
+        }
+    };
+
     // --- UI ACTIONS ---
     const setFilter = (key, value) => {
         state.filters[key] = value;
@@ -397,6 +444,7 @@ export const useTicketsStore = defineStore('tickets', () => {
         createTicket,
         updateTicket,
         deleteTicket,
+        updateTicketStatus,
 
         // Real-time handlers
         handleTicketCreated,

@@ -28,10 +28,15 @@ const props = defineProps({
     saving: {
         type: Boolean,
         default: false
+    },
+    mode: {
+        type: String,
+        default: 'view', // 'view' | 'edit' | 'create'
+        validator: (value) => ['view', 'edit', 'create'].includes(value)
     }
 });
 
-const emit = defineEmits(['update:visible', 'save-ticket', 'close']);
+const emit = defineEmits(['update:visible', 'save-ticket', 'close', 'switch-to-edit']);
 
 const authStore = useAuthStore();
 const ticketCommentsStore = useTicketCommentsStore();
@@ -51,6 +56,35 @@ const dialogVisible = computed({
 
 const isEditing = computed(() => !!props.ticket?.id);
 
+// Computed para modos del diálogo
+const isViewMode = computed(() => props.mode === 'view');
+const isEditMode = computed(() => props.mode === 'edit');
+const isCreateMode = computed(() => props.mode === 'create');
+
+// Computed para permisos del usuario actual
+const currentUser = computed(() => authStore.getUser);
+
+const isCreator = computed(() => {
+    return currentUser.value && currentTicket.value?.creator_user_id === currentUser.value.id;
+});
+
+const isAssignee = computed(() => {
+    if (!currentUser.value || !currentTicket.value) return false;
+    const isUserAssignee = currentTicket.value.assignee_user_id === currentUser.value.id;
+    const hasAssignedPosition = currentTicket.value.assignee_position === currentUser.value.position;
+    return isUserAssignee || hasAssignedPosition;
+});
+
+const canEdit = computed(() => {
+    // Solo el creador puede editar detalles del ticket
+    return isCreator.value;
+});
+
+const canAddCommentsOrAttachments = computed(() => {
+    // Creador y asignados pueden agregar comentarios/adjuntos
+    return isCreator.value || isAssignee.value;
+});
+
 // Computed para obtener el ticket actualizado del store
 const currentTicket = computed(() => {
     if (!props.ticket?.id) return props.ticket;
@@ -60,7 +94,9 @@ const currentTicket = computed(() => {
 });
 
 const dialogTitle = computed(() => {
-    return isEditing.value ? 'Editar Ticket' : 'Nuevo Ticket';
+    if (isCreateMode.value) return 'Nuevo Ticket';
+    if (isEditMode.value) return 'Editar Ticket';
+    return 'Ver Ticket'; // modo lectura
 });
 
 // Formulario reactivo
@@ -482,6 +518,7 @@ const formatCommentDate = (dateString) => {
                                     id="title"
                                     v-model="ticketForm.title"
                                     :class="{ 'p-invalid': getFieldError('title') }"
+                                    :disabled="isViewMode || !canEdit"
                                     placeholder="Ej: Falla en impresora consulta 3, Solicitud de insumos, Error en sistema de citas"
                                     maxlength="255"
                                     @blur="validateField('title')"
@@ -502,6 +539,7 @@ const formatCommentDate = (dateString) => {
                                     id="description"
                                     v-model="ticketForm.description"
                                     :class="{ 'p-invalid': getFieldError('description') }"
+                                    :disabled="isViewMode || !canEdit"
                                     placeholder="Describa detalladamente: ubicación del problema, pasos para reproducir el error, impacto en las operaciones, recursos necesarios, etc."
                                     rows="5"
                                     cols="30"
@@ -529,6 +567,7 @@ const formatCommentDate = (dateString) => {
                                     :options="priorityOptions"
                                     optionLabel="label"
                                     optionValue="value"
+                                    :disabled="isViewMode || !canEdit"
                                     placeholder="Seleccionar prioridad"
                                     :class="{ 'p-invalid': getFieldError('priority') }"
                                     @change="validateField('priority')"
@@ -559,6 +598,7 @@ const formatCommentDate = (dateString) => {
                                     :options="filteredStatusOptions"
                                     optionLabel="label"
                                     optionValue="value"
+                                    :disabled="isViewMode || !canEdit"
                                     placeholder="Seleccionar estado"
                                     :class="{ 'p-invalid': getFieldError('status') }"
                                     @change="validateField('status')"
@@ -592,6 +632,7 @@ const formatCommentDate = (dateString) => {
                                     :options="clientSearchResults"
                                     optionLabel="name"
                                     optionValue="id"
+                                    :disabled="isViewMode || !canEdit"
                                     placeholder="Buscar personal: administrativo, técnico, enfermero/a..."
                                     :filter="true"
                                     filterPlaceholder="Escriba el nombre del usuario"
@@ -619,6 +660,7 @@ const formatCommentDate = (dateString) => {
                                     :options="positionSearchResults"
                                     optionLabel="name"
                                     optionValue="id"
+                                    :disabled="isViewMode || !canEdit"
                                     placeholder="Ej: Administración, IT, Mantención, Enfermería..."
                                     :filter="true"
                                     filterPlaceholder="Buscar cargo o departamento"
@@ -646,6 +688,7 @@ const formatCommentDate = (dateString) => {
                                 <Calendar
                                     id="due_date"
                                     v-model="ticketForm.due_date"
+                                    :disabled="isViewMode || !canEdit"
                                     showTime
                                     hourFormat="24"
                                     dateFormat="dd/mm/yy"
@@ -694,15 +737,21 @@ const formatCommentDate = (dateString) => {
                         </div>
                     </div>
 
-                    <div v-if="isEditing" class="new-comment-form p-fluid">
+                    <div v-if="isEditing && canAddCommentsOrAttachments" class="new-comment-form p-fluid">
                         <Textarea v-model="newCommentContent" rows="3" placeholder="Añadir comentario, actualización de progreso o nota..." @keydown.enter.prevent="addComment" fluid />
                         <Button label="Añadir Comentario" icon="pi pi-send" class="mt-2" @click="addComment" :loading="ticketCommentsStore.state.isAdding" fluid />
+                    </div>
+                    <div v-else-if="isEditing && !canAddCommentsOrAttachments" class="p-message p-message-info mt-3">
+                        <div class="p-message-wrapper">
+                            <span class="p-message-icon pi pi-info-circle"></span>
+                            <div class="p-message-text">Solo el creador y los usuarios asignados pueden agregar comentarios.</div>
+                        </div>
                     </div>
                 </div>
             </TabPanel>
 
             <TabPanel header="📎 Adjuntos" :disabled="!isEditing">
-                <TicketAttachments v-if="isEditing" :ticket-id="props.ticket?.id" />
+                <TicketAttachments v-if="isEditing" :ticket-id="props.ticket?.id" :can-upload="canAddCommentsOrAttachments" />
                 <div v-else class="p-message p-message-warn mt-3">
                     <div class="p-message-wrapper">
                         <span class="p-message-icon pi pi-exclamation-triangle"></span>
@@ -713,11 +762,41 @@ const formatCommentDate = (dateString) => {
         </TabView>
 
         <template #footer>
-            <div class="flex justify-content-between align-items-center">
-                <div class="text-500 text-sm">* Campos obligatorios</div>
+            <div class="flex justify-content-between align-items-center w-full">
+                <!-- Botón Editar visible solo en modo vista para creadores -->
+                <div v-if="isViewMode && canEdit">
+                    <Button 
+                        label="Editar Ticket" 
+                        icon="pi pi-pencil" 
+                        @click="$emit('switch-to-edit')" 
+                        severity="primary" 
+                    />
+                </div>
+                <div v-else-if="!isViewMode" class="text-500 text-sm">
+                    * Campos obligatorios
+                </div>
+                <div v-else>
+                    <!-- Espacio vacío para mantener alineación -->
+                </div>
+                
+                <!-- Botones de acción -->
                 <div class="flex gap-2">
-                    <Button label="Cancelar" icon="pi pi-times" class="p-button-outlined" @click="closeDialog" :disabled="saving" />
-                    <Button :label="isEditing ? 'Actualizar Ticket' : 'Crear Ticket'" :icon="isEditing ? 'pi pi-check' : 'pi pi-plus'" @click="saveTicket" :loading="saving" :disabled="!isFormValid" class="p-button-success" />
+                    <Button 
+                        :label="isViewMode ? 'Cerrar' : 'Cancelar'" 
+                        icon="pi pi-times" 
+                        class="p-button-outlined" 
+                        @click="closeDialog" 
+                        :disabled="saving" 
+                    />
+                    <Button 
+                        v-if="!isViewMode"
+                        :label="isCreateMode ? 'Crear Ticket' : 'Actualizar Ticket'" 
+                        :icon="isCreateMode ? 'pi pi-plus' : 'pi pi-check'" 
+                        @click="saveTicket" 
+                        :loading="saving" 
+                        :disabled="!isFormValid || !canEdit" 
+                        class="p-button-success" 
+                    />
                 </div>
             </div>
         </template>

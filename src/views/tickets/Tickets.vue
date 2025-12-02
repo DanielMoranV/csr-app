@@ -17,6 +17,7 @@ const ticketDialogVisible = ref(false);
 const confirmDialogVisible = ref(false);
 const selectedTicket = ref(null);
 const isEditing = ref(false);
+const dialogMode = ref('view'); // 'view' | 'edit' | 'create'
 
 // Datos del diálogo de confirmación
 const confirmData = reactive({
@@ -50,23 +51,33 @@ onUnmounted(() => {
 const openCreateTicketDialog = () => {
     selectedTicket.value = null;
     isEditing.value = false;
+    dialogMode.value = 'create';
     ticketDialogVisible.value = true;
 };
 
 const editTicket = (ticket) => {
     selectedTicket.value = { ...ticket };
     isEditing.value = true;
+    dialogMode.value = 'edit';
     ticketDialogVisible.value = true;
 };
 
 const viewTicketDetails = (ticket) => {
-    editTicket(ticket); // Por ahora, usa el mismo diálogo de edición
+    selectedTicket.value = { ...ticket };
+    isEditing.value = true; // Es un ticket existente
+    dialogMode.value = 'view'; // Pero abre en modo lectura
+    ticketDialogVisible.value = true;
+};
+
+const switchToEditMode = () => {
+    dialogMode.value = 'edit';
 };
 
 const closeTicketDialog = () => {
     ticketDialogVisible.value = false;
     selectedTicket.value = null;
     isEditing.value = false;
+    dialogMode.value = 'view';
 };
 
 const handleSaveTicket = async (ticketData) => {
@@ -315,7 +326,15 @@ const getPrioritySeverity = (priority) => {
         </div>
 
         <!-- Diálogo de ticket -->
-        <TicketDialog v-model:visible="ticketDialogVisible" :ticket="selectedTicket" :saving="ticketsStore.isSaving" @save-ticket="handleSaveTicket" @close="closeTicketDialog" />
+        <TicketDialog 
+            v-model:visible="ticketDialogVisible" 
+            :ticket="selectedTicket" 
+            :saving="ticketsStore.isSaving" 
+            :mode="dialogMode"
+            @save-ticket="handleSaveTicket" 
+            @close="closeTicketDialog"
+            @switch-to-edit="switchToEditMode"
+        />
 
         <!-- Diálogo de confirmación -->
         <ConfirmActionDialog

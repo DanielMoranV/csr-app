@@ -100,6 +100,12 @@ const router = createRouter({
                     name: MODULE_PERMISSIONS.doctorSchedules.name,
                     component: () => import('@/views/doctors/DoctorSchedules.vue'),
                     meta: { requiresAuth: true, positions: MODULE_PERMISSIONS.doctorSchedules.positions }
+                },
+                {
+                    path: MODULE_PERMISSIONS.medicalFees.path,
+                    name: MODULE_PERMISSIONS.medicalFees.name,
+                    component: () => import('@/views/doctors/MedicalFees.vue'),
+                    meta: { requiresAuth: true, positions: MODULE_PERMISSIONS.medicalFees.positions }
                 }
             ]
         },

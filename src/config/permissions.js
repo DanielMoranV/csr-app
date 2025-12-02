@@ -225,6 +225,16 @@ export const MODULE_PERMISSIONS = {
         label: 'Horarios',
         icon: 'pi pi-fw pi-calendar',
         menuSection: 'Personal Médico'
+    },
+
+    // Gestión de Honorarios Médicos
+    medicalFees: {
+        name: 'medical-fees',
+        path: '/honorarios-medicos',
+        positions: [POSITIONS.SISTEMAS, POSITIONS.DIRECTOR_MEDICO, POSITIONS.ADMINISTRACION, POSITIONS.CONTABILIDAD, POSITIONS.RRHH],
+        label: 'Honorarios',
+        icon: 'pi pi-fw pi-dollar',
+        menuSection: 'Personal Médico'
     }
 };
 
