@@ -8,7 +8,7 @@ import { useMedicalSpecialties } from '@/composables/useMedicalSpecialties';
 import { usePdfScheduleExport } from '@/composables/usePdfScheduleExport';
 import Button from 'primevue/button';
 import Checkbox from 'primevue/checkbox';
-import ConfirmDialog from 'primevue/confirmdialog';
+
 import DatePicker from 'primevue/datepicker';
 import Select from 'primevue/select';
 import { useConfirm } from 'primevue/useconfirm';
@@ -1069,7 +1069,7 @@ onMounted(() => {
             @close="handleCloseBatchProgress"
         />
 
-        <ConfirmDialog />
+
     </div>
 </template>
 
