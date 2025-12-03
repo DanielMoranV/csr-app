@@ -28,15 +28,31 @@ class ServiceClassifier {
             };
         }
 
+        // Verificar si el segus indica RETÉN
+        const segusIndicatesReten = service.rawData?.segus?.toUpperCase().includes('RETEN');
+
         // Buscar horario que contenga la hora de atención
         for (const schedule of schedules) {
             if (this.isTimeInRange(serviceTime, schedule.start_time, schedule.end_time)) {
                 // Verificar si es horario de planilla
                 if (schedule.is_payment_payroll) {
+                    const startTime = this.formatTimeWithoutSeconds(schedule.start_time);
+                    const endTime = this.formatTimeWithoutSeconds(schedule.end_time);
+                    const baseReason = `Turno ${schedule.medical_shift?.code || 'N/A'} (${startTime}-${endTime})`;
+                    
+                    // VALIDACIÓN ESPECIAL: Si segus dice RETÉN pero el horario es PLANILLA
+                    if (segusIndicatesReten) {
+                        return {
+                            type: 'PLANILLA',
+                            schedule,
+                            reason: `${baseReason} ⚠️ OBSERVACIÓN: Código SEGUS indica RETÉN pero se realizó en horario PLANILLA (posible error de asignación)`
+                        };
+                    }
+                    
                     return {
                         type: 'PLANILLA',
                         schedule,
-                        reason: `Turno ${schedule.medical_shift?.code || 'N/A'} (${schedule.start_time}-${schedule.end_time})`
+                        reason: baseReason
                     };
                 } else {
                     return {
@@ -50,9 +66,11 @@ class ServiceClassifier {
 
         // No coincide con ningún horario → RETÉN
         // Construir mensaje con los horarios que sí estaban registrados
-        const registeredSchedules = schedules.map(s => 
-            `${s.medical_shift?.code || 'N/A'} (${s.start_time}-${s.end_time})`
-        ).join(', ');
+        const registeredSchedules = schedules.map(s => {
+            const startTime = this.formatTimeWithoutSeconds(s.start_time);
+            const endTime = this.formatTimeWithoutSeconds(s.end_time);
+            return `${s.medical_shift?.code || 'N/A'} (${startTime}-${endTime})`;
+        }).join(', ');
         
         return {
             type: 'RETÉN',
@@ -96,6 +114,17 @@ class ServiceClassifier {
         if (!time) return 0;
         const [hours, minutes] = time.split(':').map(Number);
         return hours * 60 + minutes;
+    }
+
+    /**
+     * Formatea hora sin segundos (HH:MM)
+     * @param {string} time - Hora en formato HH:MM:SS
+     * @returns {string} Hora en formato HH:MM
+     */
+    formatTimeWithoutSeconds(time) {
+        if (!time) return '';
+        const parts = time.split(':');
+        return `${parts[0]}:${parts[1]}`;
     }
 
     /**

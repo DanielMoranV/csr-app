@@ -204,11 +204,8 @@ async function onFileSelect(event) {
 }
 
 function handleExport() {
-    exportToExcel({
-        doctorCode: selectedDoctor.value,
-        serviceType: selectedType.value,
-        specialty: selectedSpecialty.value ? specialties.value.find(s => s.id === selectedSpecialty.value)?.name : null
-    });
+    const filename = `honorarios_medicos_${new Date().toISOString().split('T')[0]}.xlsx`;
+    exportToExcel(filteredServices.value, filename);
     toast.add({
         severity: 'success',
         summary: 'Exportado',

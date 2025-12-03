@@ -2,6 +2,7 @@ import ExcelParserService from '@/services/medicalFees/ExcelParserService';
 import MedicalFeesService from '@/services/medicalFees/MedicalFeesService';
 import ServiceClassifier from '@/services/medicalFees/ServiceClassifier';
 import { computed, ref } from 'vue';
+import * as XLSX from 'xlsx';
 
 /**
  * Composable principal para gestión de honorarios médicos
@@ -190,73 +191,153 @@ export function useMedicalFees() {
     }));
 
     /**
-     * Exporta servicios a Excel
-     * @param {Object} filters - Filtros { doctorCode, serviceType }
+     * Formatea fecha de YYYY-MM-DD a DD/MM/YYYY para Excel
+     * @param {string} dateString - Fecha en formato YYYY-MM-DD
+     * @returns {string} Fecha en formato DD/MM/YYYY
      */
-    async function exportToExcel(filters = {}) {
-        const XLSX = await import('xlsx');
+    function formatDateForExcel(dateString) {
+        if (!dateString) return '';
+        const [year, month, day] = dateString.split('-');
+        return `${day}/${month}/${year}`;
+    }
 
-        // Filtrar servicios
-        let filteredServices = services.value;
-
-        if (filters.doctorCode) {
-            filteredServices = filteredServices.filter(s =>
-                s.doctor?.code === filters.doctorCode
-            );
-        }
-
-        if (filters.serviceType) {
-            filteredServices = filteredServices.filter(s =>
-                s.serviceType === filters.serviceType
-            );
+    /**
+     * Exporta servicios filtrados a Excel
+     * @param {Array} filteredServices - Servicios a exportar
+     * @param {string} filename - Nombre del archivo
+     */
+    function exportToExcel(filteredServices, filename = 'honorarios_medicos.xlsx') {
+        if (!filteredServices || filteredServices.length === 0) {
+            throw new Error('No hay servicios para exportar');
         }
 
         // Preparar datos para Excel - Incluir TODOS los campos del Excel original
-        const excelData = filteredServices.map(service => ({
-            // Campos procesados
-            'Admisión': service.rawData?.admision || '',
-            'Código Médico': service.doctorCode || '',
-            'Médico': service.doctor?.name || 'No encontrado',
-            'Fecha': service.date || '',
-            'Hora': service.time || '',
-            'Servicio': service.serviceName || '',
-            'Paciente': service.patientName || '',
-            'Segus': service.rawData?.segus || '',
-            'Monto': service.amount || 0,
-            'Tipo': service.serviceType || '',
-            'Detalle': service.serviceTypeReason || '',
+        const excelData = filteredServices.map(service => {
+            // Calcular comisión según reglas específicas
+            const codSeg = service.rawData?.cod_seg?.toString().trim() || '';
+            const importe = parseFloat(service.rawData?.importe) || 0;
+            const isPlanilla = service.serviceType === 'PLANILLA';
+            const isReten = service.serviceType === 'RETÉN';
+            const cia = service.rawData?.cia?.toString().trim().toUpperCase() || '';
             
-            // Todos los campos adicionales del Excel original (rawData)
-            'CIA': service.rawData?.cia || '',
-            'Comprobante': service.rawData?.comprobante || '',
-            'Cod_Seg': service.rawData?.cod_seg || '',
-            'Descripcion': service.rawData?.descripcion || '',
-            'Cod_Seri': service.rawData?.cod_seri || '',
-            'Importe': service.rawData?.importe || 0,
-            'Num_Aten': service.rawData?.num_aten || '',
-            'Num_His': service.rawData?.num_his || '',
-            'Tipo_Doc': service.rawData?.tipo_doc || '',
-            'Num_Doc': service.rawData?.num_doc || '',
-            'Edad': service.rawData?.edad || '',
-            'Sexo': service.rawData?.sexo || '',
-            'Procedencia': service.rawData?.procedencia || '',
-            'Medico': service.rawData?.medico || '',
-            'Especialidad_Excel': service.rawData?.especialidad || '',
-            'Consultorio': service.rawData?.consultorio || '',
-            'Turno': service.rawData?.turno || '',
-            'Usuario': service.rawData?.usuario || '',
-            'Fecha_Reg': service.rawData?.fecha_reg || '',
-            'Hora_Reg': service.rawData?.hora_reg || ''
-        }));
+            let comision = '';
+            
+            // Regla 1: 50% si es PLANILLA Y cod_seg = 00.18.66
+            if (isPlanilla && codSeg === '00.18.66') {
+                comision = parseFloat((importe * 0.50).toFixed(2));
+            }
+            // Regla 2: 92.5% si es RETÉN Y cod_seg = 50.00.00 Y cia != PARTICULAR
+            else if (isReten && codSeg === '50.00.00' && cia !== 'PARTICULAR') {
+                comision = parseFloat((importe * 0.925).toFixed(2));
+            }
+            
+            // Convertir fecha DD/MM/YYYY a objeto Date de Excel
+            let excelDate = '';
+            if (service.date) {
+                const [year, month, day] = service.date.split('-');
+                excelDate = new Date(parseInt(year), parseInt(month) - 1, parseInt(day));
+            }
+            
+            return {
+                // Campos procesados
+                'Admisión': service.rawData?.admision || '',
+                'Código Médico': service.doctorCode ? `'${service.doctorCode}` : '', // Forzar como texto con '
+                'Médico': service.doctor?.name || 'No encontrado',
+                'Fecha': excelDate, // Objeto Date para Excel
+                'Hora': service.time || '',
+                'Servicio': service.serviceName || '',
+                'Paciente': service.patientName || '',
+                'Segus': service.rawData?.segus || '',
+                'Monto': importe,
+                'Tipo': service.serviceType || '',
+                'Detalle': service.serviceTypeReason || '',
+                'Comisión': comision,
+                
+                // Todos los campos adicionales del Excel original (rawData)
+                'CIA': service.rawData?.cia || '',
+                'Comprobante': service.rawData?.comprobante || '',
+                'Cod_Seg': service.rawData?.cod_seg || '',
+                'Descripcion': service.rawData?.descripcion || '',
+                'Cod_Seri': service.rawData?.cod_seri ? `'${service.rawData.cod_seri}` : '', // Forzar como texto
+                'Importe': importe,
+                'Num_Aten': service.rawData?.num_aten || '',
+                'Num_His': service.rawData?.num_his || '',
+                'Tipo_Doc': service.rawData?.tipo_doc || '',
+                'Num_Doc': service.rawData?.num_doc || '',
+                'Edad': service.rawData?.edad || '',
+                'Sexo': service.rawData?.sexo || '',
+                'Procedencia': service.rawData?.procedencia || '',
+                'Medico': service.rawData?.medico || '',
+                'Especialidad_Excel': service.rawData?.especialidad || '',
+                'Consultorio': service.rawData?.consultorio || '',
+                'Turno': service.rawData?.turno || '',
+                'Usuario': service.rawData?.usuario || '',
+                'Fecha_Reg': service.rawData?.fecha_reg || '',
+                'Hora_Reg': service.rawData?.hora_reg || ''
+            };
+        });
 
         // Crear workbook
         const ws = XLSX.utils.json_to_sheet(excelData);
         const wb = XLSX.utils.book_new();
-        XLSX.utils.book_append_sheet(wb, ws, 'Servicios');
+        XLSX.utils.book_append_sheet(wb, ws, 'Honorarios Médicos');
 
-        // Descargar
-        const fileName = `honorarios_${filters.doctorCode || 'todos'}_${new Date().toISOString().split('T')[0]}.xlsx`;
-        XLSX.writeFile(wb, fileName);
+        // Aplicar formatos específicos a las columnas
+        const range = XLSX.utils.decode_range(ws['!ref']);
+        
+        for (let R = range.s.r + 1; R <= range.e.r; ++R) {
+            // Columna B (Código Médico) - Forzar como texto
+            const codigoMedicoCell = ws[`B${R + 1}`];
+            if (codigoMedicoCell && codigoMedicoCell.v) {
+                codigoMedicoCell.t = 's'; // Tipo string/texto
+                codigoMedicoCell.v = String(codigoMedicoCell.v).replace(/^'/, ''); // Remover ' si existe
+            }
+            
+            // Columna D (Fecha) - Formato de fecha DD/MM/YYYY
+            const dateCell = ws[`D${R + 1}`];
+            if (dateCell && dateCell.v instanceof Date) {
+                dateCell.t = 'd'; // Tipo fecha
+                dateCell.z = 'dd/mm/yyyy'; // Formato fecha
+            }
+            
+            // Columna I (Monto) - Formato moneda S/
+            const montoCell = ws[`I${R + 1}`];
+            if (montoCell && !isNaN(montoCell.v)) {
+                montoCell.t = 'n';
+                montoCell.z = '"S/ "#,##0.00';
+            }
+            
+            // Columna L (Comisión) - Formato moneda S/
+            const comisionCell = ws[`L${R + 1}`];
+            if (comisionCell && comisionCell.v !== '' && !isNaN(comisionCell.v)) {
+                comisionCell.t = 'n';
+                comisionCell.z = '"S/ "#,##0.00';
+            }
+            
+            // Columna P (Cod_Seri) - Forzar como texto
+            const codSeriCell = ws[`P${R + 1}`];
+            if (codSeriCell && codSeriCell.v) {
+                codSeriCell.t = 's'; // Tipo string/texto
+                codSeriCell.v = String(codSeriCell.v).replace(/^'/, ''); // Remover ' si existe
+            }
+            
+            // Columna Q (Importe) - Formato moneda S/
+            const importeCell = ws[`Q${R + 1}`];
+            if (importeCell && !isNaN(importeCell.v)) {
+                importeCell.t = 'n';
+                importeCell.z = '"S/ "#,##0.00';
+            }
+        }
+
+        // Generar archivo
+        const excelBuffer = XLSX.write(wb, { bookType: 'xlsx', type: 'array', cellDates: true });
+        const data = new Blob([excelBuffer], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
+        const url = window.URL.createObjectURL(data);
+        const link = document.createElement('a');
+        link.href = url;
+        link.download = filename;
+        link.click();
+        window.URL.revokeObjectURL(url);
     }
 
     return {
