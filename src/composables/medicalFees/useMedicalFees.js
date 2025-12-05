@@ -231,6 +231,22 @@ export function useMedicalFees() {
                 comision = parseFloat((importe * 0.925).toFixed(2));
             }
             
+            // Ajustar el detalle según si tiene comisión o no
+            let detalle = service.serviceTypeReason || '';
+            const segusIndicatesReten = service.rawData?.segus?.toUpperCase().includes('RETEN');
+            const hasCommission = comision !== '' && comision > 0;
+            
+            // Solo agregar advertencia si es RETÉN, NO tiene comisión Y segus NO indica RETEN
+            if (isReten && !hasCommission && !segusIndicatesReten && detalle.includes('⚠️ Revisar atención, codigo NO RETEN')) {
+                // La advertencia ya está en el detalle, mantenerla
+            } else if (isReten && !hasCommission && !segusIndicatesReten && !detalle.includes('⚠️ Revisar atención, codigo NO RETEN')) {
+                // Agregar advertencia si no está
+                detalle += ' ⚠️ Revisar atención, codigo NO RETEN';
+            } else if (isReten && hasCommission && detalle.includes('⚠️ Revisar atención, codigo NO RETEN')) {
+                // Remover advertencia si tiene comisión
+                detalle = detalle.replace(' ⚠️ Revisar atención, codigo NO RETEN', '');
+            }
+            
             // Convertir fecha DD/MM/YYYY a objeto Date de Excel
             let excelDate = '';
             if (service.date) {
@@ -249,14 +265,16 @@ export function useMedicalFees() {
                 'Segus': service.rawData?.segus || '',
                 'Monto': importe,
                 'Tipo': service.serviceType || '',
-                'Detalle': service.serviceTypeReason || '',
+                'Detalle': detalle,
                 'Comisión': comision,
                 
                 // Campos adicionales del Excel original (solo los necesarios)
                 'CIA': service.rawData?.cia || '',
                 'Comprobante': service.rawData?.comprobante || '',
                 'Cod_Seg': service.rawData?.cod_seg || '',
-                'Importe': importe
+                'Importe': importe,
+                'Tipoate': service.rawData?.tipoate || '',
+                'Area': service.rawData?.area || ''
             };
         });
 
