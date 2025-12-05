@@ -287,8 +287,8 @@ export function useMedicalFees() {
             if (isPlanilla && codSeg === '00.18.66') {
                 comision = parseFloat((importe * 0.50).toFixed(2));
             }
-            // Regla 2: 92.5% si es RETÉN Y cod_seg = 50.00.00 Y cia != PARTICULAR
-            else if (isReten && codSeg === '50.00.00' && cia !== 'PARTICULAR') {
+            // Regla 2: 92.5% si es RETÉN Y cia != PARTICULAR
+            else if (isReten && cia !== 'PARTICULAR') {
                 comision = parseFloat((importe * 0.925).toFixed(2));
             }
             

@@ -76,8 +76,14 @@ class ServiceClassifier {
         }
 
         // No coincide con ningún horario → RETÉN
-        // Mensaje resumido: solo mostrar la hora del servicio
-        let reason = `Fuera de horario (${serviceTime})`;
+        // Construir mensaje con los horarios disponibles ese día
+        const registeredSchedules = schedules.map(s => {
+            const startTime = this.formatTimeWithoutSeconds(s.start_time);
+            const endTime = this.formatTimeWithoutSeconds(s.end_time);
+            return `${s.medical_shift?.code || 'N/A'} (${startTime}-${endTime})`;
+        }).join(', ');
+        
+        let reason = `Fuera de horario (${serviceTime}). Horarios disponibles: ${registeredSchedules}`;
         
         // VALIDACIÓN: Si es RETÉN pero segus NO indica RETÉN
         if (!segusIndicatesReten) {
