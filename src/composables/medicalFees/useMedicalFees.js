@@ -1,33 +1,48 @@
 import ExcelParserService from '@/services/medicalFees/ExcelParserService';
 import MedicalFeesService from '@/services/medicalFees/MedicalFeesService';
 import ServiceClassifier from '@/services/medicalFees/ServiceClassifier';
+import cache from '@/utils/cache';
 import { computed, ref } from 'vue';
 import * as XLSX from 'xlsx';
 
-/**
- * Composable principal para gestión de honorarios médicos
- * Orquesta la lógica de importación, clasificación y exportación
- */
+const CACHE_KEY = 'medicalFees_services';
+const CACHE_TIMESTAMP_KEY = 'medicalFees_timestamp';
+
 export function useMedicalFees() {
+    // State
     const doctors = ref([]);
     const schedules = ref([]);
     const services = ref([]);
     const isLoading = ref(false);
     const error = ref(null);
 
-    // Mapas para búsqueda rápida
-    const doctorMap = computed(() =>
-        MedicalFeesService.createDoctorCodeMap(doctors.value)
-    );
+    // Maps para búsqueda rápida
+    const doctorMap = computed(() => {
+        const map = new Map();
+        doctors.value.forEach(doctor => {
+            if (doctor.code) {
+                map.set(doctor.code, doctor);
+            }
+        });
+        return map;
+    });
 
-    const scheduleMap = computed(() =>
-        MedicalFeesService.createScheduleMap(schedules.value)
-    );
+    const scheduleMap = computed(() => {
+        const map = new Map();
+        schedules.value.forEach(schedule => {
+            const key = `${schedule.doctor?.code}_${schedule.date}`;
+            if (!map.has(key)) {
+                map.set(key, []);
+            }
+            map.get(key).push(schedule);
+        });
+        return map;
+    });
 
     /**
-     * Carga médicos y horarios del backend
-     * @param {string} startDate - Fecha inicio
-     * @param {string} endDate - Fecha fin
+     * Carga médicos y horarios desde el backend
+     * @param {string} startDate - Fecha inicio YYYY-MM-DD
+     * @param {string} endDate - Fecha fin YYYY-MM-DD
      */
     async function loadDoctorsAndSchedules(startDate, endDate) {
         isLoading.value = true;
@@ -41,6 +56,7 @@ export function useMedicalFees() {
 
             doctors.value = doctorsData;
             schedules.value = schedulesData;
+
         } catch (err) {
             error.value = `Error al cargar datos: ${err.message}`;
             throw err;
@@ -68,12 +84,12 @@ export function useMedicalFees() {
                 throw new Error(`Excel inválido: ${validation.errors.join(', ')}`);
             }
 
-            // 3. Filtrar registros inválidos (comprobante vacío/------------- Y cia PARTICULAR)
+            // 3. Filtrar registros inválidos
             const validData = rawData.filter(row => !ExcelParserService.shouldExcludeRecord(row));
             
             const excludedCount = rawData.length - validData.length;
             if (excludedCount > 0) {
-                console.log(`[useMedicalFees] ${excludedCount} registros excluidos (comprobante inválido + PARTICULAR)`);
+                console.log(`[useMedicalFees] ${excludedCount} registros excluidos`);
             }
 
             // 4. Mapear a modelo
@@ -119,6 +135,9 @@ export function useMedicalFees() {
                 };
             });
 
+            // 7. Guardar en cache (reemplaza datos anteriores)
+            saveServicesToCache(classifiedServices);
+
             services.value = classifiedServices;
             return classifiedServices;
 
@@ -127,6 +146,60 @@ export function useMedicalFees() {
             throw err;
         } finally {
             isLoading.value = false;
+        }
+    }
+
+    /**
+     * Guarda servicios en cache usando cache utility
+     * @param {Array} servicesData - Servicios a guardar
+     */
+    function saveServicesToCache(servicesData) {
+        try {
+            cache.setItem(CACHE_KEY, servicesData);
+            cache.setItem(CACHE_TIMESTAMP_KEY, new Date().toISOString());
+        } catch (err) {
+            console.error('Error al guardar en cache:', err);
+            if (err.message.includes('quota')) {
+                try {
+                    cache.removeItem(CACHE_KEY);
+                    cache.setItem(CACHE_KEY, servicesData);
+                    cache.setItem(CACHE_TIMESTAMP_KEY, new Date().toISOString());
+                } catch (retryErr) {
+                    console.error('Error al reintentar guardar en cache:', retryErr);
+                }
+            }
+        }
+    }
+
+    /**
+     * Carga servicios desde cache
+     * @returns {Array|null} Servicios guardados o null
+     */
+    function loadServicesFromCache() {
+        try {
+            if (cache.hasThis(CACHE_KEY)) {
+                const cachedData = cache.getItem(CACHE_KEY);
+                if (cachedData && Array.isArray(cachedData)) {
+                    services.value = cachedData;
+                    return cachedData;
+                }
+            }
+        } catch (err) {
+            console.error('Error al cargar desde cache:', err);
+        }
+        return null;
+    }
+
+    /**
+     * Limpia todos los datos (servicios y cache)
+     */
+    function clearAllData() {
+        services.value = [];
+        try {
+            cache.removeItem(CACHE_KEY);
+            cache.removeItem(CACHE_TIMESTAMP_KEY);
+        } catch (err) {
+            console.error('Error al limpiar cache:', err);
         }
     }
 
@@ -191,17 +264,6 @@ export function useMedicalFees() {
     }));
 
     /**
-     * Formatea fecha de YYYY-MM-DD a DD/MM/YYYY para Excel
-     * @param {string} dateString - Fecha en formato YYYY-MM-DD
-     * @returns {string} Fecha en formato DD/MM/YYYY
-     */
-    function formatDateForExcel(dateString) {
-        if (!dateString) return '';
-        const [year, month, day] = dateString.split('-');
-        return `${day}/${month}/${year}`;
-    }
-
-    /**
      * Exporta servicios filtrados a Excel
      * @param {Array} filteredServices - Servicios a exportar
      * @param {string} filename - Nombre del archivo
@@ -211,9 +273,8 @@ export function useMedicalFees() {
             throw new Error('No hay servicios para exportar');
         }
 
-        // Preparar datos para Excel - Incluir TODOS los campos del Excel original
+        // Preparar datos para Excel
         const excelData = filteredServices.map(service => {
-            // Calcular comisión según reglas específicas
             const codSeg = service.rawData?.cod_seg?.toString().trim() || '';
             const importe = parseFloat(service.rawData?.importe) || 0;
             const isPlanilla = service.serviceType === 'PLANILLA';
@@ -236,30 +297,23 @@ export function useMedicalFees() {
             const segusIndicatesReten = service.rawData?.segus?.toUpperCase().includes('RETEN');
             const hasCommission = comision !== '' && comision > 0;
             
-            // Solo agregar advertencia si es RETÉN, NO tiene comisión Y segus NO indica RETEN
-            if (isReten && !hasCommission && !segusIndicatesReten && detalle.includes('⚠️ Revisar atención, codigo NO RETEN')) {
-                // La advertencia ya está en el detalle, mantenerla
-            } else if (isReten && !hasCommission && !segusIndicatesReten && !detalle.includes('⚠️ Revisar atención, codigo NO RETEN')) {
-                // Agregar advertencia si no está
+            if (isReten && !hasCommission && !segusIndicatesReten && !detalle.includes('⚠️ Revisar atención, codigo NO RETEN')) {
                 detalle += ' ⚠️ Revisar atención, codigo NO RETEN';
             } else if (isReten && hasCommission && detalle.includes('⚠️ Revisar atención, codigo NO RETEN')) {
-                // Remover advertencia si tiene comisión
                 detalle = detalle.replace(' ⚠️ Revisar atención, codigo NO RETEN', '');
             }
             
-            // Convertir fecha YYYY-MM-DD a formato DD/MM/YYYY para Excel
+            // Convertir fecha a formato DD/MM/YYYY
             let excelDate = '';
             if (service.date) {
                 const [year, month, day] = service.date.split('-');
-                // Usar formato string DD/MM/YYYY para evitar problemas de zona horaria
                 excelDate = `${day}/${month}/${year}`;
             }
             
             return {
-                // Campos procesados
                 'Admisión': service.rawData?.admision || '',
-                'Código Médico': service.doctorCode ? `'${service.doctorCode}` : '', // Forzar como texto con '
-                'Fecha': excelDate, // Objeto Date para Excel
+                'Código Médico': service.doctorCode ? `'${service.doctorCode}` : '',
+                'Fecha': excelDate,
                 'Hora': service.time || '',
                 'Servicio': service.serviceName || '',
                 'Paciente': service.patientName || '',
@@ -268,8 +322,6 @@ export function useMedicalFees() {
                 'Tipo': service.serviceType || '',
                 'Detalle': detalle,
                 'Comisión': comision,
-                
-                // Campos adicionales del Excel original (solo los necesarios)
                 'CIA': service.rawData?.cia || '',
                 'Comprobante': service.rawData?.comprobante || '',
                 'Cod_Seg': service.rawData?.cod_seg || '',
@@ -284,39 +336,38 @@ export function useMedicalFees() {
         const wb = XLSX.utils.book_new();
         XLSX.utils.book_append_sheet(wb, ws, 'Honorarios Médicos');
 
-        // Aplicar formatos específicos a las columnas
+        // Aplicar formatos
         const range = XLSX.utils.decode_range(ws['!ref']);
         
         for (let R = range.s.r + 1; R <= range.e.r; ++R) {
-            // Columna B (Código Médico) - Forzar como texto
+            // Código Médico como texto
             const codigoMedicoCell = ws[`B${R + 1}`];
             if (codigoMedicoCell && codigoMedicoCell.v) {
-                codigoMedicoCell.t = 's'; // Tipo string/texto
-                codigoMedicoCell.v = String(codigoMedicoCell.v).replace(/^'/, ''); // Remover ' si existe
+                codigoMedicoCell.t = 's';
+                codigoMedicoCell.v = String(codigoMedicoCell.v).replace(/^'/, '');
             }
             
-            // Columna C (Fecha) - Mantener como texto en formato DD/MM/YYYY
+            // Fecha como texto
             const dateCell = ws[`C${R + 1}`];
             if (dateCell && dateCell.v) {
-                dateCell.t = 's'; // Tipo string/texto
-                // Excel reconocerá automáticamente el formato DD/MM/YYYY
+                dateCell.t = 's';
             }
             
-            // Columna H (Monto) - Formato moneda S/
+            // Monto con formato S/
             const montoCell = ws[`H${R + 1}`];
             if (montoCell && !isNaN(montoCell.v)) {
                 montoCell.t = 'n';
                 montoCell.z = '"S/ "#,##0.00';
             }
             
-            // Columna K (Comisión) - Formato moneda S/
+            // Comisión con formato S/
             const comisionCell = ws[`K${R + 1}`];
             if (comisionCell && comisionCell.v !== '' && !isNaN(comisionCell.v)) {
                 comisionCell.t = 'n';
                 comisionCell.z = '"S/ "#,##0.00';
             }
             
-            // Columna O (Importe) - Formato moneda S/
+            // Importe con formato S/
             const importeCell = ws[`O${R + 1}`];
             if (importeCell && !isNaN(importeCell.v)) {
                 importeCell.t = 'n';
@@ -351,6 +402,8 @@ export function useMedicalFees() {
         // Methods
         loadDoctorsAndSchedules,
         importFromExcel,
-        exportToExcel
+        exportToExcel,
+        loadServicesFromCache,
+        clearAllData
     };
 }

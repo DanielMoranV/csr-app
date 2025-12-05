@@ -23,7 +23,9 @@ const {
     totals,
     loadDoctorsAndSchedules,
     importFromExcel,
-    exportToExcel
+    exportToExcel,
+    loadServicesFromCache,
+    clearAllData
 } = useMedicalFees();
 
 // Filtros
@@ -255,9 +257,30 @@ onMounted(async () => {
         console.error('Error al cargar especialidades:', err);
     }
     
+    // Intentar cargar datos del cache
+    const cachedServices = loadServicesFromCache();
+    if (cachedServices && cachedServices.length > 0) {
+        toast.add({
+            severity: 'info',
+            summary: 'Datos cargados',
+            detail: `${cachedServices.length} servicios cargados desde cache`,
+            life: 3000
+        });
+    }
+    
     // Cargar datos del mes actual
     onMonthChange();
 });
+
+function handleClearData() {
+    clearAllData();
+    toast.add({
+        severity: 'success',
+        summary: 'Datos limpiados',
+        detail: 'Todos los datos han sido eliminados',
+        life: 3000
+    });
+}
 </script>
 
 <template>
@@ -275,12 +298,23 @@ onMounted(async () => {
                         Gestión y clasificación de honorarios del personal médico
                     </p>
                 </div>
-                <Button 
-                    label="Importar Excel" 
-                    icon="pi pi-upload" 
-                    class="import-button" 
-                    @click="$refs.fileInput.click()" 
-                />
+                <div class="header-actions">
+                    <Button 
+                        label="Limpiar Datos" 
+                        icon="pi pi-trash" 
+                        severity="danger"
+                        outlined
+                        class="clear-button" 
+                        @click="handleClearData"
+                        :disabled="services.length === 0"
+                    />
+                    <Button 
+                        label="Importar Excel" 
+                        icon="pi pi-upload" 
+                        class="import-button" 
+                        @click="$refs.fileInput.click()" 
+                    />
+                </div>
                 <input 
                     ref="fileInput" 
                     type="file" 
@@ -632,6 +666,20 @@ onMounted(async () => {
     display: flex;
     align-items: center;
     margin: 0;
+}
+
+.header-actions {
+    display: flex;
+    gap: 0.75rem;
+    align-items: center;
+}
+
+.clear-button {
+    transition: all 0.3s ease !important;
+}
+
+.clear-button:hover:not(:disabled) {
+    transform: translateY(-2px) !important;
 }
 
 .import-button {
