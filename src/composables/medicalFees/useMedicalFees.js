@@ -247,12 +247,12 @@ export function useMedicalFees() {
                 detalle = detalle.replace(' ⚠️ Revisar atención, codigo NO RETEN', '');
             }
             
-            // Convertir fecha YYYY-MM-DD a objeto Date de Excel usando UTC
+            // Convertir fecha YYYY-MM-DD a formato DD/MM/YYYY para Excel
             let excelDate = '';
             if (service.date) {
                 const [year, month, day] = service.date.split('-');
-                // Usar Date.UTC para evitar problemas de zona horaria
-                excelDate = new Date(Date.UTC(parseInt(year), parseInt(month) - 1, parseInt(day)));
+                // Usar formato string DD/MM/YYYY para evitar problemas de zona horaria
+                excelDate = `${day}/${month}/${year}`;
             }
             
             return {
@@ -295,11 +295,11 @@ export function useMedicalFees() {
                 codigoMedicoCell.v = String(codigoMedicoCell.v).replace(/^'/, ''); // Remover ' si existe
             }
             
-            // Columna C (Fecha) - Formato de fecha DD/MM/YYYY
+            // Columna C (Fecha) - Mantener como texto en formato DD/MM/YYYY
             const dateCell = ws[`C${R + 1}`];
-            if (dateCell && dateCell.v instanceof Date) {
-                dateCell.t = 'd'; // Tipo fecha
-                dateCell.z = 'dd/mm/yyyy'; // Formato fecha
+            if (dateCell && dateCell.v) {
+                dateCell.t = 's'; // Tipo string/texto
+                // Excel reconocerá automáticamente el formato DD/MM/YYYY
             }
             
             // Columna H (Monto) - Formato moneda S/
