@@ -247,11 +247,12 @@ export function useMedicalFees() {
                 detalle = detalle.replace(' ⚠️ Revisar atención, codigo NO RETEN', '');
             }
             
-            // Convertir fecha DD/MM/YYYY a objeto Date de Excel
+            // Convertir fecha YYYY-MM-DD a objeto Date de Excel usando UTC
             let excelDate = '';
             if (service.date) {
                 const [year, month, day] = service.date.split('-');
-                excelDate = new Date(parseInt(year), parseInt(month) - 1, parseInt(day));
+                // Usar Date.UTC para evitar problemas de zona horaria
+                excelDate = new Date(Date.UTC(parseInt(year), parseInt(month) - 1, parseInt(day)));
             }
             
             return {
