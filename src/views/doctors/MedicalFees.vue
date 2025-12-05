@@ -214,6 +214,32 @@ function handleExport() {
     });
 }
 
+async function handleFileUpload(event) {
+    const file = event.target.files[0];
+    if (!file) return;
+    
+    try {
+        await importFromExcel(file);
+        toast.add({
+            severity: 'success',
+            summary: 'Importado',
+            detail: `${services.value.length} servicios procesados`,
+            life: 3000
+        });
+        // Limpiar el input para permitir reimportar el mismo archivo
+        event.target.value = '';
+    } catch (err) {
+        toast.add({
+            severity: 'error',
+            summary: 'Error al importar',
+            detail: err.message || 'Error desconocido',
+            life: 5000
+        });
+        // Limpiar el input
+        event.target.value = '';
+    }
+}
+
 function getTypeColor(type) {
     return type === 'PLANILLA' ? 'success' : 'warning';
 }
@@ -235,18 +261,36 @@ onMounted(async () => {
 </script>
 
 <template>
-    <div class="medical-fees-container">
-        <div class="card">
-            <div class="card-header">
-                <div class="header-content">
-                    <div class="header-icon">
-                        <i class="pi pi-dollar"></i>
-                    </div>
-                    <h1 class="header-title">Honorarios Médicos</h1>
+    <div class="medical-fees-view">
+        <div class="main-card">
+            <!-- Header Section -->
+            <div class="header-section">
+                <div class="header-icon-wrapper">
+                    <i class="pi pi-dollar"></i>
                 </div>
+                <div class="header-content">
+                    <h1 class="header-title">Honorarios Médicos</h1>
+                    <p class="header-subtitle">
+                        <i class="pi pi-chart-line mr-2"></i>
+                        Gestión y clasificación de honorarios del personal médico
+                    </p>
+                </div>
+                <Button 
+                    label="Importar Excel" 
+                    icon="pi pi-upload" 
+                    class="import-button" 
+                    @click="$refs.fileInput.click()" 
+                />
+                <input 
+                    ref="fileInput" 
+                    type="file" 
+                    accept=".xlsx,.xls" 
+                    style="display: none" 
+                    @change="handleFileUpload" 
+                />
             </div>
 
-            <div class="card-body">
+            <!-- Content Section -->
                 <!-- Panel de Control -->
                 <Card class="control-panel">
                     <template #title>
@@ -301,18 +345,6 @@ onMounted(async () => {
                                     optionValue="value"
                                     placeholder="Seleccionar tipo"
                                     class="w-full"
-                                />
-                            </div>
-                            
-                            <div class="control-item">
-                                <label>Importar Excel</label>
-                                <FileUpload 
-                                    mode="basic" 
-                                    accept=".xls,.xlsx"
-                                    :maxFileSize="10000000"
-                                    @select="onFileSelect"
-                                    :auto="true"
-                                    chooseLabel="Seleccionar archivo"
                                 />
                             </div>
                             
@@ -439,52 +471,182 @@ onMounted(async () => {
                         Selecciona un periodo e importa un archivo Excel para comenzar.
                     </p>
                 </div>
-            </div>
         </div>
     </div>
 </template>
 
 <style scoped>
-.medical-fees-container {
-    padding: 1.5rem;
-    max-width: 1400px;
-    margin: 0 auto;
+/* ============================================================================
+   ANIMATIONS
+   ============================================================================ */
+@keyframes fadeIn {
+    from {
+        opacity: 0;
+        transform: translateY(10px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
 }
 
-.card {
-    background: white;
-    border-radius: 12px;
-    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+@keyframes shimmer {
+    0%,
+    100% {
+        transform: translateX(-100%) rotate(45deg);
+    }
+    50% {
+        transform: translateX(100%) rotate(45deg);
+    }
+}
+
+@keyframes pulse {
+    0%,
+    100% {
+        transform: scale(1);
+    }
+    50% {
+        transform: scale(1.05);
+    }
+}
+
+@keyframes gradientShift {
+    0%,
+    100% {
+        background-position: 0% 50%;
+    }
+    50% {
+        background-position: 100% 50%;
+    }
+}
+
+/* ============================================================================
+   MAIN CONTAINER
+   ============================================================================ */
+.medical-fees-view {
+    padding: 1rem;
+    animation: fadeIn 0.5s ease-out;
+}
+
+.main-card {
+    background: linear-gradient(145deg, var(--surface-section), var(--surface-card));
+    border: 1px solid var(--surface-border);
+    border-radius: 16px;
+    padding: 2rem;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+    position: relative;
     overflow: hidden;
 }
 
-.card-header {
-    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-    padding: 2rem;
-    color: white;
+.main-card::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 3px;
+    background: linear-gradient(90deg, #667eea, #764ba2, #667eea, #764ba2);
+    background-size: 200% 100%;
+    animation: gradientShift 3s ease infinite;
 }
 
-.header-content {
+:global(.dark) .main-card {
+    background: linear-gradient(145deg, #1e293b, #0f172a);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+}
+
+/* ============================================================================
+   HEADER SECTION
+   ============================================================================ */
+.header-section {
     display: flex;
     align-items: center;
-    gap: 1rem;
+    gap: 1.5rem;
+    margin-bottom: 2rem;
 }
 
-.header-icon {
-    width: 48px;
-    height: 48px;
-    background: rgba(255, 255, 255, 0.2);
-    border-radius: 12px;
+.header-icon-wrapper {
+    width: 64px;
+    height: 64px;
+    border-radius: 16px;
     display: flex;
     align-items: center;
     justify-content: center;
-    font-size: 1.5rem;
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 50%, #667eea 100%);
+    box-shadow:
+        0 8px 20px rgba(102, 126, 234, 0.3),
+        0 4px 12px rgba(118, 75, 162, 0.4);
+    animation: pulse 2s ease-in-out infinite;
+    position: relative;
+    overflow: hidden;
+}
+
+.header-icon-wrapper::before {
+    content: '';
+    position: absolute;
+    top: -50%;
+    left: -50%;
+    width: 200%;
+    height: 200%;
+    background: linear-gradient(135deg, transparent, rgba(255, 255, 255, 0.2), transparent);
+    animation: shimmer 3s infinite;
+}
+
+.header-icon-wrapper i {
+    font-size: 2rem;
+    color: #ffffff;
+    z-index: 1;
+}
+
+:global(.dark) .header-icon-wrapper {
+    background: linear-gradient(135deg, #764ba2 0%, #667eea 50%, #764ba2 100%);
+    box-shadow:
+        0 8px 20px rgba(118, 75, 162, 0.4),
+        0 4px 12px rgba(102, 126, 234, 0.5);
+}
+
+.header-content {
+    flex: 1;
 }
 
 .header-title {
-    margin: 0;
     font-size: 1.75rem;
-    font-weight: 600;
+    font-weight: 700;
+    margin: 0 0 0.5rem 0;
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+}
+
+:global(.dark) .header-title {
+    background: linear-gradient(135deg, #764ba2 0%, #667eea 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+}
+
+.header-subtitle {
+    color: var(--text-color-secondary);
+    font-size: 1rem;
+    display: flex;
+    align-items: center;
+    margin: 0;
+}
+
+.import-button {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%) !important;
+    color: white !important;
+    border: none !important;
+    padding: 0.75rem 1.5rem !important;
+    font-weight: 600 !important;
+    box-shadow: 0 4px 12px rgba(102, 126, 234, 0.3) !important;
+    transition: all 0.3s ease !important;
+}
+
+.import-button:hover {
+    transform: translateY(-2px) !important;
+    box-shadow: 0 6px 16px rgba(102, 126, 234, 0.4) !important;
 }
 
 .card-body {
