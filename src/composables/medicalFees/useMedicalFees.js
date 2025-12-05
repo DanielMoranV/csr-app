@@ -242,7 +242,6 @@ export function useMedicalFees() {
                 // Campos procesados
                 'Admisión': service.rawData?.admision || '',
                 'Código Médico': service.doctorCode ? `'${service.doctorCode}` : '', // Forzar como texto con '
-                'Médico': service.doctor?.name || 'No encontrado',
                 'Fecha': excelDate, // Objeto Date para Excel
                 'Hora': service.time || '',
                 'Servicio': service.serviceName || '',
@@ -253,27 +252,11 @@ export function useMedicalFees() {
                 'Detalle': service.serviceTypeReason || '',
                 'Comisión': comision,
                 
-                // Todos los campos adicionales del Excel original (rawData)
+                // Campos adicionales del Excel original (solo los necesarios)
                 'CIA': service.rawData?.cia || '',
                 'Comprobante': service.rawData?.comprobante || '',
                 'Cod_Seg': service.rawData?.cod_seg || '',
-                'Descripcion': service.rawData?.descripcion || '',
-                'Cod_Seri': service.rawData?.cod_seri ? `'${service.rawData.cod_seri}` : '', // Forzar como texto
-                'Importe': importe,
-                'Num_Aten': service.rawData?.num_aten || '',
-                'Num_His': service.rawData?.num_his || '',
-                'Tipo_Doc': service.rawData?.tipo_doc || '',
-                'Num_Doc': service.rawData?.num_doc || '',
-                'Edad': service.rawData?.edad || '',
-                'Sexo': service.rawData?.sexo || '',
-                'Procedencia': service.rawData?.procedencia || '',
-                'Medico': service.rawData?.medico || '',
-                'Especialidad_Excel': service.rawData?.especialidad || '',
-                'Consultorio': service.rawData?.consultorio || '',
-                'Turno': service.rawData?.turno || '',
-                'Usuario': service.rawData?.usuario || '',
-                'Fecha_Reg': service.rawData?.fecha_reg || '',
-                'Hora_Reg': service.rawData?.hora_reg || ''
+                'Importe': importe
             };
         });
 
@@ -293,36 +276,29 @@ export function useMedicalFees() {
                 codigoMedicoCell.v = String(codigoMedicoCell.v).replace(/^'/, ''); // Remover ' si existe
             }
             
-            // Columna D (Fecha) - Formato de fecha DD/MM/YYYY
-            const dateCell = ws[`D${R + 1}`];
+            // Columna C (Fecha) - Formato de fecha DD/MM/YYYY
+            const dateCell = ws[`C${R + 1}`];
             if (dateCell && dateCell.v instanceof Date) {
                 dateCell.t = 'd'; // Tipo fecha
                 dateCell.z = 'dd/mm/yyyy'; // Formato fecha
             }
             
-            // Columna I (Monto) - Formato moneda S/
-            const montoCell = ws[`I${R + 1}`];
+            // Columna H (Monto) - Formato moneda S/
+            const montoCell = ws[`H${R + 1}`];
             if (montoCell && !isNaN(montoCell.v)) {
                 montoCell.t = 'n';
                 montoCell.z = '"S/ "#,##0.00';
             }
             
-            // Columna L (Comisión) - Formato moneda S/
-            const comisionCell = ws[`L${R + 1}`];
+            // Columna K (Comisión) - Formato moneda S/
+            const comisionCell = ws[`K${R + 1}`];
             if (comisionCell && comisionCell.v !== '' && !isNaN(comisionCell.v)) {
                 comisionCell.t = 'n';
                 comisionCell.z = '"S/ "#,##0.00';
             }
             
-            // Columna P (Cod_Seri) - Forzar como texto
-            const codSeriCell = ws[`P${R + 1}`];
-            if (codSeriCell && codSeriCell.v) {
-                codSeriCell.t = 's'; // Tipo string/texto
-                codSeriCell.v = String(codSeriCell.v).replace(/^'/, ''); // Remover ' si existe
-            }
-            
-            // Columna Q (Importe) - Formato moneda S/
-            const importeCell = ws[`Q${R + 1}`];
+            // Columna O (Importe) - Formato moneda S/
+            const importeCell = ws[`O${R + 1}`];
             if (importeCell && !isNaN(importeCell.v)) {
                 importeCell.t = 'n';
                 importeCell.z = '"S/ "#,##0.00';

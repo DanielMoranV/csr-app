@@ -55,27 +55,39 @@ class ServiceClassifier {
                         reason: baseReason
                     };
                 } else {
+                    const baseReason = `Turno ${schedule.medical_shift?.code || 'N/A'} - No planilla`;
+                    
+                    // VALIDACIÓN: Si es RETÉN pero segus NO indica RETÉN
+                    if (!segusIndicatesReten) {
+                        return {
+                            type: 'RETÉN',
+                            schedule,
+                            reason: `${baseReason} ⚠️ Revisar atención, codigo NO RETEN`
+                        };
+                    }
+                    
                     return {
                         type: 'RETÉN',
                         schedule,
-                        reason: `Turno ${schedule.medical_shift?.code || 'N/A'} - No planilla`
+                        reason: baseReason
                     };
                 }
             }
         }
 
         // No coincide con ningún horario → RETÉN
-        // Construir mensaje con los horarios que sí estaban registrados
-        const registeredSchedules = schedules.map(s => {
-            const startTime = this.formatTimeWithoutSeconds(s.start_time);
-            const endTime = this.formatTimeWithoutSeconds(s.end_time);
-            return `${s.medical_shift?.code || 'N/A'} (${startTime}-${endTime})`;
-        }).join(', ');
+        // Mensaje resumido: solo mostrar la hora del servicio
+        let reason = `Fuera de horario (${serviceTime})`;
+        
+        // VALIDACIÓN: Si es RETÉN pero segus NO indica RETÉN
+        if (!segusIndicatesReten) {
+            reason += ' ⚠️ Revisar atención, codigo NO RETEN';
+        }
         
         return {
             type: 'RETÉN',
             schedule: null,
-            reason: `Fuera de horarios registrados. Horarios del día: ${registeredSchedules}`
+            reason: reason
         };
     }
 
