@@ -107,11 +107,37 @@ class ExcelParserService {
      */
     parseExcelDate(excelDate) {
         if (!excelDate) return null;
-        if (typeof excelDate === 'string') return excelDate;
-        if (typeof excelDate === 'number') {
-            const date = XLSX.SSF.parse_date_code(excelDate);
-            return `${date.y}-${String(date.m).padStart(2, '0')}-${String(date.d).padStart(2, '0')}`;
+        
+        // Si ya es string, verificar formato
+        if (typeof excelDate === 'string') {
+            // Si está en formato DD/MM/YYYY, convertir a YYYY-MM-DD
+            if (excelDate.includes('/')) {
+                const parts = excelDate.split('/');
+                if (parts.length === 3) {
+                    const day = parts[0].padStart(2, '0');
+                    const month = parts[1].padStart(2, '0');
+                    const year = parts[2];
+                    return `${year}-${month}-${day}`;
+                }
+            }
+            return excelDate;
         }
+        
+        // Si es número serial de Excel
+        if (typeof excelDate === 'number') {
+            // Excel almacena fechas como días desde 1900-01-01
+            // Convertir a fecha JavaScript sin problemas de zona horaria
+            const excelEpoch = new Date(1899, 11, 30); // 30 de diciembre de 1899
+            const date = new Date(excelEpoch.getTime() + excelDate * 86400000); // 86400000 ms = 1 día
+            
+            // Usar UTC para evitar problemas de zona horaria
+            const year = date.getUTCFullYear();
+            const month = String(date.getUTCMonth() + 1).padStart(2, '0');
+            const day = String(date.getUTCDate()).padStart(2, '0');
+            
+            return `${year}-${month}-${day}`;
+        }
+        
         return null;
     }
 
