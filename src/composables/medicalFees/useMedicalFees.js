@@ -1,14 +1,14 @@
 import ExcelParserService from '@/services/medicalFees/ExcelParserService';
 import MedicalFeesService from '@/services/medicalFees/MedicalFeesService';
 import ServiceClassifier from '@/services/medicalFees/ServiceClassifier';
-import cache from '@/utils/cache';
+import { useDoctorTariffsStore } from '@/store/doctorTariffsStore';
 import { computed, ref } from 'vue';
 import * as XLSX from 'xlsx';
 
-const CACHE_KEY = 'medicalFees_services';
-const CACHE_TIMESTAMP_KEY = 'medicalFees_timestamp';
-
 export function useMedicalFees() {
+    // Stores
+    const doctorTariffsStore = useDoctorTariffsStore();
+
     // State
     const doctors = ref([]);
     const schedules = ref([]);
@@ -40,7 +40,7 @@ export function useMedicalFees() {
     });
 
     /**
-     * Carga médicos y horarios desde el backend
+     * Carga médicos, horarios y tarifarios desde el backend
      * @param {string} startDate - Fecha inicio YYYY-MM-DD
      * @param {string} endDate - Fecha fin YYYY-MM-DD
      */
@@ -51,7 +51,8 @@ export function useMedicalFees() {
         try {
             const [doctorsData, schedulesData] = await Promise.all([
                 MedicalFeesService.getDoctors(),
-                MedicalFeesService.getDoctorSchedules(startDate, endDate)
+                MedicalFeesService.getDoctorSchedules(startDate, endDate),
+                doctorTariffsStore.fetchTariffs()
             ]);
 
             doctors.value = doctorsData;
@@ -135,9 +136,6 @@ export function useMedicalFees() {
                 };
             });
 
-            // 7. Guardar en cache (reemplaza datos anteriores)
-            saveServicesToCache(classifiedServices);
-
             services.value = classifiedServices;
             return classifiedServices;
 
@@ -150,57 +148,10 @@ export function useMedicalFees() {
     }
 
     /**
-     * Guarda servicios en cache usando cache utility
-     * @param {Array} servicesData - Servicios a guardar
-     */
-    function saveServicesToCache(servicesData) {
-        try {
-            cache.setItem(CACHE_KEY, servicesData);
-            cache.setItem(CACHE_TIMESTAMP_KEY, new Date().toISOString());
-        } catch (err) {
-            console.error('Error al guardar en cache:', err);
-            if (err.message.includes('quota')) {
-                try {
-                    cache.removeItem(CACHE_KEY);
-                    cache.setItem(CACHE_KEY, servicesData);
-                    cache.setItem(CACHE_TIMESTAMP_KEY, new Date().toISOString());
-                } catch (retryErr) {
-                    console.error('Error al reintentar guardar en cache:', retryErr);
-                }
-            }
-        }
-    }
-
-    /**
-     * Carga servicios desde cache
-     * @returns {Array|null} Servicios guardados o null
-     */
-    function loadServicesFromCache() {
-        try {
-            if (cache.hasThis(CACHE_KEY)) {
-                const cachedData = cache.getItem(CACHE_KEY);
-                if (cachedData && Array.isArray(cachedData)) {
-                    services.value = cachedData;
-                    return cachedData;
-                }
-            }
-        } catch (err) {
-            console.error('Error al cargar desde cache:', err);
-        }
-        return null;
-    }
-
-    /**
-     * Limpia todos los datos (servicios y cache)
+     * Limpia todos los servicios
      */
     function clearAllData() {
         services.value = [];
-        try {
-            cache.removeItem(CACHE_KEY);
-            cache.removeItem(CACHE_TIMESTAMP_KEY);
-        } catch (err) {
-            console.error('Error al limpiar cache:', err);
-        }
     }
 
     /**
@@ -280,15 +231,67 @@ export function useMedicalFees() {
             const isPlanilla = service.serviceType === 'PLANILLA';
             const isReten = service.serviceType === 'RETÉN';
             const cia = service.rawData?.cia?.toString().trim().toUpperCase() || '';
+            const doctorCode = service.doctorCode;
             
             let comision = '';
             
-            // Regla 1: % dinámico del médico si es PLANILLA Y cod_seg = 00.18.66
-            if (isPlanilla && codSeg === '00.18.66') {
-                // Obtener el porcentaje de comisión del médico (default 50%)
-                const commissionPercentage = service.doctor?.commission_percentage || 50.0;
-                const percentage = commissionPercentage / 100;
-                comision = parseFloat((importe * percentage).toFixed(2));
+            // Códigos de consulta que NO tienen comisión en PLANILLA
+            const consultationCodes = ['00.19.25', '00.19.27'];
+            const isConsultationCode = codSeg.startsWith('50.0') || consultationCodes.includes(codSeg);
+            
+            // Regla 1: Validar con tarifarios médicos si es PLANILLA
+            // EXCLUYE códigos de consulta (50.0*, 00.19.25, 00.19.27)
+            if (isPlanilla && !isConsultationCode) {
+                // Debug: Log búsqueda de tarifario
+                console.log('[Regla 1] Buscando tarifario para:', {
+                    codSeg,
+                    doctorCode,
+                    serviceName: service.serviceName,
+                    totalTariffs: doctorTariffsStore.allTariffs.length
+                });
+                
+                // Buscar tarifario del médico que coincida con el código del servicio
+                const tariff = doctorTariffsStore.allTariffs.find(t => 
+                    t.tariff_code === codSeg && t.doctor_code === doctorCode
+                );
+                
+                if (tariff) {
+                    console.log('[Regla 1] Tarifario encontrado:', {
+                        tariff_code: tariff.tariff_code,
+                        doctor_code: tariff.doctor_code,
+                        clinic_commission: tariff.clinic_commission,
+                        doctor_commission: tariff.doctor_commission
+                    });
+                } else {
+                    console.log('[Regla 1] NO se encontró tarifario para:', { codSeg, doctorCode });
+                }
+                
+                // Verificar condiciones: clinic_commission > 0 Y doctor_commission = 0 o null
+                if (tariff && 
+                    parseFloat(tariff.clinic_commission) > 0 && 
+                    (tariff.doctor_commission === null || parseFloat(tariff.doctor_commission) === 0)) {
+                    // Aplicar comisión personalizada del médico
+                    const commissionPercentage = service.doctor?.commission_percentage || 50.0;
+                    const percentage = commissionPercentage / 100;
+                    comision = parseFloat((importe * percentage).toFixed(2));
+                    
+                    console.log('[Regla 1] ✅ Comisión calculada:', {
+                        commissionPercentage,
+                        importe,
+                        comision
+                    });
+                } else if (tariff) {
+                    console.log('[Regla 1] ❌ Tarifario NO cumple condiciones:', {
+                        clinic_commission: tariff.clinic_commission,
+                        clinic_commission_parsed: parseFloat(tariff.clinic_commission),
+                        clinic_commission_gt_0: parseFloat(tariff.clinic_commission) > 0,
+                        doctor_commission: tariff.doctor_commission,
+                        doctor_commission_parsed: parseFloat(tariff.doctor_commission),
+                        doctor_commission_eq_0: parseFloat(tariff.doctor_commission) === 0
+                    });
+                }
+            } else if (isPlanilla && isConsultationCode) {
+                console.log('[Regla 1] ⚠️ Código de consulta excluido:', { codSeg });
             }
             // Regla 2: 92.5% fijo si es RETÉN Y cia != PARTICULAR
             else if (isReten && cia !== 'PARTICULAR') {
@@ -406,7 +409,6 @@ export function useMedicalFees() {
         loadDoctorsAndSchedules,
         importFromExcel,
         exportToExcel,
-        loadServicesFromCache,
         clearAllData
     };
 }

@@ -24,7 +24,6 @@ const {
     loadDoctorsAndSchedules,
     importFromExcel,
     exportToExcel,
-    loadServicesFromCache,
     clearAllData
 } = useMedicalFees();
 
@@ -255,17 +254,6 @@ onMounted(async () => {
         }
     } catch (err) {
         console.error('Error al cargar especialidades:', err);
-    }
-    
-    // Intentar cargar datos del cache
-    const cachedServices = loadServicesFromCache();
-    if (cachedServices && cachedServices.length > 0) {
-        toast.add({
-            severity: 'info',
-            summary: 'Datos cargados',
-            detail: `${cachedServices.length} servicios cargados desde cache`,
-            life: 3000
-        });
     }
     
     // Cargar datos del mes actual
