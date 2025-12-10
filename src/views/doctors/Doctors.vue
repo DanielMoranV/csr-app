@@ -12,8 +12,10 @@ import IconField from 'primevue/iconfield';
 import InputIcon from 'primevue/inputicon';
 import InputText from 'primevue/inputtext';
 import Select from 'primevue/select';
+import AutoComplete from 'primevue/autocomplete';
 import { useConfirm } from 'primevue/useconfirm';
 import { computed, onMounted, ref } from 'vue';
+import { medicalSpecialties } from '@/api/medicalSpecialties';
 
 const { doctors, isLoading, fetchDoctors, createDoctor, updateDoctor, deleteDoctor, documentTypeOptions, paymentPayrollOptions, setGlobalFilter, setDocumentTypeFilter, setPaymentPayrollFilter, clearFilters } = useDoctors();
 
@@ -34,10 +36,25 @@ const isDeletingDoctor = ref(false);
 const globalFilter = ref('');
 const documentTypeFilter = ref(null);
 const paymentPayrollFilter = ref(null);
+const selectedSpecialty = ref(null);
+const specialties = ref([]);
+const filteredSpecialties = ref([]);
 
 onMounted(async () => {
-    await Promise.all([fetchDoctors(), fetchMedicalShifts()]);
+    await Promise.all([fetchDoctors(), fetchMedicalShifts(), loadSpecialties()]);
 });
+
+// Cargar especialidades
+const loadSpecialties = async () => {
+    try {
+        const response = await medicalSpecialties.getAll();
+        if (response.data) {
+            specialties.value = Array.isArray(response.data) ? response.data : (response.data.data || []);
+        }
+    } catch (err) {
+        console.error('Error al cargar especialidades:', err);
+    }
+};
 
 // Doctor Handlers
 const openNewDoctor = () => {
@@ -115,15 +132,41 @@ const handlePaymentPayrollFilter = (value) => {
     setPaymentPayrollFilter(value);
 };
 
+const handleSpecialtyFilter = (value) => {
+    selectedSpecialty.value = value;
+};
+
+const searchSpecialty = (event) => {
+    const query = event.query.toLowerCase();
+    if (!query) {
+        filteredSpecialties.value = specialties.value;
+    } else {
+        filteredSpecialties.value = specialties.value.filter(specialty => 
+            specialty.name.toLowerCase().includes(query)
+        );
+    }
+};
+
 const handleClearFilters = () => {
     globalFilter.value = '';
     documentTypeFilter.value = null;
     paymentPayrollFilter.value = null;
+    selectedSpecialty.value = null;
     clearFilters();
 };
 
 const hasActiveFilters = computed(() => {
-    return globalFilter.value || documentTypeFilter.value || paymentPayrollFilter.value;
+    return globalFilter.value || documentTypeFilter.value || paymentPayrollFilter.value || selectedSpecialty.value;
+});
+
+// Filtrar médicos por especialidad (local)
+const filteredDoctorsBySpecialty = computed(() => {
+    if (!selectedSpecialty.value) {
+        return doctors.value;
+    }
+    return doctors.value.filter(doctor => {
+        return doctor.specialties && doctor.specialties.some(s => s.id === selectedSpecialty.value.id);
+    });
 });
 </script>
 
@@ -173,12 +216,30 @@ const hasActiveFilters = computed(() => {
 
                     <Select v-model="paymentPayrollFilter" :options="paymentPayrollOptions" optionLabel="label" optionValue="value" placeholder="Tipo de Pago" class="w-full" @change="handlePaymentPayrollFilter($event.value)" showClear />
 
+                    <AutoComplete 
+                        v-model="selectedSpecialty" 
+                        :suggestions="filteredSpecialties" 
+                        @complete="searchSpecialty" 
+                        optionLabel="name" 
+                        placeholder="Buscar especialidad..." 
+                        class="w-full"
+                        @change="handleSpecialtyFilter($event.value)"
+                        forceSelection
+                    >
+                        <template #option="slotProps">
+                            <div class="flex align-items-center">
+                                <i class="pi pi-tag mr-2"></i>
+                                <span>{{ slotProps.option.name }}</span>
+                            </div>
+                        </template>
+                    </AutoComplete>
+
                     <Button v-if="hasActiveFilters" label="Limpiar Filtros" icon="pi pi-filter-slash" severity="secondary" outlined @click="handleClearFilters" />
                 </div>
             </div>
 
             <!-- Tabla de Médicos -->
-            <DoctorTable :doctors="doctors" :loading="isLoading" @edit-doctor="editDoctor" @delete-doctor="confirmDeleteDoctor" @manage-schedules="manageSchedules" @manage-specialties="manageSpecialties" />
+            <DoctorTable :doctors="filteredDoctorsBySpecialty" :loading="isLoading" @edit-doctor="editDoctor" @delete-doctor="confirmDeleteDoctor" @manage-schedules="manageSchedules" @manage-specialties="manageSpecialties" />
         </div>
 
         <!-- Diálogos -->
@@ -572,7 +633,7 @@ const hasActiveFilters = computed(() => {
 
 .filters-grid {
     display: grid;
-    grid-template-columns: 1fr 1fr auto;
+    grid-template-columns: 1fr 1fr 1fr auto;
     gap: 1rem;
     align-items: center;
 }
@@ -582,7 +643,7 @@ const hasActiveFilters = computed(() => {
    ============================================================================ */
 @media (max-width: 1024px) {
     .filters-grid {
-        grid-template-columns: 1fr 1fr;
+        grid-template-columns: 1fr 1fr 1fr;
     }
 
     .table-header-modern {

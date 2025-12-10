@@ -204,9 +204,21 @@ const handleManageSchedules = (doctor) => {
         </Column>
 
         <!-- Tipo de Pago -->
-        <Column field="payment_payroll" header="Pago" :sortable="true" style="min-width: 130px">
+       <!--  <Column field="payment_payroll" header="Pago" :sortable="true" style="min-width: 130px">
             <template #body="{ data }">
                 <Tag :value="getPaymentPayrollLabel(data.payment_payroll)" :severity="getPaymentPayrollSeverity(data.payment_payroll)" />
+            </template>
+        </Column> -->
+
+        <!-- Comisión -->
+        <Column field="commission_percentage" header="Comisión" :sortable="true" style="min-width: 120px">
+            <template #body="{ data }">
+                <div class="flex items-center gap-2">
+                    <span v-if="data.commission_percentage !== null && data.commission_percentage !== undefined" class="font-semibold text-primary">
+                        {{ data.commission_percentage }}%
+                    </span>
+                    <span v-else class="text-muted">-</span>
+                </div>
             </template>
         </Column>
 

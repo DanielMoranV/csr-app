@@ -283,11 +283,14 @@ export function useMedicalFees() {
             
             let comision = '';
             
-            // Regla 1: 50% si es PLANILLA Y cod_seg = 00.18.66
+            // Regla 1: % dinámico del médico si es PLANILLA Y cod_seg = 00.18.66
             if (isPlanilla && codSeg === '00.18.66') {
-                comision = parseFloat((importe * 0.50).toFixed(2));
+                // Obtener el porcentaje de comisión del médico (default 50%)
+                const commissionPercentage = service.doctor?.commission_percentage || 50.0;
+                const percentage = commissionPercentage / 100;
+                comision = parseFloat((importe * percentage).toFixed(2));
             }
-            // Regla 2: 92.5% si es RETÉN Y cia != PARTICULAR
+            // Regla 2: 92.5% fijo si es RETÉN Y cia != PARTICULAR
             else if (isReten && cia !== 'PARTICULAR') {
                 comision = parseFloat((importe * 0.925).toFixed(2));
             }

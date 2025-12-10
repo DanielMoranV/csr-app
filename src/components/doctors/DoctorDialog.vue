@@ -80,7 +80,8 @@ const doctorForm = reactive({
     numero_colegiatura: '',
     rne: '',
     code: '',
-    payment_payroll: 'total'
+    payment_payroll: 'total',
+    commission_percentage: null
 });
 
 // Computed para verificar si debe mostrar campo RNE
@@ -131,7 +132,8 @@ const loadDoctorData = (doctor) => {
         numero_colegiatura: doctor.numero_colegiatura || '',
         rne: doctor.rne || '',
         code: doctor.code || '',
-        payment_payroll: doctor.payment_payroll || 'total'
+        payment_payroll: doctor.payment_payroll || 'total',
+        commission_percentage: doctor.commission_percentage ?? null
     });
     resetValidation();
 };
@@ -146,7 +148,8 @@ const resetForm = () => {
         numero_colegiatura: '',
         rne: '',
         code: '',
-        payment_payroll: 'total'
+        payment_payroll: 'total',
+        commission_percentage: null
     });
     resetValidation();
 };
@@ -173,6 +176,26 @@ const formatCode = (event) => {
     const value = event.target.value.toUpperCase().replace(/[^A-Z0-9]/g, '');
     doctorForm.code = value;
     validateField('code');
+};
+
+const formatCommissionPercentage = (event) => {
+    let value = event.target.value.replace(/[^0-9.]/g, '');
+    // Permitir solo un punto decimal
+    const parts = value.split('.');
+    if (parts.length > 2) {
+        value = parts[0] + '.' + parts.slice(1).join('');
+    }
+    // Limitar a 2 decimales
+    if (parts[1] && parts[1].length > 2) {
+        value = parts[0] + '.' + parts[1].substring(0, 2);
+    }
+    // Limitar a 100
+    const numValue = parseFloat(value);
+    if (!isNaN(numValue) && numValue > 100) {
+        value = '100.00';
+    }
+    doctorForm.commission_percentage = value;
+    validateField('commission_percentage');
 };
 
 // Validaciones
@@ -224,6 +247,24 @@ const validateField = (fieldName) => {
             }
             break;
 
+        case 'commission_percentage':
+            // Permitir null o vacío (opcional)
+            if (doctorForm.commission_percentage === null || doctorForm.commission_percentage === '') {
+                delete validationErrors.value.commission_percentage;
+            } else {
+                const percentage = parseFloat(doctorForm.commission_percentage);
+                if (isNaN(percentage)) {
+                    validationErrors.value.commission_percentage = 'Debe ser un número válido';
+                } else if (percentage < 0) {
+                    validationErrors.value.commission_percentage = 'El porcentaje no puede ser negativo';
+                } else if (percentage > 100) {
+                    validationErrors.value.commission_percentage = 'El porcentaje no puede ser mayor a 100';
+                } else {
+                    delete validationErrors.value.commission_percentage;
+                }
+            }
+            break;
+
         default:
             break;
     }
@@ -235,6 +276,7 @@ const validateAllFields = () => {
     validateField('document_number');
     validateField('numero_colegiatura');
     validateField('code');
+    validateField('commission_percentage');
     return Object.keys(validationErrors.value).length === 0;
 };
 
@@ -430,6 +472,27 @@ const handleClose = () => {
                         :disabled="saving"
                     />
                 </div>
+            </div>
+
+            <!-- Porcentaje de Comisión -->
+            <div class="field">
+                <label for="commission_percentage" class="font-semibold mb-2 block">
+                    Porcentaje de Comisión (%) <span class="text-red-500">*</span>
+                </label>
+                <InputText
+                    id="commission_percentage"
+                    v-model="doctorForm.commission_percentage"
+                    placeholder="Ej: 50.00"
+                    class="w-full"
+                    :class="{ 'p-invalid': touchedFields.commission_percentage && validationErrors.commission_percentage }"
+                    :disabled="saving"
+                    @input="formatCommissionPercentage"
+                    @blur="validateField('commission_percentage')"
+                />
+                <small v-if="touchedFields.commission_percentage && validationErrors.commission_percentage" class="p-error">
+                    {{ validationErrors.commission_percentage }}
+                </small>
+                <small class="text-muted">Porcentaje de comisión para servicios PLANILLA</small>
             </div>
         </div>
 
