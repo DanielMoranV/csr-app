@@ -93,12 +93,26 @@ export function useMedicalFees() {
                 console.log(`[useMedicalFees] ${excludedCount} registros excluidos`);
             }
 
-            // 4. Mapear a modelo
-            const parsedServices = validData.map(row =>
+            // 4. Filtrar por código médico >= 5000
+            const filteredByDoctorCode = validData.filter(row => {
+                const doctorCode = row.cod_seri?.toString().trim();
+                if (!doctorCode) return false;
+                
+                const codeNumber = parseInt(doctorCode, 10);
+                return !isNaN(codeNumber) && codeNumber >= 5000;
+            });
+            
+            const doctorCodeExcluded = validData.length - filteredByDoctorCode.length;
+            if (doctorCodeExcluded > 0) {
+                console.log(`[useMedicalFees] ${doctorCodeExcluded} servicios excluidos por código médico < 5000`);
+            }
+
+            // 5. Mapear a modelo
+            const parsedServices = filteredByDoctorCode.map(row =>
                 ExcelParserService.mapToServiceModel(row)
             );
 
-            // 5. Enriquecer con datos de médico y horario
+            // 6. Enriquecer con datos de médico y horario
             const enrichedServices = parsedServices.map(service => {
                 const doctor = doctorMap.value.get(service.doctorCode);
                 const scheduleKey = `${service.doctorCode}_${service.date}`;
@@ -112,7 +126,7 @@ export function useMedicalFees() {
                 };
             });
 
-            // 6. Clasificar servicios en PLANILLA o RETÉN
+            // 7. Clasificar servicios en PLANILLA o RETÉN
             const classifiedServices = enrichedServices.map(service => {
                 if (!service.isValid) {
                     return {
