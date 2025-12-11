@@ -3,6 +3,7 @@ import { ref, onMounted, computed, watch } from 'vue';
 import { useMedicalFees } from '@/composables/medicalFees/useMedicalFees';
 import { useToast } from 'primevue/usetoast';
 import { medicalSpecialties } from '@/api/medicalSpecialties';
+import { FilterMatchMode, FilterOperator }  from '@primevue/core/api';
 import Button from 'primevue/button';
 import FileUpload from 'primevue/fileupload';
 import DataTable from 'primevue/datatable';
@@ -11,6 +12,8 @@ import Tag from 'primevue/tag';
 import Card from 'primevue/card';
 import DatePicker from 'primevue/datepicker';
 import Dropdown from 'primevue/dropdown';
+import InputText from 'primevue/inputtext';
+import InputNumber from 'primevue/inputnumber';
 
 const toast = useToast();
 const {
@@ -34,6 +37,7 @@ const selectedMonth = ref(new Date(new Date().getFullYear(), new Date().getMonth
 const selectedDoctor = ref(null);
 const selectedType = ref(null);
 const specialties = ref([]);
+const isSpecialtiesLoading = ref(true);
 
 const typeOptions = [
     { label: 'Todos', value: null },
@@ -41,7 +45,21 @@ const typeOptions = [
     { label: 'Retén', value: 'RETEN' }
 ];
 
+const filters = ref({
+    global: { value: null, matchMode: FilterMatchMode.CONTAINS },
+    'rawData.admision': { operator: FilterOperator.AND, constraints: [{ value: null, matchMode: FilterMatchMode.CONTAINS }] },
+    'doctor.name': { operator: FilterOperator.AND, constraints: [{ value: null, matchMode: FilterMatchMode.CONTAINS }] },
+    'rawData.segus': { operator: FilterOperator.AND, constraints: [{ value: null, matchMode: FilterMatchMode.CONTAINS }] },
+    serviceType: { value: null, matchMode: FilterMatchMode.EQUALS },
+    comision: { operator: FilterOperator.AND, constraints: [{ value: null, matchMode: FilterMatchMode.EQUALS }] },
+    cia: { operator: FilterOperator.AND, constraints: [{ value: null, matchMode: FilterMatchMode.CONTAINS }] },
+    tipoate: { operator: FilterOperator.AND, constraints: [{ value: null, matchMode: FilterMatchMode.CONTAINS }] },
+    serviceTypeReason: { operator: FilterOperator.AND, constraints: [{ value: null, matchMode: FilterMatchMode.CONTAINS }] }
+});
+
 // Computed
+const canImport = computed(() => !isLoading.value && !isSpecialtiesLoading.value && doctors.value.length > 0);
+
 const doctorOptions = computed(() => {
     let filteredDoctors = doctors.value;
     
@@ -246,6 +264,7 @@ function getTypeColor(type) {
 }
 
 onMounted(async () => {
+    isSpecialtiesLoading.value = true;
     // Cargar especialidades médicas
     try {
         const response = await medicalSpecialties.getAll();
@@ -254,6 +273,8 @@ onMounted(async () => {
         }
     } catch (err) {
         console.error('Error al cargar especialidades:', err);
+    } finally {
+        isSpecialtiesLoading.value = false;
     }
     
     // Cargar datos del mes actual
@@ -297,10 +318,12 @@ function handleClearData() {
                         :disabled="services.length === 0"
                     />
                     <Button 
-                        label="Importar Excel" 
-                        icon="pi pi-upload" 
+                        :label="!canImport ? 'Cargando datos...' : 'Importar Excel'"
+                        :icon="!canImport ? 'pi pi-spin pi-spinner' : 'pi pi-upload'" 
                         class="import-button" 
-                        @click="$refs.fileInput.click()" 
+                        @click="$refs.fileInput.click()"
+                        :loading="!canImport"
+                        :disabled="!canImport"
                     />
                 </div>
                 <input 
@@ -308,7 +331,8 @@ function handleClearData() {
                     type="file" 
                     accept=".xlsx,.xls" 
                     style="display: none" 
-                    @change="handleFileUpload" 
+                    @change="handleFileUpload"
+                    :disabled="!canImport"
                 />
             </div>
 
@@ -445,40 +469,122 @@ function handleClearData() {
                     </template>
                     <template #content>
                         <DataTable 
+                            v-model:filters="filters"
                             :value="filteredServices" 
                             :paginator="true" 
                             :rows="20"
                             :loading="isLoading"
                             stripedRows
                             responsiveLayout="scroll"
+                            filterDisplay="menu"
+                            :globalFilterFields="['rawData.admision', 'doctor.name', 'rawData.segus', 'cia', 'tipoate', 'serviceTypeReason']"
                         >
-                            <Column field="doctorCode" header="Código" sortable></Column>
-                            <Column field="doctor.name" header="Médico" sortable></Column>
-                            <Column field="date" header="Fecha" sortable></Column>
-                            <Column field="time" header="Hora" sortable></Column>
-                            <Column field="serviceName" header="Servicio"></Column>
-                            <Column field="patientName" header="Paciente"></Column>
-                            <Column field="rawData.segus" header="Segus" sortable>
+                            <template #header>
+                                <div class="flex justify-content-between">
+                                    <span class="p-input-icon-left">
+                                        <i class="pi pi-search" />
+                                        <InputText v-model="filters['global'].value" placeholder="Buscar..." />
+                                    </span>
+                                </div>
+                            </template>
+
+                            <!-- Admisión -->
+                            <Column field="rawData.admision" header="Admisión" sortable style="min-width: 120px">
+                                <template #body="slotProps">
+                                    {{ slotProps.data.rawData?.admision || 'N/A' }}
+                                </template>
+                                <template #filter="{ filterModel }">
+                                    <InputText v-model="filterModel.value" type="text" class="p-column-filter" placeholder="Buscar admisión" />
+                                </template>
+                            </Column>
+                            
+                            <!-- Fecha y Hora combinadas -->
+                            <Column header="Fecha y Hora" sortable field="date" style="min-width: 150px">
+                                <template #body="slotProps">
+                                    {{ slotProps.data.date }} <br>
+                                    <small class="text-gray-500">{{ slotProps.data.time }}</small>
+                                </template>
+                            </Column>
+
+                            <!-- Médico (antes Servicio) -->
+                            <Column field="doctor.name" header="Médico" sortable style="min-width: 200px">
+                                <template #body="slotProps">
+                                    <div class="font-medium">{{ slotProps.data.doctor?.name || 'N/A' }}</div>
+                                </template>
+                                <template #filter="{ filterModel }">
+                                    <InputText v-model="filterModel.value" type="text" class="p-column-filter" placeholder="Buscar por médico" />
+                                </template>
+                            </Column>
+
+                            <!-- Servicio Medico (antes Segus) -->
+                            <Column field="rawData.segus" header="Servicio Medico" sortable style="min-width: 150px">
                                 <template #body="slotProps">
                                     {{ slotProps.data.rawData?.segus || 'N/A' }}
                                 </template>
+                                <template #filter="{ filterModel }">
+                                    <InputText v-model="filterModel.value" type="text" class="p-column-filter" placeholder="Buscar por código" />
+                                </template>
                             </Column>
-                            <Column field="amount" header="Monto" sortable>
+
+                            <!-- Cia -->
+                            <Column field="cia" header="Cia" sortable style="min-width: 120px">
+                                <template #body="slotProps">
+                                    {{ slotProps.data.cia }}
+                                </template>
+                                <template #filter="{ filterModel }">
+                                    <InputText v-model="filterModel.value" type="text" class="p-column-filter" placeholder="Buscar por cia" />
+                                </template>
+                            </Column>
+
+                            <!-- Tipo Ate -->
+                            <Column field="tipoate" header="Tipo Ate" sortable style="min-width: 120px">
+                                <template #body="slotProps">
+                                    {{ slotProps.data.tipoate }}
+                                </template>
+                                <template #filter="{ filterModel }">
+                                    <InputText v-model="filterModel.value" type="text" class="p-column-filter" placeholder="Buscar por tipo ate" />
+                                </template>
+                            </Column>
+                            
+                            <!-- Monto -->
+                            <Column field="amount" header="Monto" sortable style="min-width: 120px">
                                 <template #body="slotProps">
                                     S/ {{ slotProps.data.amount.toFixed(2) }}
                                 </template>
                             </Column>
-                            <Column field="serviceType" header="Tipo" sortable>
+
+                            <!-- Comisión (Nueva columna) -->
+                            <Column field="comision" header="Comisión" sortable style="min-width: 120px">
+                                <template #body="slotProps">
+                                    <span :class="{'text-green-600 font-bold': slotProps.data.comision > 0}">
+                                        S/ {{ slotProps.data.comision.toFixed(2) }}
+                                    </span>
+                                </template>
+                                <template #filter="{ filterModel }">
+                                    <InputNumber v-model="filterModel.value" mode="currency" currency="PEN" locale="es-PE" />
+                                </template>
+                            </Column>
+
+                            <!-- Tipo -->
+                            <Column field="serviceType" header="Tipo" sortable :showFilterMatchModes="false" style="min-width: 120px">
                                 <template #body="slotProps">
                                     <Tag 
                                         :value="slotProps.data.serviceType" 
                                         :severity="getTypeColor(slotProps.data.serviceType)"
                                     />
                                 </template>
+                                <template #filter="{ filterModel }">
+                                    <Dropdown v-model="filterModel.value" :options="['PLANILLA', 'RETÉN']" placeholder="Seleccionar" class="p-column-filter" showClear />
+                                </template>
                             </Column>
-                            <Column field="serviceTypeReason" header="Detalle">
+
+                            <!-- Observaciones (antes Detalle) -->
+                            <Column field="serviceTypeReason" header="Observaciones" style="min-width: 250px">
                                 <template #body="slotProps">
                                     <small>{{ slotProps.data.serviceTypeReason }}</small>
+                                </template>
+                                <template #filter="{ filterModel }">
+                                    <InputText v-model="filterModel.value" type="text" class="p-column-filter" placeholder="Buscar en observaciones" />
                                 </template>
                             </Column>
                         </DataTable>

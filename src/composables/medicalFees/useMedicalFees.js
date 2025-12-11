@@ -126,14 +126,17 @@ export function useMedicalFees() {
                 };
             });
 
-            // 7. Clasificar servicios en PLANILLA o RETÉN
+            // 7. Clasificar servicios en PLANILLA o RETÉN y Calcular Comisiones
             const classifiedServices = enrichedServices.map(service => {
                 if (!service.isValid) {
                     return {
                         ...service,
                         serviceType: 'RETÉN',
                         serviceTypeReason: 'Médico no encontrado',
-                        matchedSchedule: null
+                        matchedSchedule: null,
+                        comision: 0,
+                        cia: service.rawData?.cia?.toString().trim().toUpperCase() || '',
+                        tipoate: service.rawData?.tipoate || ''
                     };
                 }
 
@@ -141,12 +144,76 @@ export function useMedicalFees() {
                     service,
                     service.schedules
                 );
+                
+                // --- Lógica de Cálculo de Comisión (Movida desde exportToExcel) ---
+                const codSeg = service.rawData?.cod_seg?.toString().trim() || '';
+                const importe = parseFloat(service.rawData?.importe) || 0;
+                const isPlanilla = classification.type === 'PLANILLA';
+                const isReten = classification.type === 'RETÉN';
+                const cia = service.rawData?.cia?.toString().trim().toUpperCase() || '';
+                const doctorCode = service.doctorCode;
+                let comision = 0;
+                
+                // Códigos de consulta que NO tienen comisión en PLANILLA
+                const consultationCodes = ['00.19.25', '00.19.27'];
+                const isConsultationCode = codSeg.startsWith('50.0') || consultationCodes.includes(codSeg);
+
+                // Regla 1: Validar con tarifarios médicos si es PLANILLA
+                if (isPlanilla && !isConsultationCode) {
+                    // Buscar tarifario del médico que coincida con el código del servicio
+                    const tariff = doctorTariffsStore.allTariffs.find(t => 
+                        t.tariff_code === codSeg && t.doctor_code === doctorCode
+                    );
+                    
+                    // Determinar si se aplica comisión según la compañía
+                    let shouldApplyCommission = false;
+                    
+                    if (cia === 'PARTICULAR') {
+                        // Para PARTICULAR: validar clinic_commission > 0 Y doctor_commission = 0/null
+                        shouldApplyCommission = tariff && 
+                            parseFloat(tariff.clinic_commission) > 0 && 
+                            (tariff.doctor_commission === null || parseFloat(tariff.doctor_commission) === 0);
+                    } else {
+                        // Para otras compañías: solo validar que sea PLANILLA y no código de consulta
+                        shouldApplyCommission = true;
+                    }
+                    
+                    // Aplicar comisión si cumple las condiciones
+                    if (shouldApplyCommission) {
+                        // Verificar que el médico tenga porcentaje de comisión > 0
+                        const commissionPercentage = service.doctor?.commission_percentage;
+                        
+                        if (commissionPercentage && parseFloat(commissionPercentage) > 0) {
+                            // Aplicar comisión personalizada del médico
+                            const percentage = parseFloat(commissionPercentage) / 100;
+                            comision = parseFloat((importe * percentage).toFixed(2));
+                        }
+                    }
+                } 
+                // Regla 2: 92.5% fijo si es RETÉN Y cia != PARTICULAR
+                else if (isReten && cia !== 'PARTICULAR') {
+                    comision = parseFloat((importe * 0.925).toFixed(2));
+                }
+
+                // Ajustar el detalle según si tiene comisión o no
+                let detalle = classification.reason || '';
+                const segusIndicatesReten = service.rawData?.segus?.toUpperCase().includes('RETEN');
+                const hasCommission = comision > 0;
+                
+                if (isReten && !hasCommission && !segusIndicatesReten && !detalle.includes('⚠️ Revisar atención, codigo NO RETEN')) {
+                    detalle += ' ⚠️ Revisar atención, codigo NO RETEN';
+                } else if (isReten && hasCommission && detalle.includes('⚠️ Revisar atención, codigo NO RETEN')) {
+                    detalle = detalle.replace(' ⚠️ Revisar atención, codigo NO RETEN', '');
+                }
 
                 return {
                     ...service,
                     serviceType: classification.type,
-                    serviceTypeReason: classification.reason,
-                    matchedSchedule: classification.schedule
+                    serviceTypeReason: detalle,
+                    matchedSchedule: classification.schedule,
+                    comision: comision,
+                    cia: cia,
+                    tipoate: service.rawData?.tipoate || ''
                 };
             });
 
@@ -240,115 +307,6 @@ export function useMedicalFees() {
 
         // Preparar datos para Excel
         const excelData = filteredServices.map(service => {
-            const codSeg = service.rawData?.cod_seg?.toString().trim() || '';
-            const importe = parseFloat(service.rawData?.importe) || 0;
-            const isPlanilla = service.serviceType === 'PLANILLA';
-            const isReten = service.serviceType === 'RETÉN';
-            const cia = service.rawData?.cia?.toString().trim().toUpperCase() || '';
-            const doctorCode = service.doctorCode;
-            
-            let comision = '';
-            
-            // Códigos de consulta que NO tienen comisión en PLANILLA
-            const consultationCodes = ['00.19.25', '00.19.27'];
-            const isConsultationCode = codSeg.startsWith('50.0') || consultationCodes.includes(codSeg);
-            
-            // Regla 1: Validar con tarifarios médicos si es PLANILLA
-            // EXCLUYE códigos de consulta (50.0*, 00.19.25, 00.19.27)
-            if (isPlanilla && !isConsultationCode) {
-                // Debug: Log búsqueda de tarifario
-                console.log('[Regla 1] Buscando tarifario para:', {
-                    codSeg,
-                    doctorCode,
-                    serviceName: service.serviceName,
-                    totalTariffs: doctorTariffsStore.allTariffs.length
-                });
-                
-                // Buscar tarifario del médico que coincida con el código del servicio
-                const tariff = doctorTariffsStore.allTariffs.find(t => 
-                    t.tariff_code === codSeg && t.doctor_code === doctorCode
-                );
-                
-                if (tariff) {
-                    console.log('[Regla 1] Tarifario encontrado:', {
-                        tariff_code: tariff.tariff_code,
-                        doctor_code: tariff.doctor_code,
-                        clinic_commission: tariff.clinic_commission,
-                        doctor_commission: tariff.doctor_commission
-                    });
-                } else {
-                    console.log('[Regla 1] NO se encontró tarifario para:', { codSeg, doctorCode });
-                }
-                
-                // Determinar si se aplica comisión según la compañía
-                let shouldApplyCommission = false;
-                
-                if (cia === 'PARTICULAR') {
-                    // Para PARTICULAR: validar clinic_commission > 0 Y doctor_commission = 0/null
-                    shouldApplyCommission = tariff && 
-                        parseFloat(tariff.clinic_commission) > 0 && 
-                        (tariff.doctor_commission === null || parseFloat(tariff.doctor_commission) === 0);
-                    
-                    if (tariff && !shouldApplyCommission) {
-                        console.log('[Regla 1] ❌ Tarifario PARTICULAR NO cumple condiciones:', {
-                            cia,
-                            clinic_commission: tariff.clinic_commission,
-                            clinic_commission_parsed: parseFloat(tariff.clinic_commission),
-                            clinic_commission_gt_0: parseFloat(tariff.clinic_commission) > 0,
-                            doctor_commission: tariff.doctor_commission,
-                            doctor_commission_parsed: parseFloat(tariff.doctor_commission),
-                            doctor_commission_eq_0: tariff.doctor_commission === null || parseFloat(tariff.doctor_commission) === 0
-                        });
-                    }
-                } else {
-                    // Para otras compañías: solo validar que sea PLANILLA y no código de consulta
-                    // (ya validado en el if principal, no requiere tarifario)
-                    shouldApplyCommission = true;
-                    console.log('[Regla 1] ✅ Aplicando comisión para compañía:', { cia });
-                }
-                
-                // Aplicar comisión si cumple las condiciones
-                if (shouldApplyCommission) {
-                    // Verificar que el médico tenga porcentaje de comisión > 0
-                    const commissionPercentage = service.doctor?.commission_percentage;
-                    
-                    if (commissionPercentage && parseFloat(commissionPercentage) > 0) {
-                        // Aplicar comisión personalizada del médico
-                        const percentage = parseFloat(commissionPercentage) / 100;
-                        comision = parseFloat((importe * percentage).toFixed(2));
-                        
-                        console.log('[Regla 1] ✅ Comisión calculada:', {
-                            cia,
-                            commissionPercentage,
-                            importe,
-                            comision
-                        });
-                    } else {
-                        console.log('[Regla 1] ⚠️ Médico sin comisión (pago directo):', {
-                            doctorCode: service.doctorCode,
-                            commissionPercentage
-                        });
-                    }
-                }
-            } else if (isPlanilla && isConsultationCode) {
-                console.log('[Regla 1] ⚠️ Código de consulta excluido:', { codSeg });
-            }
-            // Regla 2: 92.5% fijo si es RETÉN Y cia != PARTICULAR
-            else if (isReten && cia !== 'PARTICULAR') {
-                comision = parseFloat((importe * 0.925).toFixed(2));
-            }
-            
-            // Ajustar el detalle según si tiene comisión o no
-            let detalle = service.serviceTypeReason || '';
-            const segusIndicatesReten = service.rawData?.segus?.toUpperCase().includes('RETEN');
-            const hasCommission = comision !== '' && comision > 0;
-            
-            if (isReten && !hasCommission && !segusIndicatesReten && !detalle.includes('⚠️ Revisar atención, codigo NO RETEN')) {
-                detalle += ' ⚠️ Revisar atención, codigo NO RETEN';
-            } else if (isReten && hasCommission && detalle.includes('⚠️ Revisar atención, codigo NO RETEN')) {
-                detalle = detalle.replace(' ⚠️ Revisar atención, codigo NO RETEN', '');
-            }
-            
             // Convertir fecha a formato DD/MM/YYYY
             let excelDate = '';
             if (service.date) {
@@ -364,15 +322,15 @@ export function useMedicalFees() {
                 'Servicio': service.serviceName || '',
                 'Paciente': service.patientName || '',
                 'Segus': service.rawData?.segus || '',
-                'Monto': importe,
+                'Monto': service.amount,
                 'Tipo': service.serviceType || '',
-                'Detalle': detalle,
-                'Comisión': comision,
-                'CIA': service.rawData?.cia || '',
+                'Detalle': service.serviceTypeReason,
+                'Comisión': service.comision,
+                'CIA': service.cia,
                 'Comprobante': service.rawData?.comprobante || '',
                 'Cod_Seg': service.rawData?.cod_seg || '',
-                'Importe': importe,
-                'Tipoate': service.rawData?.tipoate || '',
+                'Importe': service.amount,
+                'Tipoate': service.tipoate,
                 'Area': service.rawData?.area || ''
             };
         });
