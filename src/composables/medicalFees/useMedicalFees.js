@@ -309,17 +309,26 @@ export function useMedicalFees() {
                 
                 // Aplicar comisión si cumple las condiciones
                 if (shouldApplyCommission) {
-                    // Aplicar comisión personalizada del médico
-                    const commissionPercentage = service.doctor?.commission_percentage || 50.0;
-                    const percentage = commissionPercentage / 100;
-                    comision = parseFloat((importe * percentage).toFixed(2));
+                    // Verificar que el médico tenga porcentaje de comisión > 0
+                    const commissionPercentage = service.doctor?.commission_percentage;
                     
-                    console.log('[Regla 1] ✅ Comisión calculada:', {
-                        cia,
-                        commissionPercentage,
-                        importe,
-                        comision
-                    });
+                    if (commissionPercentage && parseFloat(commissionPercentage) > 0) {
+                        // Aplicar comisión personalizada del médico
+                        const percentage = parseFloat(commissionPercentage) / 100;
+                        comision = parseFloat((importe * percentage).toFixed(2));
+                        
+                        console.log('[Regla 1] ✅ Comisión calculada:', {
+                            cia,
+                            commissionPercentage,
+                            importe,
+                            comision
+                        });
+                    } else {
+                        console.log('[Regla 1] ⚠️ Médico sin comisión (pago directo):', {
+                            doctorCode: service.doctorCode,
+                            commissionPercentage
+                        });
+                    }
                 }
             } else if (isPlanilla && isConsultationCode) {
                 console.log('[Regla 1] ⚠️ Código de consulta excluido:', { codSeg });
