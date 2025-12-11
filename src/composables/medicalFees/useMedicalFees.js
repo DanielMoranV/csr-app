@@ -280,28 +280,45 @@ export function useMedicalFees() {
                     console.log('[Regla 1] NO se encontró tarifario para:', { codSeg, doctorCode });
                 }
                 
-                // Verificar condiciones: clinic_commission > 0 Y doctor_commission = 0 o null
-                if (tariff && 
-                    parseFloat(tariff.clinic_commission) > 0 && 
-                    (tariff.doctor_commission === null || parseFloat(tariff.doctor_commission) === 0)) {
+                // Determinar si se aplica comisión según la compañía
+                let shouldApplyCommission = false;
+                
+                if (cia === 'PARTICULAR') {
+                    // Para PARTICULAR: validar clinic_commission > 0 Y doctor_commission = 0/null
+                    shouldApplyCommission = tariff && 
+                        parseFloat(tariff.clinic_commission) > 0 && 
+                        (tariff.doctor_commission === null || parseFloat(tariff.doctor_commission) === 0);
+                    
+                    if (tariff && !shouldApplyCommission) {
+                        console.log('[Regla 1] ❌ Tarifario PARTICULAR NO cumple condiciones:', {
+                            cia,
+                            clinic_commission: tariff.clinic_commission,
+                            clinic_commission_parsed: parseFloat(tariff.clinic_commission),
+                            clinic_commission_gt_0: parseFloat(tariff.clinic_commission) > 0,
+                            doctor_commission: tariff.doctor_commission,
+                            doctor_commission_parsed: parseFloat(tariff.doctor_commission),
+                            doctor_commission_eq_0: tariff.doctor_commission === null || parseFloat(tariff.doctor_commission) === 0
+                        });
+                    }
+                } else {
+                    // Para otras compañías: solo validar que sea PLANILLA y no código de consulta
+                    // (ya validado en el if principal, no requiere tarifario)
+                    shouldApplyCommission = true;
+                    console.log('[Regla 1] ✅ Aplicando comisión para compañía:', { cia });
+                }
+                
+                // Aplicar comisión si cumple las condiciones
+                if (shouldApplyCommission) {
                     // Aplicar comisión personalizada del médico
                     const commissionPercentage = service.doctor?.commission_percentage || 50.0;
                     const percentage = commissionPercentage / 100;
                     comision = parseFloat((importe * percentage).toFixed(2));
                     
                     console.log('[Regla 1] ✅ Comisión calculada:', {
+                        cia,
                         commissionPercentage,
                         importe,
                         comision
-                    });
-                } else if (tariff) {
-                    console.log('[Regla 1] ❌ Tarifario NO cumple condiciones:', {
-                        clinic_commission: tariff.clinic_commission,
-                        clinic_commission_parsed: parseFloat(tariff.clinic_commission),
-                        clinic_commission_gt_0: parseFloat(tariff.clinic_commission) > 0,
-                        doctor_commission: tariff.doctor_commission,
-                        doctor_commission_parsed: parseFloat(tariff.doctor_commission),
-                        doctor_commission_eq_0: parseFloat(tariff.doctor_commission) === 0
                     });
                 }
             } else if (isPlanilla && isConsultationCode) {
