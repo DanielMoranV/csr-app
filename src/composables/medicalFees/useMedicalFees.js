@@ -15,6 +15,7 @@ export function useMedicalFees() {
     const services = ref([]);
     const isLoading = ref(false);
     const error = ref(null);
+    const isExcelData = ref(false);
 
     // Maps para búsqueda rápida
     const doctorMap = computed(() => {
@@ -38,6 +39,62 @@ export function useMedicalFees() {
         });
         return map;
     });
+
+    /**
+     * Calcula la comisión de un servicio según reglas de negocio
+     * @param {Object} params - Parámetros para el cálculo
+     * @returns {number} Monto de comisión calculado
+     */
+    function calculateCommissionRule({ type, amount, cia, doctorCode, segusCode, doctor }) {
+        let comision = 0;
+        const importe = parseFloat(amount) || 0;
+        const isPlanilla = type === 'PLANILLA';
+        const isReten = type === 'RETEN' || type === 'RETÉN';
+        const company = cia?.toString().trim().toUpperCase() || '';
+        
+        // Códigos de consulta que NO tienen comisión en PLANILLA
+        const consultationCodes = ['00.19.25', '00.19.27'];
+        const isConsultationCode = segusCode?.startsWith('50.0') || consultationCodes.includes(segusCode);
+
+        // Regla 1: Validar con tarifarios médicos si es PLANILLA
+        if (isPlanilla && !isConsultationCode) {
+            // Buscar tarifario del médico que coincida con el código del servicio
+            const tariff = doctorTariffsStore.allTariffs.find(t => 
+                t.tariff_code === segusCode && t.doctor_code === doctorCode
+            );
+            
+            // Determinar si se aplica comisión según la compañía
+            let shouldApplyCommission = false;
+            
+            if (company === 'PARTICULAR') {
+                // Para PARTICULAR: validar clinic_commission > 0 Y doctor_commission = 0/null
+                shouldApplyCommission = tariff && 
+                    parseFloat(tariff.clinic_commission) > 0 && 
+                    (tariff.doctor_commission === null || parseFloat(tariff.doctor_commission) === 0);
+            } else {
+                // Para otras compañías: solo validar que sea PLANILLA y no código de consulta
+                shouldApplyCommission = true;
+            }
+            
+            // Aplicar comisión si cumple las condiciones
+            if (shouldApplyCommission) {
+                // Verificar que el médico tenga porcentaje de comisión > 0
+                const commissionPercentage = doctor?.commission_percentage;
+                
+                if (commissionPercentage && parseFloat(commissionPercentage) > 0) {
+                    // Aplicar comisión personalizada del médico
+                    const percentage = parseFloat(commissionPercentage) / 100;
+                    comision = parseFloat((importe * percentage).toFixed(2));
+                }
+            }
+        } 
+        // Regla 2: 92.5% fijo si es RETÉN Y cia != PARTICULAR
+        else if (isReten && company !== 'PARTICULAR') {
+            comision = parseFloat((importe * 0.925).toFixed(2));
+        }
+
+        return comision;
+    }
 
     /**
      * Carga médicos, horarios y tarifarios desde el backend
@@ -146,54 +203,25 @@ export function useMedicalFees() {
                 );
                 
                 // --- Lógica de Cálculo de Comisión (Movida desde exportToExcel) ---
+                // --- Lógica de Cálculo de Comisión (Refactorizada) ---
                 const codSeg = service.rawData?.cod_seg?.toString().trim() || '';
                 const importe = parseFloat(service.rawData?.importe) || 0;
-                const isPlanilla = classification.type === 'PLANILLA';
-                const isReten = classification.type === 'RETEN' || classification.type === 'RETÉN'; // Aceptar ambos por si ServiceClassifier devuelve con tilde
                 const cia = service.rawData?.cia?.toString().trim().toUpperCase() || '';
                 const doctorCode = service.doctorCode;
-                let comision = 0;
+                const isReten = classification.type === 'RETEN' || classification.type === 'RETÉN';
                 
-                // Códigos de consulta que NO tienen comisión en PLANILLA
-                const consultationCodes = ['00.19.25', '00.19.27'];
-                const isConsultationCode = codSeg.startsWith('50.0') || consultationCodes.includes(codSeg);
+                // Normalizar classification.type si viene con tilde
+                let finalType = classification.type;
+                if (finalType === 'RETÉN') finalType = 'RETEN';
 
-                // Regla 1: Validar con tarifarios médicos si es PLANILLA
-                if (isPlanilla && !isConsultationCode) {
-                    // Buscar tarifario del médico que coincida con el código del servicio
-                    const tariff = doctorTariffsStore.allTariffs.find(t => 
-                        t.tariff_code === codSeg && t.doctor_code === doctorCode
-                    );
-                    
-                    // Determinar si se aplica comisión según la compañía
-                    let shouldApplyCommission = false;
-                    
-                    if (cia === 'PARTICULAR') {
-                        // Para PARTICULAR: validar clinic_commission > 0 Y doctor_commission = 0/null
-                        shouldApplyCommission = tariff && 
-                            parseFloat(tariff.clinic_commission) > 0 && 
-                            (tariff.doctor_commission === null || parseFloat(tariff.doctor_commission) === 0);
-                    } else {
-                        // Para otras compañías: solo validar que sea PLANILLA y no código de consulta
-                        shouldApplyCommission = true;
-                    }
-                    
-                    // Aplicar comisión si cumple las condiciones
-                    if (shouldApplyCommission) {
-                        // Verificar que el médico tenga porcentaje de comisión > 0
-                        const commissionPercentage = service.doctor?.commission_percentage;
-                        
-                        if (commissionPercentage && parseFloat(commissionPercentage) > 0) {
-                            // Aplicar comisión personalizada del médico
-                            const percentage = parseFloat(commissionPercentage) / 100;
-                            comision = parseFloat((importe * percentage).toFixed(2));
-                        }
-                    }
-                } 
-                // Regla 2: 92.5% fijo si es RETÉN Y cia != PARTICULAR
-                else if (isReten && cia !== 'PARTICULAR') {
-                    comision = parseFloat((importe * 0.925).toFixed(2));
-                }
+                const comision = calculateCommissionRule({
+                    type: finalType,
+                    amount: importe,
+                    cia: cia,
+                    doctorCode: doctorCode,
+                    segusCode: codSeg,
+                    doctor: service.doctor
+                });
 
                 // Ajustar el detalle según si tiene comisión o no
                 let detalle = classification.reason || '';
@@ -206,9 +234,7 @@ export function useMedicalFees() {
                     detalle = detalle.replace(' ⚠️ Revisar atención, codigo NO RETEN', '');
                 }
 
-                // Normalizar classification.type si viene con tilde
-                let finalType = classification.type;
-                if (finalType === 'RETÉN') finalType = 'RETEN';
+
 
                 return {
                     ...service,
@@ -222,6 +248,7 @@ export function useMedicalFees() {
             });
 
             services.value = classifiedServices;
+            isExcelData.value = true;
             return classifiedServices;
 
         } catch (err) {
@@ -436,6 +463,72 @@ export function useMedicalFees() {
         }
     }
 
+    async function loadMedicalServices(startDate, endDate, filters = {}) {
+        isLoading.value = true;
+        isExcelData.value = false;
+        try {
+            const response = await MedicalFeesService.getMedicalServices(startDate, endDate, filters);
+            
+            console.log('loadMedicalServices response:', response);
+
+            if (Array.isArray(response)) {
+                console.log('Data found in response (Array), mapping...');
+                // Mapear respuesta de BD a estructura de UI existente
+                services.value = response.map(apiService => {
+                    let date = '', time = '';
+                    if (apiService.service_datetime) {
+                        // Manejar formato "YYYY-MM-DD HH:MM:SS" o ISO "YYYY-MM-DDTHH:MM:SS.000Z"
+                        const parts = apiService.service_datetime.replace('T', ' ').replace('Z', '').split(' ');
+                        date = parts[0];
+                        time = parts[1] ? parts[1].split('.')[0] : ''; // Quitar milisegundos si existen
+                    }
+                    
+                    let doctor = apiService.doctor;
+                    // Enriquecer con datos del store local para tener commission_percentage actualizado
+                    if (doctor && doctor.code) {
+                         const localDoctor = doctorMap.value.get(doctor.code);
+                         if (localDoctor) {
+                             doctor = { ...doctor, ...localDoctor };
+                         }
+                    }
+
+                    return {
+                        id: apiService.id,
+                        doctorCode: apiService.doctor_code,
+                        date: date,
+                        time: time,
+                        serviceName: apiService.service_name,
+                        amount: parseFloat(apiService.amount),
+                        patientName: apiService.patient_name,
+                        doctor: doctor,
+                        cia: apiService.insurance_company,
+                        tipoate: apiService.attention_type,
+                        serviceType: apiService.service_type,
+                        serviceTypeReason: apiService.observation,
+                        comision: parseFloat(apiService.commission_amount || 0),
+                        
+                        // Estructura Legacy para compatibilidad con filtros y computed existentes
+                        rawData: {
+                            admision: apiService.admission_number,
+                            segus: apiService.segus_code,
+                            comprobante: apiService.receipt_number,
+                            area: apiService.area,
+                            cod_seg: apiService.insurance_code || apiService.segus_code
+                        }
+                    };
+                });
+                console.log('Mapped services:', services.value.length, services.value[0]);
+            } else {
+                console.warn('No data found or structure mismatch:', response);
+            }
+        } catch (err) {
+            console.error(err);
+            error.value = 'Error al cargar servicios de base de datos';
+        } finally {
+            isLoading.value = false;
+        }
+    }
+
     return {
         // State
         doctors,
@@ -443,6 +536,7 @@ export function useMedicalFees() {
         services,
         isLoading,
         error,
+        isExcelData,
 
         // Computed
         servicesByDoctor,
@@ -451,6 +545,7 @@ export function useMedicalFees() {
 
         // Methods
         loadDoctorsAndSchedules,
+        loadMedicalServices,
         importFromExcel,
         exportToExcel,
         clearAllData,

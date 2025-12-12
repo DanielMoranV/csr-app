@@ -2,7 +2,7 @@
 import { ref, onMounted, computed, watch } from 'vue';
 import { useMedicalFees } from '@/composables/medicalFees/useMedicalFees';
 import { useToast } from 'primevue/usetoast';
-import { medicalSpecialties } from '@/api/medicalSpecialties';
+import { useMedicalSpecialtiesStore } from '@/store/medicalSpecialtiesStore';
 import { FilterMatchMode, FilterOperator }  from '@primevue/core/api';
 import Button from 'primevue/button';
 import FileUpload from 'primevue/fileupload';
@@ -28,8 +28,36 @@ const {
     importFromExcel,
     exportToExcel,
     clearAllData,
-    saveToDatabase
+    saveToDatabase,
+    loadMedicalServices,
+    updateService,
+    isExcelData
 } = useMedicalFees();
+
+async function onCellEditComplete(event) {
+    const { data, newValue, field } = event;
+    const oldValue = data[field];
+
+    // Si no hubo cambio, ignorar
+    if (newValue === oldValue) return;
+
+    // Validación básica
+    if (field === 'amount' || field === 'comision') {
+         if (isNaN(newValue) || newValue < 0) {
+             toast.add({ severity: 'error', summary: 'Error', detail: 'Valor inválido', life: 3000 });
+             return; // O revertir cambio
+         }
+    }
+
+    try {
+        await updateService(data.id, field, newValue);
+        toast.add({ severity: 'success', summary: 'Actualizado', detail: 'Registro actualizado correctamente', life: 3000 });
+    } catch (error) {
+        toast.add({ severity: 'error', summary: 'Error', detail: 'No se pudo actualizar', life: 3000 });
+        // Aquí idealmente revertiríamos el cambio en la UI si falla, pero el datatable a veces lo mantiene
+    }
+}
+
 
 // Filtros
 const selectedSpecialty = ref(null);
@@ -122,7 +150,7 @@ const filteredServices = computed(() => {
 // Totales calculados basándose en servicios filtrados
 const filteredTotals = computed(() => {
     const planillaServices = filteredServices.value.filter(s => s.serviceType === 'PLANILLA');
-    const retenServices = filteredServices.value.filter(s => s.serviceType === 'RETÉN');
+    const retenServices = filteredServices.value.filter(s => s.serviceType === 'RETEN' || s.serviceType === 'RETÉN');
     
     // Obtener médicos únicos de los servicios filtrados
     const uniqueDoctors = new Set(
@@ -154,52 +182,94 @@ watch(selectedSpecialty, () => {
 });
 
 // Methods
-function onMonthChange() {
-    if (!selectedMonth.value) return;
-    
-    // Obtener primer y último día del mes seleccionado
-    const year = selectedMonth.value.getFullYear();
-    const month = selectedMonth.value.getMonth();
-    const firstDay = new Date(year, month, 1);
-    const lastDay = new Date(year, month + 1, 0);
-    
-    // Cargar datos con las fechas del mes seleccionado
-    loadDataForMonth(firstDay, lastDay);
+
+
+// Funciones de carga
+async function loadServerData() {
+    const start = selectedMonth.value.toISOString().split('T')[0];
+    const endDate = new Date(selectedMonth.value.getFullYear(), selectedMonth.value.getMonth() + 1, 0);
+    const end = endDate.toISOString().split('T')[0];
+
+    // Preparar filtros
+    const filters = {};
+    if (selectedSpecialty.value) {
+        filters.medical_specialty_id = selectedSpecialty.value;
+    }
+    // Buscar ID del médico seleccionado (ya que selectedDoctor es el código)
+    if (selectedDoctor.value) {
+        const doctorObj = doctors.value.find(d => d.code === selectedDoctor.value);
+        if (doctorObj) {
+            filters.doctor_id = doctorObj.id;
+        }
+    }
+
+    await loadMedicalServices(start, end, filters);
 }
 
-async function loadDataForMonth(startDate, endDate) {
+async function loadDataForMonth() {
     // Validar que son objetos Date válidos
-    if (!(startDate instanceof Date) || !(endDate instanceof Date)) {
-        console.error('[MedicalFees] No son objetos Date:', { startDate, endDate });
-        return;
-    }
-    
-    if (isNaN(startDate.getTime()) || isNaN(endDate.getTime())) {
-        console.error('[MedicalFees] Fechas inválidas:', { startDate, endDate });
-        return;
-    }
-    
-    const start = startDate.toISOString().split('T')[0];
+    const start = selectedMonth.value.toISOString().split('T')[0];
+    const endDate = new Date(selectedMonth.value.getFullYear(), selectedMonth.value.getMonth() + 1, 0);
     const end = endDate.toISOString().split('T')[0];
     
     try {
+        // Cargar dependencias (médicos, horarios)
         await loadDoctorsAndSchedules(start, end);
+        
+        // Preparar filtros iniciales
+        const filters = {};
+        if (selectedSpecialty.value) {
+            filters.medical_specialty_id = selectedSpecialty.value;
+        }
+        if (selectedDoctor.value) {
+            const doctorObj = doctors.value.find(d => d.code === selectedDoctor.value);
+            if (doctorObj) {
+                filters.doctor_id = doctorObj.id;
+            }
+        }
+        
+        // Cargar servicios de la BD con filtros
+        await loadMedicalServices(start, end, filters);
+
         toast.add({
             severity: 'success',
             summary: 'Datos cargados',
-            detail: `${doctors.value.length} médicos cargados`,
+            detail: `${doctors.value.length} médicos y ${services.value.length} servicios cargados`,
             life: 3000
         });
     } catch (err) {
         toast.add({
             severity: 'error',
             summary: 'Error',
-            detail: error.value,
-            life: 5000
+            detail: 'No se pudieron cargar los datos del mes',
+            life: 3000
         });
     }
 }
 
+async function handleSearch() {
+    try {
+        await loadServerData();
+        toast.add({
+            severity: 'success',
+            summary: 'Búsqueda completada',
+            detail: `${services.value.length} servicios encontrados`,
+            life: 3000
+        });
+    } catch (err) {
+        console.error('handleSearch Error:', err);
+        toast.add({
+            severity: 'error',
+            summary: 'Error',
+            detail: 'Falló la búsqueda en servidor: ' + (err.message || 'Error desconocido'),
+            life: 3000
+        });
+    }
+}
+
+async function onMonthChange() {
+    await loadDataForMonth();
+}
 
 async function onFileSelect(event) {
     const file = event.files[0];
@@ -274,6 +344,8 @@ async function handleSaveToDatabase() {
                 detail: result.message || `${result.data?.imported_count || 0} registros guardados`,
                 life: 3000
             });
+            // Recargar datos de la BD para confirmar
+            onMonthChange();
         }
     } catch (err) {
         toast.add({
@@ -287,11 +359,25 @@ async function handleSaveToDatabase() {
 
 onMounted(async () => {
     isSpecialtiesLoading.value = true;
-    // Cargar especialidades médicas
+    const specialtiesStore = useMedicalSpecialtiesStore();
+
+    // Cargar especialidades médicas (con caché)
     try {
-        const response = await medicalSpecialties.getAll();
-        if (response.data) {
-            specialties.value = Array.isArray(response.data) ? response.data : (response.data.data || []);
+        // Si ya hay datos en el store, usarlos directamente (Caché)
+        if (specialtiesStore.allSpecialties.length > 0) {
+             specialties.value = specialtiesStore.allSpecialties;
+             console.log('Usando especialidades desde caché');
+        } else {
+             // Si no, cargar de la API
+             await specialtiesStore.fetchSpecialties();
+             specialties.value = specialtiesStore.allSpecialties;
+             console.log('Especialidades cargadas de API');
+        }
+
+        // Pre-seleccionar Pediatría por defecto (ID 32)
+        const pediatric = specialties.value.find(s => s.id === 32);
+        if (pediatric) {
+            selectedSpecialty.value = pediatric.id;
         }
     } catch (err) {
         console.error('Error al cargar especialidades:', err);
@@ -404,12 +490,13 @@ function handleClearData() {
                                 <label>Médico</label>
                                 <Dropdown 
                                     v-model="selectedDoctor" 
-                                    :options="doctorOptions"
-                                    optionLabel="label"
-                                    optionValue="value"
+                                    :options="doctorOptions" 
+                                    optionLabel="label" 
+                                    optionValue="value" 
                                     placeholder="Seleccionar médico"
                                     :filter="true"
                                     class="w-full"
+                                    showClear
                                 />
                             </div>
                             
@@ -427,13 +514,22 @@ function handleClearData() {
                             
                             <div class="control-item">
                                 <label>&nbsp;</label>
-                                <Button 
-                                    label="Exportar Excel" 
-                                    icon="pi pi-download"
-                                    @click="handleExport"
-                                    :disabled="services.length === 0"
-                                    class="w-full"
-                                />
+                                <div class="flex gap-2">
+                                    <Button 
+                                        icon="pi pi-search" 
+                                        v-tooltip.top="'Buscar en BD'"
+                                        @click="handleSearch"
+                                        :loading="isLoading"
+                                        severity="info"
+                                    />
+                                    <Button 
+                                        icon="pi pi-file-excel" 
+                                        v-tooltip.top="'Exportar Excel'"
+                                        @click="exportToExcel" 
+                                        class="p-button-success"
+                                        :disabled="services.length === 0"
+                                    />
+                                </div>
                             </div>
                         </div>
                     </template>
@@ -502,13 +598,20 @@ function handleClearData() {
                         <DataTable 
                             v-model:filters="filters"
                             :value="filteredServices" 
-                            :paginator="true" 
-                            :rows="20"
+                            dataKey="id"
+                            paginator
+                            :rows="10"
+                            :rowsPerPageOptions="[10, 20, 50, 100]"
+                            paginatorTemplate="FirstPageLink PrevPageLink PageLinks NextPageLink LastPageLink CurrentPageReport RowsPerPageDropdown"
+                            currentPageReportTemplate="Mostrando {first} a {last} de {totalRecords} servicios"
+                            class="p-datatable-sm"
                             :loading="isLoading"
                             stripedRows
                             responsiveLayout="scroll"
                             filterDisplay="menu"
-                            :globalFilterFields="['rawData.admision', 'doctor.name', 'rawData.segus', 'cia', 'tipoate', 'serviceTypeReason']"
+                            :globalFilterFields="['id', 'rawData.admision', 'doctor.name', 'rawData.segus', 'cia', 'tipoate', 'serviceTypeReason']"
+                            editMode="cell"
+                            @cell-edit-complete="onCellEditComplete"
                         >
                             <template #header>
                                 <div class="flex justify-content-between">
@@ -518,6 +621,9 @@ function handleClearData() {
                                     </span>
                                 </div>
                             </template>
+
+                            <!-- ID -->
+                            <Column field="id" header="ID" sortable style="min-width: 80px"></Column>
 
                             <!-- Admisión -->
                             <Column field="rawData.admision" header="Admisión" sortable style="min-width: 120px">
@@ -582,6 +688,9 @@ function handleClearData() {
                                 <template #body="slotProps">
                                     S/ {{ slotProps.data.amount.toFixed(2) }}
                                 </template>
+                                <template #editor="{ data, field }">
+                                    <InputNumber v-model="data[field]" mode="currency" currency="PEN" locale="es-PE" :min="0" class="w-full" />
+                                </template>
                             </Column>
 
                             <!-- Comisión (Nueva columna) -->
@@ -590,6 +699,9 @@ function handleClearData() {
                                     <span :class="{'text-green-600 font-bold': slotProps.data.comision > 0}">
                                         S/ {{ slotProps.data.comision.toFixed(2) }}
                                     </span>
+                                </template>
+                                <template #editor="{ data, field }">
+                                    <InputNumber v-model="data[field]" mode="currency" currency="PEN" locale="es-PE" :min="0" class="w-full" />
                                 </template>
                                 <template #filter="{ filterModel }">
                                     <InputNumber v-model="filterModel.value" mode="currency" currency="PEN" locale="es-PE" />
@@ -603,6 +715,9 @@ function handleClearData() {
                                         :value="slotProps.data.serviceType" 
                                         :severity="getTypeColor(slotProps.data.serviceType)"
                                     />
+                                </template>
+                                <template #editor="{ data, field }">
+                                    <Dropdown v-model="data[field]" :options="['PLANILLA', 'RETEN']" class="w-full" />
                                 </template>
                                 <template #filter="{ filterModel }">
                                     <Dropdown v-model="filterModel.value" :options="['PLANILLA', 'RETÉN']" placeholder="Seleccionar" class="p-column-filter" showClear />

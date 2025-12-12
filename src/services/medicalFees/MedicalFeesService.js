@@ -54,6 +54,25 @@ class MedicalFeesService {
     }
 
     /**
+     * Obtiene servicios médicos filtrados por rango de fechas
+     * @param {string} startDate - Fecha inicio YYYY-MM-DD
+     * @param {string} endDate - Fecha fin YYYY-MM-DD
+     * @param {Object} filters - Filtros opcionales (medical_specialty_id, doctor_id)
+     * @returns {Promise<Object>} Respuesta con datos paginados
+     */
+    async getMedicalServices(startDate, endDate, filters = {}) {
+        const response = await axios.get('/medical-services', {
+            params: {
+                start_date: startDate,
+                end_date: endDate,
+                ...filters
+            }
+        });
+        console.log('Respuesta endpoint medical-services:', response.data);
+        return response.data; // { success, data: { data: [...] } }
+    }
+
+    /**
      * Crea un mapa de médicos por código para búsqueda rápida
      * @param {Array} doctors - Lista de médicos
      * @returns {Map} Mapa código -> médico
@@ -73,6 +92,17 @@ class MedicalFeesService {
         });
         
         return response.data; // { success, message, data }
+    }
+
+    /**
+     * Actualiza un servicio médico
+     * @param {number} id - ID del servicio
+     * @param {Object} data - Datos a actualizar
+     * @returns {Promise<Object>} Resultado de la actualización
+     */
+    async updateMedicalService(id, data) {
+        const response = await axios.put(`/medical-services/${id}`, data);
+        return response.data;
     }
 
     /**

@@ -1,12 +1,15 @@
+import { apiUtils } from '@/api/axios.js';
+import { medicalSpecialties as specialtiesApi } from '@/api/medicalSpecialties';
+import cache from '@/utils/cache';
 import { defineStore } from 'pinia';
 import { computed, reactive } from 'vue';
-import { medicalSpecialties as specialtiesApi } from '@/api/medicalSpecialties';
-import { apiUtils } from '@/api/axios.js';
+
+const CACHE_KEY = 'medical_specialties_list';
 
 export const useMedicalSpecialtiesStore = defineStore('medicalSpecialties', () => {
     // State
     const state = reactive({
-        specialties: [],
+        specialties: cache.hasThis(CACHE_KEY) ? cache.getItem(CACHE_KEY) || [] : [],
         currentSpecialty: null,
         isLoading: false,
         isSaving: false,
@@ -46,12 +49,36 @@ export const useMedicalSpecialtiesStore = defineStore('medicalSpecialties', () =
     // Actions
     const fetchSpecialties = async (params = {}) => {
         state.isLoading = true;
+        
+        // 1. Intentar cargar de caché si no hay parámetros de filtrado específicos (carga inicial limpia)
+        if (Object.keys(params).length === 0 && cache.hasThis(CACHE_KEY)) {
+            try {
+                const cachedData = cache.getItem(CACHE_KEY);
+                if (cachedData && Array.isArray(cachedData)) {
+                    state.specialties = cachedData;
+                    state.lastFetch = Date.now();
+                    state.isLoading = false;
+                    // Retornamos estructura simulada de éxito
+                    return { success: true, data: cachedData };
+                }
+            } catch (e) {
+                console.warn('Error reading from cache', e);
+            }
+        }
+
+        // 2. Cargar de API
         try {
             const response = await specialtiesApi.getAll({ ...state.filters, ...params });
             if (apiUtils.isSuccess(response)) {
                 const data = apiUtils.getData(response);
                 state.specialties = Array.isArray(data) ? data : data.data || [];
                 state.lastFetch = Date.now();
+                
+                // Guardar en caché solo si es una carga limpia (sin filtros extras que no sean los default)
+                if (Object.keys(params).length === 0) {
+                     cache.setItem(CACHE_KEY, state.specialties);
+                }
+                
                 return response;
             }
             throw response;
