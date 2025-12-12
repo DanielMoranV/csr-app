@@ -131,7 +131,7 @@ export function useMedicalFees() {
                 if (!service.isValid) {
                     return {
                         ...service,
-                        serviceType: 'RETÉN',
+                        serviceType: 'RETEN',
                         serviceTypeReason: 'Médico no encontrado',
                         matchedSchedule: null,
                         comision: 0,
@@ -149,7 +149,7 @@ export function useMedicalFees() {
                 const codSeg = service.rawData?.cod_seg?.toString().trim() || '';
                 const importe = parseFloat(service.rawData?.importe) || 0;
                 const isPlanilla = classification.type === 'PLANILLA';
-                const isReten = classification.type === 'RETÉN';
+                const isReten = classification.type === 'RETEN' || classification.type === 'RETÉN'; // Aceptar ambos por si ServiceClassifier devuelve con tilde
                 const cia = service.rawData?.cia?.toString().trim().toUpperCase() || '';
                 const doctorCode = service.doctorCode;
                 let comision = 0;
@@ -206,9 +206,13 @@ export function useMedicalFees() {
                     detalle = detalle.replace(' ⚠️ Revisar atención, codigo NO RETEN', '');
                 }
 
+                // Normalizar classification.type si viene con tilde
+                let finalType = classification.type;
+                if (finalType === 'RETÉN') finalType = 'RETEN';
+
                 return {
                     ...service,
-                    serviceType: classification.type,
+                    serviceType: finalType,
                     serviceTypeReason: detalle,
                     matchedSchedule: classification.schedule,
                     comision: comision,
@@ -415,10 +419,12 @@ export function useMedicalFees() {
                 receipt_number: s.rawData?.comprobante,
                 attention_type: s.tipoate,
                 area: s.rawData?.area,
-                service_type: s.serviceType,
+                service_type: s.serviceType === 'RETÉN' ? 'RETEN' : s.serviceType, // Normalizar para backend
                 observation: s.serviceTypeReason,
                 commission_amount: parseFloat(s.comision)
             }));
+
+            console.log('Payload saving to DB:', servicesPayload);
 
             const result = await MedicalFeesService.saveMedicalServices(servicesPayload);
             return result;
