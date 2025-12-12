@@ -63,6 +63,19 @@ class MedicalFeesService {
     }
 
     /**
+     * Guarda servicios médicos masivamente en base de datos
+     * @param {Array} servicesPayload - Array de servicios con estructura de backend
+     * @returns {Promise<Object>} Resultado de la importación
+     */
+    async saveMedicalServices(servicesPayload) {
+        const response = await axios.post('/medical-services/import', {
+            services: servicesPayload
+        });
+        
+        return response.data; // { success, message, data }
+    }
+
+    /**
      * Crea un mapa de horarios por código de médico y fecha
      * @param {Array} schedules - Lista de horarios
      * @returns {Map} Mapa "code_date" -> horario[]

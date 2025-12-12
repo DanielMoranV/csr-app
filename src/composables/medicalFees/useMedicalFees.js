@@ -390,6 +390,46 @@ export function useMedicalFees() {
         window.URL.revokeObjectURL(url);
     }
 
+    /**
+     * Guarda los servicios actuales en la base de datos
+     * @returns {Promise<Object>} Resultado de la operación
+     */
+    async function saveToDatabase() {
+        if (services.value.length === 0) {
+            throw new Error('No hay servicios para guardar');
+        }
+
+        isLoading.value = true;
+        
+        try {
+            // Mapear al payload esperado por el backend
+            const servicesPayload = services.value.map(s => ({
+                doctor_code: s.doctorCode,
+                service_datetime: `${s.date} ${s.time}`, // Formato YYYY-MM-DD HH:MM:SS
+                patient_name: s.patientName,
+                admission_number: s.rawData?.admision,
+                segus_code: s.rawData?.cod_seg || s.rawData?.segus, // Usar cod_seg preferentemente, fallback a segus
+                service_name: s.serviceName,
+                amount: parseFloat(s.amount),
+                insurance_company: s.cia,
+                receipt_number: s.rawData?.comprobante,
+                attention_type: s.tipoate,
+                area: s.rawData?.area,
+                service_type: s.serviceType,
+                observation: s.serviceTypeReason,
+                commission_amount: parseFloat(s.comision)
+            }));
+
+            const result = await MedicalFeesService.saveMedicalServices(servicesPayload);
+            return result;
+        } catch (err) {
+            error.value = `Error al guardar en BD: ${err.message}`;
+            throw err;
+        } finally {
+            isLoading.value = false;
+        }
+    }
+
     return {
         // State
         doctors,
@@ -407,6 +447,7 @@ export function useMedicalFees() {
         loadDoctorsAndSchedules,
         importFromExcel,
         exportToExcel,
-        clearAllData
+        clearAllData,
+        saveToDatabase
     };
 }

@@ -27,7 +27,8 @@ const {
     loadDoctorsAndSchedules,
     importFromExcel,
     exportToExcel,
-    clearAllData
+    clearAllData,
+    saveToDatabase
 } = useMedicalFees();
 
 // Filtros
@@ -263,6 +264,27 @@ function getTypeColor(type) {
     return type === 'PLANILLA' ? 'success' : 'warning';
 }
 
+async function handleSaveToDatabase() {
+    try {
+        const result = await saveToDatabase();
+        if (result.success) {
+            toast.add({
+                severity: 'success',
+                summary: 'Guardado exitoso',
+                detail: result.message || `${result.data?.imported_count || 0} registros guardados`,
+                life: 3000
+            });
+        }
+    } catch (err) {
+        toast.add({
+            severity: 'error',
+            summary: 'Error al guardar',
+            detail: err.message || 'Ocurrió un error inesperado',
+            life: 5000
+        });
+    }
+}
+
 onMounted(async () => {
     isSpecialtiesLoading.value = true;
     // Cargar especialidades médicas
@@ -324,6 +346,15 @@ function handleClearData() {
                         @click="$refs.fileInput.click()"
                         :loading="!canImport"
                         :disabled="!canImport"
+                    />
+                    <Button 
+                        v-if="services.length > 0"
+                        label="Guardar en BD" 
+                        icon="pi pi-database" 
+                        severity="success"
+                        class="save-button ml-2" 
+                        @click="handleSaveToDatabase"
+                        :loading="isLoading"
                     />
                 </div>
                 <input 
