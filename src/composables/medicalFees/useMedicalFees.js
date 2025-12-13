@@ -12,7 +12,8 @@ export function useMedicalFees() {
     // State
     const doctors = ref([]);
     const schedules = ref([]);
-    const services = ref([]);
+    const services = ref([]); // Datos mostrados en el DataTable (desde BD)
+    const pendingImportServices = ref([]); // Datos importados del Excel pendientes de guardar
     const isLoading = ref(false);
     const error = ref(null);
     const isExcelData = ref(false);
@@ -52,9 +53,13 @@ export function useMedicalFees() {
         const isReten = type === 'RETEN' || type === 'RETÉN';
         const company = cia?.toString().trim().toUpperCase() || '';
         
+        
         // Códigos de consulta que NO tienen comisión en PLANILLA
         const consultationCodes = ['00.19.25', '00.19.27'];
-        const isConsultationCode = segusCode?.startsWith('50.0') || consultationCodes.includes(segusCode);
+        
+        // Excepción: 50.03.00 (CONSULTA EN PACIENTE HOSPITALIZADO) SÍ tiene comisión
+        const isConsultationCode = (segusCode?.startsWith('50.0') && segusCode !== '50.03.00') || 
+                                    consultationCodes.includes(segusCode);
 
         // Regla 1: Validar con tarifarios médicos si es PLANILLA
         if (isPlanilla && !isConsultationCode) {
@@ -247,8 +252,10 @@ export function useMedicalFees() {
                 };
             });
 
-            services.value = classifiedServices;
+            // Guardar en pendingImportServices (NO en services para que no se muestren en el DataTable)
+            pendingImportServices.value = classifiedServices;
             isExcelData.value = true;
+            console.log('[useMedicalFees] isExcelData set to TRUE (Excel imported)', classifiedServices.length, 'services pending');
             return classifiedServices;
 
         } catch (err) {
@@ -264,6 +271,8 @@ export function useMedicalFees() {
      */
     function clearAllData() {
         services.value = [];
+        pendingImportServices.value = [];
+        isExcelData.value = false;
     }
 
     /**
@@ -332,7 +341,8 @@ export function useMedicalFees() {
      * @param {string} filename - Nombre del archivo
      */
     function exportToExcel(filteredServices, filename = 'honorarios_medicos.xlsx') {
-        if (!filteredServices || filteredServices.length === 0) {
+        // Validación robusta
+        if (!filteredServices || !Array.isArray(filteredServices) || filteredServices.length === 0) {
             throw new Error('No hay servicios para exportar');
         }
 
@@ -345,23 +355,23 @@ export function useMedicalFees() {
                 excelDate = `${day}/${month}/${year}`;
             }
             
+            
             return {
                 'Admisión': service.rawData?.admision || '',
                 'Código Médico': service.doctorCode ? `'${service.doctorCode}` : '',
                 'Fecha': excelDate,
                 'Hora': service.time || '',
-                'Servicio': service.serviceName || '',
+                'Médico': service.doctor?.name || service.serviceName || '',
                 'Paciente': service.patientName || '',
-                'Segus': service.rawData?.segus || '',
+                'Servicio': service.generalTariff?.name || 'N/A',
+                'Código Servicio': service.rawData?.segus || '',
                 'Monto': service.amount,
                 'Tipo': service.serviceType || '',
                 'Detalle': service.serviceTypeReason,
                 'Comisión': service.comision,
                 'CIA': service.cia,
                 'Comprobante': service.rawData?.comprobante || '',
-                'Cod_Seg': service.rawData?.cod_seg || '',
-                'Importe': service.amount,
-                'Tipoate': service.tipoate,
+                'Tipo Atención': service.tipoate || '',
                 'Area': service.rawData?.area || ''
             };
         });
@@ -426,15 +436,15 @@ export function useMedicalFees() {
      * @returns {Promise<Object>} Resultado de la operación
      */
     async function saveToDatabase() {
-        if (services.value.length === 0) {
-            throw new Error('No hay servicios para guardar');
+        if (pendingImportServices.value.length === 0) {
+            throw new Error('No hay servicios importados para guardar');
         }
 
         isLoading.value = true;
         
         try {
-            // Mapear al payload esperado por el backend
-            const servicesPayload = services.value.map(s => ({
+            // Mapear al payload esperado por el backend usando pendingImportServices
+            const servicesPayload = pendingImportServices.value.map(s => ({
                 doctor_code: s.doctorCode,
                 service_datetime: `${s.date} ${s.time}`, // Formato YYYY-MM-DD HH:MM:SS
                 patient_name: s.patientName,
@@ -454,6 +464,12 @@ export function useMedicalFees() {
             console.log('Payload saving to DB:', servicesPayload);
 
             const result = await MedicalFeesService.saveMedicalServices(servicesPayload);
+            
+            // Limpiar datos importados y deshabilitar el flag después de guardar exitosamente
+            pendingImportServices.value = [];
+            isExcelData.value = false;
+            console.log('[useMedicalFees] isExcelData set to FALSE (Saved to DB)');
+            
             return result;
         } catch (err) {
             error.value = `Error al guardar en BD: ${err.message}`;
@@ -466,6 +482,7 @@ export function useMedicalFees() {
     async function loadMedicalServices(startDate, endDate, filters = {}) {
         isLoading.value = true;
         isExcelData.value = false;
+        console.log('[useMedicalFees] isExcelData set to FALSE (Loading from DB)');
         try {
             const response = await MedicalFeesService.getMedicalServices(startDate, endDate, filters);
             
@@ -506,6 +523,10 @@ export function useMedicalFees() {
                         serviceType: apiService.service_type,
                         serviceTypeReason: apiService.observation,
                         comision: parseFloat(apiService.commission_amount || 0),
+                        generalTariff: apiService.general_tariff ? {
+                            name: apiService.general_tariff.name,
+                            code: apiService.segus_code
+                        } : null,
                         
                         // Estructura Legacy para compatibilidad con filtros y computed existentes
                         rawData: {
@@ -529,11 +550,70 @@ export function useMedicalFees() {
         }
     }
 
+    /**
+     * Actualiza un servicio médico individual
+     * @param {number} serviceId - ID del servicio
+     * @param {string} field - Campo a actualizar
+     * @param {any} newValue - Nuevo valor
+     */
+    async function updateService(serviceId, field, newValue) {
+        try {
+            const service = services.value.find(s => s.id === serviceId);
+            if (!service) {
+                throw new Error('Servicio no encontrado');
+            }
+
+            // Preparar payload base
+            const payload = {};
+
+            // Si se modifica el tipo o el monto, recalcular comisión
+            if (field === 'serviceType' || field === 'amount') {
+                const type = field === 'serviceType' ? newValue : service.serviceType;
+                const amount = field === 'amount' ? newValue : service.amount;
+
+                // Recalcular comisión usando la misma lógica que en importFromExcel
+                const newCommission = calculateCommissionRule({
+                    type: type,
+                    amount: amount,
+                    cia: service.cia,
+                    doctorCode: service.doctorCode,
+                    segusCode: service.rawData?.segus,
+                    doctor: service.doctor
+                });
+
+                payload.service_type = type === 'RETÉN' ? 'RETEN' : type;
+                payload.amount = amount;
+                payload.commission_amount = newCommission;
+
+                // Actualizar en el estado local
+                service.serviceType = type;
+                service.amount = amount;
+                service.comision = newCommission;
+            } else if (field === 'comision') {
+                // Actualización manual de comisión
+                payload.commission_amount = newValue;
+                service.comision = newValue;
+            } else {
+                // Otros campos
+                payload[field] = newValue;
+                service[field] = newValue;
+            }
+
+            // Llamar al backend
+            await MedicalFeesService.updateMedicalService(serviceId, payload);
+
+        } catch (err) {
+            console.error('Error updating service:', err);
+            throw err;
+        }
+    }
+
     return {
         // State
         doctors,
         schedules,
         services,
+        pendingImportServices,
         isLoading,
         error,
         isExcelData,
@@ -549,6 +629,7 @@ export function useMedicalFees() {
         importFromExcel,
         exportToExcel,
         clearAllData,
-        saveToDatabase
+        saveToDatabase,
+        updateService
     };
 }

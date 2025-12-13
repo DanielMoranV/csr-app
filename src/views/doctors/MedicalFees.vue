@@ -19,6 +19,7 @@ const toast = useToast();
 const {
     doctors,
     services,
+    pendingImportServices,
     isLoading,
     error,
     servicesByDoctor,
@@ -309,13 +310,33 @@ async function handleFileUpload(event) {
     if (!file) return;
     
     try {
+        // 1. Importar y procesar Excel (validaciones, reglas, comisiones)
         await importFromExcel(file);
+        
+        const importedCount = pendingImportServices.value.length;
+        
+        // 2. Guardar automáticamente en BD
         toast.add({
-            severity: 'success',
-            summary: 'Importado',
-            detail: `${services.value.length} servicios procesados`,
+            severity: 'info',
+            summary: 'Procesando',
+            detail: `${importedCount} servicios procesados. Guardando en base de datos...`,
             life: 3000
         });
+        
+        const result = await saveToDatabase();
+        
+        if (result.success) {
+            toast.add({
+                severity: 'success',
+                summary: 'Importación Exitosa',
+                detail: `${result.data?.imported_count || importedCount} servicios guardados en BD`,
+                life: 4000
+            });
+            
+            // 3. Recargar datos del mes para mostrar los nuevos registros
+            await onMonthChange();
+        }
+        
         // Limpiar el input para permitir reimportar el mismo archivo
         event.target.value = '';
     } catch (err) {
@@ -341,11 +362,11 @@ async function handleSaveToDatabase() {
             toast.add({
                 severity: 'success',
                 summary: 'Guardado exitoso',
-                detail: result.message || `${result.data?.imported_count || 0} registros guardados`,
+                detail: result.message || `${result.data?.imported_count || pendingImportServices.value.length} registros guardados en BD`,
                 life: 3000
             });
-            // Recargar datos de la BD para confirmar
-            onMonthChange();
+            // Recargar datos de la BD para mostrar los nuevos registros
+            await onMonthChange();
         }
     } catch (err) {
         toast.add({
@@ -386,7 +407,10 @@ onMounted(async () => {
     }
     
     // Cargar datos del mes actual
-    onMonthChange();
+    await onMonthChange();
+    
+    // Debug: verificar estado inicial
+    console.log('[MedicalFees] Estado inicial - isExcelData:', isExcelData.value, 'services.length:', services.value.length);
 });
 
 function handleClearData() {
@@ -432,15 +456,6 @@ function handleClearData() {
                         @click="$refs.fileInput.click()"
                         :loading="!canImport"
                         :disabled="!canImport"
-                    />
-                    <Button 
-                        v-if="services.length > 0"
-                        label="Guardar en BD" 
-                        icon="pi pi-database" 
-                        severity="success"
-                        class="save-button ml-2" 
-                        @click="handleSaveToDatabase"
-                        :loading="isLoading"
                     />
                 </div>
                 <input 
@@ -525,7 +540,7 @@ function handleClearData() {
                                     <Button 
                                         icon="pi pi-file-excel" 
                                         v-tooltip.top="'Exportar Excel'"
-                                        @click="exportToExcel" 
+                                        @click="handleExport" 
                                         class="p-button-success"
                                         :disabled="services.length === 0"
                                     />
@@ -654,12 +669,23 @@ function handleClearData() {
                             </Column>
 
                             <!-- Servicio Medico (antes Segus) -->
-                            <Column field="rawData.segus" header="Servicio Medico" sortable style="min-width: 150px">
+                            <Column field="rawData.segus" header="Servicio Medico" sortable style="min-width: 200px">
                                 <template #body="slotProps">
-                                    {{ slotProps.data.rawData?.segus || 'N/A' }}
+                                    <div style="display: flex; flex-direction: column; gap: 2px;">
+                                        <span 
+                                            class="font-semibold" 
+                                            style="font-size: 0.875rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 180px;"
+                                            v-tooltip.top="slotProps.data.generalTariff?.name"
+                                        >
+                                            {{ slotProps.data.generalTariff?.name || 'N/A' }}
+                                        </span>
+                                        <span style="font-size: 0.75rem; color: #6c757d;">
+                                            {{ slotProps.data.rawData?.segus || 'N/A' }}
+                                        </span>
+                                    </div>
                                 </template>
                                 <template #filter="{ filterModel }">
-                                    <InputText v-model="filterModel.value" type="text" class="p-column-filter" placeholder="Buscar por código" />
+                                    <InputText v-model="filterModel.value" type="text" class="p-column-filter" placeholder="Buscar por código o nombre" />
                                 </template>
                             </Column>
 
