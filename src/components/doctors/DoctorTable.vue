@@ -24,7 +24,7 @@ const props = defineProps({
     }
 });
 
-const emit = defineEmits(['view-doctor', 'edit-doctor', 'delete-doctor', 'manage-specialties', 'manage-schedules', 'refresh']);
+const emit = defineEmits(['view-doctor', 'edit-doctor', 'delete-doctor', 'manage-specialties', 'manage-schedules', 'link-user', 'refresh']);
 
 const toast = useToast();
 
@@ -132,6 +132,10 @@ const handleManageSpecialties = (doctor) => {
 const handleManageSchedules = (doctor) => {
     emit('manage-schedules', doctor);
 };
+
+const handleLinkUser = (doctor) => {
+    emit('link-user', doctor);
+};
 </script>
 
 <template>
@@ -155,8 +159,15 @@ const handleManageSchedules = (doctor) => {
                     <div class="flex items-center justify-center w-10 h-10 rounded-full bg-primary text-white font-semibold">
                         {{ getInitials(data.name) }}
                     </div>
-                    <div class="flex flex-col">
-                        <span class="font-semibold">{{ data.name }}</span>
+                    <div class="flex flex-col flex-1">
+                        <div class="flex items-center gap-2">
+                            <span class="font-semibold">{{ data.name }}</span>
+                            <i 
+                                v-if="data.user_id" 
+                                class="pi pi-verified text-green-500" 
+                                v-tooltip.top="'Usuario vinculado'"
+                            ></i>
+                        </div>
                         <span class="text-sm text-muted">{{ getTypeLabel(data.type) }}</span>
                         <span class="text-xs text-muted">Código: {{ data.code }}</span>
                     </div>
@@ -242,10 +253,20 @@ const handleManageSchedules = (doctor) => {
             </template>
         </Column>
 
+
         <!-- Acciones -->
         <Column header="Acciones" style="min-width: 200px">
-            <template #body="{ data }">
+            <template #body="{ data, index }">
                 <div class="flex gap-1">
+                    <Button
+                        icon="pi pi-link"
+                        size="small"
+                        rounded
+                        :severity="data.user_id ? 'success' : 'help'"
+                        outlined
+                        v-tooltip.top="data.user_id ? 'Usuario Vinculado' : 'Vincular Usuario'"
+                        @click="handleLinkUser(data)"
+                    />
                     <Button
                         icon="pi pi-calendar"
                         size="small"

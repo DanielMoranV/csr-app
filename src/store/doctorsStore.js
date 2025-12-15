@@ -145,6 +145,25 @@ export const useDoctorsStore = defineStore('doctors', () => {
         }
     };
 
+    const createDoctorWithUser = async (data) => {
+        state.isSaving = true;
+        try {
+            const response = await doctorsApi.createWithUser(data);
+            if (apiUtils.isSuccess(response)) {
+                const responseData = apiUtils.getData(response);
+                // El endpoint retorna { user, doctor }
+                const newDoctor = responseData.doctor;
+                state.doctors.push(newDoctor);
+                return response;
+            }
+            throw response;
+        } catch (error) {
+            throw error;
+        } finally {
+            state.isSaving = false;
+        }
+    };
+
     const updateDoctor = async (id, doctorData) => {
         state.isSaving = true;
         try {
@@ -299,6 +318,7 @@ export const useDoctorsStore = defineStore('doctors', () => {
         fetchDoctorById,
         fetchDoctorByCode,
         createDoctor,
+        createDoctorWithUser,
         updateDoctor,
         deleteDoctor,
         searchDoctors,

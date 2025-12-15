@@ -112,6 +112,7 @@ export const useUsersStore = defineStore('users', () => {
             ADMINISTRACION: 'Administración',
             ADMISION: 'Admisión',
             'ARCHIVO HISTORIAS': 'Archivo Historias',
+            'AUDITOR MEDICO': 'Auditor Médico',
             CONSULTORIOS: 'Consultorios',
             CONTABILIDAD: 'Contabilidad',
             'DIRECTOR MEDICO': 'Director Médico',

@@ -22,6 +22,7 @@ export const POSITIONS = {
     // Médicas
     MEDICOS: 'MEDICOS',
     EMERGENCIA: 'EMERGENCIA',
+    AUDITOR_MEDICO: 'AUDITOR MEDICO',
     HOSPITALIZACION: 'HOSPITALIZACION',
     QUIROFANO: 'QUIROFANO',
     CONSULTORIOS: 'CONSULTORIOS',
@@ -50,7 +51,7 @@ export const PERMISSION_GROUPS = {
     OPERATIONAL: [POSITIONS.ADMISION, POSITIONS.FACTURACION],
 
     // Personal médico
-    MEDICAL: [POSITIONS.MEDICOS, POSITIONS.EMERGENCIA, POSITIONS.HOSPITALIZACION, POSITIONS.QUIROFANO, POSITIONS.CONSULTORIOS],
+    MEDICAL: [POSITIONS.MEDICOS, POSITIONS.EMERGENCIA, POSITIONS.AUDITOR_MEDICO, POSITIONS.HOSPITALIZACION, POSITIONS.QUIROFANO, POSITIONS.CONSULTORIOS],
 
     // Personal de hospitalización
     HOSPITALIZATION_STAFF: [POSITIONS.SISTEMAS, POSITIONS.ADMINISTRACION, POSITIONS.DIRECTOR_MEDICO, POSITIONS.MEDICOS, POSITIONS.EMERGENCIA, POSITIONS.HOSPITALIZACION, POSITIONS.ADMISION, POSITIONS.FARMACIA],
@@ -227,13 +228,23 @@ export const MODULE_PERMISSIONS = {
         menuSection: 'Personal Médico'
     },
 
-    // Gestión de Honorarios Médicos
+    // Gestión de Honorarios Médicos (Administradores)
     medicalFees: {
         name: 'medical-fees',
         path: '/honorarios-medicos',
         positions: [POSITIONS.SISTEMAS, POSITIONS.DIRECTOR_MEDICO, POSITIONS.ADMINISTRACION, POSITIONS.CONTABILIDAD, POSITIONS.RRHH],
         label: 'Honorarios',
         icon: 'pi pi-fw pi-dollar',
+        menuSection: 'Personal Médico'
+    },
+
+    // Mis Honorarios Médicos (Vista Personal)
+    myMedicalFees: {
+        name: 'myMedicalFees',
+        path: '/my-medical-fees',
+        positions: [POSITIONS.MEDICOS, POSITIONS.EMERGENCIA, POSITIONS.DIRECTOR_MEDICO, POSITIONS.AUDITOR_MEDICO],
+        label: 'Mis Honorarios',
+        icon: 'pi pi-fw pi-user-edit',
         menuSection: 'Personal Médico'
     }
 };

@@ -1,11 +1,15 @@
 <script setup>
 import DoctorDialog from '@/components/doctors/DoctorDialog.vue';
 import DoctorTable from '@/components/doctors/DoctorTable.vue';
+import BulkLinkUserDialog from '@/components/doctors/BulkLinkUserDialog.vue';
+import LinkUserDialog from '@/components/doctors/LinkUserDialog.vue';
+import CreateDoctorWithUserDialog from '@/components/doctors/CreateDoctorWithUserDialog.vue';
 import ScheduleDialog from '@/components/doctors/ScheduleDialog.vue';
 import SpecialtyAssignmentDialog from '@/components/doctors/SpecialtyAssignmentDialog.vue';
 import { useDoctors } from '@/composables/useDoctors';
 import { useDoctorSchedules } from '@/composables/useDoctorSchedules';
 import { usePermissions } from '@/composables/usePermissions';
+import { useAuthStore } from '@/store/authStore';
 import Button from 'primevue/button';
 import ConfirmDialog from 'primevue/confirmdialog';
 import IconField from 'primevue/iconfield';
@@ -28,9 +32,20 @@ const confirm = useConfirm();
 const doctorDialogVisible = ref(false);
 const scheduleDialogVisible = ref(false);
 const specialtyDialogVisible = ref(false);
+const linkUserDialogVisible = ref(false);
+const bulkLinkDialogVisible = ref(false);
+const createWithUserDialogVisible = ref(false);
 const selectedDoctor = ref(null);
 const isEditingDoctor = ref(false);
 const isDeletingDoctor = ref(false);
+
+const authStore = useAuthStore();
+
+// Permisos para vincular usuarios
+const canLinkUsers = computed(() => {
+    const position = authStore.getUser?.position;
+    return ['DIRECTOR MEDICO', 'ADMINISTRACION', 'SISTEMAS'].includes(position);
+});
 
 // Filtros
 const globalFilter = ref('');
@@ -116,6 +131,41 @@ const handleSpecialtiesUpdated = async () => {
     await fetchDoctors();
 };
 
+const openLinkUserDialog = (doctor) => {
+    if (!canLinkUsers.value) return;
+    selectedDoctor.value = doctor;
+    linkUserDialogVisible.value = true;
+};
+
+const handleUserLinked = async () => {
+    // Recargar la lista de médicos para ver los cambios
+    await fetchDoctors();
+};
+
+const handleUserUnlinked = async () => {
+    // Recargar la lista de médicos para ver los cambios
+    await fetchDoctors();
+};
+
+const openBulkLinkDialog = () => {
+    if (!canLinkUsers.value) return;
+    bulkLinkDialogVisible.value = true;
+};
+
+const handleBulkLinkCompleted = async (results) => {
+    // Recargar médicos
+    await fetchDoctors();
+};
+
+const openCreateWithUserDialog = () => {
+    createWithUserDialogVisible.value = true;
+};
+
+const handleDoctorWithUserCreated = async () => {
+    // Recargar médicos
+    await fetchDoctors();
+};
+
 // Filtros
 const handleGlobalFilter = (event) => {
     globalFilter.value = event.target.value;
@@ -176,7 +226,7 @@ const filteredDoctorsBySpecialty = computed(() => {
             <!-- Header Principal -->
             <div class="header-section">
                 <div class="header-icon-wrapper">
-                    <i class="pi pi-user-md"></i>
+                    <i class="pi pi-users"></i>
                 </div>
                 <div class="header-content">
                     <h1 class="header-title">Gestión de Médicos</h1>
@@ -185,7 +235,24 @@ const filteredDoctorsBySpecialty = computed(() => {
                         Administración del personal médico del hospital
                     </p>
                 </div>
-                <Button label="Nuevo Médico" icon="pi pi-plus" class="add-button" @click="openNewDoctor" />
+                <div class="flex gap-2">
+                    <Button 
+                        v-if="canLinkUsers"
+                        label="Vinculación Masiva" 
+                        icon="pi pi-link" 
+                        severity="help"
+                        outlined
+                        @click="openBulkLinkDialog"
+                    />
+                    <Button 
+                        label="Crear con Usuario" 
+                        icon="pi pi-user-plus" 
+                        severity="success"
+                        outlined
+                        @click="openCreateWithUserDialog"
+                    />
+                    <Button label="Nuevo Médico" icon="pi pi-plus" class="add-button" @click="openNewDoctor" />
+                </div>
             </div>
 
             <!-- Table Header con búsqueda -->
@@ -239,7 +306,15 @@ const filteredDoctorsBySpecialty = computed(() => {
             </div>
 
             <!-- Tabla de Médicos -->
-            <DoctorTable :doctors="filteredDoctorsBySpecialty" :loading="isLoading" @edit-doctor="editDoctor" @delete-doctor="confirmDeleteDoctor" @manage-schedules="manageSchedules" @manage-specialties="manageSpecialties" />
+            <DoctorTable 
+                :doctors="filteredDoctorsBySpecialty" 
+                :loading="isLoading" 
+                @edit-doctor="editDoctor" 
+                @delete-doctor="confirmDeleteDoctor" 
+                @manage-schedules="manageSchedules" 
+                @manage-specialties="manageSpecialties"
+                @link-user="openLinkUserDialog"
+            />
         </div>
 
         <!-- Diálogos -->
@@ -248,6 +323,26 @@ const filteredDoctorsBySpecialty = computed(() => {
         <ScheduleDialog v-model:visible="scheduleDialogVisible" :doctors="doctors" :medical-shifts="medicalShifts" />
 
         <SpecialtyAssignmentDialog v-model:visible="specialtyDialogVisible" :doctor="selectedDoctor" @updated="handleSpecialtiesUpdated" />
+
+        <LinkUserDialog 
+            v-if="canLinkUsers"
+            v-model:visible="linkUserDialogVisible" 
+            :doctor="selectedDoctor" 
+            @linked="handleUserLinked"
+            @unlinked="handleUserUnlinked"
+        />
+
+        <BulkLinkUserDialog
+            v-if="canLinkUsers"
+            v-model:visible="bulkLinkDialogVisible"
+            :doctors="doctors"
+            @completed="handleBulkLinkCompleted"
+        />
+
+        <CreateDoctorWithUserDialog
+            v-model:visible="createWithUserDialogVisible"
+            @created="handleDoctorWithUserCreated"
+        />
 
         <ConfirmDialog />
     </div>

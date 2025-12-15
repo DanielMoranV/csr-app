@@ -20,6 +20,13 @@ export const doctors = {
     create: (doctorData) => axios.post('/doctors', doctorData),
 
     /**
+     * Creates a doctor with linked user account in a single operation.
+     * @param {object} data - Combined user and doctor data
+     * @returns {Promise}
+     */
+    createWithUser: (data) => axios.post('/doctors/with-user', data),
+
+    /**
      * Retrieves a specific doctor by ID.
      * @param {number} id - Doctor ID
      * @returns {Promise}

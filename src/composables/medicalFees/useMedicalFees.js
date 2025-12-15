@@ -346,7 +346,7 @@ export function useMedicalFees() {
             throw new Error('No hay servicios para exportar');
         }
 
-        // Preparar datos para Excel
+        // Preparar datos para Excel - Hoja 1: Detalle
         const excelData = filteredServices.map(service => {
             // Convertir fecha a formato DD/MM/YYYY
             let excelDate = '';
@@ -381,7 +381,7 @@ export function useMedicalFees() {
         const wb = XLSX.utils.book_new();
         XLSX.utils.book_append_sheet(wb, ws, 'Honorarios Médicos');
 
-        // Aplicar formatos
+        // Aplicar formatos a Hoja 1
         const range = XLSX.utils.decode_range(ws['!ref']);
         
         for (let R = range.s.r + 1; R <= range.e.r; ++R) {
@@ -419,6 +419,146 @@ export function useMedicalFees() {
                 importeCell.z = '"S/ "#,##0.00';
             }
         }
+
+        // ============================================================================
+        // HOJA 2: Resumen por Médico
+        // ============================================================================
+        
+        // Agrupar servicios por médico
+        const doctorSummaryMap = new Map();
+        
+        filteredServices.forEach(service => {
+            const doctorCode = service.doctorCode || 'SIN_CODIGO';
+            const doctorName = service.doctor?.name || 'Médico no identificado';
+            
+            if (!doctorSummaryMap.has(doctorCode)) {
+                doctorSummaryMap.set(doctorCode, {
+                    codigo: doctorCode,
+                    nombre: doctorName,
+                    // Planilla
+                    cantidadPlanilla: 0,
+                    montoPlanilla: 0,
+                    // Retén
+                    cantidadReten: 0,
+                    montoReten: 0,
+                    // Comisión
+                    totalComision: 0,
+                    // Totales
+                    totalAtenciones: 0,
+                    totalGenerado: 0
+                });
+            }
+            
+            const summary = doctorSummaryMap.get(doctorCode);
+            const isPlanilla = service.serviceType === 'PLANILLA';
+            const isReten = service.serviceType === 'RETEN' || service.serviceType === 'RETÉN';
+            
+            // Acumular totales
+            summary.totalAtenciones++;
+            summary.totalGenerado += service.amount;
+            summary.totalComision += service.comision || 0;
+            
+            if (isPlanilla) {
+                summary.cantidadPlanilla++;
+                summary.montoPlanilla += service.amount;
+            } else if (isReten) {
+                summary.cantidadReten++;
+                summary.montoReten += service.amount;
+            }
+        });
+        
+        // Convertir Map a array y ordenar por nombre de médico
+        const summaryData = Array.from(doctorSummaryMap.values())
+            .sort((a, b) => a.nombre.localeCompare(b.nombre))
+            .map(summary => ({
+                'Código Médico': summary.codigo === 'SIN_CODIGO' ? '' : `'${summary.codigo}`,
+                'Médico': summary.nombre,
+                'Cant. Planilla': summary.cantidadPlanilla,
+                'Monto Planilla': summary.montoPlanilla,
+                'Cant. Retén': summary.cantidadReten,
+                'Monto Retén': summary.montoReten,
+                'Total Comisión': summary.totalComision,
+                'Total Atenciones': summary.totalAtenciones,
+                'Total Generado': summary.totalGenerado
+            }));
+        
+        // Crear hoja de resumen
+        const wsSummary = XLSX.utils.json_to_sheet(summaryData);
+        XLSX.utils.book_append_sheet(wb, wsSummary, 'Resumen por Médico');
+        
+        // Aplicar formatos a Hoja 2
+        const summaryRange = XLSX.utils.decode_range(wsSummary['!ref']);
+        
+        for (let R = summaryRange.s.r + 1; R <= summaryRange.e.r; ++R) {
+            // Código Médico como texto (columna A)
+            const codigoCell = wsSummary[`A${R + 1}`];
+            if (codigoCell && codigoCell.v) {
+                codigoCell.t = 's';
+                codigoCell.v = String(codigoCell.v).replace(/^'/, '');
+            }
+            
+            // Cant. Planilla (columna C) - número entero
+            const cantPlanillaCell = wsSummary[`C${R + 1}`];
+            if (cantPlanillaCell && !isNaN(cantPlanillaCell.v)) {
+                cantPlanillaCell.t = 'n';
+                cantPlanillaCell.z = '#,##0';
+            }
+            
+            // Monto Planilla (columna D) - moneda
+            const montoPlanillaCell = wsSummary[`D${R + 1}`];
+            if (montoPlanillaCell && !isNaN(montoPlanillaCell.v)) {
+                montoPlanillaCell.t = 'n';
+                montoPlanillaCell.z = '"S/ "#,##0.00';
+            }
+            
+            // Cant. Retén (columna E) - número entero
+            const cantRetenCell = wsSummary[`E${R + 1}`];
+            if (cantRetenCell && !isNaN(cantRetenCell.v)) {
+                cantRetenCell.t = 'n';
+                cantRetenCell.z = '#,##0';
+            }
+            
+            // Monto Retén (columna F) - moneda
+            const montoRetenCell = wsSummary[`F${R + 1}`];
+            if (montoRetenCell && !isNaN(montoRetenCell.v)) {
+                montoRetenCell.t = 'n';
+                montoRetenCell.z = '"S/ "#,##0.00';
+            }
+            
+            // Total Comisión (columna G) - moneda
+            const totalComisionCell = wsSummary[`G${R + 1}`];
+            if (totalComisionCell && !isNaN(totalComisionCell.v)) {
+                totalComisionCell.t = 'n';
+                totalComisionCell.z = '"S/ "#,##0.00';
+            }
+            
+            // Total Atenciones (columna H) - número entero
+            const totalAtencionesCell = wsSummary[`H${R + 1}`];
+            if (totalAtencionesCell && !isNaN(totalAtencionesCell.v)) {
+                totalAtencionesCell.t = 'n';
+                totalAtencionesCell.z = '#,##0';
+            }
+            
+            // Total Generado (columna I) - moneda
+            const totalGeneradoCell = wsSummary[`I${R + 1}`];
+            if (totalGeneradoCell && !isNaN(totalGeneradoCell.v)) {
+                totalGeneradoCell.t = 'n';
+                totalGeneradoCell.z = '"S/ "#,##0.00';
+            }
+        }
+        
+        // Ajustar ancho de columnas en hoja de resumen
+        wsSummary['!cols'] = [
+            { wch: 15 }, // Código Médico
+            { wch: 30 }, // Médico
+            { wch: 15 }, // Cant. Planilla
+            { wch: 18 }, // Monto Planilla
+            { wch: 15 }, // Cant. Retén
+            { wch: 18 }, // Monto Retén
+            { wch: 18 }, // Total Comisión
+            { wch: 18 }, // Total Atenciones
+            { wch: 18 }  // Total Generado
+        ];
 
         // Generar archivo
         const excelBuffer = XLSX.write(wb, { bookType: 'xlsx', type: 'array', cellDates: true });
