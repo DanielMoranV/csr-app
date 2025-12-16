@@ -76,7 +76,9 @@ const isAssignee = computed(() => {
 });
 
 const canEdit = computed(() => {
-    // Solo el creador puede editar detalles del ticket
+    // En modo creación, siempre permitir editar
+    if (isCreateMode.value) return true;
+    // En otros modos, solo el creador puede editar detalles del ticket
     return isCreator.value;
 });
 
