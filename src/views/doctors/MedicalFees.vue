@@ -14,6 +14,8 @@ import DatePicker from 'primevue/datepicker';
 import Dropdown from 'primevue/dropdown';
 import InputText from 'primevue/inputtext';
 import InputNumber from 'primevue/inputnumber';
+import IconField from 'primevue/iconfield';
+import InputIcon from 'primevue/inputicon';
 
 const toast = useToast();
 const {
@@ -79,6 +81,7 @@ const typeOptions = [
 const filters = ref({
     global: { value: null, matchMode: FilterMatchMode.CONTAINS },
     'rawData.admision': { operator: FilterOperator.AND, constraints: [{ value: null, matchMode: FilterMatchMode.CONTAINS }] },
+    patientName: { operator: FilterOperator.AND, constraints: [{ value: null, matchMode: FilterMatchMode.CONTAINS }] },
     'doctor.name': { operator: FilterOperator.AND, constraints: [{ value: null, matchMode: FilterMatchMode.CONTAINS }] },
     'rawData.segus': { operator: FilterOperator.AND, constraints: [{ value: null, matchMode: FilterMatchMode.CONTAINS }] },
     serviceType: { value: null, matchMode: FilterMatchMode.EQUALS },
@@ -754,16 +757,16 @@ function handleClearData() {
                             stripedRows
                             responsiveLayout="scroll"
                             filterDisplay="menu"
-                            :globalFilterFields="['id', 'rawData.admision', 'doctor.name', 'rawData.segus', 'cia', 'tipoate', 'serviceTypeReason']"
+                            :globalFilterFields="['id', 'rawData.admision', 'patientName', 'doctor.name', 'rawData.segus', 'cia', 'tipoate', 'serviceTypeReason']"
                             editMode="cell"
                             @cell-edit-complete="onCellEditComplete"
                         >
                             <template #header>
                                 <div class="flex justify-content-between">
-                                    <span class="p-input-icon-left">
-                                        <i class="pi pi-search" />
+                                    <IconField>
+                                        <InputIcon class="pi pi-search" />
                                         <InputText v-model="filters['global'].value" placeholder="Buscar..." />
-                                    </span>
+                                    </IconField>
                                 </div>
                             </template>
 
@@ -771,12 +774,22 @@ function handleClearData() {
                             <Column field="id" header="ID" sortable style="min-width: 80px"></Column>
 
                             <!-- Admisión -->
-                            <Column field="rawData.admision" header="Admisión" sortable style="min-width: 120px">
+                            <Column field="rawData.admision" header="Admisión" sortable style="min-width: 80px">
                                 <template #body="slotProps">
-                                    {{ slotProps.data.rawData?.admision || 'N/A' }}
+                                    <span style="font-size: 0.8rem">{{ slotProps.data.rawData?.admision || 'N/A' }}</span>
                                 </template>
                                 <template #filter="{ filterModel }">
                                     <InputText v-model="filterModel.value" type="text" class="p-column-filter" placeholder="Buscar admisión" />
+                                </template>
+                            </Column>
+                            
+                            <!-- Paciente -->
+                            <Column field="patientName" header="Paciente" sortable style="min-width: 200px">
+                                <template #body="slotProps">
+                                    <div class="font-medium">{{ slotProps.data.patientName || 'N/A' }}</div>
+                                </template>
+                                <template #filter="{ filterModel }">
+                                    <InputText v-model="filterModel.value" type="text" class="p-column-filter" placeholder="Buscar paciente" />
                                 </template>
                             </Column>
                             

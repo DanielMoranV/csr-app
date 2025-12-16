@@ -305,7 +305,7 @@ function getErrorMessage(error) {
     // Mensajes por defecto según código HTTP
     switch (status) {
         case 401:
-            return 'Credenciales incorrectas o sesión expirada.';
+            return 'Credenciales incorrectas o sesión inválida.';
         case 403:
             return 'No tiene permisos para realizar esta acción.';
         case 404:

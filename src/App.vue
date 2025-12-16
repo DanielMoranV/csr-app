@@ -1,10 +1,10 @@
 <script setup>
 import Toast from 'primevue/toast';
 import ConfirmDialog from 'primevue/confirmdialog';
-import { useTokenRefresh } from '@/composables/useTokenRefresh';
+// import { useTokenRefresh } from '@/composables/useTokenRefresh'; // DESHABILITADO - tokens ya no expiran
 
 // Activar auto-refresh preventivo del token
-useTokenRefresh();
+// useTokenRefresh(); // DESHABILITADO - tokens ya no expiran automaticamente
 </script>
 
 <template>

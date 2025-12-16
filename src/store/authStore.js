@@ -7,7 +7,7 @@ import { useTicketsStore } from './ticketsStore';
 // Configuración de seguridad
 const TOKEN_STORAGE_KEY = 'token';
 const USER_STORAGE_KEY = 'currentUser';
-const REFRESH_THRESHOLD_MINUTES = 5; // Refrescar token 5 minutos antes de expirar
+// NOTA: REFRESH_THRESHOLD_MINUTES eliminado - tokens ya no expiran automáticamente
 
 export const useAuthStore = defineStore('auth', () => {
     // Estado reactivo
@@ -16,7 +16,7 @@ export const useAuthStore = defineStore('auth', () => {
         token: null,
         isAuthenticated: false,
         isLoading: false,
-        tokenExpiresAt: null,
+        // tokenExpiresAt: null, // REMOVIDO - tokens ya no expiran
         lastActivity: Date.now(),
         isInitialized: false // Flag para saber si ya se inicializó
     });
@@ -27,15 +27,7 @@ export const useAuthStore = defineStore('auth', () => {
 
     const isLoggedIn = computed(() => state.isAuthenticated && !!state.token);
     const isInitialized = computed(() => state.isInitialized);
-    const isTokenExpired = computed(() => {
-        if (!state.tokenExpiresAt) return true;
-        return Date.now() >= state.tokenExpiresAt;
-    });
-    const shouldRefreshToken = computed(() => {
-        if (!state.tokenExpiresAt) return false;
-        const thresholdMs = REFRESH_THRESHOLD_MINUTES * 60 * 1000;
-        return state.tokenExpiresAt - Date.now() <= thresholdMs;
-    });
+    // isTokenExpired y shouldRefreshToken REMOVIDOS - tokens ya no expiran automáticamente
 
     // Validadores de entrada
     const validateLoginData = (dni, password) => {
@@ -137,27 +129,17 @@ export const useAuthStore = defineStore('auth', () => {
             state.token = authData.access_token;
             state.user = authData.user || null;
             state.isAuthenticated = true;
-
-            // Calcular tiempo de expiraci�n con validaci�n mejorada
-            let expiresInSeconds = authData.expires_in;
-
-            // Validar que expires_in est� presente y sea v�lido
-            if (!expiresInSeconds || typeof expiresInSeconds !== 'number' || expiresInSeconds <= 0) {
-                console.warn('⚠️ [AuthStore] expires_in no proporcionado o inv�lido, usando 3600s (1 hora) por defecto');
-                expiresInSeconds = 3600; // Default: 1 hora
-            } else if (import.meta.env.DEV) {
-                console.log(`[AuthStore] Token expira en ${expiresInSeconds} segundos (${Math.round(expiresInSeconds / 60)} minutos)`);
-            }
-
-            const expiresInMs = expiresInSeconds * 1000;
-            state.tokenExpiresAt = Date.now() + expiresInMs;
             state.lastActivity = Date.now();
+
+            // NOTA: Calculo de expiracion removido - tokens ya no expiran automaticamente
+            if (import.meta.env.DEV) {
+                console.log('[AuthStore] Token guardado (duracion indefinida)');
+            }
 
             // Guardar token de forma compatible con sistema existente
             cache.setItem(TOKEN_STORAGE_KEY, authData.access_token);
             cache.setItem('auth_token', {
-                token: authData.access_token,
-                expiresAt: state.tokenExpiresAt
+                token: authData.access_token
             });
 
             if (state.user) {
@@ -176,28 +158,20 @@ export const useAuthStore = defineStore('auth', () => {
             let tokenString = cache.getItem(TOKEN_STORAGE_KEY);
             const userData = cache.getItem(USER_STORAGE_KEY);
 
-            // Si no hay estructura de auth_token pero sí token string, crear estructura
+            // Si no hay estructura de auth_token pero si token string, usar directamente
             if (!tokenData && tokenString && typeof tokenString === 'string') {
-                // Asumir token válido por 1 hora desde ahora si no hay expiración
                 tokenData = {
-                    token: tokenString,
-                    expiresAt: Date.now() + 3600 * 1000 // 1 hora
+                    token: tokenString
                 };
             }
 
-            if (tokenData && tokenData.token && tokenData.expiresAt) {
-                const now = Date.now();
-                const isExpired = now >= tokenData.expiresAt;
-
-                // Verificar si el token no ha expirado
-                if (!isExpired) {
-                    state.token = tokenData.token;
-                    state.tokenExpiresAt = tokenData.expiresAt;
-                    state.user = userData;
-                    state.isAuthenticated = true;
-                    state.lastActivity = Date.now();
-                    return true;
-                }
+            // Verificar que exista token (sin validar expiracion)
+            if (tokenData && tokenData.token) {
+                state.token = tokenData.token;
+                state.user = userData;
+                state.isAuthenticated = true;
+                state.lastActivity = Date.now();
+                return true;
             }
 
             // Token expirado o inv�lido, limpiar
@@ -213,7 +187,7 @@ export const useAuthStore = defineStore('auth', () => {
         state.user = null;
         state.token = null;
         state.isAuthenticated = false;
-        state.tokenExpiresAt = null;
+        // state.tokenExpiresAt = null; // REMOVIDO - ya no se usa
         state.lastActivity = Date.now();
 
         // Limpiar cache (tanto claves nuevas como existentes)
@@ -414,21 +388,8 @@ export const useAuthStore = defineStore('auth', () => {
             return false;
         }
 
-        if (isTokenExpired.value) {
-            clearAuthData();
-            return false;
-        }
-
-        if (shouldRefreshToken.value) {
-            try {
-                await refreshToken();
-                return true;
-            } catch (error) {
-                clearAuthData();
-                return false;
-            }
-        }
-
+        // NOTA: Validacion de expiracion removida - tokens ya no expiran
+        // Solo verificamos que exista autenticacion
         return true;
     };
 
@@ -446,22 +407,8 @@ export const useAuthStore = defineStore('auth', () => {
     const initialize = () => {
         loadAuthDataFromCache();
 
-        // Limpiar interval previo si existe
-        if (refreshInterval) {
-            clearInterval(refreshInterval);
-        }
-
-        // Auto-refrescar token peri�dicamente
-        refreshInterval = setInterval(async () => {
-            if (state.isAuthenticated && shouldRefreshToken.value) {
-                try {
-                    await refreshToken();
-                } catch (error) {
-                    clearInterval(refreshInterval);
-                    refreshInterval = null;
-                }
-            }
-        }, 60000); // Cada minuto
+        // NOTA: setInterval auto-refresh removido - tokens ya no expiran
+        // No es necesario refrescar periodicamente
 
         // Marcar como inicializado
         state.isInitialized = true;
@@ -487,8 +434,7 @@ export const useAuthStore = defineStore('auth', () => {
         getToken,
         isLoggedIn,
         isInitialized,
-        isTokenExpired,
-        shouldRefreshToken,
+        // isTokenExpired y shouldRefreshToken REMOVIDOS
 
         // M�todos p�blicos
         login,

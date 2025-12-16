@@ -1,3 +1,14 @@
+/*
+ * DESHABILITADO - Los tokens ya no expiran automaticamente
+ * 
+ * Este composable programaba el refresh preventivo del token JWT antes de que expirara.
+ * Con la nueva politica de tokens indefinidos del backend, ya no es necesario.
+ * 
+ * Mantenido comentado para referencia futura.
+ * Fecha de deshabilitacion: 2025-12-16
+ */
+
+/*
 import { onMounted, onUnmounted, watch } from 'vue';
 import { useAuthStore } from '@/store/authStore';
 
@@ -18,7 +29,7 @@ import { useAuthStore } from '@/store/authStore';
  *     useTokenRefresh()
  *   }
  * }
- */
+ *\/
 export function useTokenRefresh() {
     const authStore = useAuthStore();
     let refreshTimeout = null;
@@ -29,7 +40,7 @@ export function useTokenRefresh() {
     /**
      * Programa el próximo refresh del token
      * Calcula cuándo debe refrescarse basándose en la expiración actual
-     */
+     *\/
     function scheduleRefresh() {
         // Limpiar timeout anterior si existe
         if (refreshTimeout) {
@@ -70,7 +81,7 @@ export function useTokenRefresh() {
 
     /**
      * Ejecuta el refresh del token
-     */
+     *\/
     async function performRefresh() {
         try {
             await authStore.refreshToken();
@@ -91,7 +102,7 @@ export function useTokenRefresh() {
 
     /**
      * Cancela el refresh programado
-     */
+     *\/
     function cancelScheduledRefresh() {
         if (refreshTimeout) {
             clearTimeout(refreshTimeout);
@@ -142,3 +153,4 @@ export function useTokenRefresh() {
         performRefresh
     };
 }
+*/
