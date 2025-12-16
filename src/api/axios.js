@@ -1,10 +1,12 @@
+import { useApiConfigStore } from '@/store/apiConfigStore';
 import { useAuthStore } from '@/store/authStore';
 import axios from 'axios';
 
+// Exportar para compatibilidad, pero ahora es dinámico
 export const api_url = import.meta.env.VITE_API_URL;
 
 const instance = axios.create({
-    baseURL: api_url,
+    // baseURL se establecerá dinámicamente en el interceptor
     timeout: 90000000, // 30 segundos (reducido de 90000000)
     headers: {
         'Content-Type': 'application/json',
@@ -48,9 +50,13 @@ function onRefreshed(token) {
     refreshSubscribers = [];
 }
 
-// Request interceptor - Agregar token automáticamente
+// Request interceptor - Establecer baseURL dinámico y agregar token
 instance.interceptors.request.use(
     (config) => {
+        // Establecer baseURL dinámicamente desde el store
+        const apiConfigStore = useApiConfigStore();
+        config.baseURL = apiConfigStore.getCurrentBaseURL;
+
         const authStore = useAuthStore();
         const token = authStore.getToken;
 
@@ -70,8 +76,9 @@ instance.interceptors.request.use(
                 fullUrl = `${config.url}?${queryString}`;
             }
 
-            console.log(`[API] ${config.method?.toUpperCase()} ${fullUrl}`, {
+            console.log(`[API ${apiConfigStore.getCurrentMode.toUpperCase()}] ${config.method?.toUpperCase()} ${fullUrl}`, {
                 baseURL: config.baseURL,
+                mode: apiConfigStore.getCurrentMode,
                 headers: config.headers,
                 params: config.params,
                 data: config.data

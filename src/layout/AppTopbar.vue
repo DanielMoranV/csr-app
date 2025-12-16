@@ -1,6 +1,8 @@
 <script setup>
 import { useAuth } from '@/composables/useAuth';
 import { useLayout } from '@/layout/composables/layout';
+import { useApiConfigStore } from '@/store/apiConfigStore';
+import { computed } from 'vue';
 import { useConfirm } from 'primevue/useconfirm';
 import { useToast } from 'primevue/usetoast';
 import { useRouter } from 'vue-router';
@@ -8,9 +10,15 @@ import AppConfigurator from './AppConfigurator.vue';
 
 const { toggleMenu, toggleDarkMode, isDarkTheme } = useLayout();
 const { logout, user } = useAuth();
+const apiConfigStore = useApiConfigStore();
 const router = useRouter();
 const toast = useToast();
 const confirm = useConfirm();
+
+// Computadas para el indicador de API
+const apiMode = computed(() => apiConfigStore.getCurrentMode);
+const apiUrl = computed(() => apiConfigStore.getCurrentBaseURL);
+const isLocalMode = computed(() => apiMode.value === 'local');
 
 const handleLogout = () => {
     console.log('Iniciando proceso de cierre de sesión...');
@@ -64,6 +72,14 @@ const handleLogout = () => {
 
         <div class="layout-topbar-actions">
             <div class="layout-config-menu">
+                <!-- API Status Indicator -->
+                <div class="api-status-indicator" v-tooltip.bottom="apiUrl">
+                    <span :class="['api-status-badge', { 'local-mode': isLocalMode, 'cloud-mode': !isLocalMode }]">
+                        <i :class="['pi', isLocalMode ? 'pi-wifi' : 'pi-cloud']"></i>
+                        <span class="api-status-text">{{ isLocalMode ? 'Local' : 'Online' }}</span>
+                    </span>
+                </div>
+                
                 <button type="button" class="layout-topbar-action" @click="toggleDarkMode">
                     <i :class="['pi', { 'pi-moon': isDarkTheme, 'pi-sun': !isDarkTheme }]"></i>
                 </button>
@@ -111,6 +127,56 @@ const handleLogout = () => {
 </template>
 
 <style scoped>
+/* API Status Indicator */
+.api-status-indicator {
+    display: flex;
+    align-items: center;
+    margin-right: 0.5rem;
+}
+
+.api-status-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.375rem;
+    padding: 0.375rem 0.75rem;
+    border-radius: 1rem;
+    font-size: 0.75rem;
+    font-weight: 600;
+    transition: all 0.2s ease;
+    cursor: default;
+}
+
+.api-status-badge.local-mode {
+    background-color: rgba(34, 197, 94, 0.1);
+    color: rgb(34, 197, 94);
+    border: 1px solid rgba(34, 197, 94, 0.3);
+}
+
+.api-status-badge.cloud-mode {
+    background-color: rgba(59, 130, 246, 0.1);
+    color: rgb(59, 130, 246);
+    border: 1px solid rgba(59, 130, 246, 0.3);
+}
+
+.api-status-badge i {
+    font-size: 0.875rem;
+}
+
+.api-status-text {
+    white-space: nowrap;
+}
+
+/* Dark mode adjustments */
+.app-dark .api-status-badge.local-mode {
+    background-color: rgba(34, 197, 94, 0.15);
+    color: rgb(74, 222, 128);
+}
+
+.app-dark .api-status-badge.cloud-mode {
+    background-color: rgba(59, 130, 246, 0.15);
+    color: rgb(96, 165, 250);
+}
+
 .layout-logo-image {
     width: 32px;
     height: 32px;
@@ -162,6 +228,15 @@ const handleLogout = () => {
 
     .layout-logo-image {
         margin-right: 0;
+    }
+
+    /* Hide API status text on mobile, keep icon */
+    .api-status-text {
+        display: none;
+    }
+
+    .api-status-badge {
+        padding: 0.375rem 0.5rem;
     }
 }
 </style>

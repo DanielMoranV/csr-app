@@ -11,6 +11,7 @@ import ToastService from 'primevue/toastservice';
 import '@/assets/styles.scss';
 
 // Inicializar autenticación
+import { useApiConfigStore } from '@/store/apiConfigStore';
 import { useAuthStore } from '@/store/authStore';
 
 const app = createApp(App);
@@ -46,7 +47,7 @@ app.use(PrimeVue, {
     locale: {
         accept: 'Aceptar',
         reject: 'Rechazar',
-        invalidFileSize: 'El archivo "{0}" tiene un tamaño inválido. Debe ser menor a {1} KB.',
+        invalidFileSize: 'El archivo \"{0}\" tiene un tamaño inválido. Debe ser menor a {1} KB.',
         startsWith: 'Comienza con',
         contains: 'Contiene',
         notContains: 'No contiene',
@@ -164,6 +165,10 @@ app.use(PrimeVue, {
 app.use(ToastService);
 app.use(ConfirmationService);
 
+// Inicializar API config (debe ser antes de auth para que axios tenga la URL correcta)
+const apiConfigStore = useApiConfigStore();
+await apiConfigStore.initialize();
+
 const authStore = useAuthStore();
 await authStore.initialize();
 
@@ -173,4 +178,5 @@ app.mount('#app');
 // Limpiar recursos cuando la aplicación se desmonte
 window.addEventListener('beforeunload', () => {
     authStore.cleanup();
+    apiConfigStore.cleanup();
 });
