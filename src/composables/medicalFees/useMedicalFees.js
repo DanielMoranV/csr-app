@@ -679,6 +679,13 @@ export function useMedicalFees() {
                         }
                     };
                 });
+
+                // Filtrar por estado si se especificó en los filtros (el backend no aplica este filtro)
+                if (filters.status) {
+                    services.value = services.value.filter(s => s.status === filters.status);
+                    console.log(`Filtered by status '${filters.status}': ${services.value.length} services`);
+                }
+
                 console.log('Mapped services:', services.value.length, services.value[0]);
             } else {
                 console.warn('No data found or structure mismatch:', response);

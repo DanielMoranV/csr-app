@@ -38,7 +38,7 @@ const hasDoctorProfile = computed(() => !!currentDoctor.value);
 // Filtros
 const selectedMonth = ref(new Date(new Date().getFullYear(), new Date().getMonth() - 1, 1));
 const selectedType = ref(null);
-const showSummaryTable = ref(false);
+const showSummaryTable = ref(true);
 
 const typeOptions = [
     { label: 'Todos', value: null },
@@ -152,9 +152,10 @@ async function loadDataForMonth() {
     try {
         await loadDoctorsAndSchedules(start, end);
         
-        // Filtrar por el médico autenticado
+        // Filtrar por el médico autenticado y solo atenciones aprobadas
         const filters = {
-            doctor_id: currentDoctor.value.id
+            doctor_id: currentDoctor.value.id,
+            status: 'aprobado'
         };
         
         await loadMedicalServices(start, end, filters);
