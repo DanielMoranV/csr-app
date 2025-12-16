@@ -663,6 +663,7 @@ export function useMedicalFees() {
                         serviceType: apiService.service_type,
                         serviceTypeReason: apiService.observation,
                         comision: parseFloat(apiService.commission_amount || 0),
+                        status: apiService.status || 'pendiente', // Estado del servicio
                         generalTariff: apiService.general_tariff ? {
                             name: apiService.general_tariff.name,
                             code: apiService.segus_code
@@ -733,6 +734,10 @@ export function useMedicalFees() {
                 // Actualización manual de comisión
                 payload.commission_amount = newValue;
                 service.comision = newValue;
+            } else if (field === 'status') {
+                // Actualización de estado
+                payload.status = newValue;
+                service.status = newValue;
             } else {
                 // Otros campos
                 payload[field] = newValue;
@@ -744,6 +749,23 @@ export function useMedicalFees() {
 
         } catch (err) {
             console.error('Error updating service:', err);
+            throw err;
+        }
+    }
+
+    /**
+     * Aprobación masiva de servicios médicos
+     * @param {Array} ids - Array de IDs de servicios
+     * @param {string} status - Nuevo estado
+     * @param {string} observation - Observación opcional
+     * @returns {Promise<Object>} Resultado de la aprobación masiva
+     */
+    async function bulkApproveServices(ids, status, observation = null) {
+        try {
+            const result = await MedicalFeesService.bulkApprove(ids, status, observation);
+            return result;
+        } catch (err) {
+            console.error('Error bulk approving services:', err);
             throw err;
         }
     }
@@ -770,6 +792,7 @@ export function useMedicalFees() {
         exportToExcel,
         clearAllData,
         saveToDatabase,
-        updateService
+        updateService,
+        bulkApproveServices
     };
 }

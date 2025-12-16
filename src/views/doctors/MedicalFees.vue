@@ -16,6 +16,7 @@ import InputText from 'primevue/inputtext';
 import InputNumber from 'primevue/inputnumber';
 import IconField from 'primevue/iconfield';
 import InputIcon from 'primevue/inputicon';
+import BulkApprovalDialog from '@/components/doctors/BulkApprovalDialog.vue';
 
 const toast = useToast();
 const {
@@ -34,7 +35,8 @@ const {
     saveToDatabase,
     loadMedicalServices,
     updateService,
-    isExcelData
+    isExcelData,
+    bulkApproveServices
 } = useMedicalFees();
 
 async function onCellEditComplete(event) {
@@ -50,6 +52,15 @@ async function onCellEditComplete(event) {
              toast.add({ severity: 'error', summary: 'Error', detail: 'Valor inválido', life: 3000 });
              return; // O revertir cambio
          }
+    }
+
+    // Validación para status
+    if (field === 'status') {
+        const validStatuses = ['pendiente', 'revisado', 'aprobado', 'rechazado'];
+        if (!validStatuses.includes(newValue)) {
+            toast.add({ severity: 'error', summary: 'Error', detail: 'Estado inválido', life: 3000 });
+            return;
+        }
     }
 
     try {
@@ -71,6 +82,7 @@ const selectedType = ref(null);
 const specialties = ref([]);
 const isSpecialtiesLoading = ref(true);
 const showSummaryTable = ref(false);
+const showBulkApprovalDialog = ref(false);
 
 const typeOptions = [
     { label: 'Todos', value: null },
@@ -85,6 +97,7 @@ const filters = ref({
     'doctor.name': { operator: FilterOperator.AND, constraints: [{ value: null, matchMode: FilterMatchMode.CONTAINS }] },
     'rawData.segus': { operator: FilterOperator.AND, constraints: [{ value: null, matchMode: FilterMatchMode.CONTAINS }] },
     serviceType: { value: null, matchMode: FilterMatchMode.EQUALS },
+    status: { value: null, matchMode: FilterMatchMode.EQUALS },
     comision: { operator: FilterOperator.AND, constraints: [{ value: null, matchMode: FilterMatchMode.EQUALS }] },
     cia: { operator: FilterOperator.AND, constraints: [{ value: null, matchMode: FilterMatchMode.CONTAINS }] },
     tipoate: { operator: FilterOperator.AND, constraints: [{ value: null, matchMode: FilterMatchMode.CONTAINS }] },
@@ -401,6 +414,26 @@ function getTypeColor(type) {
     return type === 'PLANILLA' ? 'success' : 'warning';
 }
 
+function getStatusColor(status) {
+    const statusColors = {
+        'pendiente': 'warn',
+        'revisado': 'info',
+        'aprobado': 'success',
+        'rechazado': 'danger'
+    };
+    return statusColors[status] || 'secondary';
+}
+
+function getStatusLabel(status) {
+    const statusLabels = {
+        'pendiente': 'Pendiente',
+        'revisado': 'Revisado',
+        'aprobado': 'Aprobado',
+        'rechazado': 'Rechazado'
+    };
+    return statusLabels[status] || status;
+}
+
 async function handleSaveToDatabase() {
     try {
         const result = await saveToDatabase();
@@ -458,6 +491,47 @@ onMounted(async () => {
     // Debug: verificar estado inicial
     console.log('[MedicalFees] Estado inicial - isExcelData:', isExcelData.value, 'services.length:', services.value.length);
 });
+
+// Abrir modal de aprobación masiva
+function openBulkApprovalDialog() {
+    showBulkApprovalDialog.value = true;
+}
+
+// Manejar aprobación masiva
+async function handleBulkApproval({ ids, status, observation }) {
+    try {
+        const result = await bulkApproveServices(ids, status, observation);
+        
+        if (result.success) {
+            const updatedCount = result.data?.updated_count || ids.length;
+            const skippedCount = result.data?.skipped_count || 0;
+            
+            let message = `${updatedCount} atención${updatedCount !== 1 ? 'es' : ''} actualizada${updatedCount !== 1 ? 's' : ''} a estado: ${status}`;
+            
+            if (skippedCount > 0) {
+                message += ` (${skippedCount} omitida${skippedCount !== 1 ? 's' : ''} por estar aprobada${skippedCount !== 1 ? 's' : ''} o rechazada${skippedCount !== 1 ? 's' : ''})`;
+            }
+            
+            toast.add({
+                severity: 'success',
+                summary: 'Actualización Masiva Exitosa',
+                detail: message,
+                life: 5000
+            });
+            
+            // Recargar datos
+            await onMonthChange();
+        }
+    } catch (err) {
+        console.error('Error en aprobación masiva:', err);
+        toast.add({
+            severity: 'error',
+            summary: 'Error',
+            detail: err.message || 'No se pudo realizar la aprobación masiva',
+            life: 5000
+        });
+    }
+}
 
 function handleClearData() {
     clearAllData();
@@ -589,6 +663,13 @@ function handleClearData() {
                                         @click="showSummaryTable = !showSummaryTable" 
                                         :severity="showSummaryTable ? 'secondary' : 'help'"
                                         :disabled="services.length === 0"
+                                    />
+                                    <Button 
+                                        icon="pi pi-check-circle" 
+                                        v-tooltip.top="'Aprobar/Rechazar Atenciones'"
+                                        @click="openBulkApprovalDialog" 
+                                        severity="warn"
+                                        :disabled="!selectedDoctor || filteredServices.length === 0"
                                     />
                                     <Button 
                                         icon="pi pi-file-excel" 
@@ -893,6 +974,46 @@ function handleClearData() {
                                 </template>
                             </Column>
 
+                            <!-- Estado -->
+                            <Column field="status" header="Estado" sortable :showFilterMatchModes="false" style="min-width: 150px">
+                                <template #body="slotProps">
+                                    <Tag 
+                                        :value="getStatusLabel(slotProps.data.status)" 
+                                        :severity="getStatusColor(slotProps.data.status)"
+                                    />
+                                </template>
+                                <template #editor="{ data, field }">
+                                    <Dropdown 
+                                        v-model="data[field]" 
+                                        :options="[
+                                            { label: 'Pendiente', value: 'pendiente' },
+                                            { label: 'Revisado', value: 'revisado' },
+                                            { label: 'Aprobado', value: 'aprobado' },
+                                            { label: 'Rechazado', value: 'rechazado' }
+                                        ]" 
+                                        optionLabel="label"
+                                        optionValue="value"
+                                        class="w-full" 
+                                    />
+                                </template>
+                                <template #filter="{ filterModel }">
+                                    <Dropdown 
+                                        v-model="filterModel.value" 
+                                        :options="[
+                                            { label: 'Pendiente', value: 'pendiente' },
+                                            { label: 'Revisado', value: 'revisado' },
+                                            { label: 'Aprobado', value: 'aprobado' },
+                                            { label: 'Rechazado', value: 'rechazado' }
+                                        ]" 
+                                        optionLabel="label"
+                                        optionValue="value"
+                                        placeholder="Seleccionar" 
+                                        class="p-column-filter" 
+                                        showClear 
+                                    />
+                                </template>
+                            </Column>
+
                             <!-- Observaciones (antes Detalle) -->
                             <Column field="serviceTypeReason" header="Observaciones" style="min-width: 250px">
                                 <template #body="slotProps">
@@ -915,6 +1036,14 @@ function handleClearData() {
                     </p>
                 </div>
         </div>
+
+        <!-- Modal de Aprobación Masiva -->
+        <BulkApprovalDialog
+            v-model:visible="showBulkApprovalDialog"
+            :services="filteredServices"
+            :doctorName="selectedDoctor ? doctorOptions.find(d => d.value === selectedDoctor)?.label : 'Todos los médicos'"
+            @approve="handleBulkApproval"
+        />
     </div>
 </template>
 

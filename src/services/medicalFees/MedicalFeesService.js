@@ -106,6 +106,32 @@ class MedicalFeesService {
     }
 
     /**
+     * Aprobación masiva de servicios médicos por IDs
+     * @param {Array} ids - Array de IDs de servicios
+     * @param {string} status - Nuevo estado
+     * @param {string} observation - Observación opcional
+     * @returns {Promise<Object>} Resultado de la aprobación masiva
+     */
+    async bulkApprove(ids, status, observation = null) {
+        const response = await axios.post('/medical-services/bulk-approve', {
+            ids,
+            status,
+            observation
+        });
+        return response.data;
+    }
+
+    /**
+     * Actualización masiva de estado con filtros
+     * @param {Object} params - Parámetros de filtrado y nuevo estado
+     * @returns {Promise<Object>} Resultado de la actualización masiva
+     */
+    async bulkUpdateStatus(params) {
+        const response = await axios.post('/medical-services/bulk-update-status', params);
+        return response.data;
+    }
+
+    /**
      * Crea un mapa de horarios por código de médico y fecha
      * @param {Array} schedules - Lista de horarios
      * @returns {Map} Mapa "code_date" -> horario[]
