@@ -4,7 +4,7 @@ import { computed, reactive } from 'vue';
 
 // URLs de las APIs
 const CLOUD_API_URL = import.meta.env.VITE_API_URL || 'https://api.csr.net.pe/api';
-const LOCAL_API_URL = 'https://192.168.18.50:8443/api';
+const LOCAL_API_URL = 'http://192.168.18.50:8080/api';
 
 // Intervalo de verificación de salud (30 segundos)
 const HEALTH_CHECK_INTERVAL = 30000;
