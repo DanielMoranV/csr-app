@@ -119,7 +119,15 @@ onMounted(async () => {
     setStartDateFilter(firstDayOfMonth.toISOString().split('T')[0]);
     setEndDateFilter(lastDayOfMonth.toISOString().split('T')[0]);
 
-    await Promise.all([fetchSchedules(), fetchDoctors(), fetchMedicalShifts(), fetchSpecialties()]);
+    // Load specialties first to set default filter
+    await fetchSpecialties();
+    
+    // Set default specialty filter to Pediatrics (ID 32) to reduce initial load
+    specialtyFilter.value = 32;
+    setSpecialtyFilter(32);
+
+    // Now load schedules with the specialty filter applied, along with other data
+    await Promise.all([fetchSchedules(), fetchDoctors(), fetchMedicalShifts()]);
 });
 
 // Schedule Handlers

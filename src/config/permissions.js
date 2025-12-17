@@ -246,6 +246,16 @@ export const MODULE_PERMISSIONS = {
         label: 'Mis Honorarios',
         icon: 'pi pi-fw pi-user-edit',
         menuSection: 'Personal Médico'
+    },
+
+    // Mis Horarios (Vista Personal para Médicos)
+    mySchedules: {
+        name: 'mySchedules',
+        path: '/my-schedules',
+        positions: [POSITIONS.MEDICOS, POSITIONS.EMERGENCIA, POSITIONS.DIRECTOR_MEDICO, POSITIONS.AUDITOR_MEDICO],
+        label: 'Mis Horarios',
+        icon: 'pi pi-fw pi-calendar-plus',
+        menuSection: 'Personal Médico'
     }
 };
 

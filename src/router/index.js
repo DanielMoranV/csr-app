@@ -115,6 +115,15 @@ const router = createRouter({
                         requiresAuth: true, 
                         positions: ['MEDICOS', 'EMERGENCIA', 'DIRECTOR MEDICO', 'AUDITOR MEDICO']
                     }
+                },
+                {
+                    path: '/my-schedules',
+                    name: 'mySchedules',
+                    component: () => import('@/views/doctors/MySchedules.vue'),
+                    meta: { 
+                        requiresAuth: true, 
+                        positions: ['MEDICOS', 'EMERGENCIA', 'DIRECTOR MEDICO', 'AUDITOR MEDICO']
+                    }
                 }
             ]
         },
