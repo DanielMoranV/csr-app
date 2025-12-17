@@ -66,6 +66,16 @@ const router = createRouter({
                     meta: { requiresAuth: true, positions: MODULE_PERMISSIONS.hospitalizacionDisplay.positions }
                 },
                 {
+                    path: '/hospitalizacion-status-tv',
+                    name: 'hospitalizacion-status-tv',
+                    component: () => import('@/views/hospitalization/HospitalizationStatusTV.vue'),
+                    meta: {
+                        requiresAuth: true,
+                        positions: ['SISTEMAS', 'HOSPITALIZACION', 'ENFERMERA', 'MEDICOS', 'EMERGENCIA', 'DIRECTOR MEDICO', 'ADMINISTRADOR'],
+                        fullscreen: true
+                    }
+                },
+                {
                     path: MODULE_PERMISSIONS.tickets.path,
                     name: MODULE_PERMISSIONS.tickets.name,
                     component: () => import('@/views/tickets/Tickets.vue'),
@@ -111,8 +121,8 @@ const router = createRouter({
                     path: '/my-medical-fees',
                     name: 'myMedicalFees',
                     component: () => import('@/views/doctors/MyMedicalFees.vue'),
-                    meta: { 
-                        requiresAuth: true, 
+                    meta: {
+                        requiresAuth: true,
                         positions: ['MEDICOS', 'EMERGENCIA', 'DIRECTOR MEDICO', 'AUDITOR MEDICO']
                     }
                 },
@@ -120,8 +130,8 @@ const router = createRouter({
                     path: '/my-schedules',
                     name: 'mySchedules',
                     component: () => import('@/views/doctors/MySchedules.vue'),
-                    meta: { 
-                        requiresAuth: true, 
+                    meta: {
+                        requiresAuth: true,
                         positions: ['MEDICOS', 'EMERGENCIA', 'DIRECTOR MEDICO', 'AUDITOR MEDICO']
                     }
                 }

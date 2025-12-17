@@ -11,8 +11,11 @@ import Checkbox from 'primevue/checkbox';
 import Select from 'primevue/select';
 import Tag from 'primevue/tag';
 import { computed, onMounted, onUnmounted, ref } from 'vue';
+import { useRouter } from 'vue-router';
 
+const router = useRouter();
 const store = useHospitalizationStore();
+
 const { state } = storeToRefs(store);
 
 // Real-time events - only update hospitalization and dashboard (not attentions)
@@ -289,12 +292,13 @@ onUnmounted(() => {
                 </div>
 
                 <div class="header-actions">
-                    <!-- Real-time status indicator -->
                     <div class="realtime-status">
                         <i v-if="isListening" class="pi pi-circle-fill realtime-indicator realtime-indicator--active" v-tooltip.bottom="'Actualizaciones en tiempo real activas'"></i>
                         <i v-else class="pi pi-circle realtime-indicator realtime-indicator--inactive" v-tooltip.bottom="'Actualizaciones en tiempo real inactivas'"></i>
                         <span class="realtime-text">Tiempo Real</span>
                     </div>
+
+                    <Button icon="pi pi-desktop" @click="router.push({ name: 'hospitalizacion-status-tv' })" severity="help" outlined v-tooltip.bottom="'Abrir vista TV (Pantalla completa)'" />
 
                     <Button
                         icon="pi pi-sparkles"
