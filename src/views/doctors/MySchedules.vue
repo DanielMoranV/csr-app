@@ -40,6 +40,7 @@ const {
     updateSchedule,
     deleteSchedule,
     setDoctorFilter,
+    setSpecialtyFilter,
     setStartDateFilter,
     setEndDateFilter,
     clearFilters
@@ -92,37 +93,63 @@ const monthStats = computed(() => {
 
 // Load data for month
 const loadDataForMonth = async () => {
-    if (!hasDoctorProfile.value) return;
+    if (!hasDoctorProfile.value) {
+        console.warn('⚠️ [MySchedules] No doctor profile found');
+        return;
+    }
     
     const firstDayOfMonth = new Date(selectedMonth.value.getFullYear(), selectedMonth.value.getMonth(), 1);
     const lastDayOfMonth = new Date(selectedMonth.value.getFullYear(), selectedMonth.value.getMonth() + 1, 0);
     
-    setStartDateFilter(firstDayOfMonth.toISOString().split('T')[0]);
-    setEndDateFilter(lastDayOfMonth.toISOString().split('T')[0]);
-    
-    // Load schedules for doctors in my specialty (for conflict detection)
+    // Get my specialty IDs for filtering
     const mySpecialtyIds = currentDoctor.value.specialties?.map(s => s.id) || [];
     
+    console.log('🔍 [MySchedules] Loading data:', {
+        doctorId: currentDoctor.value.id,
+        doctorName: currentDoctor.value.name,
+        specialties: currentDoctor.value.specialties,
+        specialtyIds: mySpecialtyIds,
+        dateRange: {
+            start: firstDayOfMonth.toISOString().split('T')[0],
+            end: lastDayOfMonth.toISOString().split('T')[0]
+        }
+    });
+    
     try {
-        // Clear previous filters
-        clearFilters();
-        
         // Set date filters
         setStartDateFilter(firstDayOfMonth.toISOString().split('T')[0]);
         setEndDateFilter(lastDayOfMonth.toISOString().split('T')[0]);
         
-        // Load all schedules from my specialties (for conflict detection)
-        // The backend will filter by specialty
+        // Set specialty filter to load schedules from my specialties (for conflict detection)
         if (mySpecialtyIds.length > 0) {
-            // For now, load all and filter client-side
-            // TODO: Backend should support specialty_ids filter
-            await fetchSchedules();
-            
-            // Filter client-side to show only my specialty
-            // This is temporary until backend supports specialty filtering
+            console.log('🎯 [MySchedules] Setting specialty filter:', mySpecialtyIds[0]);
+            // Use the first specialty for filtering
+            // This will load all doctors in this specialty
+            setSpecialtyFilter(mySpecialtyIds[0]);
+        } else {
+            console.warn('⚠️ [MySchedules] No specialties found for doctor');
         }
         
+        // Load schedules with filters applied
+        console.log('📡 [MySchedules] Fetching schedules...');
+        await fetchSchedules();
+        
+        // Load doctors for display
         await fetchDoctors();
+        
+        console.log('📅 [MySchedules] Schedules loaded:', {
+            total: schedules.value.length,
+            mySchedules: mySchedules.value.length,
+            othersSchedules: othersSchedules.value.length,
+            currentDoctorId: currentDoctor.value.id,
+            schedulesData: schedules.value.map(s => ({
+                id: s.id,
+                doctor_id: s.id_doctors,
+                doctor_name: s.doctor?.name,
+                date: s.date,
+                shift: s.medical_shift?.description
+            }))
+        });
         
         toast.add({
             severity: 'success',
@@ -131,6 +158,7 @@ const loadDataForMonth = async () => {
             life: 3000
         });
     } catch (err) {
+        console.error('❌ [MySchedules] Error loading schedules:', err);
         toast.add({
             severity: 'error',
             summary: 'Error',
@@ -412,7 +440,10 @@ const calendarOptions = ref({
         });
     }),
     datesSet: (dateInfo) => {
-        selectedMonth.value = dateInfo.start;
+        // Use the view's current date (middle of visible range) instead of start
+        // This ensures we get the actual month being displayed, not the first visible date
+        const currentDate = dateInfo.view.currentStart || dateInfo.start;
+        selectedMonth.value = new Date(currentDate);
         loadDataForMonth();
     }
 });
@@ -429,8 +460,43 @@ onMounted(async () => {
         return;
     }
     
-    await fetchMedicalShifts();
-    await loadDataForMonth();
+    console.log('🚀 [MySchedules] Component mounted, doctor ID:', currentDoctor.value.id);
+    
+    try {
+        // First, fetch medical shifts
+        await fetchMedicalShifts();
+        
+        // Then, fetch all doctors to get the full doctor profile with specialties
+        await fetchDoctors();
+        
+        // Find the current doctor in the fetched doctors list to get specialties
+        const fullDoctorProfile = doctors.value.find(d => d.id === currentDoctor.value.id);
+        
+        if (fullDoctorProfile && fullDoctorProfile.specialties) {
+            console.log('✅ [MySchedules] Full doctor profile loaded:', {
+                id: fullDoctorProfile.id,
+                name: fullDoctorProfile.name,
+                specialties: fullDoctorProfile.specialties
+            });
+            
+            // Update currentDoctor with full profile including specialties
+            // We need to update the authStore user object
+            currentUser.value.doctor = fullDoctorProfile;
+        } else {
+            console.warn('⚠️ [MySchedules] Doctor profile found but no specialties:', fullDoctorProfile);
+        }
+        
+        // Now load schedules with the updated doctor profile
+        await loadDataForMonth();
+    } catch (error) {
+        console.error('❌ [MySchedules] Error in onMounted:', error);
+        toast.add({
+            severity: 'error',
+            summary: 'Error',
+            detail: 'No se pudo inicializar la vista',
+            life: 5000
+        });
+    }
 });
 </script>
 
