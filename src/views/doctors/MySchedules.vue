@@ -94,7 +94,6 @@ const monthStats = computed(() => {
 // Load data for month
 const loadDataForMonth = async () => {
     if (!hasDoctorProfile.value) {
-        console.warn('⚠️ [MySchedules] No doctor profile found');
         return;
     }
     
@@ -104,16 +103,7 @@ const loadDataForMonth = async () => {
     // Get my specialty IDs for filtering
     const mySpecialtyIds = currentDoctor.value.specialties?.map(s => s.id) || [];
     
-    console.log('🔍 [MySchedules] Loading data:', {
-        doctorId: currentDoctor.value.id,
-        doctorName: currentDoctor.value.name,
-        specialties: currentDoctor.value.specialties,
-        specialtyIds: mySpecialtyIds,
-        dateRange: {
-            start: firstDayOfMonth.toISOString().split('T')[0],
-            end: lastDayOfMonth.toISOString().split('T')[0]
-        }
-    });
+
     
     try {
         // Set date filters
@@ -122,34 +112,22 @@ const loadDataForMonth = async () => {
         
         // Set specialty filter to load schedules from my specialties (for conflict detection)
         if (mySpecialtyIds.length > 0) {
-            console.log('🎯 [MySchedules] Setting specialty filter:', mySpecialtyIds[0]);
+
             // Use the first specialty for filtering
             // This will load all doctors in this specialty
             setSpecialtyFilter(mySpecialtyIds[0]);
         } else {
-            console.warn('⚠️ [MySchedules] No specialties found for doctor');
+            // No specialties - will load all schedules
         }
         
         // Load schedules with filters applied
-        console.log('📡 [MySchedules] Fetching schedules...');
+
         await fetchSchedules();
         
         // Load doctors for display
         await fetchDoctors();
         
-        console.log('📅 [MySchedules] Schedules loaded:', {
-            total: schedules.value.length,
-            mySchedules: mySchedules.value.length,
-            othersSchedules: othersSchedules.value.length,
-            currentDoctorId: currentDoctor.value.id,
-            schedulesData: schedules.value.map(s => ({
-                id: s.id,
-                doctor_id: s.id_doctors,
-                doctor_name: s.doctor?.name,
-                date: s.date,
-                shift: s.medical_shift?.description
-            }))
-        });
+
         
         toast.add({
             severity: 'success',
@@ -158,7 +136,6 @@ const loadDataForMonth = async () => {
             life: 3000
         });
     } catch (err) {
-        console.error('❌ [MySchedules] Error loading schedules:', err);
         toast.add({
             severity: 'error',
             summary: 'Error',
@@ -460,7 +437,7 @@ onMounted(async () => {
         return;
     }
     
-    console.log('🚀 [MySchedules] Component mounted, doctor ID:', currentDoctor.value.id);
+
     
     try {
         // First, fetch medical shifts
@@ -473,23 +450,18 @@ onMounted(async () => {
         const fullDoctorProfile = doctors.value.find(d => d.id === currentDoctor.value.id);
         
         if (fullDoctorProfile && fullDoctorProfile.specialties) {
-            console.log('✅ [MySchedules] Full doctor profile loaded:', {
-                id: fullDoctorProfile.id,
-                name: fullDoctorProfile.name,
-                specialties: fullDoctorProfile.specialties
-            });
+
             
             // Update currentDoctor with full profile including specialties
             // We need to update the authStore user object
             currentUser.value.doctor = fullDoctorProfile;
         } else {
-            console.warn('⚠️ [MySchedules] Doctor profile found but no specialties:', fullDoctorProfile);
+            // Doctor profile found but no specialties
         }
         
         // Now load schedules with the updated doctor profile
         await loadDataForMonth();
     } catch (error) {
-        console.error('❌ [MySchedules] Error in onMounted:', error);
         toast.add({
             severity: 'error',
             summary: 'Error',
