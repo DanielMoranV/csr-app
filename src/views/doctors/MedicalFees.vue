@@ -50,7 +50,9 @@ async function onCellEditComplete(event) {
     if (field === 'amount' || field === 'comision') {
          if (isNaN(newValue) || newValue < 0) {
              toast.add({ severity: 'error', summary: 'Error', detail: 'Valor inválido', life: 3000 });
-             return; // O revertir cambio
+             // Revertir al valor anterior
+             data[field] = oldValue;
+             return;
          }
     }
 
@@ -59,6 +61,8 @@ async function onCellEditComplete(event) {
         const validStatuses = ['pendiente', 'revisado', 'aprobado', 'rechazado'];
         if (!validStatuses.includes(newValue)) {
             toast.add({ severity: 'error', summary: 'Error', detail: 'Estado inválido', life: 3000 });
+            // Revertir al valor anterior
+            data[field] = oldValue;
             return;
         }
     }
@@ -67,8 +71,17 @@ async function onCellEditComplete(event) {
         await updateService(data.id, field, newValue);
         toast.add({ severity: 'success', summary: 'Actualizado', detail: 'Registro actualizado correctamente', life: 3000 });
     } catch (error) {
-        toast.add({ severity: 'error', summary: 'Error', detail: 'No se pudo actualizar', life: 3000 });
-        // Aquí idealmente revertiríamos el cambio en la UI si falla, pero el datatable a veces lo mantiene
+        // Revertir automáticamente al valor anterior cuando falla la actualización
+        data[field] = oldValue;
+        
+        // Mostrar mensaje de error con más detalle
+        const errorMessage = error.response?.data?.message || error.message || 'No se pudo actualizar';
+        toast.add({ 
+            severity: 'error', 
+            summary: 'Error al actualizar', 
+            detail: errorMessage, 
+            life: 4000 
+        });
     }
 }
 
