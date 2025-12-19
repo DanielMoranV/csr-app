@@ -1,6 +1,6 @@
+import useTasks from '@/composables/useTasks';
 import { defineStore } from 'pinia';
 import { ref } from 'vue';
-import useTasks from '@/composables/useTasks';
 
 export const useTasksStore = defineStore('tasks', () => {
     const tasks = ref([]);

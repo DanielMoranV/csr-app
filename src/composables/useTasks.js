@@ -73,6 +73,16 @@ export default function useTasks() {
         }
     };
 
+    const changeTaskStatus = async (id, statusData) => {
+        try {
+            const { updateTaskStatus } = await import('@/api/tasks');
+            const response = await updateTaskStatus(id, statusData);
+            return response.data;
+        } catch (error) {
+            throw error;
+        }
+    };
+
     return {
         indexTasks,
         storeTask,
@@ -80,8 +90,8 @@ export default function useTasks() {
         modifyTask,
         destroyTask,
         findTasks,
-        findTasks,
         fetchTaskStats,
-        markAsViewed
+        markAsViewed,
+        changeTaskStatus
     };
 }

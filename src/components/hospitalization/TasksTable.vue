@@ -6,15 +6,30 @@ import { useTasksStore } from '@/store/tasksStore';
 import { format, formatDistanceToNow } from 'date-fns';
 import { es } from 'date-fns/locale';
 import { storeToRefs } from 'pinia';
-import { ref } from 'vue';
+import { computed, ref } from 'vue';
 
-const { markAsViewed } = useTasks();
+// Props
+const props = defineProps({
+    tasks: {
+        type: Array,
+        default: () => []
+    }
+});
+
+const { markAsViewed, changeTaskStatus } = useTasks();
 const store = useTasksStore();
 const authStore = useAuthStore();
-const { user } = storeToRefs(authStore);
+const user = computed(() => authStore.getUser);
 const { tasks, loading } = storeToRefs(store);
 const { exportToExcel } = useExcelExport();
 const dt = ref();
+
+// Estado para cambio de estado
+const changingStatus = ref({});
+const statusReasonDialog = ref(false);
+const currentTask = ref(null);
+const selectedNewStatus = ref(null);
+const cancellationReason = ref('');
 
 const filters = ref({
     global: { value: null, matchMode: 'contains' }
@@ -23,15 +38,15 @@ const filters = ref({
 const getSeverity = (status) => {
     switch (status) {
         case 'pendiente':
-            return 'warning';
+            return 'warning'; // Yellow/Orange
         case 'en_proceso':
-            return 'info';
+            return 'info'; // Blue
         case 'realizado':
-            return 'success';
+            return 'success'; // Green
         case 'supervisado':
-            return 'info';
+            return 'secondary'; // Purple/Violet
         case 'anulado':
-            return 'danger';
+            return 'danger'; // Red
         default:
             return null;
     }
@@ -107,6 +122,119 @@ const getLastUpdatedByUser = (task) => {
     return 'N/A';
 };
 
+// Funciones para cambio de estado
+const canChangeStatus = (task) => {
+    const userPosition = user.value?.position;
+    const userId = user.value?.id;
+
+    // Estados inmutables
+    if (['realizado', 'anulado'].includes(task.status)) {
+        return false;
+    }
+
+    // Grupo 2: Acceso total
+    const fullAccessPositions = ['SISTEMAS', 'ADMINISTRACION', 'DIRECTOR MEDICO', 'HOSPITALIZACION', 'EMERGENCIA', 'MEDICOS'];
+
+    if (fullAccessPositions.includes(userPosition)) {
+        return true;
+    }
+
+    // Grupo 1: Acceso restringido
+    const restrictedPositions = ['ADMISION', 'FARMACIA', 'LABORATORIO', 'RAYOS X'];
+
+    if (restrictedPositions.includes(userPosition)) {
+        // Verificar si está en área asignada
+        if (task.areas && task.areas.includes(userPosition)) {
+            return true;
+        }
+
+        // Verificar si está asignado directamente
+        if (task.assignees && task.assignees.some((a) => a.id === userId)) {
+            return true;
+        }
+
+        return false;
+    }
+
+    return false;
+};
+
+const getAvailableStatuses = (currentStatus) => {
+    const transitions = {
+        pendiente: [
+            { label: 'En Proceso', value: 'en_proceso' },
+            { label: 'Realizado', value: 'realizado' },
+            { label: 'Anulado', value: 'anulado' }
+        ],
+        en_proceso: [
+            { label: 'Realizado', value: 'realizado' },
+            { label: 'Anulado', value: 'anulado' }
+        ],
+        supervisado: [{ label: 'Anulado', value: 'anulado' }]
+    };
+
+    return transitions[currentStatus] || [];
+};
+
+const handleStatusChange = async (task, newStatus) => {
+    // Si es anulado, mostrar diálogo para motivo
+    if (newStatus === 'anulado') {
+        currentTask.value = task;
+        selectedNewStatus.value = newStatus;
+        cancellationReason.value = '';
+        statusReasonDialog.value = true;
+        return;
+    }
+
+    // Para otros estados, cambiar directamente
+    await updateTaskStatus(task, newStatus, null);
+};
+
+const confirmCancellation = async () => {
+    if (!cancellationReason.value.trim()) {
+        return;
+    }
+
+    await updateTaskStatus(currentTask.value, selectedNewStatus.value, cancellationReason.value);
+    statusReasonDialog.value = false;
+    currentTask.value = null;
+    selectedNewStatus.value = null;
+    cancellationReason.value = '';
+};
+
+const updateTaskStatus = async (task, newStatus, reason) => {
+    changingStatus.value[task.id] = true;
+
+    try {
+        const payload = {
+            status: newStatus
+        };
+
+        if (reason) {
+            payload.reason = reason;
+        }
+
+        await changeTaskStatus(task.id, payload);
+
+        // Actualizar tarea localmente
+        task.status = newStatus;
+        if (newStatus === 'realizado' || newStatus === 'supervisado') {
+            task.completed_at = new Date();
+        }
+        if (reason) {
+            task.observations = reason;
+        }
+
+        // Refrescar lista
+        await store.fetchTasks();
+    } catch (error) {
+        console.error('Error al cambiar estado:', error);
+        // Mostrar error al usuario
+    } finally {
+        changingStatus.value[task.id] = false;
+    }
+};
+
 const getUsersTooltip = (task) => {
     const createdBy = getCreatedByUser(task);
     const completedBy = getCompletedByUser(task);
@@ -134,12 +262,12 @@ const getUsersTooltip = (task) => {
 };
 
 const exportExcel = () => {
-    if (!tasks.value || tasks.value.length === 0) {
+    if (!props.tasks || props.tasks.length === 0) {
         return;
     }
 
     // Preparar los datos con campos calculados
-    const dataToExport = tasks.value.map((task) => ({
+    const dataToExport = props.tasks.map((task) => ({
         ...task,
         patient_name: task.hospital_attention?.patient?.name || '',
         patient_document: task.hospital_attention?.patient?.document_type + ' ' + task.hospital_attention?.patient?.number_document || '',
@@ -189,7 +317,7 @@ const exportExcel = () => {
     <div class="card">
         <DataTable
             ref="dt"
-            :value="tasks || []"
+            :value="props.tasks || []"
             :loading="loading"
             v-model:filters="filters"
             filterDisplay="row"
@@ -197,6 +325,11 @@ const exportExcel = () => {
             stripedRows
             size="small"
             class="p-datatable-compact"
+            :paginator="true"
+            :rows="15"
+            :rowsPerPageOptions="[10, 15, 25, 50, 100]"
+            paginatorTemplate="FirstPageLink PrevPageLink PageLinks NextPageLink LastPageLink CurrentPageReport RowsPerPageDropdown"
+            currentPageReportTemplate="Mostrando {first} a {last} de {totalRecords}"
         >
             <template #header>
                 <div class="table-header-modern">
@@ -206,7 +339,7 @@ const exportExcel = () => {
                         </div>
                         <div class="header-info">
                             <span class="header-title">Tareas de Hospitalización</span>
-                            <span class="header-count" v-if="tasks && tasks.length">{{ tasks.length }} {{ tasks.length === 1 ? 'tarea' : 'tareas' }}</span>
+                            <span class="header-count" v-if="props.tasks && props.tasks.length">{{ props.tasks.length }} {{ props.tasks.length === 1 ? 'tarea' : 'tareas' }}</span>
                         </div>
                     </div>
                     <div class="header-actions-modern">
@@ -271,10 +404,34 @@ const exportExcel = () => {
                 </template>
             </Column>
 
-            <Column header="Estado" style="width: 110px">
+            <Column header="Estado" style="width: 160px">
                 <template #body="slotProps">
                     <div class="status-cell">
-                        <Tag :value="getStatusLabel(slotProps.data.status)" :severity="getSeverity(slotProps.data.status)" class="compact-tag" />
+                        <!-- Dropdown para cambiar estado -->
+                        <Dropdown
+                            v-if="canChangeStatus(slotProps.data)"
+                            :modelValue="slotProps.data.status"
+                            @update:modelValue="(value) => handleStatusChange(slotProps.data, value)"
+                            :options="getAvailableStatuses(slotProps.data.status)"
+                            optionLabel="label"
+                            optionValue="value"
+                            :placeholder="getStatusLabel(slotProps.data.status)"
+                            class="status-dropdown"
+                            :loading="changingStatus[slotProps.data.id]"
+                            :disabled="changingStatus[slotProps.data.id]"
+                        >
+                            <template #value="slotProps">
+                                <Tag :value="getStatusLabel(slotProps.value || slotProps.placeholder)" :severity="getSeverity(slotProps.value || slotProps.placeholder)" class="compact-tag" />
+                            </template>
+                            <template #option="slotProps">
+                                <Tag :value="slotProps.option.label" :severity="getSeverity(slotProps.option.value)" class="compact-tag" />
+                            </template>
+                        </Dropdown>
+
+                        <!-- Tag estático para estados inmutables -->
+                        <Tag v-else :value="getStatusLabel(slotProps.data.status)" :severity="getSeverity(slotProps.data.status)" class="compact-tag" />
+
+                        <!-- Iconos de estado -->
                         <i v-if="slotProps.data.is_completed_late" class="pi pi-exclamation-triangle status-icon warning" v-tooltip.top="'Completado con retraso'"></i>
                         <i v-else-if="slotProps.data.is_completed_on_time" class="pi pi-check-circle status-icon success" v-tooltip.top="'Completado a tiempo'"></i>
                         <i v-else-if="slotProps.data.is_overdue" class="pi pi-times-circle status-icon danger" v-tooltip.top="'Tarea vencida'"></i>
@@ -291,7 +448,6 @@ const exportExcel = () => {
                                 <Tag v-for="area in slotProps.data.areas" :key="area" :value="area.substring(0, 3)" severity="secondary" style="font-size: 0.6rem" v-tooltip.top="area" />
                             </div>
                             <div v-if="slotProps.data.assignees && slotProps.data.assignees.length" class="text-xs text-500">{{ slotProps.data.assignees.length }} usuarios</div>
-                            <div v-else class="text-xs text-500">Toda el área</div>
                         </div>
                     </div>
                 </template>
@@ -337,6 +493,21 @@ const exportExcel = () => {
                 </template>
             </Column>
         </DataTable>
+
+        <!-- Diálogo para motivo de anulación -->
+        <Dialog v-model:visible="statusReasonDialog" header="Motivo de Anulación" :modal="true" :style="{ width: '450px' }">
+            <div class="flex flex-column gap-3">
+                <div>
+                    <label for="cancellationReason" class="font-semibold block mb-2">Motivo (Obligatorio):</label>
+                    <Textarea id="cancellationReason" v-model="cancellationReason" rows="4" class="w-full" placeholder="Ingrese el motivo de anulación..." autofocus />
+                </div>
+            </div>
+
+            <template #footer>
+                <Button label="Cancelar" icon="pi pi-times" text @click="statusReasonDialog = false" />
+                <Button label="Anular Tarea" icon="pi pi-check" severity="danger" @click="confirmCancellation" :disabled="!cancellationReason.trim()" />
+            </template>
+        </Dialog>
     </div>
 </template>
 
@@ -647,14 +818,6 @@ const exportExcel = () => {
     border-bottom: 1px solid var(--surface-border);
 }
 
-.p-datatable-compact :deep(.p-datatable-tbody > tr:hover) {
-    background: linear-gradient(135deg, var(--surface-hover) 0%, color-mix(in srgb, var(--surface-hover) 95%, var(--primary-50) 5%) 100%) !important;
-    transform: scale(1.002);
-    box-shadow:
-        0 2px 8px var(--card-shadow),
-        0 0 0 1px color-mix(in srgb, var(--primary-color) 10%, transparent);
-}
-
 .p-datatable-compact :deep(.p-datatable-thead > tr > th) {
     padding: 0.875rem 0.75rem;
     font-weight: 700;
@@ -757,33 +920,38 @@ const exportExcel = () => {
 }
 
 :deep(.p-tag.p-tag-warning) {
-    background: var(--yellow-50);
-    color: var(--yellow-800);
-    border-color: var(--yellow-200);
+    background: linear-gradient(135deg, #fef3c7 0%, #fed7aa 100%) !important;
+    color: #92400e !important;
+    border-color: #fcd34d !important;
+    font-weight: 600;
 }
 
 :deep(.p-tag.p-tag-success) {
-    background: var(--green-50);
-    color: var(--green-800);
-    border-color: var(--green-200);
+    background: linear-gradient(135deg, #d1fae5 0%, #ccfbf1 100%) !important;
+    color: #065f46 !important;
+    border-color: #6ee7b7 !important;
+    font-weight: 600;
 }
 
 :deep(.p-tag.p-tag-info) {
-    background: var(--blue-50);
-    color: var(--blue-800);
-    border-color: var(--blue-200);
+    background: linear-gradient(135deg, #dbeafe 0%, #cffafe 100%) !important;
+    color: #1e40af !important;
+    border-color: #93c5fd !important;
+    font-weight: 600;
 }
 
 :deep(.p-tag.p-tag-danger) {
-    background: var(--red-50);
-    color: var(--red-800);
-    border-color: var(--red-200);
+    background: linear-gradient(135deg, #fee2e2 0%, #fce7f3 100%) !important;
+    color: #991b1b !important;
+    border-color: #fca5a5 !important;
+    font-weight: 600;
 }
 
 :deep(.p-tag.p-tag-secondary) {
-    background: var(--surface-100);
-    color: var(--text-color-secondary);
-    border-color: var(--surface-300);
+    background: linear-gradient(135deg, #f3e8ff 0%, #e0e7ff 100%) !important;
+    color: #6b21a8 !important;
+    border-color: #c4b5fd !important;
+    font-weight: 600;
 }
 
 /* Status Cell - Enhanced */
@@ -968,5 +1136,24 @@ const exportExcel = () => {
     50% {
         opacity: 0.5;
     }
+}
+
+/* Status Dropdown Styles */
+:deep(.status-dropdown) {
+    width: 100%;
+    min-width: 140px;
+}
+
+:deep(.status-dropdown .p-dropdown-trigger) {
+    width: 2rem;
+}
+
+:deep(.status-dropdown .p-dropdown-label) {
+    padding: 0.25rem 0.5rem;
+}
+
+:deep(.status-dropdown .compact-tag) {
+    font-size: 0.7rem;
+    padding: 0.25rem 0.5rem;
 }
 </style>

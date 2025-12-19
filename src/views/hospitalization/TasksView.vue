@@ -1,10 +1,16 @@
 <script setup>
 import TasksTable from '@/components/hospitalization/TasksTable.vue';
+import { useAuthStore } from '@/store/authStore';
 import { useTasksStore } from '@/store/tasksStore';
 import { format } from 'date-fns';
-import { onMounted, ref } from 'vue';
+import { storeToRefs } from 'pinia';
+import { computed, onMounted, ref } from 'vue';
 
 const store = useTasksStore();
+const authStore = useAuthStore();
+const { tasks } = storeToRefs(store);
+const user = computed(() => authStore.getUser);
+
 const startDate = ref();
 const endDate = ref();
 const searchTerm = ref('');
@@ -15,10 +21,50 @@ const filtersVisible = ref(true);
 const statusOptions = [
     { label: 'Todos', value: null },
     { label: 'Pendiente', value: 'pendiente' },
+    { label: 'En Proceso', value: 'en_proceso' },
     { label: 'Realizado', value: 'realizado' },
     { label: 'Supervisado', value: 'supervisado' },
     { label: 'Anulado', value: 'anulado' }
 ];
+
+// Computed: Filtrar tareas por área según posición del usuario
+const filteredTasksByArea = computed(() => {
+    // Safety check: usar valores por defecto si no están disponibles
+    const tasksList = tasks?.value ?? [];
+    const currentUser = user?.value;
+
+    // Si no hay usuario o no hay tareas, retornar array vacío
+    if (!currentUser || tasksList.length === 0) {
+        return tasksList;
+    }
+
+    const userPosition = currentUser.position;
+
+    // Posiciones con acceso total (sin filtro por área)
+    const fullAccessPositions = ['SISTEMAS', 'ADMINISTRACION', 'DIRECTOR MEDICO', 'HOSPITALIZACION', 'ADMISION', 'MEDICOS', 'EMERGENCIA'];
+
+    // Si tiene acceso total, mostrar todas las tareas
+    if (fullAccessPositions.includes(userPosition)) {
+        return tasksList;
+    }
+
+    // Mapeo de posición a área (para filtrado)
+    const positionToArea = {
+        LABORATORIO: 'LABORATORIO',
+        'RAYOS X': 'RAYOS X',
+        FARMACIA: 'FARMACIA'
+    };
+
+    const requiredArea = positionToArea[userPosition];
+
+    // Si no está en el mapeo, mostrar todas (fallback)
+    if (!requiredArea) {
+        return tasksList;
+    }
+
+    // Filtrar tareas que incluyan el área requerida
+    return tasksList.filter((task) => task.areas && task.areas.includes(requiredArea));
+});
 
 const toggleFilters = () => {
     filtersVisible.value = !filtersVisible.value;
@@ -192,7 +238,7 @@ const clearFilters = () => {
                     </div>
 
                     <!-- Table Section -->
-                    <TasksTable />
+                    <TasksTable :tasks="filteredTasksByArea" />
                 </div>
             </div>
         </div>
