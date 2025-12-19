@@ -1,12 +1,17 @@
 <script setup>
-import { useTasksStore } from '@/store/tasksStore';
 import { useExcelExport } from '@/composables/useExcelExport';
+import useTasks from '@/composables/useTasks'; // Import composable
+import { useAuthStore } from '@/store/authStore';
+import { useTasksStore } from '@/store/tasksStore';
 import { format, formatDistanceToNow } from 'date-fns';
 import { es } from 'date-fns/locale';
 import { storeToRefs } from 'pinia';
 import { ref } from 'vue';
 
+const { markAsViewed } = useTasks();
 const store = useTasksStore();
+const authStore = useAuthStore();
+const { user } = storeToRefs(authStore);
 const { tasks, loading } = storeToRefs(store);
 const { exportToExcel } = useExcelExport();
 const dt = ref();
@@ -19,6 +24,8 @@ const getSeverity = (status) => {
     switch (status) {
         case 'pendiente':
             return 'warning';
+        case 'en_proceso':
+            return 'info';
         case 'realizado':
             return 'success';
         case 'supervisado':
@@ -30,9 +37,22 @@ const getSeverity = (status) => {
     }
 };
 
+const handleMarkAsViewed = async (task) => {
+    try {
+        await markAsViewed(task.id);
+        // Optimistically update or refresh
+        task.viewed_at = new Date(); // Mock update
+        // You might want to refresh tasks list here
+        store.fetchTasks();
+    } catch (error) {
+        console.error('Error marking as viewed', error);
+    }
+};
+
 const getStatusLabel = (status) => {
     const labels = {
         pendiente: 'Pendiente',
+        en_proceso: 'En Proceso',
         realizado: 'Realizado',
         supervisado: 'Supervisado',
         anulado: 'Anulado'
@@ -93,6 +113,14 @@ const getUsersTooltip = (task) => {
     const lastUpdatedBy = getLastUpdatedByUser(task);
 
     let tooltip = `Creado por: ${createdBy}`;
+
+    if (task.areas && task.areas.length > 0) {
+        tooltip += `\nÁreas: ${task.areas.join(', ')}`;
+    }
+
+    if (task.assignees && task.assignees.length > 0) {
+        tooltip += `\nAsignado a: ${task.assignees.map((a) => a.name).join(', ')}`;
+    }
 
     if (completedBy) {
         tooltip += `\nCompletado por: ${completedBy}`;
@@ -255,15 +283,32 @@ const exportExcel = () => {
                 </template>
             </Column>
 
-            <Column header="Usuario" style="width: 100px">
+            <Column header="Asignación" style="width: 140px">
                 <template #body="slotProps">
                     <div class="user-cell" v-tooltip.top="getUsersTooltip(slotProps.data)">
-                        <i class="pi pi-users cell-icon-small"></i>
-                        <div class="user-info">
-                            <span class="user-name">{{ getCreatedByUser(slotProps.data) }}</span>
-                            <span v-if="getCompletedByUser(slotProps.data)" class="user-completed"> ✓ {{ getCompletedByUser(slotProps.data) }} </span>
+                        <div class="flex flex-column gap-1">
+                            <div v-if="slotProps.data.areas && slotProps.data.areas.length" class="flex gap-1 flex-wrap">
+                                <Tag v-for="area in slotProps.data.areas" :key="area" :value="area.substring(0, 3)" severity="secondary" style="font-size: 0.6rem" v-tooltip.top="area" />
+                            </div>
+                            <div v-if="slotProps.data.assignees && slotProps.data.assignees.length" class="text-xs text-500">{{ slotProps.data.assignees.length }} usuarios</div>
+                            <div v-else class="text-xs text-500">Toda el área</div>
                         </div>
                     </div>
+                </template>
+            </Column>
+
+            <Column header="Acciones" style="width: 80px">
+                <template #body="slotProps">
+                    <Button
+                        v-if="!slotProps.data.viewed_at && slotProps.data.assignees?.some((u) => u.id === user?.id)"
+                        icon="pi pi-eye"
+                        text
+                        rounded
+                        severity="secondary"
+                        @click="handleMarkAsViewed(slotProps.data)"
+                        v-tooltip.top="'Marcar como visto'"
+                    />
+                    <i v-else-if="slotProps.data.viewed_at" class="pi pi-check-circle text-green-500" v-tooltip.top="`Visto: ${formatDate(slotProps.data.viewed_at)}`"></i>
                 </template>
             </Column>
 

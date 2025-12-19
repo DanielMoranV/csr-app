@@ -4,9 +4,8 @@ import AttentionTasks from '@/components/attentions/AttentionTasks.vue';
 import DetailsTimeline from '@/components/attentions/DetailsTimeline.vue';
 import BedReservationDialog from '@/components/hospitalization/BedReservationDialog.vue';
 import { usePermissions, USER_POSITIONS } from '@/composables/usePermissions';
-import { useHospitalAttentionsStore } from '@/store/hospitalAttentionsStore';
 import { useBedReservationsStore } from '@/store/bedReservationsStore';
-import { useToast } from 'primevue/usetoast';
+import { useHospitalAttentionsStore } from '@/store/hospitalAttentionsStore';
 import Badge from 'primevue/badge';
 import Button from 'primevue/button';
 import Drawer from 'primevue/drawer';
@@ -16,6 +15,7 @@ import TabPanel from 'primevue/tabpanel';
 import TabPanels from 'primevue/tabpanels';
 import Tabs from 'primevue/tabs';
 import Tag from 'primevue/tag';
+import { useToast } from 'primevue/usetoast';
 import { computed, ref, watch } from 'vue';
 
 const props = defineProps({
@@ -237,11 +237,7 @@ const isToday = (date) => {
     if (!date) return false;
     const today = new Date();
     const checkDate = new Date(date);
-    return (
-        checkDate.getDate() === today.getDate() &&
-        checkDate.getMonth() === today.getMonth() &&
-        checkDate.getFullYear() === today.getFullYear()
-    );
+    return checkDate.getDate() === today.getDate() && checkDate.getMonth() === today.getMonth() && checkDate.getFullYear() === today.getFullYear();
 };
 
 // Función para seleccionar automáticamente la fecha más reciente o la de hoy
@@ -259,9 +255,7 @@ const selectInitialDate = () => {
     });
 
     // Buscar si hay un detalle de hoy
-    const todayDetail = sortedDetails.find(detail =>
-        isToday(detail.attention_date || detail.created_at)
-    );
+    const todayDetail = sortedDetails.find((detail) => isToday(detail.attention_date || detail.created_at));
 
     // Si existe un detalle de hoy, seleccionarlo
     if (todayDetail) {
@@ -528,7 +522,15 @@ watch(
                         </TabPanel>
 
                         <TabPanel value="1" class="h-full">
-                            <AttentionTasks :tasks="attention.tasks || []" :attention-id="attention.hospital_attention_id" :read-only="!canEdit" @create-task="handleCreateTask" @update-task="handleUpdateTask" @delete-task="handleDeleteTask" />
+                            <AttentionTasks
+                                :tasks="attention.tasks || []"
+                                :attention-id="attention.hospital_attention_id"
+                                :read-only="!canEdit"
+                                @create-task="handleCreateTask"
+                                @update-task="handleUpdateTask"
+                                @delete-task="handleDeleteTask"
+                                @refresh-data="emit('refresh-data')"
+                            />
                         </TabPanel>
                     </TabPanels>
                 </Tabs>

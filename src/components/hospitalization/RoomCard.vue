@@ -47,7 +47,7 @@ const handleRefreshData = () => {
 // Función para obtener cantidad de tareas pendientes
 const getPendingTasksCount = (tasks) => {
     if (!tasks || !Array.isArray(tasks)) return 0;
-    return tasks.filter((task) => task.status === 'pendiente').length;
+    return tasks.filter((task) => task.status === 'pendiente' || task.status === 'en_proceso').length;
 };
 
 const getTasksTooltip = (tasks) => {
@@ -286,7 +286,7 @@ const hasOverdueTasks = (bed) => {
     const attention = bed.attention;
     if (!attention.tasks || !Array.isArray(attention.tasks)) return false;
 
-    return attention.tasks.some((task) => task.status === 'pendiente' && task.alert_status === 'vencida');
+    return attention.tasks.some((task) => (task.status === 'pendiente' || task.status === 'en_proceso') && task.alert_status === 'vencida');
 };
 
 // Función para verificar si una cama tiene tareas por vencer
@@ -295,7 +295,7 @@ const hasNearingDueTasks = (bed) => {
     const attention = bed.attention;
     if (!attention.tasks || !Array.isArray(attention.tasks)) return false;
 
-    return attention.tasks.some((task) => task.status === 'pendiente' && task.alert_status === 'por_vencer');
+    return attention.tasks.some((task) => (task.status === 'pendiente' || task.status === 'en_proceso') && task.alert_status === 'por_vencer');
 };
 
 // Función para verificar si una cama tiene tareas pendientes (sin alert_status o normal)
@@ -304,9 +304,8 @@ const hasPendingTasks = (bed) => {
     const attention = bed.attention;
     if (!attention.tasks || !Array.isArray(attention.tasks)) return false;
 
-    return attention.tasks.some((task) => task.status === 'pendiente' && (!task.alert_status || task.alert_status === 'normal'));
+    return attention.tasks.some((task) => (task.status === 'pendiente' || task.status === 'en_proceso') && (!task.alert_status || task.alert_status === 'normal'));
 };
-
 </script>
 
 <template>

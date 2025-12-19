@@ -7,3 +7,4 @@ export const updateTask = (id, data) => axios.put(`/tasks/${id}`, data);
 export const deleteTask = (id) => axios.delete(`/tasks/${id}`);
 export const getTaskStats = () => axios.get('/tasks/stats');
 export const searchTasks = (params) => axios.get('/tasks/search', { params });
+export const markTaskAsViewed = (id) => axios.patch(`/tasks/${id}/mark-viewed`);

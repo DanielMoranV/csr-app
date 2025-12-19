@@ -163,7 +163,7 @@ const globalStats = computed(() => {
                 // Contar tareas pendientes y alertas
                 if (bed.attention.tasks) {
                     bed.attention.tasks.forEach((task) => {
-                        if (task.status === 'pendiente') {
+                        if (task.status === 'pendiente' || task.status === 'en_proceso') {
                             totalTasks++;
 
                             // Contar tareas por vencer y vencidas según alert_status
@@ -185,7 +185,12 @@ const globalStats = computed(() => {
 
         // Verificar si la habitación tiene alertas (tareas pendientes, por vencer o vencidas)
         const hasAlerts = room.beds.some((bed) => {
-            return bed.status === 'occupied' && bed.attention && bed.attention.tasks && bed.attention.tasks.some((task) => task.status === 'pendiente' && (task.alert_status === 'por_vencer' || task.alert_status === 'vencida'));
+            return (
+                bed.status === 'occupied' &&
+                bed.attention &&
+                bed.attention.tasks &&
+                bed.attention.tasks.some((task) => (task.status === 'pendiente' || task.status === 'en_proceso') && (task.alert_status === 'por_vencer' || task.alert_status === 'vencida'))
+            );
         });
 
         if (hasAlerts) alertRooms++;

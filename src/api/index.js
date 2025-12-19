@@ -95,3 +95,6 @@ export { TicketService } from './tickets';
 
 // Ticket Recurrence Rules Management
 export { TicketRecurrenceRuleService } from './ticketRecurrenceRules';
+
+// General Tariffs Management
+export { generalTariffs } from './generalTariffs';

@@ -8,9 +8,10 @@ export const generalTariffs = {
     /**
      * Gets a list of all general tariffs (without pagination).
      * Obtiene todos los tarifarios generales sin paginación.
+     * @param {object} params - Optional query parameters (search, grouper, control_group, paginate, per_page)
      * @returns {Promise}
      */
-    getAll: () => axios.get('/general-tariffs'),
+    getAll: (params = {}) => axios.get('/general-tariffs', { params }),
 
     /**
      * Creates a new general tariff.

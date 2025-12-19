@@ -1,6 +1,12 @@
 <script setup>
-import { computed, defineEmits, defineProps, ref, watch } from 'vue';
+import TaskDialog from '@/components/hospitalization/TaskDialog.vue'; // Import Component
+import { useTasksStore } from '@/store/tasksStore';
+import Button from 'primevue/button';
+import DatePicker from 'primevue/datepicker';
 import Dialog from 'primevue/dialog';
+import InputText from 'primevue/inputtext';
+import Textarea from 'primevue/textarea';
+import { defineEmits, defineProps, ref, watch } from 'vue';
 
 const props = defineProps({
     tasks: {
@@ -17,62 +23,63 @@ const props = defineProps({
     }
 });
 
-const emit = defineEmits(['create-task', 'update-task', 'delete-task']);
+const emit = defineEmits(['create-task', 'update-task', 'delete-task', 'refresh-data']);
 
-const newTaskDescription = ref('');
-const newTaskDueDate = ref(null);
-const enableDueDate = ref(false);
+const store = useTasksStore();
+const taskDialogVisible = ref(false);
+
+const openNewTaskDialog = () => {
+    store.selectedTask = null; // Reset for new task
+    taskDialogVisible.value = true;
+};
+
+const openEditTaskDialog = (task) => {
+    // Populate selected task in store for editing
+    store.selectedTask = { ...task };
+    taskDialogVisible.value = true;
+};
+
+const handleTaskSaved = () => {
+    emit('refresh-data'); // Trigger refresh in parent
+};
+
+// Quick Task Logic
+const quickTask = ref({
+    description: '',
+    dueDate: null
+});
+
+const createQuickTask = async () => {
+    if (!quickTask.value.description) return;
+
+    const taskData = {
+        id_attentions: props.attentionId,
+        description: quickTask.value.description,
+        due_date: quickTask.value.dueDate ? quickTask.value.dueDate.toISOString().slice(0, 19).replace('T', ' ') : null,
+        status: 'pendiente',
+        areas: ['HOSPITALIZACION'], // Default area as requested
+        assignee_ids: []
+    };
+
+    try {
+        await store.createTask(taskData);
+        emit('refresh-data');
+        // Reset form
+        quickTask.value.description = '';
+        quickTask.value.dueDate = null;
+    } catch (error) {
+        console.error('Error creating quick task:', error);
+    }
+};
 
 // Estado para el diálogo de confirmación de eliminación
 const confirmDeleteVisible = ref(false);
 const taskToDelete = ref(null);
 
-// Fecha mínima: ahora + 1 minuto
-const minDate = computed(() => {
-    const date = new Date();
-    date.setMinutes(date.getMinutes() + 1);
-    return date;
-});
-
-const createTask = () => {
-    if (newTaskDescription.value.trim()) {
-        const taskData = {
-            id_attentions: props.attentionId,
-            description: newTaskDescription.value.trim(),
-            status: 'pendiente'
-        };
-
-        // Solo incluir due_date si está habilitado y tiene valor
-        if (enableDueDate.value && newTaskDueDate.value) {
-            const selectedDate = new Date(newTaskDueDate.value);
-
-            // Extraer componentes de fecha/hora LOCAL (no convertir a UTC)
-            // El backend con timezone America/Lima interpreta esto como hora de Lima
-            const year = selectedDate.getFullYear();
-            const month = String(selectedDate.getMonth() + 1).padStart(2, '0');
-            const day = String(selectedDate.getDate()).padStart(2, '0');
-            const hours = String(selectedDate.getHours()).padStart(2, '0');
-            const minutes = String(selectedDate.getMinutes()).padStart(2, '0');
-            const seconds = String(selectedDate.getSeconds()).padStart(2, '0');
-
-            // Formato ISO sin timezone: Laravel lo interpreta como hora de Lima
-            const localIsoString = `${year}-${month}-${day}T${hours}:${minutes}:${seconds}`;
-
-            taskData.due_date = localIsoString;
-        }
-
-        emit('create-task', taskData);
-
-        // Limpiar formulario
-        newTaskDescription.value = '';
-        newTaskDueDate.value = null;
-        enableDueDate.value = false;
-    }
-};
-
-const updateTaskStatus = (task, status) => {
-    emit('update-task', { ...task, status });
-};
+// Estado para el diálogo de razón de anulación
+const cancelReasonVisible = ref(false);
+const taskToCancel = ref(null);
+const cancelReason = ref('');
 
 // Mostrar diálogo de confirmación de eliminación
 const showDeleteConfirmation = (task) => {
@@ -95,12 +102,67 @@ const cancelDeleteTask = () => {
     taskToDelete.value = null;
 };
 
+// Quick status change functions
+const changeTaskStatus = async (task, newStatus) => {
+    try {
+        const updateData = {
+            ...task,
+            status: newStatus,
+            areas: task.areas || ['HOSPITALIZACION'], // Ensure areas is always present
+            assignee_ids: task.assignee_ids || [],
+            due_date: task.due_date ? task.due_date : null
+        };
+
+        await store.updateTask(task.id, updateData);
+        emit('refresh-data');
+    } catch (error) {
+        console.error('Error updating task status:', error);
+    }
+};
+
+const showCancelReasonDialog = (task) => {
+    taskToCancel.value = task;
+    cancelReason.value = '';
+    cancelReasonVisible.value = true;
+};
+
+const confirmCancelTask = async () => {
+    if (taskToCancel.value) {
+        try {
+            const updateData = {
+                ...taskToCancel.value,
+                status: 'anulado',
+                areas: taskToCancel.value.areas || ['HOSPITALIZACION'], // Ensure areas is always present
+                assignee_ids: taskToCancel.value.assignee_ids || [],
+                observations: cancelReason.value || taskToCancel.value.observations,
+                due_date: taskToCancel.value.due_date ? taskToCancel.value.due_date : null
+            };
+
+            await store.updateTask(taskToCancel.value.id, updateData);
+            emit('refresh-data');
+            cancelReasonVisible.value = false;
+            taskToCancel.value = null;
+            cancelReason.value = '';
+        } catch (error) {
+            console.error('Error canceling task:', error);
+        }
+    }
+};
+
+const closeCancelDialog = () => {
+    cancelReasonVisible.value = false;
+    taskToCancel.value = null;
+    cancelReason.value = '';
+};
+
 const getStatusSeverity = (status) => {
     switch (status) {
         case 'realizado':
             return 'success';
         case 'anulado':
             return 'danger';
+        case 'en_proceso':
+            return 'info';
         case 'pendiente':
         default:
             return 'warning';
@@ -252,6 +314,8 @@ const getStatusChangeText = (status) => {
             return 'Anulado';
         case 'pendiente':
             return 'Marcado como pendiente';
+        case 'en_proceso':
+            return 'En Proceso';
         default:
             return 'Estado cambiado';
     }
@@ -265,6 +329,8 @@ const getStatusChangeIcon = (status) => {
             return 'pi pi-times-circle';
         case 'pendiente':
             return 'pi pi-clock';
+        case 'en_proceso':
+            return 'pi pi-spinner';
         default:
             return 'pi pi-info-circle';
     }
@@ -342,28 +408,33 @@ watch(
 
 <template>
     <div class="p-4">
-        <!-- New Task Input -->
-        <div v-if="!readOnly" class="space-y-3 mb-4">
-            <!-- Descripción de la tarea -->
-            <div class="flex gap-2">
-                <InputText v-model="newTaskDescription" placeholder="Nueva tarea..." class="flex-grow" @keyup.enter="createTask" />
-                <Button icon="pi pi-plus" @click="createTask" :disabled="!newTaskDescription.trim() || (enableDueDate && !newTaskDueDate)" />
-            </div>
+        <!-- Quick Task Creation -->
+        <div v-if="!props.readOnly" class="mb-4">
+            <div class="surface-card p-3 border-round shadow-1">
+                <div class="flex flex-column md:flex-row gap-2 align-items-end">
+                    <!-- Description Field -->
+                    <div class="flex-1">
+                        <label class="block text-sm font-medium mb-2 text-700">
+                            <i class="pi pi-plus-circle mr-2 text-primary"></i>
+                            Tarea Rápida
+                        </label>
+                        <InputText v-model="quickTask.description" placeholder="Descripción de la tarea..." @keyup.enter="createQuickTask" class="w-full" fluid />
+                    </div>
 
-            <!-- Opciones de fecha límite -->
-            <div class="border rounded-lg p-3 bg-gray-50">
-                <div class="flex items-center gap-2 mb-2">
-                    <Checkbox v-model="enableDueDate" inputId="enableDueDate" :binary="true" />
-                    <label for="enableDueDate" class="font-medium text-sm cursor-pointer">Establecer fecha límite (opcional)</label>
-                </div>
+                    <!-- Date Picker -->
+                    <div class="flex-none" style="width: 100%; max-width: 220px">
+                        <label class="block text-sm font-medium mb-2 text-700">
+                            <i class="pi pi-calendar mr-2 text-orange-500"></i>
+                            Fecha Límite
+                        </label>
+                        <DatePicker v-model="quickTask.dueDate" showTime hourFormat="24" placeholder="Opcional" :showIcon="true" fluid />
+                    </div>
 
-                <!-- DatePicker para due_date -->
-                <div v-if="enableDueDate" class="ml-6">
-                    <DatePicker v-model="newTaskDueDate" :minDate="minDate" showTime hourFormat="24" showIcon iconDisplay="input" dateFormat="dd/mm/yy" placeholder="Seleccionar fecha y hora límite" class="w-full" />
-                    <small class="text-gray-500 block mt-1">
-                        <i class="pi pi-info-circle mr-1"></i>
-                        La tarea generará alertas automáticas al alcanzar el 80% del tiempo y al vencer.
-                    </small>
+                    <!-- Action Buttons -->
+                    <div class="flex gap-2 flex-none">
+                        <Button icon="pi pi-plus" @click="createQuickTask" :disabled="!quickTask.description" v-tooltip.top="'Crear tarea rápida'" />
+                        <Button icon="pi pi-external-link" @click="openNewTaskDialog" severity="secondary" outlined v-tooltip.top="'Formulario completo'" />
+                    </div>
                 </div>
             </div>
         </div>
@@ -374,6 +445,15 @@ watch(
                 <!-- Task Header -->
                 <div class="flex items-start justify-between mb-2">
                     <div class="flex-grow">
+                        <!-- Areas Tags - Always show section for debugging -->
+                        <div class="mb-2 flex gap-1 flex-wrap items-center">
+                            <i class="pi pi-sitemap text-purple-500 text-xs"></i>
+                            <template v-if="task.areas && task.areas.length > 0">
+                                <Tag v-for="area in task.areas" :key="area" :value="area" severity="info" class="text-xs" />
+                            </template>
+                            <span v-else class="text-xs text-gray-400 italic">Sin área asignada {{ console.log('Task data:', task) }}</span>
+                        </div>
+
                         <div class="flex items-center gap-2 mb-1 flex-wrap">
                             <span :class="{ 'line-through text-gray-500': task.status === 'realizado' || task.status === 'anulado' }" class="font-medium">
                                 {{ task.description }}
@@ -381,10 +461,20 @@ watch(
                             <Tag :value="task.status" :severity="getStatusSeverity(task.status)" class="text-xs" />
 
                             <!-- Alerta visual si tiene alert_status -->
-                            <Tag v-if="task.alert_status && task.status === 'pendiente'" :severity="getAlertSeverity(task)" class="text-xs">
+                            <Tag v-if="task.alert_status && (task.status === 'pendiente' || task.status === 'en_proceso')" :severity="getAlertSeverity(task)" class="text-xs">
                                 <i :class="getAlertIcon(task)" class="mr-1"></i>
                                 {{ task.alert_status === 'vencida' ? 'VENCIDA' : 'POR VENCER' }}
                             </Tag>
+                        </div>
+
+                        <!-- Observations -->
+                        <div v-if="task.observations" class="text-sm text-gray-600 mb-2 italic bg-gray-50 p-2 rounded">
+                            {{ task.observations }}
+                        </div>
+
+                        <!-- Link -->
+                        <div v-if="task.url_file" class="mb-2">
+                            <a :href="task.url_file" target="_blank" class="text-blue-600 hover:underline text-sm flex items-center gap-1"> <i class="pi pi-link"></i> Ver archivo adjunto </a>
                         </div>
 
                         <!-- Due Date Info -->
@@ -474,10 +564,19 @@ watch(
                     </div>
 
                     <!-- Actions -->
-                    <div v-if="!readOnly" class="flex items-center gap-1 ml-2">
-                        <Button v-if="task.status === 'pendiente'" icon="pi pi-check" class="p-button-rounded p-button-success p-button-text p-button-sm" @click="updateTaskStatus(task, 'realizado')" v-tooltip.top="'Marcar como realizado'" />
-                        <Button v-if="task.status === 'pendiente'" icon="pi pi-ban" class="p-button-rounded p-button-warning p-button-text p-button-sm" @click="updateTaskStatus(task, 'anulado')" v-tooltip.top="'Anular tarea'" />
-                        <Button icon="pi pi-trash" class="p-button-rounded p-button-danger p-button-text p-button-sm" @click="showDeleteConfirmation(task)" v-tooltip.top="'Eliminar tarea'" />
+                    <div v-if="!readOnly" class="flex flex-column gap-2 ml-2">
+                        <!-- Quick Status Actions (only for pending/in_progress tasks) -->
+                        <div v-if="task.status === 'pendiente' || task.status === 'en_proceso'" class="flex gap-1">
+                            <Button v-if="task.status === 'pendiente'" icon="pi pi-play" class="p-button-rounded p-button-info p-button-text p-button-sm" @click="changeTaskStatus(task, 'en_proceso')" v-tooltip.top="'Marcar en proceso'" />
+                            <Button icon="pi pi-check" class="p-button-rounded p-button-success p-button-text p-button-sm" @click="changeTaskStatus(task, 'realizado')" v-tooltip.top="'Marcar como realizado'" />
+                            <Button icon="pi pi-times" class="p-button-rounded p-button-danger p-button-text p-button-sm" @click="showCancelReasonDialog(task)" v-tooltip.top="'Anular tarea'" />
+                        </div>
+
+                        <!-- Edit/Delete Actions -->
+                        <div class="flex gap-1">
+                            <Button icon="pi pi-pencil" class="p-button-rounded p-button-secondary p-button-text p-button-sm" @click="openEditTaskDialog(task)" v-tooltip.top="'Editar tarea'" />
+                            <Button icon="pi pi-trash" class="p-button-rounded p-button-danger p-button-text p-button-sm" @click="showDeleteConfirmation(task)" v-tooltip.top="'Eliminar tarea'" />
+                        </div>
                     </div>
                 </div>
             </div>
@@ -487,15 +586,16 @@ watch(
             No hay tareas asociadas.
         </div>
 
+        <!-- Task Dialog -->
+        <TaskDialog :visible="taskDialogVisible" :attention-id="attentionId" @hide="taskDialogVisible = false" @saved="handleTaskSaved" />
+
         <!-- Diálogo de confirmación de eliminación -->
         <Dialog v-model:visible="confirmDeleteVisible" :modal="true" header="Confirmar eliminación" :style="{ width: '450px' }">
             <div class="flex items-start gap-3 mb-4">
                 <i class="pi pi-exclamation-triangle text-4xl text-red-500"></i>
                 <div>
                     <p class="text-base mb-2">¿Estás seguro de que deseas eliminar esta tarea?</p>
-                    <p v-if="taskToDelete" class="text-sm text-gray-600 bg-gray-50 p-3 rounded border-l-4 border-red-500">
-                        <strong>Tarea:</strong> {{ taskToDelete.description }}
-                    </p>
+                    <p v-if="taskToDelete" class="text-sm text-gray-600 bg-gray-50 p-3 rounded border-l-4 border-red-500"><strong>Tarea:</strong> {{ taskToDelete.description }}</p>
                     <p class="text-sm text-gray-500 mt-2">
                         <i class="pi pi-info-circle mr-1"></i>
                         Esta acción no se puede deshacer.
@@ -505,6 +605,32 @@ watch(
             <template #footer>
                 <Button label="Cancelar" icon="pi pi-times" @click="cancelDeleteTask" severity="secondary" outlined />
                 <Button label="Eliminar" icon="pi pi-trash" @click="confirmDeleteTask" severity="danger" />
+            </template>
+        </Dialog>
+
+        <!-- Diálogo de razón de anulación -->
+        <Dialog v-model:visible="cancelReasonVisible" :modal="true" header="Anular Tarea" :style="{ width: '500px' }">
+            <div class="flex flex-column gap-3">
+                <div class="flex items-start gap-3">
+                    <i class="pi pi-times-circle text-4xl text-orange-500"></i>
+                    <div class="flex-1">
+                        <p class="text-base mb-2">¿Estás seguro de que deseas anular esta tarea?</p>
+                        <p v-if="taskToCancel" class="text-sm text-gray-600 bg-gray-50 p-3 rounded border-l-4 border-orange-500"><strong>Tarea:</strong> {{ taskToCancel.description }}</p>
+                    </div>
+                </div>
+
+                <div class="field">
+                    <label for="cancelReason" class="block text-sm font-medium mb-2">
+                        <i class="pi pi-comment mr-2"></i>
+                        Motivo de anulación (opcional)
+                    </label>
+                    <Textarea id="cancelReason" v-model="cancelReason" rows="3" placeholder="Describe el motivo por el cual se anula esta tarea..." class="w-full" />
+                    <small class="text-gray-500 mt-1 block">Este motivo se guardará en las observaciones de la tarea</small>
+                </div>
+            </div>
+            <template #footer>
+                <Button label="Cancelar" icon="pi pi-times" @click="closeCancelDialog" severity="secondary" outlined />
+                <Button label="Anular Tarea" icon="pi pi-check" @click="confirmCancelTask" severity="warning" />
             </template>
         </Dialog>
     </div>

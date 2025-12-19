@@ -1,4 +1,4 @@
-import { createTask, deleteTask, getTask, getTasks, getTaskStats, searchTasks, updateTask } from '@/api/tasks';
+import { createTask, deleteTask, getTask, getTasks, getTaskStats, markTaskAsViewed, searchTasks, updateTask } from '@/api/tasks';
 
 export default function useTasks() {
     const indexTasks = async (options) => {
@@ -64,6 +64,15 @@ export default function useTasks() {
         }
     };
 
+    const markAsViewed = async (id) => {
+        try {
+            const response = await markTaskAsViewed(id);
+            return response.data;
+        } catch (error) {
+            throw error;
+        }
+    };
+
     return {
         indexTasks,
         storeTask,
@@ -71,6 +80,8 @@ export default function useTasks() {
         modifyTask,
         destroyTask,
         findTasks,
-        fetchTaskStats
+        findTasks,
+        fetchTaskStats,
+        markAsViewed
     };
 }

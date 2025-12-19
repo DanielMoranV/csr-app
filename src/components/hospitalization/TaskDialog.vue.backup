@@ -8,7 +8,6 @@ import IconField from 'primevue/iconfield';
 import InputIcon from 'primevue/inputicon';
 import MultiSelect from 'primevue/multiselect';
 import { computed, onMounted, ref, watch } from 'vue';
-import ProceduresDialog from './ProceduresDialog.vue';
 
 const props = defineProps({
     visible: Boolean,
@@ -28,10 +27,6 @@ const usersOptions = ref([]);
 // Procedures state
 const showProceduresDialog = ref(false);
 const selectedProcedures = ref([]);
-
-// Lab tests state
-const showLabTestsDialog = ref(false);
-const selectedLabTests = ref([]);
 
 const task = ref({
     areas: [],
@@ -139,12 +134,6 @@ const showProceduresButton = computed(() => {
     return task.value.areas.some((area) => area === 'RAYOS X' || area === 'ADMISION');
 });
 
-// Check if lab tests button should be shown
-const showLabTestsButton = computed(() => {
-    if (!task.value.areas || task.value.areas.length === 0) return false;
-    return task.value.areas.includes('LABORATORIO');
-});
-
 // Handle procedures selection
 const handleProceduresDialogOpen = () => {
     showProceduresDialog.value = true;
@@ -180,45 +169,6 @@ const updateDescriptionWithProcedures = () => {
     }
 };
 
-// Handle lab tests selection
-const handleLabTestsDialogOpen = () => {
-    showLabTestsDialog.value = true;
-};
-
-const handleLabTestsSave = (tests) => {
-    selectedLabTests.value = tests;
-    updateDescriptionWithLabTests();
-};
-
-const updateDescriptionWithLabTests = () => {
-    if (selectedLabTests.value.length === 0) {
-        return;
-    }
-
-    // Create a formatted list of lab tests
-    const testsList = selectedLabTests.value
-        .map((test) => {
-            const code = test.cod_seg ? ` (${test.cod_seg})` : '';
-            return `• ${test.nom_sgp}${code}`;
-        })
-        .join('\n');
-
-    // Get current description without test list
-    let currentDesc = task.value.description || '';
-
-    // Remove old lists if exists (lines starting with •)
-    const lines = currentDesc.split('\n');
-    const nonListLines = lines.filter((line) => !line.trim().startsWith('•'));
-    const baseDescription = nonListLines.join('\n').trim();
-
-    // Combine base description with new tests list
-    if (baseDescription) {
-        task.value.description = `${baseDescription}\n\n${testsList}`;
-    } else {
-        task.value.description = testsList;
-    }
-};
-
 // Watch for procedure deselection through description editing
 watch(
     () => task.value.description,
@@ -234,26 +184,6 @@ watch(
         if (removedProcedures.length > 0) {
             // Remove from selected procedures
             selectedProcedures.value = selectedProcedures.value.filter((proc) => !removedProcedures.find((removed) => removed.id === proc.id));
-        }
-    }
-);
-
-// Watch for lab test deselection through description editing
-watch(
-    () => task.value.description,
-    (newDesc) => {
-        if (!newDesc || selectedLabTests.value.length === 0) return;
-
-        // Check if any selected test was removed from description
-        const removedTests = selectedLabTests.value.filter((test) => {
-            const code = test.cod_seg ? ` (${test.cod_seg})` : '';
-            const testText = `• ${test.nom_sgp}${code}`;
-            return !newDesc.includes(testText);
-        });
-
-        if (removedTests.length > 0) {
-            // Remove from selected tests
-            selectedLabTests.value = selectedLabTests.value.filter((test) => !removedTests.find((removed) => removed.cod_sgp === test.cod_sgp));
         }
     }
 );
@@ -290,26 +220,6 @@ watch(
                     </label>
                     <Textarea id="description" v-model.trim="task.description" required="true" autofocus rows="2" placeholder="Describa la tarea a realizar" class="compact-input" fluid />
                     <small class="field-help text-500">Detalle breve y claro de la actividad a realizar</small>
-                    <!-- Procedimientos Button -->
-                    <div v-if="showProceduresButton" class="mt-2">
-                        <Button label="Procedimientos" icon="pi pi-list" class="p-button-sm p-button-outlined" @click="handleProceduresDialogOpen">
-                            <template #default>
-                                <i class="pi pi-list mr-2"></i>
-                                Procedimientos
-                                <Badge v-if="selectedProcedures.length > 0" :value="selectedProcedures.length" severity="info" class="ml-2" />
-                            </template>
-                        </Button>
-                    </div>
-                    <!-- Lab Tests Button -->
-                    <div v-if="showLabTestsButton" class="mt-2">
-                        <Button label="Análisis de Laboratorio" icon="pi pi-flask" class="p-button-sm p-button-outlined" @click="handleLabTestsDialogOpen">
-                            <template #default>
-                                <i class="pi pi-flask mr-2"></i>
-                                Análisis de Laboratorio
-                                <Badge v-if="selectedLabTests.length > 0" :value="selectedLabTests.length" severity="info" class="ml-2" />
-                            </template>
-                        </Button>
-                    </div>
                 </div>
             </div>
             <!-- <div class="col-12 md:col-6">
@@ -400,10 +310,6 @@ watch(
             </div>
         </template>
     </Dialog>
-    <!-- Procedures Dialog -->
-    <ProceduresDialog :visible="showProceduresDialog" :selectedProcedures="selectedProcedures" @hide="showProceduresDialog = false" @save="handleProceduresSave" />
-    <!-- Lab Tests Dialog -->
-    <LabTestsDialog :visible="showLabTestsDialog" :selectedLabTests="selectedLabTests" @hide="showLabTestsDialog = false" @save="handleLabTestsSave" />
 </template>
 
 <style scoped>
