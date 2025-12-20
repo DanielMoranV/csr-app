@@ -21,7 +21,7 @@ export function useMedicalFees() {
     // Maps para búsqueda rápida
     const doctorMap = computed(() => {
         const map = new Map();
-        doctors.value.forEach(doctor => {
+        doctors.value.forEach((doctor) => {
             if (doctor.code) {
                 map.set(doctor.code, doctor);
             }
@@ -31,7 +31,7 @@ export function useMedicalFees() {
 
     const scheduleMap = computed(() => {
         const map = new Map();
-        schedules.value.forEach(schedule => {
+        schedules.value.forEach((schedule) => {
             const key = `${schedule.doctor?.code}_${schedule.date}`;
             if (!map.has(key)) {
                 map.set(key, []);
@@ -46,56 +46,79 @@ export function useMedicalFees() {
      * @param {Object} params - Parámetros para el cálculo
      * @returns {number} Monto de comisión calculado
      */
-    function calculateCommissionRule({ type, amount, cia, doctorCode, segusCode, doctor }) {
+    function calculateCommissionRule({ type, amount, cia, doctorCode, segusCode, doctor, admision }) {
         let comision = 0;
         const importe = parseFloat(amount) || 0;
         const isPlanilla = type === 'PLANILLA';
         const isReten = type === 'RETEN' || type === 'RETÉN';
         const company = cia?.toString().trim().toUpperCase() || '';
-        
-        
+
         // Códigos de consulta que NO tienen comisión en PLANILLA
         const consultationCodes = ['00.19.25', '00.19.27'];
-        
+
         // Excepción: 50.03.00 (CONSULTA EN PACIENTE HOSPITALIZADO) SÍ tiene comisión
-        const isConsultationCode = (segusCode?.startsWith('50.0') && segusCode !== '50.03.00') || 
-                                    consultationCodes.includes(segusCode);
+        const isConsultationCode = (segusCode?.startsWith('50.0') && segusCode !== '50.03.00') || consultationCodes.includes(segusCode);
 
         // Regla 1: Validar con tarifarios médicos si es PLANILLA
         if (isPlanilla && !isConsultationCode) {
             // Buscar tarifario del médico que coincida con el código del servicio
-            const tariff = doctorTariffsStore.allTariffs.find(t => 
-                t.tariff_code === segusCode && t.doctor_code === doctorCode
-            );
-            
+            const tariff = doctorTariffsStore.allTariffs.find((t) => t.tariff_code === segusCode && t.doctor_code === doctorCode);
+
             // Determinar si se aplica comisión según la compañía
             let shouldApplyCommission = false;
-            
+
             if (company === 'PARTICULAR') {
                 // Para PARTICULAR: validar clinic_commission > 0 Y doctor_commission = 0/null
-                shouldApplyCommission = tariff && 
-                    parseFloat(tariff.clinic_commission) > 0 && 
-                    (tariff.doctor_commission === null || parseFloat(tariff.doctor_commission) === 0);
+                shouldApplyCommission = tariff && parseFloat(tariff.clinic_commission) > 0 && (tariff.doctor_commission === null || parseFloat(tariff.doctor_commission) === 0);
             } else {
                 // Para otras compañías: solo validar que sea PLANILLA y no código de consulta
                 shouldApplyCommission = true;
             }
-            
+
             // Aplicar comisión si cumple las condiciones
             if (shouldApplyCommission) {
                 // Verificar que el médico tenga porcentaje de comisión > 0
                 const commissionPercentage = doctor?.commission_percentage;
-                
+
                 if (commissionPercentage && parseFloat(commissionPercentage) > 0) {
                     // Aplicar comisión personalizada del médico
                     const percentage = parseFloat(commissionPercentage) / 100;
                     comision = parseFloat((importe * percentage).toFixed(2));
                 }
             }
-        } 
-        // Regla 2: 92.5% fijo si es RETÉN Y cia != PARTICULAR
+        }
+        // Regla 2: Porcentaje variable para RETÉN con seguros/EPS
         else if (isReten && company !== 'PARTICULAR') {
-            comision = parseFloat((importe * 0.925).toFixed(2));
+            // Usar insurance_commission_percentage si está configurado, sino usar 92.5% por defecto
+            const insurancePercentage = doctor?.insurance_commission_percentage;
+
+            if (insurancePercentage && parseFloat(insurancePercentage) > 0) {
+                // Aplicar porcentaje personalizado para seguros
+                const percentage = parseFloat(insurancePercentage) / 100;
+                comision = parseFloat((importe * percentage).toFixed(2));
+            } else {
+                // Fallback: 92.5% fijo (compatibilidad con médicos sin configuración)
+                comision = parseFloat((importe * 0.925).toFixed(2));
+            }
+        }
+        // Regla 3: RETÉN + PARTICULAR con tarifario que indica todo para clínica
+        else if (isReten && company === 'PARTICULAR') {
+            // Buscar tarifario del médico para validar distribución de ingresos
+            const tariff = doctorTariffsStore.allTariffs.find((t) => t.tariff_code === segusCode && t.doctor_code === doctorCode);
+
+            // Si existe tarifario y muestra que todo ingresa para clínica (doctor_commission = 0/null)
+            // entonces el médico SÍ debe recibir comisión por trabajar en RETÉN
+            if (tariff && parseFloat(tariff.clinic_commission) > 0 && (tariff.doctor_commission === null || parseFloat(tariff.doctor_commission) === 0)) {
+                const commissionPercentage = doctor?.commission_percentage;
+
+                if (commissionPercentage && parseFloat(commissionPercentage) > 0) {
+                    // Aplicar comisión según porcentaje del médico
+                    const percentage = parseFloat(commissionPercentage) / 100;
+                    comision = parseFloat((importe * percentage).toFixed(2));
+                }
+            }
+            // Si el médico tiene doctor_commission > 0, no recibe comisión adicional
+            // (ya está cobrando su tarifa personalizada)
         }
 
         return comision;
@@ -111,15 +134,10 @@ export function useMedicalFees() {
         error.value = null;
 
         try {
-            const [doctorsData, schedulesData] = await Promise.all([
-                MedicalFeesService.getDoctors(),
-                MedicalFeesService.getDoctorSchedules(startDate, endDate),
-                doctorTariffsStore.fetchTariffs()
-            ]);
+            const [doctorsData, schedulesData] = await Promise.all([MedicalFeesService.getDoctors(), MedicalFeesService.getDoctorSchedules(startDate, endDate), doctorTariffsStore.fetchTariffs()]);
 
             doctors.value = doctorsData;
             schedules.value = schedulesData;
-
         } catch (err) {
             error.value = `Error al cargar datos: ${err.message}`;
             throw err;
@@ -148,34 +166,32 @@ export function useMedicalFees() {
             }
 
             // 3. Filtrar registros inválidos
-            const validData = rawData.filter(row => !ExcelParserService.shouldExcludeRecord(row));
-            
+            const validData = rawData.filter((row) => !ExcelParserService.shouldExcludeRecord(row));
+
             const excludedCount = rawData.length - validData.length;
             if (excludedCount > 0) {
                 console.log(`[useMedicalFees] ${excludedCount} registros excluidos`);
             }
 
             // 4. Filtrar por código médico >= 5000
-            const filteredByDoctorCode = validData.filter(row => {
+            const filteredByDoctorCode = validData.filter((row) => {
                 const doctorCode = row.cod_seri?.toString().trim();
                 if (!doctorCode) return false;
-                
+
                 const codeNumber = parseInt(doctorCode, 10);
                 return !isNaN(codeNumber) && codeNumber >= 5000;
             });
-            
+
             const doctorCodeExcluded = validData.length - filteredByDoctorCode.length;
             if (doctorCodeExcluded > 0) {
                 console.log(`[useMedicalFees] ${doctorCodeExcluded} servicios excluidos por código médico < 5000`);
             }
 
             // 5. Mapear a modelo
-            const parsedServices = filteredByDoctorCode.map(row =>
-                ExcelParserService.mapToServiceModel(row)
-            );
+            const parsedServices = filteredByDoctorCode.map((row) => ExcelParserService.mapToServiceModel(row));
 
             // 6. Enriquecer con datos de médico y horario
-            const enrichedServices = parsedServices.map(service => {
+            const enrichedServices = parsedServices.map((service) => {
                 const doctor = doctorMap.value.get(service.doctorCode);
                 const scheduleKey = `${service.doctorCode}_${service.date}`;
                 const daySchedules = scheduleMap.value.get(scheduleKey) || [];
@@ -189,7 +205,7 @@ export function useMedicalFees() {
             });
 
             // 7. Clasificar servicios en PLANILLA o RETÉN y Calcular Comisiones
-            const classifiedServices = enrichedServices.map(service => {
+            const classifiedServices = enrichedServices.map((service) => {
                 if (!service.isValid) {
                     return {
                         ...service,
@@ -202,11 +218,8 @@ export function useMedicalFees() {
                     };
                 }
 
-                const classification = ServiceClassifier.classifyService(
-                    service,
-                    service.schedules
-                );
-                
+                const classification = ServiceClassifier.classifyService(service, service.schedules);
+
                 // --- Lógica de Cálculo de Comisión (Movida desde exportToExcel) ---
                 // --- Lógica de Cálculo de Comisión (Refactorizada) ---
                 const codSeg = service.rawData?.cod_seg?.toString().trim() || '';
@@ -214,7 +227,7 @@ export function useMedicalFees() {
                 const cia = service.rawData?.cia?.toString().trim().toUpperCase() || '';
                 const doctorCode = service.doctorCode;
                 const isReten = classification.type === 'RETEN' || classification.type === 'RETÉN';
-                
+
                 // Normalizar classification.type si viene con tilde
                 let finalType = classification.type;
                 if (finalType === 'RETÉN') finalType = 'RETEN';
@@ -225,21 +238,33 @@ export function useMedicalFees() {
                     cia: cia,
                     doctorCode: doctorCode,
                     segusCode: codSeg,
-                    doctor: service.doctor
+                    doctor: service.doctor,
+                    admision: service.rawData?.admision
                 });
 
                 // Ajustar el detalle según si tiene comisión o no
                 let detalle = classification.reason || '';
                 const segusIndicatesReten = service.rawData?.segus?.toUpperCase().includes('RETEN');
                 const hasCommission = comision > 0;
-                
+                const isParticular = cia === 'PARTICULAR';
+
+                // Validación 1: RETÉN sin comisión y código NO indica RETÉN
                 if (isReten && !hasCommission && !segusIndicatesReten && !detalle.includes('⚠️ Revisar atención, codigo NO RETEN')) {
                     detalle += ' ⚠️ Revisar atención, codigo NO RETEN';
                 } else if (isReten && hasCommission && detalle.includes('⚠️ Revisar atención, codigo NO RETEN')) {
                     detalle = detalle.replace(' ⚠️ Revisar atención, codigo NO RETEN', '');
                 }
 
+                // Validación 2: PARTICULAR sin tarifario configurado (requiere revisión manual)
+                if (isParticular && !hasCommission) {
+                    // Buscar si existe tarifario para este servicio
+                    const tariff = doctorTariffsStore.allTariffs.find((t) => t.tariff_code === codSeg && t.doctor_code === doctorCode);
 
+                    // Si NO existe tarifario, agregar alerta de revisión manual
+                    if (!tariff && !detalle.includes('⚠️ SIN TARIFARIO PARTICULAR')) {
+                        detalle += ' ⚠️ SIN TARIFARIO PARTICULAR - Revisar si ingreso fue para clínica o médico cobró con tarifa general';
+                    }
+                }
 
                 return {
                     ...service,
@@ -257,7 +282,6 @@ export function useMedicalFees() {
             isExcelData.value = true;
             console.log('[useMedicalFees] isExcelData set to TRUE (Excel imported)', classifiedServices.length, 'services pending');
             return classifiedServices;
-
         } catch (err) {
             error.value = `Error al importar Excel: ${err.message}`;
             throw err;
@@ -281,7 +305,7 @@ export function useMedicalFees() {
     const servicesByDoctor = computed(() => {
         const grouped = new Map();
 
-        services.value.forEach(service => {
+        services.value.forEach((service) => {
             if (!service.doctor) return;
 
             const doctorCode = service.doctor.code;
@@ -318,9 +342,7 @@ export function useMedicalFees() {
     /**
      * Servicios agrupados por tipo (PLANILLA/RETÉN)
      */
-    const servicesByType = computed(() =>
-        ServiceClassifier.groupByType(services.value)
-    );
+    const servicesByType = computed(() => ServiceClassifier.groupByType(services.value));
 
     /**
      * Totales generales
@@ -347,32 +369,31 @@ export function useMedicalFees() {
         }
 
         // Preparar datos para Excel - Hoja 1: Detalle
-        const excelData = filteredServices.map(service => {
+        const excelData = filteredServices.map((service) => {
             // Convertir fecha a formato DD/MM/YYYY
             let excelDate = '';
             if (service.date) {
                 const [year, month, day] = service.date.split('-');
                 excelDate = `${day}/${month}/${year}`;
             }
-            
-            
+
             return {
-                'Admisión': service.rawData?.admision || '',
+                Admisión: service.rawData?.admision || '',
                 'Código Médico': service.doctorCode ? `'${service.doctorCode}` : '',
-                'Fecha': excelDate,
-                'Hora': service.time || '',
-                'Médico': service.doctor?.name || service.serviceName || '',
-                'Paciente': service.patientName || '',
-                'Servicio': service.generalTariff?.name || 'N/A',
+                Fecha: excelDate,
+                Hora: service.time || '',
+                Médico: service.doctor?.name || service.serviceName || '',
+                Paciente: service.patientName || '',
+                Servicio: service.generalTariff?.name || 'N/A',
                 'Código Servicio': service.rawData?.segus || '',
-                'Monto': service.amount,
-                'Tipo': service.serviceType || '',
-                'Detalle': service.serviceTypeReason,
-                'Comisión': service.comision,
-                'CIA': service.cia,
-                'Comprobante': service.rawData?.comprobante || '',
+                Monto: service.amount,
+                Tipo: service.serviceType || '',
+                Detalle: service.serviceTypeReason,
+                Comisión: service.comision,
+                CIA: service.cia,
+                Comprobante: service.rawData?.comprobante || '',
                 'Tipo Atención': service.tipoate || '',
-                'Area': service.rawData?.area || ''
+                Area: service.rawData?.area || ''
             };
         });
 
@@ -383,7 +404,7 @@ export function useMedicalFees() {
 
         // Aplicar formatos a Hoja 1
         const range = XLSX.utils.decode_range(ws['!ref']);
-        
+
         for (let R = range.s.r + 1; R <= range.e.r; ++R) {
             // Código Médico como texto
             const codigoMedicoCell = ws[`B${R + 1}`];
@@ -391,27 +412,27 @@ export function useMedicalFees() {
                 codigoMedicoCell.t = 's';
                 codigoMedicoCell.v = String(codigoMedicoCell.v).replace(/^'/, '');
             }
-            
+
             // Fecha como texto
             const dateCell = ws[`C${R + 1}`];
             if (dateCell && dateCell.v) {
                 dateCell.t = 's';
             }
-            
+
             // Monto con formato S/
             const montoCell = ws[`H${R + 1}`];
             if (montoCell && !isNaN(montoCell.v)) {
                 montoCell.t = 'n';
                 montoCell.z = '"S/ "#,##0.00';
             }
-            
+
             // Comisión con formato S/
             const comisionCell = ws[`K${R + 1}`];
             if (comisionCell && comisionCell.v !== '' && !isNaN(comisionCell.v)) {
                 comisionCell.t = 'n';
                 comisionCell.z = '"S/ "#,##0.00';
             }
-            
+
             // Importe con formato S/
             const importeCell = ws[`O${R + 1}`];
             if (importeCell && !isNaN(importeCell.v)) {
@@ -423,14 +444,14 @@ export function useMedicalFees() {
         // ============================================================================
         // HOJA 2: Resumen por Médico
         // ============================================================================
-        
+
         // Agrupar servicios por médico
         const doctorSummaryMap = new Map();
-        
-        filteredServices.forEach(service => {
+
+        filteredServices.forEach((service) => {
             const doctorCode = service.doctorCode || 'SIN_CODIGO';
             const doctorName = service.doctor?.name || 'Médico no identificado';
-            
+
             if (!doctorSummaryMap.has(doctorCode)) {
                 doctorSummaryMap.set(doctorCode, {
                     codigo: doctorCode,
@@ -448,16 +469,16 @@ export function useMedicalFees() {
                     totalGenerado: 0
                 });
             }
-            
+
             const summary = doctorSummaryMap.get(doctorCode);
             const isPlanilla = service.serviceType === 'PLANILLA';
             const isReten = service.serviceType === 'RETEN' || service.serviceType === 'RETÉN';
-            
+
             // Acumular totales
             summary.totalAtenciones++;
             summary.totalGenerado += service.amount;
             summary.totalComision += service.comision || 0;
-            
+
             if (isPlanilla) {
                 summary.cantidadPlanilla++;
                 summary.montoPlanilla += service.amount;
@@ -466,13 +487,13 @@ export function useMedicalFees() {
                 summary.montoReten += service.amount;
             }
         });
-        
+
         // Convertir Map a array y ordenar por nombre de médico
         const summaryData = Array.from(doctorSummaryMap.values())
             .sort((a, b) => a.nombre.localeCompare(b.nombre))
-            .map(summary => ({
+            .map((summary) => ({
                 'Código Médico': summary.codigo === 'SIN_CODIGO' ? '' : `'${summary.codigo}`,
-                'Médico': summary.nombre,
+                Médico: summary.nombre,
                 'Cant. Planilla': summary.cantidadPlanilla,
                 'Monto Planilla': summary.montoPlanilla,
                 'Cant. Retén': summary.cantidadReten,
@@ -481,14 +502,14 @@ export function useMedicalFees() {
                 'Total Atenciones': summary.totalAtenciones,
                 'Total Generado': summary.totalGenerado
             }));
-        
+
         // Crear hoja de resumen
         const wsSummary = XLSX.utils.json_to_sheet(summaryData);
         XLSX.utils.book_append_sheet(wb, wsSummary, 'Resumen por Médico');
-        
+
         // Aplicar formatos a Hoja 2
         const summaryRange = XLSX.utils.decode_range(wsSummary['!ref']);
-        
+
         for (let R = summaryRange.s.r + 1; R <= summaryRange.e.r; ++R) {
             // Código Médico como texto (columna A)
             const codigoCell = wsSummary[`A${R + 1}`];
@@ -496,49 +517,49 @@ export function useMedicalFees() {
                 codigoCell.t = 's';
                 codigoCell.v = String(codigoCell.v).replace(/^'/, '');
             }
-            
+
             // Cant. Planilla (columna C) - número entero
             const cantPlanillaCell = wsSummary[`C${R + 1}`];
             if (cantPlanillaCell && !isNaN(cantPlanillaCell.v)) {
                 cantPlanillaCell.t = 'n';
                 cantPlanillaCell.z = '#,##0';
             }
-            
+
             // Monto Planilla (columna D) - moneda
             const montoPlanillaCell = wsSummary[`D${R + 1}`];
             if (montoPlanillaCell && !isNaN(montoPlanillaCell.v)) {
                 montoPlanillaCell.t = 'n';
                 montoPlanillaCell.z = '"S/ "#,##0.00';
             }
-            
+
             // Cant. Retén (columna E) - número entero
             const cantRetenCell = wsSummary[`E${R + 1}`];
             if (cantRetenCell && !isNaN(cantRetenCell.v)) {
                 cantRetenCell.t = 'n';
                 cantRetenCell.z = '#,##0';
             }
-            
+
             // Monto Retén (columna F) - moneda
             const montoRetenCell = wsSummary[`F${R + 1}`];
             if (montoRetenCell && !isNaN(montoRetenCell.v)) {
                 montoRetenCell.t = 'n';
                 montoRetenCell.z = '"S/ "#,##0.00';
             }
-            
+
             // Total Comisión (columna G) - moneda
             const totalComisionCell = wsSummary[`G${R + 1}`];
             if (totalComisionCell && !isNaN(totalComisionCell.v)) {
                 totalComisionCell.t = 'n';
                 totalComisionCell.z = '"S/ "#,##0.00';
             }
-            
+
             // Total Atenciones (columna H) - número entero
             const totalAtencionesCell = wsSummary[`H${R + 1}`];
             if (totalAtencionesCell && !isNaN(totalAtencionesCell.v)) {
                 totalAtencionesCell.t = 'n';
                 totalAtencionesCell.z = '#,##0';
             }
-            
+
             // Total Generado (columna I) - moneda
             const totalGeneradoCell = wsSummary[`I${R + 1}`];
             if (totalGeneradoCell && !isNaN(totalGeneradoCell.v)) {
@@ -546,7 +567,7 @@ export function useMedicalFees() {
                 totalGeneradoCell.z = '"S/ "#,##0.00';
             }
         }
-        
+
         // Ajustar ancho de columnas en hoja de resumen
         wsSummary['!cols'] = [
             { wch: 15 }, // Código Médico
@@ -557,7 +578,7 @@ export function useMedicalFees() {
             { wch: 18 }, // Monto Retén
             { wch: 18 }, // Total Comisión
             { wch: 18 }, // Total Atenciones
-            { wch: 18 }  // Total Generado
+            { wch: 18 } // Total Generado
         ];
 
         // Generar archivo
@@ -581,10 +602,10 @@ export function useMedicalFees() {
         }
 
         isLoading.value = true;
-        
+
         try {
             // Mapear al payload esperado por el backend usando pendingImportServices
-            const servicesPayload = pendingImportServices.value.map(s => ({
+            const servicesPayload = pendingImportServices.value.map((s) => ({
                 doctor_code: s.doctorCode,
                 service_datetime: `${s.date} ${s.time}`, // Formato YYYY-MM-DD HH:MM:SS
                 patient_name: s.patientName,
@@ -604,12 +625,12 @@ export function useMedicalFees() {
             console.log('Payload saving to DB:', servicesPayload);
 
             const result = await MedicalFeesService.saveMedicalServices(servicesPayload);
-            
+
             // Limpiar datos importados y deshabilitar el flag después de guardar exitosamente
             pendingImportServices.value = [];
             isExcelData.value = false;
             console.log('[useMedicalFees] isExcelData set to FALSE (Saved to DB)');
-            
+
             return result;
         } catch (err) {
             error.value = `Error al guardar en BD: ${err.message}`;
@@ -625,28 +646,29 @@ export function useMedicalFees() {
         console.log('[useMedicalFees] isExcelData set to FALSE (Loading from DB)');
         try {
             const response = await MedicalFeesService.getMedicalServices(startDate, endDate, filters);
-            
+
             console.log('loadMedicalServices response:', response);
 
             if (Array.isArray(response)) {
                 console.log('Data found in response (Array), mapping...');
                 // Mapear respuesta de BD a estructura de UI existente
-                services.value = response.map(apiService => {
-                    let date = '', time = '';
+                services.value = response.map((apiService) => {
+                    let date = '',
+                        time = '';
                     if (apiService.service_datetime) {
                         // Manejar formato "YYYY-MM-DD HH:MM:SS" o ISO "YYYY-MM-DDTHH:MM:SS.000Z"
                         const parts = apiService.service_datetime.replace('T', ' ').replace('Z', '').split(' ');
                         date = parts[0];
                         time = parts[1] ? parts[1].split('.')[0] : ''; // Quitar milisegundos si existen
                     }
-                    
+
                     let doctor = apiService.doctor;
                     // Enriquecer con datos del store local para tener commission_percentage actualizado
                     if (doctor && doctor.code) {
-                         const localDoctor = doctorMap.value.get(doctor.code);
-                         if (localDoctor) {
-                             doctor = { ...doctor, ...localDoctor };
-                         }
+                        const localDoctor = doctorMap.value.get(doctor.code);
+                        if (localDoctor) {
+                            doctor = { ...doctor, ...localDoctor };
+                        }
                     }
 
                     return {
@@ -664,11 +686,13 @@ export function useMedicalFees() {
                         serviceTypeReason: apiService.observation,
                         comision: parseFloat(apiService.commission_amount || 0),
                         status: apiService.status || 'pendiente', // Estado del servicio
-                        generalTariff: apiService.general_tariff ? {
-                            name: apiService.general_tariff.name,
-                            code: apiService.segus_code
-                        } : null,
-                        
+                        generalTariff: apiService.general_tariff
+                            ? {
+                                  name: apiService.general_tariff.name,
+                                  code: apiService.segus_code
+                              }
+                            : null,
+
                         // Estructura Legacy para compatibilidad con filtros y computed existentes
                         rawData: {
                             admision: apiService.admission_number,
@@ -682,7 +706,7 @@ export function useMedicalFees() {
 
                 // Filtrar por estado si se especificó en los filtros (el backend no aplica este filtro)
                 if (filters.status) {
-                    services.value = services.value.filter(s => s.status === filters.status);
+                    services.value = services.value.filter((s) => s.status === filters.status);
                     console.log(`Filtered by status '${filters.status}': ${services.value.length} services`);
                 }
 
@@ -706,7 +730,7 @@ export function useMedicalFees() {
      */
     async function updateService(serviceId, field, newValue) {
         try {
-            const service = services.value.find(s => s.id === serviceId);
+            const service = services.value.find((s) => s.id === serviceId);
             if (!service) {
                 throw new Error('Servicio no encontrado');
             }
@@ -726,7 +750,8 @@ export function useMedicalFees() {
                     cia: service.cia,
                     doctorCode: service.doctorCode,
                     segusCode: service.rawData?.segus,
-                    doctor: service.doctor
+                    doctor: service.doctor,
+                    admision: service.rawData?.admision
                 });
 
                 payload.service_type = type === 'RETÉN' ? 'RETEN' : type;
@@ -753,7 +778,6 @@ export function useMedicalFees() {
 
             // Llamar al backend
             await MedicalFeesService.updateMedicalService(serviceId, payload);
-
         } catch (err) {
             console.error('Error updating service:', err);
             throw err;
