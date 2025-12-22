@@ -132,6 +132,30 @@ class MedicalFeesService {
     }
 
     /**
+     * Actualización masiva de comisiones
+     * @param {Array} updates - Array de {id, commission_amount}
+     * @returns {Promise<Object>} Resultado de la actualización masiva
+     */
+    async bulkUpdateCommissions(updates) {
+        const response = await axios.put('/medical-services/bulk-update-commissions', {
+            updates
+        });
+
+        // El interceptor de axios (línea 134 en axios.js) devuelve response.data directamente
+        // Entonces 'response' aquí ya es el objeto {success, message, data}
+        // No necesitamos hacer response.data.data, solo response.data
+
+        if (response?.data) {
+            return response.data;
+        } else if (response) {
+            // Fallback si la estructura es diferente
+            return response;
+        }
+
+        throw new Error('Respuesta inválida del servidor');
+    }
+
+    /**
      * Crea un mapa de horarios por código de médico y fecha
      * @param {Array} schedules - Lista de horarios
      * @returns {Map} Mapa "code_date" -> horario[]

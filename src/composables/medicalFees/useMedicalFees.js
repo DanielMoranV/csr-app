@@ -803,7 +803,7 @@ export function useMedicalFees() {
 
     /**
      * Recalcular comisiones para servicios de un médico específico
-     * Usa la misma lógica que la importación de Excel
+     * Calcula comisiones en el frontend y las actualiza masivamente en el backend
      * @param {number} doctorId - ID del médico
      * @returns {Promise<Object>} Resultados del recálculo
      */
@@ -819,47 +819,49 @@ export function useMedicalFees() {
                 throw new Error('No hay servicios para recalcular');
             }
 
-            let updated = 0;
-            let errors = [];
+            console.log(`[useMedicalFees] Recalculando ${servicesToRecalculate.length} servicios para médico ID ${doctorId}`);
 
-            // 2. Recalcular y actualizar cada servicio usando el endpoint existente
-            for (const service of servicesToRecalculate) {
-                try {
-                    // Recalcular comisión localmente
-                    const newCommission = calculateCommissionRule({
-                        type: service.serviceType,
-                        amount: service.amount,
-                        cia: service.cia,
-                        doctorCode: service.doctorCode,
-                        segusCode: service.rawData?.cod_seg || service.rawData?.segus,
-                        doctor: service.doctor,
-                        admision: service.rawData?.admision
-                    });
+            // 2. Calcular comisiones en el FRONTEND (lógica existente)
+            const updates = servicesToRecalculate.map((service) => {
+                const newCommission = calculateCommissionRule({
+                    type: service.serviceType,
+                    amount: service.amount,
+                    cia: service.cia,
+                    doctorCode: service.doctorCode,
+                    segusCode: service.rawData?.cod_seg || service.rawData?.segus,
+                    doctor: service.doctor,
+                    admision: service.rawData?.admision
+                });
 
-                    // Actualizar en backend usando endpoint existente
-                    await MedicalFeesService.updateMedicalService(service.id, {
-                        commission_amount: newCommission
-                    });
+                return {
+                    id: service.id,
+                    commission_amount: newCommission
+                };
+            });
 
-                    // Actualizar localmente
-                    service.comision = newCommission;
-                    updated++;
-                } catch (err) {
-                    errors.push({
-                        id: service.id,
-                        admision: service.rawData?.admision,
-                        error: err.message
-                    });
+            console.log(`[useMedicalFees] Enviando ${updates.length} actualizaciones al backend...`);
+
+            // 3. Enviar TODAS las actualizaciones en una sola llamada al backend
+            const result = await MedicalFeesService.bulkUpdateCommissions(updates);
+
+            console.log('[useMedicalFees] Resultado del backend:', result);
+
+            // 4. Actualizar servicios localmente con las nuevas comisiones
+            updates.forEach((update) => {
+                const service = services.value.find((s) => s.id === update.id);
+                if (service) {
+                    service.comision = update.commission_amount;
                 }
-            }
+            });
 
+            // 5. Contar servicios omitidos (aprobados/rechazados)
             const skipped = services.value.filter((s) => s.doctor?.id === doctorId && (s.status === 'aprobado' || s.status === 'rechazado')).length;
 
             return {
                 total: servicesToRecalculate.length,
-                updated,
-                skipped,
-                errors
+                updated: result.updated,
+                skipped: skipped + result.skipped,
+                errors: result.errors || []
             };
         } catch (err) {
             error.value = err.message || 'Error al recalcular comisiones';
