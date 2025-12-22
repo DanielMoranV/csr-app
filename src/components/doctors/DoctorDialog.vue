@@ -81,7 +81,8 @@ const doctorForm = reactive({
     rne: '',
     code: '',
     payment_payroll: 'total',
-    commission_percentage: null
+    commission_percentage: null,
+    insurance_commission_percentage: null
 });
 
 // Computed para verificar si debe mostrar campo RNE
@@ -133,7 +134,8 @@ const loadDoctorData = (doctor) => {
         rne: doctor.rne || '',
         code: doctor.code || '',
         payment_payroll: doctor.payment_payroll || 'total',
-        commission_percentage: doctor.commission_percentage ?? null
+        commission_percentage: doctor.commission_percentage ?? null,
+        insurance_commission_percentage: doctor.insurance_commission_percentage ?? null
     });
     resetValidation();
 };
@@ -149,7 +151,8 @@ const resetForm = () => {
         rne: '',
         code: '',
         payment_payroll: 'total',
-        commission_percentage: null
+        commission_percentage: null,
+        insurance_commission_percentage: null
     });
     resetValidation();
 };
@@ -196,6 +199,26 @@ const formatCommissionPercentage = (event) => {
     }
     doctorForm.commission_percentage = value;
     validateField('commission_percentage');
+};
+
+const formatInsuranceCommissionPercentage = (event) => {
+    let value = event.target.value.replace(/[^0-9.]/g, '');
+    // Permitir solo un punto decimal
+    const parts = value.split('.');
+    if (parts.length > 2) {
+        value = parts[0] + '.' + parts.slice(1).join('');
+    }
+    // Limitar a 2 decimales
+    if (parts[1] && parts[1].length > 2) {
+        value = parts[0] + '.' + parts[1].substring(0, 2);
+    }
+    // Limitar a 100
+    const numValue = parseFloat(value);
+    if (!isNaN(numValue) && numValue > 100) {
+        value = '100.00';
+    }
+    doctorForm.insurance_commission_percentage = value;
+    validateField('insurance_commission_percentage');
 };
 
 // Validaciones
@@ -265,6 +288,24 @@ const validateField = (fieldName) => {
             }
             break;
 
+        case 'insurance_commission_percentage':
+            // Permitir null o vacío (opcional)
+            if (doctorForm.insurance_commission_percentage === null || doctorForm.insurance_commission_percentage === '') {
+                delete validationErrors.value.insurance_commission_percentage;
+            } else {
+                const percentage = parseFloat(doctorForm.insurance_commission_percentage);
+                if (isNaN(percentage)) {
+                    validationErrors.value.insurance_commission_percentage = 'Debe ser un número válido';
+                } else if (percentage < 0) {
+                    validationErrors.value.insurance_commission_percentage = 'El porcentaje no puede ser negativo';
+                } else if (percentage > 100) {
+                    validationErrors.value.insurance_commission_percentage = 'El porcentaje no puede ser mayor a 100';
+                } else {
+                    delete validationErrors.value.insurance_commission_percentage;
+                }
+            }
+            break;
+
         default:
             break;
     }
@@ -277,18 +318,13 @@ const validateAllFields = () => {
     validateField('numero_colegiatura');
     validateField('code');
     validateField('commission_percentage');
+    validateField('insurance_commission_percentage');
     return Object.keys(validationErrors.value).length === 0;
 };
 
 // Validación en tiempo real
 const isFormValid = computed(() => {
-    return (
-        doctorForm.name.trim() &&
-        doctorForm.document_number &&
-        doctorForm.numero_colegiatura &&
-        doctorForm.code &&
-        Object.keys(validationErrors.value).length === 0
-    );
+    return doctorForm.name.trim() && doctorForm.document_number && doctorForm.numero_colegiatura && doctorForm.code && Object.keys(validationErrors.value).length === 0;
 });
 
 // Guardar
@@ -318,15 +354,7 @@ const handleClose = () => {
 </script>
 
 <template>
-    <Dialog
-        v-model:visible="dialogVisible"
-        :header="dialogTitle"
-        :modal="true"
-        :closable="!saving"
-        :closeOnEscape="!saving"
-        class="w-full md:w-[600px]"
-        @hide="handleClose"
-    >
+    <Dialog v-model:visible="dialogVisible" :header="dialogTitle" :modal="true" :closable="!saving" :closeOnEscape="!saving" class="w-full md:w-[600px]" @hide="handleClose">
         <div class="flex flex-col gap-6 py-4">
             <!-- Nombre -->
             <div class="field">
@@ -385,30 +413,12 @@ const handleClose = () => {
             <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div class="field">
                     <label for="type" class="font-semibold mb-2 block"> Tipo de Profesional <span class="text-red-500">*</span> </label>
-                    <Select
-                        id="type"
-                        v-model="doctorForm.type"
-                        :options="typeOptions"
-                        optionLabel="label"
-                        optionValue="value"
-                        placeholder="Seleccionar"
-                        class="w-full"
-                        :disabled="saving"
-                    />
+                    <Select id="type" v-model="doctorForm.type" :options="typeOptions" optionLabel="label" optionValue="value" placeholder="Seleccionar" class="w-full" :disabled="saving" />
                 </div>
 
                 <div class="field">
                     <label for="colegio" class="font-semibold mb-2 block"> Colegio Profesional <span class="text-red-500">*</span> </label>
-                    <Select
-                        id="colegio"
-                        v-model="doctorForm.colegio"
-                        :options="colegioOptions"
-                        optionLabel="label"
-                        optionValue="value"
-                        placeholder="Seleccionar"
-                        class="w-full"
-                        :disabled="saving"
-                    />
+                    <Select id="colegio" v-model="doctorForm.colegio" :options="colegioOptions" optionLabel="label" optionValue="value" placeholder="Seleccionar" class="w-full" :disabled="saving" />
                 </div>
             </div>
 
@@ -443,16 +453,7 @@ const handleClose = () => {
             <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div class="field">
                     <label for="code" class="font-semibold mb-2 block"> Código <span class="text-red-500">*</span> </label>
-                    <InputText
-                        id="code"
-                        v-model="doctorForm.code"
-                        placeholder="Ej: MED001"
-                        class="w-full"
-                        :class="{ 'p-invalid': touchedFields.code && validationErrors.code }"
-                        :disabled="saving"
-                        @input="formatCode"
-                        @blur="validateField('code')"
-                    />
+                    <InputText id="code" v-model="doctorForm.code" placeholder="Ej: MED001" class="w-full" :class="{ 'p-invalid': touchedFields.code && validationErrors.code }" :disabled="saving" @input="formatCode" @blur="validateField('code')" />
                     <small v-if="touchedFields.code && validationErrors.code" class="p-error">
                         {{ validationErrors.code }}
                     </small>
@@ -461,38 +462,47 @@ const handleClose = () => {
 
                 <div class="field">
                     <label for="payment_payroll" class="font-semibold mb-2 block"> Tipo de Pago <span class="text-red-500">*</span> </label>
-                    <Select
-                        id="payment_payroll"
-                        v-model="doctorForm.payment_payroll"
-                        :options="paymentPayrollOptions"
-                        optionLabel="label"
-                        optionValue="value"
-                        placeholder="Seleccionar"
-                        class="w-full"
-                        :disabled="saving"
-                    />
+                    <Select id="payment_payroll" v-model="doctorForm.payment_payroll" :options="paymentPayrollOptions" optionLabel="label" optionValue="value" placeholder="Seleccionar" class="w-full" :disabled="saving" />
                 </div>
             </div>
 
-            <!-- Porcentaje de Comisión -->
-            <div class="field">
-                <label for="commission_percentage" class="font-semibold mb-2 block">
-                    Porcentaje de Comisión (%) <span class="text-red-500">*</span>
-                </label>
-                <InputText
-                    id="commission_percentage"
-                    v-model="doctorForm.commission_percentage"
-                    placeholder="Ej: 50.00"
-                    class="w-full"
-                    :class="{ 'p-invalid': touchedFields.commission_percentage && validationErrors.commission_percentage }"
-                    :disabled="saving"
-                    @input="formatCommissionPercentage"
-                    @blur="validateField('commission_percentage')"
-                />
-                <small v-if="touchedFields.commission_percentage && validationErrors.commission_percentage" class="p-error">
-                    {{ validationErrors.commission_percentage }}
-                </small>
-                <small class="text-muted">Porcentaje de comisión para servicios PLANILLA</small>
+            <!-- Porcentajes de Comisión -->
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div class="field">
+                    <label for="commission_percentage" class="font-semibold mb-2 block"> Comisión Base (%) <span class="text-red-500">*</span> </label>
+                    <InputText
+                        id="commission_percentage"
+                        v-model="doctorForm.commission_percentage"
+                        placeholder="Ej: 50.00"
+                        class="w-full"
+                        :class="{ 'p-invalid': touchedFields.commission_percentage && validationErrors.commission_percentage }"
+                        :disabled="saving"
+                        @input="formatCommissionPercentage"
+                        @blur="validateField('commission_percentage')"
+                    />
+                    <small v-if="touchedFields.commission_percentage && validationErrors.commission_percentage" class="p-error">
+                        {{ validationErrors.commission_percentage }}
+                    </small>
+                    <small class="text-muted">Para PLANILLA y PARTICULAR en RETÉN</small>
+                </div>
+
+                <div class="field">
+                    <label for="insurance_commission_percentage" class="font-semibold mb-2 block"> Comisión Seguros RETÉN (%) </label>
+                    <InputText
+                        id="insurance_commission_percentage"
+                        v-model="doctorForm.insurance_commission_percentage"
+                        placeholder="Ej: 85.00 (Opcional)"
+                        class="w-full"
+                        :class="{ 'p-invalid': touchedFields.insurance_commission_percentage && validationErrors.insurance_commission_percentage }"
+                        :disabled="saving"
+                        @input="formatInsuranceCommissionPercentage"
+                        @blur="validateField('insurance_commission_percentage')"
+                    />
+                    <small v-if="touchedFields.insurance_commission_percentage && validationErrors.insurance_commission_percentage" class="p-error">
+                        {{ validationErrors.insurance_commission_percentage }}
+                    </small>
+                    <small class="text-muted">Para RETÉN con Seguros/EPS (92.5% por defecto)</small>
+                </div>
             </div>
         </div>
 

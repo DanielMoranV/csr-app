@@ -1,22 +1,21 @@
 <script setup>
-import { ref, onMounted, computed, watch } from 'vue';
+import BulkApprovalDialog from '@/components/doctors/BulkApprovalDialog.vue';
 import { useMedicalFees } from '@/composables/medicalFees/useMedicalFees';
-import { useToast } from 'primevue/usetoast';
 import { useMedicalSpecialtiesStore } from '@/store/medicalSpecialtiesStore';
-import { FilterMatchMode, FilterOperator }  from '@primevue/core/api';
+import { FilterMatchMode, FilterOperator } from '@primevue/core/api';
 import Button from 'primevue/button';
-import FileUpload from 'primevue/fileupload';
-import DataTable from 'primevue/datatable';
-import Column from 'primevue/column';
-import Tag from 'primevue/tag';
 import Card from 'primevue/card';
+import Column from 'primevue/column';
+import DataTable from 'primevue/datatable';
 import DatePicker from 'primevue/datepicker';
 import Dropdown from 'primevue/dropdown';
-import InputText from 'primevue/inputtext';
-import InputNumber from 'primevue/inputnumber';
 import IconField from 'primevue/iconfield';
 import InputIcon from 'primevue/inputicon';
-import BulkApprovalDialog from '@/components/doctors/BulkApprovalDialog.vue';
+import InputNumber from 'primevue/inputnumber';
+import InputText from 'primevue/inputtext';
+import Tag from 'primevue/tag';
+import { useToast } from 'primevue/usetoast';
+import { computed, onMounted, ref, watch } from 'vue';
 
 const toast = useToast();
 const {
@@ -36,7 +35,8 @@ const {
     loadMedicalServices,
     updateService,
     isExcelData,
-    bulkApproveServices
+    bulkApproveServices,
+    recalculateCommissionsForDoctor
 } = useMedicalFees();
 
 async function onCellEditComplete(event) {
@@ -48,12 +48,12 @@ async function onCellEditComplete(event) {
 
     // Validación básica
     if (field === 'amount' || field === 'comision') {
-         if (isNaN(newValue) || newValue < 0) {
-             toast.add({ severity: 'error', summary: 'Error', detail: 'Valor inválido', life: 3000 });
-             // Revertir al valor anterior
-             data[field] = oldValue;
-             return;
-         }
+        if (isNaN(newValue) || newValue < 0) {
+            toast.add({ severity: 'error', summary: 'Error', detail: 'Valor inválido', life: 3000 });
+            // Revertir al valor anterior
+            data[field] = oldValue;
+            return;
+        }
     }
 
     // Validación para status
@@ -73,18 +73,17 @@ async function onCellEditComplete(event) {
     } catch (error) {
         // Revertir automáticamente al valor anterior cuando falla la actualización
         data[field] = oldValue;
-        
+
         // Mostrar mensaje de error con más detalle
         const errorMessage = error.response?.data?.message || error.message || 'No se pudo actualizar';
-        toast.add({ 
-            severity: 'error', 
-            summary: 'Error al actualizar', 
-            detail: errorMessage, 
-            life: 4000 
+        toast.add({
+            severity: 'error',
+            summary: 'Error al actualizar',
+            detail: errorMessage,
+            life: 4000
         });
     }
 }
-
 
 // Filtros
 const selectedSpecialty = ref(null);
@@ -96,6 +95,7 @@ const specialties = ref([]);
 const isSpecialtiesLoading = ref(true);
 const showSummaryTable = ref(false);
 const showBulkApprovalDialog = ref(false);
+const showRecalculateDialog = ref(false);
 
 const typeOptions = [
     { label: 'Todos', value: null },
@@ -122,74 +122,63 @@ const canImport = computed(() => !isLoading.value && !isSpecialtiesLoading.value
 
 const doctorOptions = computed(() => {
     let filteredDoctors = doctors.value;
-    
+
     // Filtrar médicos por especialidad seleccionada (basado en la relación del backend)
     if (selectedSpecialty.value) {
-        filteredDoctors = doctors.value.filter(doctor => {
+        filteredDoctors = doctors.value.filter((doctor) => {
             // Verificar si el médico tiene el array de especialidades
             if (!doctor.specialties || !Array.isArray(doctor.specialties)) {
                 return false;
             }
-            
+
             // Verificar si alguna especialidad del médico coincide con la seleccionada
-            return doctor.specialties.some(specialty => specialty.id === selectedSpecialty.value);
+            return doctor.specialties.some((specialty) => specialty.id === selectedSpecialty.value);
         });
     }
-    
-    return [
-        { label: 'Todos los médicos', value: null },
-        ...filteredDoctors.map(d => ({ label: d.name, value: d.code }))
-    ];
+
+    return [{ label: 'Todos los médicos', value: null }, ...filteredDoctors.map((d) => ({ label: d.name, value: d.code }))];
 });
 
-
-const specialtyOptions = computed(() => [
-    { label: 'Todas las especialidades', value: null },
-    ...specialties.value.map(s => ({ label: s.name, value: s.id }))
-]);
+const specialtyOptions = computed(() => [{ label: 'Todas las especialidades', value: null }, ...specialties.value.map((s) => ({ label: s.name, value: s.id }))]);
 
 const filteredServices = computed(() => {
     let filtered = services.value;
-    
+
     // Filtrar por especialidad (indirectamente a través de los médicos)
     if (selectedSpecialty.value) {
         // Obtener códigos de médicos que pertenecen a la especialidad seleccionada
         const doctorCodesInSpecialty = doctors.value
-            .filter(doctor => {
+            .filter((doctor) => {
                 if (!doctor.specialties || !Array.isArray(doctor.specialties)) {
                     return false;
                 }
-                return doctor.specialties.some(specialty => specialty.id === selectedSpecialty.value);
+                return doctor.specialties.some((specialty) => specialty.id === selectedSpecialty.value);
             })
-            .map(doctor => doctor.code);
-        
+            .map((doctor) => doctor.code);
+
         // Filtrar servicios por médicos de esa especialidad
-        filtered = filtered.filter(s => doctorCodesInSpecialty.includes(s.doctorCode));
+        filtered = filtered.filter((s) => doctorCodesInSpecialty.includes(s.doctorCode));
     }
-    
+
     if (selectedDoctor.value) {
-        filtered = filtered.filter(s => s.doctor?.code === selectedDoctor.value);
+        filtered = filtered.filter((s) => s.doctor?.code === selectedDoctor.value);
     }
-    
+
     if (selectedType.value) {
-        filtered = filtered.filter(s => s.serviceType === selectedType.value);
+        filtered = filtered.filter((s) => s.serviceType === selectedType.value);
     }
-    
+
     return filtered;
 });
 
 // Totales calculados basándose en servicios filtrados
 const filteredTotals = computed(() => {
-    const planillaServices = filteredServices.value.filter(s => s.serviceType === 'PLANILLA');
-    const retenServices = filteredServices.value.filter(s => s.serviceType === 'RETEN' || s.serviceType === 'RETÉN');
-    
+    const planillaServices = filteredServices.value.filter((s) => s.serviceType === 'PLANILLA');
+    const retenServices = filteredServices.value.filter((s) => s.serviceType === 'RETEN' || s.serviceType === 'RETÉN');
+
     // Obtener médicos únicos de los servicios filtrados
-    const uniqueDoctors = new Set(
-        filteredServices.value
-            .filter(s => s.doctor)
-            .map(s => s.doctor.code)
-    );
-    
+    const uniqueDoctors = new Set(filteredServices.value.filter((s) => s.doctor).map((s) => s.doctor.code));
+
     return {
         totalGenerated: filteredServices.value.reduce((sum, s) => sum + s.amount, 0),
         totalPlanilla: planillaServices.reduce((sum, s) => sum + s.amount, 0),
@@ -205,7 +194,7 @@ const filteredTotals = computed(() => {
 watch(selectedSpecialty, () => {
     // Si hay un médico seleccionado, verificar si pertenece a la nueva especialidad
     if (selectedDoctor.value) {
-        const doctorStillValid = doctorOptions.value.some(opt => opt.value === selectedDoctor.value);
+        const doctorStillValid = doctorOptions.value.some((opt) => opt.value === selectedDoctor.value);
         if (!doctorStillValid) {
             selectedDoctor.value = null;
         }
@@ -215,11 +204,11 @@ watch(selectedSpecialty, () => {
 // Computed para resumen por médico
 const doctorSummary = computed(() => {
     const summaryMap = new Map();
-    
-    filteredServices.value.forEach(service => {
+
+    filteredServices.value.forEach((service) => {
         const doctorCode = service.doctorCode || 'SIN_CODIGO';
         const doctorName = service.doctor?.name || 'Médico no identificado';
-        
+
         if (!summaryMap.has(doctorCode)) {
             summaryMap.set(doctorCode, {
                 codigo: doctorCode,
@@ -233,15 +222,15 @@ const doctorSummary = computed(() => {
                 totalGenerado: 0
             });
         }
-        
+
         const summary = summaryMap.get(doctorCode);
         const isPlanilla = service.serviceType === 'PLANILLA';
         const isReten = service.serviceType === 'RETEN' || service.serviceType === 'RETÉN';
-        
+
         summary.totalAtenciones++;
         summary.totalGenerado += service.amount;
         summary.totalComision += service.comision || 0;
-        
+
         if (isPlanilla) {
             summary.cantidadPlanilla++;
             summary.montoPlanilla += service.amount;
@@ -250,12 +239,11 @@ const doctorSummary = computed(() => {
             summary.montoReten += service.amount;
         }
     });
-    
+
     return Array.from(summaryMap.values()).sort((a, b) => a.nombre.localeCompare(b.nombre));
 });
 
 // Methods
-
 
 // Funciones de carga
 async function loadServerData() {
@@ -270,7 +258,7 @@ async function loadServerData() {
     }
     // Buscar ID del médico seleccionado (ya que selectedDoctor es el código)
     if (selectedDoctor.value) {
-        const doctorObj = doctors.value.find(d => d.code === selectedDoctor.value);
+        const doctorObj = doctors.value.find((d) => d.code === selectedDoctor.value);
         if (doctorObj) {
             filters.doctor_id = doctorObj.id;
         }
@@ -284,23 +272,23 @@ async function loadDataForMonth() {
     const start = selectedMonth.value.toISOString().split('T')[0];
     const endDate = new Date(selectedMonth.value.getFullYear(), selectedMonth.value.getMonth() + 1, 0);
     const end = endDate.toISOString().split('T')[0];
-    
+
     try {
         // Cargar dependencias (médicos, horarios)
         await loadDoctorsAndSchedules(start, end);
-        
+
         // Preparar filtros iniciales
         const filters = {};
         if (selectedSpecialty.value) {
             filters.medical_specialty_id = selectedSpecialty.value;
         }
         if (selectedDoctor.value) {
-            const doctorObj = doctors.value.find(d => d.code === selectedDoctor.value);
+            const doctorObj = doctors.value.find((d) => d.code === selectedDoctor.value);
             if (doctorObj) {
                 filters.doctor_id = doctorObj.id;
             }
         }
-        
+
         // Cargar servicios de la BD con filtros
         await loadMedicalServices(start, end, filters);
 
@@ -347,7 +335,7 @@ async function onMonthChange() {
 async function onFileSelect(event) {
     const file = event.files[0];
     if (!file) return;
-    
+
     try {
         await importFromExcel(file);
         toast.add({
@@ -380,13 +368,13 @@ function handleExport() {
 async function handleFileUpload(event) {
     const file = event.target.files[0];
     if (!file) return;
-    
+
     try {
         // 1. Importar y procesar Excel (validaciones, reglas, comisiones)
         await importFromExcel(file);
-        
+
         const importedCount = pendingImportServices.value.length;
-        
+
         // 2. Guardar automáticamente en BD
         toast.add({
             severity: 'info',
@@ -394,9 +382,9 @@ async function handleFileUpload(event) {
             detail: `${importedCount} servicios procesados. Guardando en base de datos...`,
             life: 3000
         });
-        
+
         const result = await saveToDatabase();
-        
+
         if (result.success) {
             toast.add({
                 severity: 'success',
@@ -404,11 +392,11 @@ async function handleFileUpload(event) {
                 detail: `${result.data?.imported_count || importedCount} servicios guardados en BD`,
                 life: 4000
             });
-            
+
             // 3. Recargar datos del mes para mostrar los nuevos registros
             await onMonthChange();
         }
-        
+
         // Limpiar el input para permitir reimportar el mismo archivo
         event.target.value = '';
     } catch (err) {
@@ -429,20 +417,20 @@ function getTypeColor(type) {
 
 function getStatusColor(status) {
     const statusColors = {
-        'pendiente': 'warn',
-        'revisado': 'info',
-        'aprobado': 'success',
-        'rechazado': 'danger'
+        pendiente: 'warn',
+        revisado: 'info',
+        aprobado: 'success',
+        rechazado: 'danger'
     };
     return statusColors[status] || 'secondary';
 }
 
 function getStatusLabel(status) {
     const statusLabels = {
-        'pendiente': 'Pendiente',
-        'revisado': 'Revisado',
-        'aprobado': 'Aprobado',
-        'rechazado': 'Rechazado'
+        pendiente: 'Pendiente',
+        revisado: 'Revisado',
+        aprobado: 'Aprobado',
+        rechazado: 'Rechazado'
     };
     return statusLabels[status] || status;
 }
@@ -478,17 +466,17 @@ onMounted(async () => {
     try {
         // Si ya hay datos en el store, usarlos directamente (Caché)
         if (specialtiesStore.allSpecialties.length > 0) {
-             specialties.value = specialtiesStore.allSpecialties;
-             console.log('Usando especialidades desde caché');
+            specialties.value = specialtiesStore.allSpecialties;
+            console.log('Usando especialidades desde caché');
         } else {
-             // Si no, cargar de la API
-             await specialtiesStore.fetchSpecialties();
-             specialties.value = specialtiesStore.allSpecialties;
-             console.log('Especialidades cargadas de API');
+            // Si no, cargar de la API
+            await specialtiesStore.fetchSpecialties();
+            specialties.value = specialtiesStore.allSpecialties;
+            console.log('Especialidades cargadas de API');
         }
 
         // Pre-seleccionar Pediatría por defecto (ID 32)
-        const pediatric = specialties.value.find(s => s.id === 32);
+        const pediatric = specialties.value.find((s) => s.id === 32);
         if (pediatric) {
             selectedSpecialty.value = pediatric.id;
         }
@@ -497,10 +485,10 @@ onMounted(async () => {
     } finally {
         isSpecialtiesLoading.value = false;
     }
-    
+
     // Cargar datos del mes actual
     await onMonthChange();
-    
+
     // Debug: verificar estado inicial
     console.log('[MedicalFees] Estado inicial - isExcelData:', isExcelData.value, 'services.length:', services.value.length);
 });
@@ -514,24 +502,24 @@ function openBulkApprovalDialog() {
 async function handleBulkApproval({ ids, status, observation }) {
     try {
         const result = await bulkApproveServices(ids, status, observation);
-        
+
         if (result.success) {
             const updatedCount = result.data?.updated_count || ids.length;
             const skippedCount = result.data?.skipped_count || 0;
-            
+
             let message = `${updatedCount} atención${updatedCount !== 1 ? 'es' : ''} actualizada${updatedCount !== 1 ? 's' : ''} a estado: ${status}`;
-            
+
             if (skippedCount > 0) {
                 message += ` (${skippedCount} omitida${skippedCount !== 1 ? 's' : ''} por estar aprobada${skippedCount !== 1 ? 's' : ''} o rechazada${skippedCount !== 1 ? 's' : ''})`;
             }
-            
+
             toast.add({
                 severity: 'success',
                 summary: 'Actualización Masiva Exitosa',
                 detail: message,
                 life: 5000
             });
-            
+
             // Recargar datos
             await onMonthChange();
         }
@@ -555,6 +543,56 @@ function handleClearData() {
         life: 3000
     });
 }
+
+// Recálculo de comisiones
+const selectedDoctorObject = computed(() => {
+    if (!selectedDoctor.value) return null;
+    return doctors.value.find((d) => d.code === selectedDoctor.value || d.id === selectedDoctor.value);
+});
+
+const recalculableServicesCount = computed(() => {
+    if (!selectedDoctorObject.value) return 0;
+    return services.value.filter((s) => s.doctor?.id === selectedDoctorObject.value.id && s.status !== 'aprobado' && s.status !== 'rechazado').length;
+});
+
+const canRecalculate = computed(() => selectedDoctorObject.value && recalculableServicesCount.value > 0);
+
+function openRecalculateDialog() {
+    if (!canRecalculate.value) {
+        toast.add({
+            severity: 'warn',
+            summary: 'Selecciona un médico',
+            detail: 'Debes seleccionar un médico para recalcular sus comisiones',
+            life: 3000
+        });
+        return;
+    }
+    showRecalculateDialog.value = true;
+}
+
+async function handleRecalculate(doctorId, resolve) {
+    try {
+        const results = await recalculateCommissionsForDoctor(doctorId);
+        resolve(results);
+    } catch (error) {
+        console.error('Error en recálculo:', error);
+        resolve({
+            total: 0,
+            updated: 0,
+            skipped: 0,
+            errors: [{ id: 0, admision: 'N/A', error: error.message }]
+        });
+    }
+}
+
+function handleRecalculateComplete(results) {
+    toast.add({
+        severity: 'success',
+        summary: 'Recálculo completado',
+        detail: `${results.updated} servicios actualizados para ${selectedDoctor.value.name}`,
+        life: 5000
+    });
+}
 </script>
 
 <template>
@@ -573,490 +611,405 @@ function handleClearData() {
                     </p>
                 </div>
                 <div class="header-actions">
-                    <Button 
-                        label="Limpiar Datos" 
-                        icon="pi pi-trash" 
-                        severity="danger"
-                        outlined
-                        class="clear-button" 
-                        @click="handleClearData"
-                        :disabled="services.length === 0"
-                    />
-                    <Button 
+                    <Button label="Limpiar Datos" icon="pi pi-trash" severity="danger" outlined class="clear-button" @click="handleClearData" :disabled="services.length === 0" />
+                    <Button
                         :label="!canImport ? 'Cargando datos...' : 'Importar Excel'"
-                        :icon="!canImport ? 'pi pi-spin pi-spinner' : 'pi pi-upload'" 
-                        class="import-button" 
+                        :icon="!canImport ? 'pi pi-spin pi-spinner' : 'pi pi-upload'"
+                        class="import-button"
                         @click="$refs.fileInput.click()"
                         :loading="!canImport"
                         :disabled="!canImport"
                     />
                 </div>
-                <input 
-                    ref="fileInput" 
-                    type="file" 
-                    accept=".xlsx,.xls" 
-                    style="display: none" 
-                    @change="handleFileUpload"
-                    :disabled="!canImport"
-                />
+                <input ref="fileInput" type="file" accept=".xlsx,.xls" style="display: none" @change="handleFileUpload" :disabled="!canImport" />
             </div>
 
             <!-- Content Section -->
-                <!-- Panel de Control -->
-                <Card class="control-panel">
-                    <template #title>
-                        <i class="pi pi-sliders-h"></i> Panel de Control
-                    </template>
+            <!-- Panel de Control -->
+            <Card class="control-panel">
+                <template #title> <i class="pi pi-sliders-h"></i> Panel de Control </template>
+                <template #content>
+                    <div class="control-grid">
+                        <div class="control-item">
+                            <label>Especialidad</label>
+                            <Dropdown v-model="selectedSpecialty" :options="specialtyOptions" optionLabel="label" optionValue="value" placeholder="Seleccionar especialidad" :filter="true" class="w-full" />
+                        </div>
+
+                        <div class="control-item">
+                            <label>Mes</label>
+                            <DatePicker v-model="selectedMonth" view="month" dateFormat="MM yy" @date-select="onMonthChange" placeholder="Seleccionar mes" class="w-full" />
+                        </div>
+
+                        <div class="control-item">
+                            <label>Médico</label>
+                            <Dropdown v-model="selectedDoctor" :options="doctorOptions" optionLabel="label" optionValue="value" placeholder="Seleccionar médico" :filter="true" class="w-full" showClear />
+                        </div>
+
+                        <div class="control-item">
+                            <label>Tipo</label>
+                            <Dropdown v-model="selectedType" :options="typeOptions" optionLabel="label" optionValue="value" placeholder="Seleccionar tipo" class="w-full" />
+                        </div>
+
+                        <div class="control-item">
+                            <label>&nbsp;</label>
+                            <div class="flex gap-2">
+                                <Button icon="pi pi-search" v-tooltip.top="'Buscar en BD'" @click="handleSearch" :loading="isLoading" severity="info" />
+                                <Button
+                                    :icon="showSummaryTable ? 'pi pi-eye-slash' : 'pi pi-chart-bar'"
+                                    v-tooltip.top="showSummaryTable ? 'Ocultar Resumen' : 'Ver Resumen por Médico'"
+                                    @click="showSummaryTable = !showSummaryTable"
+                                    :severity="showSummaryTable ? 'secondary' : 'help'"
+                                    :disabled="services.length === 0"
+                                />
+                                <Button icon="pi pi-check-circle" v-tooltip.top="'Aprobar/Rechazar Atenciones'" @click="openBulkApprovalDialog" severity="warn" :disabled="!selectedDoctor || filteredServices.length === 0" />
+                                <Button icon="pi pi-calculator" v-tooltip.top="'Recalcular Comisiones'" @click="openRecalculateDialog" severity="warning" :disabled="!canRecalculate" />
+                                <Button icon="pi pi-file-excel" v-tooltip.top="'Exportar Excel'" @click="handleExport" class="p-button-success" :disabled="services.length === 0" />
+                            </div>
+                        </div>
+                    </div>
+                </template>
+            </Card>
+
+            <!-- Resumen General -->
+            <div class="summary-cards" v-if="services.length > 0">
+                <Card class="summary-card">
                     <template #content>
-                        <div class="control-grid">
-                            <div class="control-item">
-                                <label>Especialidad</label>
-                                <Dropdown 
-                                    v-model="selectedSpecialty" 
-                                    :options="specialtyOptions"
-                                    optionLabel="label"
-                                    optionValue="value"
-                                    placeholder="Seleccionar especialidad"
-                                    :filter="true"
-                                    class="w-full"
-                                />
-                            </div>
-                            
-                            <div class="control-item">
-                                <label>Mes</label>
-                                <DatePicker 
-                                    v-model="selectedMonth" 
-                                    view="month" 
-                                    dateFormat="MM yy"
-                                    @date-select="onMonthChange"
-                                    placeholder="Seleccionar mes"
-                                    class="w-full"
-                                />
-                            </div>
-                            
-                            <div class="control-item">
-                                <label>Médico</label>
-                                <Dropdown 
-                                    v-model="selectedDoctor" 
-                                    :options="doctorOptions" 
-                                    optionLabel="label" 
-                                    optionValue="value" 
-                                    placeholder="Seleccionar médico"
-                                    :filter="true"
-                                    class="w-full"
-                                    showClear
-                                />
-                            </div>
-                            
-                            <div class="control-item">
-                                <label>Tipo</label>
-                                <Dropdown 
-                                    v-model="selectedType" 
-                                    :options="typeOptions"
-                                    optionLabel="label"
-                                    optionValue="value"
-                                    placeholder="Seleccionar tipo"
-                                    class="w-full"
-                                />
-                            </div>
-                            
-                            <div class="control-item">
-                                <label>&nbsp;</label>
-                                <div class="flex gap-2">
-                                    <Button 
-                                        icon="pi pi-search" 
-                                        v-tooltip.top="'Buscar en BD'"
-                                        @click="handleSearch"
-                                        :loading="isLoading"
-                                        severity="info"
-                                    />
-                                    <Button 
-                                        :icon="showSummaryTable ? 'pi pi-eye-slash' : 'pi pi-chart-bar'" 
-                                        v-tooltip.top="showSummaryTable ? 'Ocultar Resumen' : 'Ver Resumen por Médico'"
-                                        @click="showSummaryTable = !showSummaryTable" 
-                                        :severity="showSummaryTable ? 'secondary' : 'help'"
-                                        :disabled="services.length === 0"
-                                    />
-                                    <Button 
-                                        icon="pi pi-check-circle" 
-                                        v-tooltip.top="'Aprobar/Rechazar Atenciones'"
-                                        @click="openBulkApprovalDialog" 
-                                        severity="warn"
-                                        :disabled="!selectedDoctor || filteredServices.length === 0"
-                                    />
-                                    <Button 
-                                        icon="pi pi-file-excel" 
-                                        v-tooltip.top="'Exportar Excel'"
-                                        @click="handleExport" 
-                                        class="p-button-success"
-                                        :disabled="services.length === 0"
-                                    />
-                                </div>
+                        <div class="summary-content">
+                            <i class="pi pi-dollar summary-icon"></i>
+                            <div>
+                                <div class="summary-label">Total Generado</div>
+                                <div class="summary-value">S/ {{ filteredTotals.totalGenerated.toFixed(2) }}</div>
                             </div>
                         </div>
                     </template>
                 </Card>
 
-                <!-- Resumen General -->
-                <div class="summary-cards" v-if="services.length > 0">
-                    <Card class="summary-card">
-                        <template #content>
-                            <div class="summary-content">
-                                <i class="pi pi-dollar summary-icon"></i>
-                                <div>
-                                    <div class="summary-label">Total Generado</div>
-                                    <div class="summary-value">S/ {{ filteredTotals.totalGenerated.toFixed(2) }}</div>
-                                </div>
-                            </div>
-                        </template>
-                    </Card>
-                    
-                    <Card class="summary-card">
-                        <template #content>
-                            <div class="summary-content">
-                                <i class="pi pi-check-circle summary-icon success"></i>
-                                <div>
-                                    <div class="summary-label">Planilla</div>
-                                    <div class="summary-value">S/ {{ filteredTotals.totalPlanilla.toFixed(2) }}</div>
-                                    <div class="summary-count">{{ filteredTotals.planillaCount }} servicios</div>
-                                </div>
-                            </div>
-                        </template>
-                    </Card>
-                    
-                    <Card class="summary-card">
-                        <template #content>
-                            <div class="summary-content">
-                                <i class="pi pi-exclamation-triangle summary-icon warning"></i>
-                                <div>
-                                    <div class="summary-label">Retén</div>
-                                    <div class="summary-value">S/ {{ filteredTotals.totalReten.toFixed(2) }}</div>
-                                    <div class="summary-count">{{ filteredTotals.retenCount }} servicios</div>
-                                </div>
-                            </div>
-                        </template>
-                    </Card>
-                    
-                    <Card class="summary-card">
-                        <template #content>
-                            <div class="summary-content">
-                                <i class="pi pi-users summary-icon"></i>
-                                <div>
-                                    <div class="summary-label">Médicos</div>
-                                    <div class="summary-value">{{ filteredTotals.doctorCount }}</div>
-                                    <div class="summary-count">{{ filteredTotals.serviceCount }} servicios</div>
-                                </div>
-                            </div>
-                        </template>
-                    </Card>
-                </div>
-
-                <!-- Tabla Resumen por Médico (Toggle) -->
-                <Card class="summary-table-card" v-if="services.length > 0 && showSummaryTable">
-                    <template #title>
-                        <div class="flex align-items-center gap-2">
-                            <i class="pi pi-chart-bar"></i> 
-                            <span>Resumen por Médico</span>
-                            <Tag :value="`${doctorSummary.length} médicos`" severity="info" />
-                        </div>
-                    </template>
+                <Card class="summary-card">
                     <template #content>
-                        <DataTable 
-                            :value="doctorSummary" 
-                            dataKey="codigo"
-                            paginator
-                            :rows="10"
-                            :rowsPerPageOptions="[10, 20, 50]"
-                            paginatorTemplate="FirstPageLink PrevPageLink PageLinks NextPageLink LastPageLink CurrentPageReport RowsPerPageDropdown"
-                            currentPageReportTemplate="Mostrando {first} a {last} de {totalRecords} médicos"
-                            class="p-datatable-sm"
-                            stripedRows
-                            responsiveLayout="scroll"
-                            showGridlines
-                        >
-                            <Column field="codigo" header="Código" sortable style="min-width: 100px">
-                                <template #body="slotProps">
-                                    <span class="font-mono">{{ slotProps.data.codigo }}</span>
-                                </template>
-                            </Column>
-                            
-                            <Column field="nombre" header="Médico" sortable style="min-width: 200px">
-                                <template #body="slotProps">
-                                    <span class="font-semibold">{{ slotProps.data.nombre }}</span>
-                                </template>
-                            </Column>
-                            
-                            <Column field="cantidadPlanilla" header="Cant. Planilla" sortable style="min-width: 120px" class="text-center">
-                                <template #body="slotProps">
-                                    <Tag :value="slotProps.data.cantidadPlanilla" severity="success" />
-                                </template>
-                            </Column>
-                            
-                            <Column field="montoPlanilla" header="Monto Planilla" sortable style="min-width: 150px">
-                                <template #body="slotProps">
-                                    <span class="font-semibold text-green-600">S/ {{ slotProps.data.montoPlanilla.toFixed(2) }}</span>
-                                </template>
-                            </Column>
-                            
-                            <Column field="cantidadReten" header="Cant. Retén" sortable style="min-width: 120px" class="text-center">
-                                <template #body="slotProps">
-                                    <Tag :value="slotProps.data.cantidadReten" severity="warning" />
-                                </template>
-                            </Column>
-                            
-                            <Column field="montoReten" header="Monto Retén" sortable style="min-width: 150px">
-                                <template #body="slotProps">
-                                    <span class="font-semibold text-orange-600">S/ {{ slotProps.data.montoReten.toFixed(2) }}</span>
-                                </template>
-                            </Column>
-                            
-                            <Column field="totalComision" header="Total Comisión" sortable style="min-width: 150px">
-                                <template #body="slotProps">
-                                    <span class="font-bold text-blue-600">S/ {{ slotProps.data.totalComision.toFixed(2) }}</span>
-                                </template>
-                            </Column>
-                            
-                            <Column field="totalAtenciones" header="Total Atenciones" sortable style="min-width: 140px" class="text-center">
-                                <template #body="slotProps">
-                                    <Tag :value="slotProps.data.totalAtenciones" severity="info" />
-                                </template>
-                            </Column>
-                            
-                            <Column field="totalGenerado" header="Total Generado" sortable style="min-width: 150px">
-                                <template #body="slotProps">
-                                    <span class="font-bold text-primary">S/ {{ slotProps.data.totalGenerado.toFixed(2) }}</span>
-                                </template>
-                            </Column>
-                        </DataTable>
+                        <div class="summary-content">
+                            <i class="pi pi-check-circle summary-icon success"></i>
+                            <div>
+                                <div class="summary-label">Planilla</div>
+                                <div class="summary-value">S/ {{ filteredTotals.totalPlanilla.toFixed(2) }}</div>
+                                <div class="summary-count">{{ filteredTotals.planillaCount }} servicios</div>
+                            </div>
+                        </div>
                     </template>
                 </Card>
 
-                <!-- Tabla de Servicios -->
-                <Card class="services-table-card" v-if="services.length > 0">
-                    <template #title>
-                        <i class="pi pi-list"></i> Detalle de Servicios
-                    </template>
+                <Card class="summary-card">
                     <template #content>
-                        <DataTable 
-                            v-model:filters="filters"
-                            :value="filteredServices" 
-                            dataKey="id"
-                            paginator
-                            :rows="10"
-                            :rowsPerPageOptions="[10, 20, 50, 100]"
-                            paginatorTemplate="FirstPageLink PrevPageLink PageLinks NextPageLink LastPageLink CurrentPageReport RowsPerPageDropdown"
-                            currentPageReportTemplate="Mostrando {first} a {last} de {totalRecords} servicios"
-                            class="p-datatable-sm"
-                            :loading="isLoading"
-                            stripedRows
-                            responsiveLayout="scroll"
-                            filterDisplay="menu"
-                            :globalFilterFields="['id', 'rawData.admision', 'patientName', 'doctor.name', 'rawData.segus', 'cia', 'tipoate', 'serviceTypeReason']"
-                            editMode="cell"
-                            @cell-edit-complete="onCellEditComplete"
-                        >
-                            <template #header>
-                                <div class="flex justify-content-between">
-                                    <IconField>
-                                        <InputIcon class="pi pi-search" />
-                                        <InputText v-model="filters['global'].value" placeholder="Buscar..." />
-                                    </IconField>
+                        <div class="summary-content">
+                            <i class="pi pi-exclamation-triangle summary-icon warning"></i>
+                            <div>
+                                <div class="summary-label">Retén</div>
+                                <div class="summary-value">S/ {{ filteredTotals.totalReten.toFixed(2) }}</div>
+                                <div class="summary-count">{{ filteredTotals.retenCount }} servicios</div>
+                            </div>
+                        </div>
+                    </template>
+                </Card>
+
+                <Card class="summary-card">
+                    <template #content>
+                        <div class="summary-content">
+                            <i class="pi pi-users summary-icon"></i>
+                            <div>
+                                <div class="summary-label">Médicos</div>
+                                <div class="summary-value">{{ filteredTotals.doctorCount }}</div>
+                                <div class="summary-count">{{ filteredTotals.serviceCount }} servicios</div>
+                            </div>
+                        </div>
+                    </template>
+                </Card>
+            </div>
+
+            <!-- Tabla Resumen por Médico (Toggle) -->
+            <Card class="summary-table-card" v-if="services.length > 0 && showSummaryTable">
+                <template #title>
+                    <div class="flex align-items-center gap-2">
+                        <i class="pi pi-chart-bar"></i>
+                        <span>Resumen por Médico</span>
+                        <Tag :value="`${doctorSummary.length} médicos`" severity="info" />
+                    </div>
+                </template>
+                <template #content>
+                    <DataTable
+                        :value="doctorSummary"
+                        dataKey="codigo"
+                        paginator
+                        :rows="10"
+                        :rowsPerPageOptions="[10, 20, 50]"
+                        paginatorTemplate="FirstPageLink PrevPageLink PageLinks NextPageLink LastPageLink CurrentPageReport RowsPerPageDropdown"
+                        currentPageReportTemplate="Mostrando {first} a {last} de {totalRecords} médicos"
+                        class="p-datatable-sm"
+                        stripedRows
+                        responsiveLayout="scroll"
+                        showGridlines
+                    >
+                        <Column field="codigo" header="Código" sortable style="min-width: 100px">
+                            <template #body="slotProps">
+                                <span class="font-mono">{{ slotProps.data.codigo }}</span>
+                            </template>
+                        </Column>
+
+                        <Column field="nombre" header="Médico" sortable style="min-width: 200px">
+                            <template #body="slotProps">
+                                <span class="font-semibold">{{ slotProps.data.nombre }}</span>
+                            </template>
+                        </Column>
+
+                        <Column field="cantidadPlanilla" header="Cant. Planilla" sortable style="min-width: 120px" class="text-center">
+                            <template #body="slotProps">
+                                <Tag :value="slotProps.data.cantidadPlanilla" severity="success" />
+                            </template>
+                        </Column>
+
+                        <Column field="montoPlanilla" header="Monto Planilla" sortable style="min-width: 150px">
+                            <template #body="slotProps">
+                                <span class="font-semibold text-green-600">S/ {{ slotProps.data.montoPlanilla.toFixed(2) }}</span>
+                            </template>
+                        </Column>
+
+                        <Column field="cantidadReten" header="Cant. Retén" sortable style="min-width: 120px" class="text-center">
+                            <template #body="slotProps">
+                                <Tag :value="slotProps.data.cantidadReten" severity="warning" />
+                            </template>
+                        </Column>
+
+                        <Column field="montoReten" header="Monto Retén" sortable style="min-width: 150px">
+                            <template #body="slotProps">
+                                <span class="font-semibold text-orange-600">S/ {{ slotProps.data.montoReten.toFixed(2) }}</span>
+                            </template>
+                        </Column>
+
+                        <Column field="totalComision" header="Total Comisión" sortable style="min-width: 150px">
+                            <template #body="slotProps">
+                                <span class="font-bold text-blue-600">S/ {{ slotProps.data.totalComision.toFixed(2) }}</span>
+                            </template>
+                        </Column>
+
+                        <Column field="totalAtenciones" header="Total Atenciones" sortable style="min-width: 140px" class="text-center">
+                            <template #body="slotProps">
+                                <Tag :value="slotProps.data.totalAtenciones" severity="info" />
+                            </template>
+                        </Column>
+
+                        <Column field="totalGenerado" header="Total Generado" sortable style="min-width: 150px">
+                            <template #body="slotProps">
+                                <span class="font-bold text-primary">S/ {{ slotProps.data.totalGenerado.toFixed(2) }}</span>
+                            </template>
+                        </Column>
+                    </DataTable>
+                </template>
+            </Card>
+
+            <!-- Tabla de Servicios -->
+            <Card class="services-table-card" v-if="services.length > 0">
+                <template #title> <i class="pi pi-list"></i> Detalle de Servicios </template>
+                <template #content>
+                    <DataTable
+                        v-model:filters="filters"
+                        :value="filteredServices"
+                        dataKey="id"
+                        paginator
+                        :rows="10"
+                        :rowsPerPageOptions="[10, 20, 50, 100]"
+                        paginatorTemplate="FirstPageLink PrevPageLink PageLinks NextPageLink LastPageLink CurrentPageReport RowsPerPageDropdown"
+                        currentPageReportTemplate="Mostrando {first} a {last} de {totalRecords} servicios"
+                        class="p-datatable-sm"
+                        :loading="isLoading"
+                        stripedRows
+                        responsiveLayout="scroll"
+                        filterDisplay="menu"
+                        :globalFilterFields="['id', 'rawData.admision', 'patientName', 'doctor.name', 'rawData.segus', 'cia', 'tipoate', 'serviceTypeReason']"
+                        editMode="cell"
+                        @cell-edit-complete="onCellEditComplete"
+                    >
+                        <template #header>
+                            <div class="flex justify-content-between">
+                                <IconField>
+                                    <InputIcon class="pi pi-search" />
+                                    <InputText v-model="filters['global'].value" placeholder="Buscar..." />
+                                </IconField>
+                            </div>
+                        </template>
+
+                        <!-- ID -->
+                        <Column field="id" header="ID" sortable style="min-width: 80px"></Column>
+
+                        <!-- Admisión -->
+                        <Column field="rawData.admision" header="Admisión" sortable style="min-width: 80px">
+                            <template #body="slotProps">
+                                <span style="font-size: 0.8rem">{{ slotProps.data.rawData?.admision || 'N/A' }}</span>
+                            </template>
+                            <template #filter="{ filterModel }">
+                                <InputText v-model="filterModel.value" type="text" class="p-column-filter" placeholder="Buscar admisión" />
+                            </template>
+                        </Column>
+
+                        <!-- Paciente -->
+                        <Column field="patientName" header="Paciente" sortable style="min-width: 200px">
+                            <template #body="slotProps">
+                                <div class="font-medium">{{ slotProps.data.patientName || 'N/A' }}</div>
+                            </template>
+                            <template #filter="{ filterModel }">
+                                <InputText v-model="filterModel.value" type="text" class="p-column-filter" placeholder="Buscar paciente" />
+                            </template>
+                        </Column>
+
+                        <!-- Fecha y Hora combinadas -->
+                        <Column header="Fecha y Hora" sortable field="date" style="min-width: 150px">
+                            <template #body="slotProps">
+                                {{ slotProps.data.date }} <br />
+                                <small class="text-gray-500">{{ slotProps.data.time }}</small>
+                            </template>
+                        </Column>
+
+                        <!-- Médico (antes Servicio) -->
+                        <Column field="doctor.name" header="Médico" sortable style="min-width: 200px">
+                            <template #body="slotProps">
+                                <div class="font-medium">{{ slotProps.data.doctor?.name || 'N/A' }}</div>
+                            </template>
+                            <template #filter="{ filterModel }">
+                                <InputText v-model="filterModel.value" type="text" class="p-column-filter" placeholder="Buscar por médico" />
+                            </template>
+                        </Column>
+
+                        <!-- Servicio Medico (antes Segus) -->
+                        <Column field="rawData.segus" header="Servicio Medico" sortable style="min-width: 200px">
+                            <template #body="slotProps">
+                                <div style="display: flex; flex-direction: column; gap: 2px">
+                                    <span class="font-semibold" style="font-size: 0.875rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 180px" v-tooltip.top="slotProps.data.generalTariff?.name">
+                                        {{ slotProps.data.generalTariff?.name || 'N/A' }}
+                                    </span>
+                                    <span style="font-size: 0.75rem; color: #6c757d">
+                                        {{ slotProps.data.rawData?.segus || 'N/A' }}
+                                    </span>
                                 </div>
                             </template>
+                            <template #filter="{ filterModel }">
+                                <InputText v-model="filterModel.value" type="text" class="p-column-filter" placeholder="Buscar por código o nombre" />
+                            </template>
+                        </Column>
 
-                            <!-- ID -->
-                            <Column field="id" header="ID" sortable style="min-width: 80px"></Column>
+                        <!-- Cia -->
+                        <Column field="cia" header="Cia" sortable style="min-width: 120px">
+                            <template #body="slotProps">
+                                {{ slotProps.data.cia }}
+                            </template>
+                            <template #filter="{ filterModel }">
+                                <InputText v-model="filterModel.value" type="text" class="p-column-filter" placeholder="Buscar por cia" />
+                            </template>
+                        </Column>
 
-                            <!-- Admisión -->
-                            <Column field="rawData.admision" header="Admisión" sortable style="min-width: 80px">
-                                <template #body="slotProps">
-                                    <span style="font-size: 0.8rem">{{ slotProps.data.rawData?.admision || 'N/A' }}</span>
-                                </template>
-                                <template #filter="{ filterModel }">
-                                    <InputText v-model="filterModel.value" type="text" class="p-column-filter" placeholder="Buscar admisión" />
-                                </template>
-                            </Column>
-                            
-                            <!-- Paciente -->
-                            <Column field="patientName" header="Paciente" sortable style="min-width: 200px">
-                                <template #body="slotProps">
-                                    <div class="font-medium">{{ slotProps.data.patientName || 'N/A' }}</div>
-                                </template>
-                                <template #filter="{ filterModel }">
-                                    <InputText v-model="filterModel.value" type="text" class="p-column-filter" placeholder="Buscar paciente" />
-                                </template>
-                            </Column>
-                            
-                            <!-- Fecha y Hora combinadas -->
-                            <Column header="Fecha y Hora" sortable field="date" style="min-width: 150px">
-                                <template #body="slotProps">
-                                    {{ slotProps.data.date }} <br>
-                                    <small class="text-gray-500">{{ slotProps.data.time }}</small>
-                                </template>
-                            </Column>
+                        <!-- Tipo Ate -->
+                        <Column field="tipoate" header="Tipo Ate" sortable style="min-width: 120px">
+                            <template #body="slotProps">
+                                {{ slotProps.data.tipoate }}
+                            </template>
+                            <template #filter="{ filterModel }">
+                                <InputText v-model="filterModel.value" type="text" class="p-column-filter" placeholder="Buscar por tipo ate" />
+                            </template>
+                        </Column>
 
-                            <!-- Médico (antes Servicio) -->
-                            <Column field="doctor.name" header="Médico" sortable style="min-width: 200px">
-                                <template #body="slotProps">
-                                    <div class="font-medium">{{ slotProps.data.doctor?.name || 'N/A' }}</div>
-                                </template>
-                                <template #filter="{ filterModel }">
-                                    <InputText v-model="filterModel.value" type="text" class="p-column-filter" placeholder="Buscar por médico" />
-                                </template>
-                            </Column>
+                        <!-- Monto -->
+                        <Column field="amount" header="Monto" sortable style="min-width: 120px">
+                            <template #body="slotProps"> S/ {{ slotProps.data.amount.toFixed(2) }} </template>
+                            <template #editor="{ data, field }">
+                                <InputNumber v-model="data[field]" mode="currency" currency="PEN" locale="es-PE" :min="0" class="w-full" />
+                            </template>
+                        </Column>
 
-                            <!-- Servicio Medico (antes Segus) -->
-                            <Column field="rawData.segus" header="Servicio Medico" sortable style="min-width: 200px">
-                                <template #body="slotProps">
-                                    <div style="display: flex; flex-direction: column; gap: 2px;">
-                                        <span 
-                                            class="font-semibold" 
-                                            style="font-size: 0.875rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 180px;"
-                                            v-tooltip.top="slotProps.data.generalTariff?.name"
-                                        >
-                                            {{ slotProps.data.generalTariff?.name || 'N/A' }}
-                                        </span>
-                                        <span style="font-size: 0.75rem; color: #6c757d;">
-                                            {{ slotProps.data.rawData?.segus || 'N/A' }}
-                                        </span>
-                                    </div>
-                                </template>
-                                <template #filter="{ filterModel }">
-                                    <InputText v-model="filterModel.value" type="text" class="p-column-filter" placeholder="Buscar por código o nombre" />
-                                </template>
-                            </Column>
+                        <!-- Comisión (Nueva columna) -->
+                        <Column field="comision" header="Comisión" sortable style="min-width: 120px">
+                            <template #body="slotProps">
+                                <span :class="{ 'text-green-600 font-bold': slotProps.data.comision > 0 }"> S/ {{ slotProps.data.comision.toFixed(2) }} </span>
+                            </template>
+                            <template #editor="{ data, field }">
+                                <InputNumber v-model="data[field]" mode="currency" currency="PEN" locale="es-PE" :min="0" class="w-full" />
+                            </template>
+                            <template #filter="{ filterModel }">
+                                <InputNumber v-model="filterModel.value" mode="currency" currency="PEN" locale="es-PE" />
+                            </template>
+                        </Column>
 
-                            <!-- Cia -->
-                            <Column field="cia" header="Cia" sortable style="min-width: 120px">
-                                <template #body="slotProps">
-                                    {{ slotProps.data.cia }}
-                                </template>
-                                <template #filter="{ filterModel }">
-                                    <InputText v-model="filterModel.value" type="text" class="p-column-filter" placeholder="Buscar por cia" />
-                                </template>
-                            </Column>
+                        <!-- Tipo -->
+                        <Column field="serviceType" header="Tipo" sortable :showFilterMatchModes="false" style="min-width: 120px">
+                            <template #body="slotProps">
+                                <Tag :value="slotProps.data.serviceType" :severity="getTypeColor(slotProps.data.serviceType)" />
+                            </template>
+                            <template #editor="{ data, field }">
+                                <Dropdown v-model="data[field]" :options="['PLANILLA', 'RETEN']" class="w-full" />
+                            </template>
+                            <template #filter="{ filterModel }">
+                                <Dropdown v-model="filterModel.value" :options="['PLANILLA', 'RETÉN']" placeholder="Seleccionar" class="p-column-filter" showClear />
+                            </template>
+                        </Column>
 
-                            <!-- Tipo Ate -->
-                            <Column field="tipoate" header="Tipo Ate" sortable style="min-width: 120px">
-                                <template #body="slotProps">
-                                    {{ slotProps.data.tipoate }}
-                                </template>
-                                <template #filter="{ filterModel }">
-                                    <InputText v-model="filterModel.value" type="text" class="p-column-filter" placeholder="Buscar por tipo ate" />
-                                </template>
-                            </Column>
-                            
-                            <!-- Monto -->
-                            <Column field="amount" header="Monto" sortable style="min-width: 120px">
-                                <template #body="slotProps">
-                                    S/ {{ slotProps.data.amount.toFixed(2) }}
-                                </template>
-                                <template #editor="{ data, field }">
-                                    <InputNumber v-model="data[field]" mode="currency" currency="PEN" locale="es-PE" :min="0" class="w-full" />
-                                </template>
-                            </Column>
+                        <!-- Estado -->
+                        <Column field="status" header="Estado" sortable :showFilterMatchModes="false" style="min-width: 150px">
+                            <template #body="slotProps">
+                                <Tag :value="getStatusLabel(slotProps.data.status)" :severity="getStatusColor(slotProps.data.status)" />
+                            </template>
+                            <template #editor="{ data, field }">
+                                <Dropdown
+                                    v-model="data[field]"
+                                    :options="[
+                                        { label: 'Pendiente', value: 'pendiente' },
+                                        { label: 'Revisado', value: 'revisado' },
+                                        { label: 'Aprobado', value: 'aprobado' },
+                                        { label: 'Rechazado', value: 'rechazado' }
+                                    ]"
+                                    optionLabel="label"
+                                    optionValue="value"
+                                    class="w-full"
+                                />
+                            </template>
+                            <template #filter="{ filterModel }">
+                                <Dropdown
+                                    v-model="filterModel.value"
+                                    :options="[
+                                        { label: 'Pendiente', value: 'pendiente' },
+                                        { label: 'Revisado', value: 'revisado' },
+                                        { label: 'Aprobado', value: 'aprobado' },
+                                        { label: 'Rechazado', value: 'rechazado' }
+                                    ]"
+                                    optionLabel="label"
+                                    optionValue="value"
+                                    placeholder="Seleccionar"
+                                    class="p-column-filter"
+                                    showClear
+                                />
+                            </template>
+                        </Column>
 
-                            <!-- Comisión (Nueva columna) -->
-                            <Column field="comision" header="Comisión" sortable style="min-width: 120px">
-                                <template #body="slotProps">
-                                    <span :class="{'text-green-600 font-bold': slotProps.data.comision > 0}">
-                                        S/ {{ slotProps.data.comision.toFixed(2) }}
-                                    </span>
-                                </template>
-                                <template #editor="{ data, field }">
-                                    <InputNumber v-model="data[field]" mode="currency" currency="PEN" locale="es-PE" :min="0" class="w-full" />
-                                </template>
-                                <template #filter="{ filterModel }">
-                                    <InputNumber v-model="filterModel.value" mode="currency" currency="PEN" locale="es-PE" />
-                                </template>
-                            </Column>
+                        <!-- Observaciones (antes Detalle) -->
+                        <Column field="serviceTypeReason" header="Observaciones" style="min-width: 250px">
+                            <template #body="slotProps">
+                                <small>{{ slotProps.data.serviceTypeReason }}</small>
+                            </template>
+                            <template #filter="{ filterModel }">
+                                <InputText v-model="filterModel.value" type="text" class="p-column-filter" placeholder="Buscar en observaciones" />
+                            </template>
+                        </Column>
+                    </DataTable>
+                </template>
+            </Card>
 
-                            <!-- Tipo -->
-                            <Column field="serviceType" header="Tipo" sortable :showFilterMatchModes="false" style="min-width: 120px">
-                                <template #body="slotProps">
-                                    <Tag 
-                                        :value="slotProps.data.serviceType" 
-                                        :severity="getTypeColor(slotProps.data.serviceType)"
-                                    />
-                                </template>
-                                <template #editor="{ data, field }">
-                                    <Dropdown v-model="data[field]" :options="['PLANILLA', 'RETEN']" class="w-full" />
-                                </template>
-                                <template #filter="{ filterModel }">
-                                    <Dropdown v-model="filterModel.value" :options="['PLANILLA', 'RETÉN']" placeholder="Seleccionar" class="p-column-filter" showClear />
-                                </template>
-                            </Column>
-
-                            <!-- Estado -->
-                            <Column field="status" header="Estado" sortable :showFilterMatchModes="false" style="min-width: 150px">
-                                <template #body="slotProps">
-                                    <Tag 
-                                        :value="getStatusLabel(slotProps.data.status)" 
-                                        :severity="getStatusColor(slotProps.data.status)"
-                                    />
-                                </template>
-                                <template #editor="{ data, field }">
-                                    <Dropdown 
-                                        v-model="data[field]" 
-                                        :options="[
-                                            { label: 'Pendiente', value: 'pendiente' },
-                                            { label: 'Revisado', value: 'revisado' },
-                                            { label: 'Aprobado', value: 'aprobado' },
-                                            { label: 'Rechazado', value: 'rechazado' }
-                                        ]" 
-                                        optionLabel="label"
-                                        optionValue="value"
-                                        class="w-full" 
-                                    />
-                                </template>
-                                <template #filter="{ filterModel }">
-                                    <Dropdown 
-                                        v-model="filterModel.value" 
-                                        :options="[
-                                            { label: 'Pendiente', value: 'pendiente' },
-                                            { label: 'Revisado', value: 'revisado' },
-                                            { label: 'Aprobado', value: 'aprobado' },
-                                            { label: 'Rechazado', value: 'rechazado' }
-                                        ]" 
-                                        optionLabel="label"
-                                        optionValue="value"
-                                        placeholder="Seleccionar" 
-                                        class="p-column-filter" 
-                                        showClear 
-                                    />
-                                </template>
-                            </Column>
-
-                            <!-- Observaciones (antes Detalle) -->
-                            <Column field="serviceTypeReason" header="Observaciones" style="min-width: 250px">
-                                <template #body="slotProps">
-                                    <small>{{ slotProps.data.serviceTypeReason }}</small>
-                                </template>
-                                <template #filter="{ filterModel }">
-                                    <InputText v-model="filterModel.value" type="text" class="p-column-filter" placeholder="Buscar en observaciones" />
-                                </template>
-                            </Column>
-                        </DataTable>
-                    </template>
-                </Card>
-
-                <!-- Estado vacío -->
-                <div class="empty-state" v-else>
-                    <i class="pi pi-inbox empty-icon"></i>
-                    <h3>No hay servicios cargados</h3>
-                    <p class="text-muted">
-                        Selecciona un periodo e importa un archivo Excel para comenzar.
-                    </p>
-                </div>
+            <!-- Estado vacío -->
+            <div class="empty-state" v-else>
+                <i class="pi pi-inbox empty-icon"></i>
+                <h3>No hay servicios cargados</h3>
+                <p class="text-muted">Selecciona un periodo e importa un archivo Excel para comenzar.</p>
+            </div>
         </div>
 
         <!-- Modal de Aprobación Masiva -->
-        <BulkApprovalDialog
-            v-model:visible="showBulkApprovalDialog"
-            :services="filteredServices"
-            :doctorName="selectedDoctor ? doctorOptions.find(d => d.value === selectedDoctor)?.label : 'Todos los médicos'"
-            @approve="handleBulkApproval"
-        />
+        <BulkApprovalDialog v-model:visible="showBulkApprovalDialog" :services="filteredServices" :doctorName="selectedDoctor ? doctorOptions.find((d) => d.value === selectedDoctor)?.label : 'Todos los médicos'" @approve="handleBulkApproval" />
+
+        <!-- Modal de Recálculo de Comisiones -->
+        <RecalculateCommissionsDialog v-model:visible="showRecalculateDialog" :doctor="selectedDoctorObject" :service-count="recalculableServicesCount" @recalculate="handleRecalculate" @complete="handleRecalculateComplete" />
     </div>
 </template>
 
@@ -1285,7 +1238,9 @@ function handleClearData() {
 
 .summary-card {
     border-left: 4px solid #667eea;
-    transition: transform 0.2s, box-shadow 0.2s;
+    transition:
+        transform 0.2s,
+        box-shadow 0.2s;
 }
 
 .summary-card:hover {
@@ -1357,7 +1312,6 @@ function handleClearData() {
     font-size: 0.75rem;
     letter-spacing: 0.5px;
 }
-
 
 /* Services Table */
 .services-table-card {

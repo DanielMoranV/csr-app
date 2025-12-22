@@ -801,6 +801,74 @@ export function useMedicalFees() {
         }
     }
 
+    /**
+     * Recalcular comisiones para servicios de un médico específico
+     * Usa la misma lógica que la importación de Excel
+     * @param {number} doctorId - ID del médico
+     * @returns {Promise<Object>} Resultados del recálculo
+     */
+    async function recalculateCommissionsForDoctor(doctorId) {
+        isLoading.value = true;
+        error.value = null;
+
+        try {
+            // 1. Filtrar servicios del médico que NO estén aprobados/rechazados
+            const servicesToRecalculate = services.value.filter((service) => service.doctor?.id === doctorId && service.status !== 'aprobado' && service.status !== 'rechazado');
+
+            if (servicesToRecalculate.length === 0) {
+                throw new Error('No hay servicios para recalcular');
+            }
+
+            let updated = 0;
+            let errors = [];
+
+            // 2. Recalcular y actualizar cada servicio usando el endpoint existente
+            for (const service of servicesToRecalculate) {
+                try {
+                    // Recalcular comisión localmente
+                    const newCommission = calculateCommissionRule({
+                        type: service.serviceType,
+                        amount: service.amount,
+                        cia: service.cia,
+                        doctorCode: service.doctorCode,
+                        segusCode: service.rawData?.cod_seg || service.rawData?.segus,
+                        doctor: service.doctor,
+                        admision: service.rawData?.admision
+                    });
+
+                    // Actualizar en backend usando endpoint existente
+                    await MedicalFeesService.updateMedicalService(service.id, {
+                        commission_amount: newCommission
+                    });
+
+                    // Actualizar localmente
+                    service.comision = newCommission;
+                    updated++;
+                } catch (err) {
+                    errors.push({
+                        id: service.id,
+                        admision: service.rawData?.admision,
+                        error: err.message
+                    });
+                }
+            }
+
+            const skipped = services.value.filter((s) => s.doctor?.id === doctorId && (s.status === 'aprobado' || s.status === 'rechazado')).length;
+
+            return {
+                total: servicesToRecalculate.length,
+                updated,
+                skipped,
+                errors
+            };
+        } catch (err) {
+            error.value = err.message || 'Error al recalcular comisiones';
+            throw err;
+        } finally {
+            isLoading.value = false;
+        }
+    }
+
     return {
         // State
         doctors,
@@ -824,6 +892,7 @@ export function useMedicalFees() {
         clearAllData,
         saveToDatabase,
         updateService,
-        bulkApproveServices
+        bulkApproveServices,
+        recalculateCommissionsForDoctor
     };
 }

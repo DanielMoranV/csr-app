@@ -20,7 +20,7 @@ class MedicalFeesService {
             // Respuesta paginada
             return response.data.data;
         }
-        
+
         return [];
     }
 
@@ -32,12 +32,12 @@ class MedicalFeesService {
      */
     async getDoctorSchedules(startDate, endDate) {
         const response = await axios.get('/doctor-schedules', {
-            params: { 
-                start_date: startDate, 
-                end_date: endDate 
+            params: {
+                start_date: startDate,
+                end_date: endDate
             }
         });
-        
+
         // El interceptor devuelve {success, data, message}
         // data puede ser un array directo o un objeto con schedules
         if (Array.isArray(response.data)) {
@@ -49,7 +49,7 @@ class MedicalFeesService {
             // Respuesta paginada
             return response.data.data;
         }
-        
+
         return [];
     }
 
@@ -78,7 +78,7 @@ class MedicalFeesService {
      * @returns {Map} Mapa código -> médico
      */
     createDoctorCodeMap(doctors) {
-        return new Map(doctors.map(doctor => [doctor.code, doctor]));
+        return new Map(doctors.map((doctor) => [doctor.code, doctor]));
     }
 
     /**
@@ -90,7 +90,7 @@ class MedicalFeesService {
         const response = await axios.post('/medical-services/import', {
             services: servicesPayload
         });
-        
+
         return response.data; // { success, message, data }
     }
 
@@ -138,7 +138,7 @@ class MedicalFeesService {
      */
     createScheduleMap(schedules) {
         const map = new Map();
-        schedules.forEach(schedule => {
+        schedules.forEach((schedule) => {
             const key = `${schedule.doctor.code}_${schedule.date}`;
             if (!map.has(key)) {
                 map.set(key, []);
