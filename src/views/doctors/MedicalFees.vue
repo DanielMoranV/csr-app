@@ -99,7 +99,7 @@ onMounted(async () => {
             <MedicalFeesSummaryCards v-if="medicalFeesState.services.value.length > 0" :totals="computedState.filteredTotals.value" />
 
             <!-- Tabla Resumen por Médico (Toggle) -->
-            <MedicalFeesSummaryTable :visible="filtersState.showSummaryTable.value" :doctor-summary="computedState.doctorSummary.value" />
+            <MedicalFeesSummaryTable :visible="filtersState.showSummaryTable.value" :doctor-summary="computedState.doctorSummary.value" @delete-doctor="actions.handleDeleteDoctor" />
 
             <!-- Tabla de Servicios -->
             <MedicalFeesServicesTable
@@ -108,6 +108,8 @@ onMounted(async () => {
                 :services="computedState.filteredServices.value"
                 :is-loading="medicalFeesState.isLoading.value"
                 @cell-edit-complete="actions.onCellEditComplete"
+                @update-commission="actions.updateServiceCommission"
+                @bulk-update-commission="actions.applyBulkCommission"
             />
 
             <!-- Estado vacío -->

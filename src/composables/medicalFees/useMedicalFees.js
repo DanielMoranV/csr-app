@@ -871,6 +871,20 @@ export function useMedicalFees() {
         }
     }
 
+    /**
+     * Elimina todos los servicios de un médico del período actual (solo local)
+     * @param {string} doctorCode - Código del médico
+     * @returns {number} Cantidad de servicios eliminados
+     */
+    function deleteDoctorServices(doctorCode) {
+        const initialCount = services.value.length;
+        services.value = services.value.filter((service) => service.doctorCode !== doctorCode);
+        const deletedCount = initialCount - services.value.length;
+
+        console.log(`[useMedicalFees] Deleted ${deletedCount} services for doctor ${doctorCode}`);
+        return deletedCount;
+    }
+
     return {
         // State
         doctors,
@@ -895,6 +909,7 @@ export function useMedicalFees() {
         saveToDatabase,
         updateService,
         bulkApproveServices,
-        recalculateCommissionsForDoctor
+        recalculateCommissionsForDoctor,
+        deleteDoctorServices
     };
 }

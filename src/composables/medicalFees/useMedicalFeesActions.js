@@ -2,6 +2,7 @@
  * Composable para acciones y handlers de eventos de Honorarios Médicos
  */
 
+import MedicalFeesService from '@/services/medicalFees/MedicalFeesService';
 import { VALID_STATUSES } from '@/utils/medicalFees/constants';
 import { formatExportFilename } from '@/utils/medicalFees/formatters';
 import { useToast } from 'primevue/usetoast';
@@ -456,6 +457,117 @@ export function useMedicalFeesActions(medicalFeesState, filtersState, computedSt
         onMonthChange();
     }
 
+    /**
+     * Maneja la eliminación de un médico del período actual
+     */
+    function handleDeleteDoctor(doctorCode) {
+        const deletedCount = medicalFeesState.deleteDoctorServices(doctorCode);
+
+        toast.add({
+            severity: 'success',
+            summary: '🗑️ Médico Eliminado',
+            detail: `${deletedCount} servicio${deletedCount !== 1 ? 's' : ''} eliminado${deletedCount !== 1 ? 's' : ''} del período actual`,
+            life: 4000
+        });
+    }
+
+    /**
+     * Actualiza la comisión de un servicio individual
+     */
+    async function updateServiceCommission(serviceId, newCommission) {
+        try {
+            const response = await MedicalFeesService.bulkUpdateCommissions([
+                {
+                    id: serviceId,
+                    commission_amount: newCommission
+                }
+            ]);
+
+            console.log('🔍 Response from bulkUpdateCommissions:', response);
+
+            // La respuesta tiene estructura: {total, updated, skipped, errors}
+            if (response && response.updated !== undefined && response.updated > 0) {
+                toast.add({
+                    severity: 'success',
+                    summary: '✓ Guardado Exitoso',
+                    detail: `Comisión actualizada a S/ ${newCommission.toFixed(2)} en la base de datos`,
+                    life: 3000
+                });
+            } else {
+                console.warn('⚠️ Response did not match success criteria:', response);
+                toast.add({
+                    severity: 'warn',
+                    summary: 'Advertencia',
+                    detail: 'La comisión se actualizó localmente pero hubo un problema al guardar',
+                    life: 4000
+                });
+            }
+        } catch (error) {
+            console.error('Error updating commission:', error);
+            toast.add({
+                severity: 'error',
+                summary: '❌ Error al Guardar',
+                detail: 'No se pudo guardar la comisión en la base de datos',
+                life: 4000
+            });
+        }
+    }
+
+    /**
+     * Aplica comisión a múltiples servicios
+     */
+    async function applyBulkCommission(serviceIds, percentage) {
+        try {
+            const updates = serviceIds
+                .map((id) => {
+                    const service = medicalFeesState.services.value.find((s) => s.id === id);
+                    if (!service) return null;
+
+                    return {
+                        id,
+                        commission_amount: (service.amount * percentage) / 100
+                    };
+                })
+                .filter(Boolean);
+
+            if (updates.length === 0) {
+                toast.add({
+                    severity: 'warn',
+                    summary: 'Advertencia',
+                    detail: 'No hay servicios válidos para actualizar',
+                    life: 3000
+                });
+                return;
+            }
+
+            const response = await MedicalFeesService.bulkUpdateCommissions(updates);
+
+            if (response && response.updated !== undefined && response.updated > 0) {
+                toast.add({
+                    severity: 'success',
+                    summary: '✓ Guardado Exitoso',
+                    detail: `${response.updated} servicio${response.updated !== 1 ? 's' : ''} actualizado${response.updated !== 1 ? 's' : ''} con ${percentage}% en la base de datos`,
+                    life: 4000
+                });
+            } else {
+                toast.add({
+                    severity: 'warn',
+                    summary: 'Advertencia',
+                    detail: 'Las comisiones se actualizaron localmente pero hubo un problema al guardar',
+                    life: 4000
+                });
+            }
+        } catch (error) {
+            console.error('Error updating bulk commissions:', error);
+            toast.add({
+                severity: 'error',
+                summary: '❌ Error al Guardar',
+                detail: 'No se pudieron guardar las comisiones en la base de datos',
+                life: 4000
+            });
+        }
+    }
+
     return {
         // Inicialización
         initialize,
@@ -481,6 +593,13 @@ export function useMedicalFeesActions(medicalFeesState, filtersState, computedSt
         // Recálculo de comisiones
         openRecalculateDialog,
         handleRecalculate,
-        handleRecalculateComplete
+        handleRecalculateComplete,
+
+        // Eliminación de médico
+        handleDeleteDoctor,
+
+        // Edición manual de comisiones
+        updateServiceCommission,
+        applyBulkCommission
     };
 }

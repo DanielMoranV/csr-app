@@ -10,7 +10,7 @@ import InputIcon from 'primevue/inputicon';
 import InputNumber from 'primevue/inputnumber';
 import InputText from 'primevue/inputtext';
 import Tag from 'primevue/tag';
-import { computed } from 'vue';
+import { computed, ref } from 'vue';
 
 const props = defineProps({
     services: {
@@ -27,7 +27,7 @@ const props = defineProps({
     }
 });
 
-const emit = defineEmits(['cell-edit-complete', 'update:filters']);
+const emit = defineEmits(['cell-edit-complete', 'update:filters', 'update-commission', 'bulk-update-commission']);
 
 // Computed property para manejar v-model:filters
 const localFilters = computed({
@@ -39,6 +39,63 @@ const localFilters = computed({
     }
 });
 
+// Selección de servicios
+const selectedServices = ref([]);
+
+// Referencias para componentes
+const commissionPopover = ref();
+const currentService = ref(null);
+const showBulkDialog = ref(false);
+
+/**
+ * Calcula el porcentaje de comisión
+ */
+function calculatePercentage(service) {
+    if (!service.amount || service.amount === 0) return '0.0';
+    return ((service.comision / service.amount) * 100).toFixed(1);
+}
+
+/**
+ * Abre el popover de edición de comisión
+ */
+function openCommissionEdit(event, service) {
+    currentService.value = service;
+    commissionPopover.value.show(event);
+}
+
+/**
+ * Maneja la aplicación de comisión individual
+ */
+function handleApplyCommission(newCommission) {
+    // Actualizar directamente en el array de servicios
+    const service = props.services.find((s) => s.id === currentService.value.id);
+    if (service) {
+        service.comision = newCommission;
+    }
+
+    // Emitir evento para guardar en BD
+    emit('update-commission', currentService.value.id, newCommission);
+}
+
+/**
+ * Maneja la aplicación de comisión masiva
+ */
+function handleBulkApply(percentage) {
+    const serviceIds = selectedServices.value.map((s) => s.id);
+
+    // Actualizar directamente en el array de servicios
+    selectedServices.value.forEach((selectedService) => {
+        const service = props.services.find((s) => s.id === selectedService.id);
+        if (service) {
+            service.comision = (service.amount * percentage) / 100;
+        }
+    });
+
+    // Emitir evento para guardar en BD
+    emit('bulk-update-commission', serviceIds, percentage);
+    selectedServices.value = [];
+}
+
 function handleCellEditComplete(event) {
     emit('cell-edit-complete', event);
 }
@@ -48,8 +105,23 @@ function handleCellEditComplete(event) {
     <Card class="services-table-card">
         <template #title> <i class="pi pi-list"></i> Detalle de Servicios </template>
         <template #content>
+            <!-- Barra de acciones masivas -->
+            <div v-if="selectedServices.length > 0" class="bulk-actions-bar p-3 mb-3 surface-100 border-round">
+                <div class="flex align-items-center justify-content-between">
+                    <span class="font-semibold">
+                        <i class="pi pi-check-circle mr-2"></i>
+                        {{ selectedServices.length }} servicio{{ selectedServices.length !== 1 ? 's' : '' }} seleccionado{{ selectedServices.length !== 1 ? 's' : '' }}
+                    </span>
+                    <div class="flex gap-2">
+                        <Button label="Aplicar Comisión" icon="pi pi-percentage" size="small" severity="success" @click="showBulkDialog = true" />
+                        <Button label="Limpiar" icon="pi pi-times" text size="small" @click="selectedServices = []" />
+                    </div>
+                </div>
+            </div>
+
             <DataTable
                 v-model:filters="localFilters"
+                v-model:selection="selectedServices"
                 :value="services"
                 dataKey="id"
                 paginator
@@ -74,6 +146,9 @@ function handleCellEditComplete(event) {
                         </IconField>
                     </div>
                 </template>
+
+                <!-- Columna de selección -->
+                <Column selectionMode="multiple" headerStyle="width: 3rem" :exportable="false"></Column>
 
                 <!-- ID -->
                 <Column field="id" header="ID" sortable style="min-width: 80px"></Column>
@@ -162,9 +237,15 @@ function handleCellEditComplete(event) {
                 </Column>
 
                 <!-- Comisión -->
-                <Column field="comision" header="Comisión" sortable style="min-width: 120px">
+                <Column field="comision" header="Comisión" sortable style="min-width: 160px">
                     <template #body="slotProps">
-                        <span :class="{ 'text-green-600 font-bold': slotProps.data.comision > 0 }"> S/ {{ slotProps.data.comision.toFixed(2) }} </span>
+                        <div style="display: flex; flex-direction: column">
+                            <div class="flex align-items-center gap-2">
+                                <span :class="{ 'text-green-600 font-bold': slotProps.data.comision > 0 }"> S/ {{ slotProps.data.comision.toFixed(2) }} </span>
+                                <Button icon="pi pi-pencil" text rounded size="small" severity="secondary" @click="openCommissionEdit($event, slotProps.data)" v-tooltip.top="'Editar comisión'" />
+                            </div>
+                            <small class="text-400" style="font-size: 0.7rem; display: block">{{ calculatePercentage(slotProps.data) }}%</small>
+                        </div>
                     </template>
                     <template #editor="{ data, field }">
                         <InputNumber v-model="data[field]" mode="currency" currency="PEN" locale="es-PE" :min="0" class="w-full" />
@@ -210,6 +291,11 @@ function handleCellEditComplete(event) {
                     </template>
                 </Column>
             </DataTable>
+
+            <!-- Componentes de edición de comisión -->
+            <ManualCommissionPopover ref="commissionPopover" :service="currentService" @apply="handleApplyCommission" />
+
+            <BulkManualCommissionDialog v-model:visible="showBulkDialog" :selectedServices="selectedServices" @apply="handleBulkApply" />
         </template>
     </Card>
 </template>
