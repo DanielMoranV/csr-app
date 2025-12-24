@@ -472,6 +472,63 @@ export function useMedicalFeesActions(medicalFeesState, filtersState, computedSt
     }
 
     /**
+     * Maneja la eliminación de servicios seleccionados
+     */
+    async function handleBulkDelete(serviceIds) {
+        let deletedCount = 0;
+        let errorCount = 0;
+
+        try {
+            // Mostrar toast de progreso
+            toast.add({
+                severity: 'info',
+                summary: '🗑️ Eliminando Servicios',
+                detail: `Eliminando ${serviceIds.length} servicio${serviceIds.length !== 1 ? 's' : ''}...`,
+                life: 3000
+            });
+
+            // Eliminar servicios uno por uno
+            for (const id of serviceIds) {
+                try {
+                    await MedicalFeesService.deleteMedicalService(id);
+                    deletedCount++;
+                } catch (error) {
+                    console.error(`Error eliminando servicio ${id}:`, error);
+                    errorCount++;
+                }
+            }
+
+            // Mostrar resultado final
+            if (deletedCount > 0) {
+                toast.add({
+                    severity: errorCount > 0 ? 'warn' : 'success',
+                    summary: errorCount > 0 ? '⚠️ Eliminación Parcial' : '✅ Servicios Eliminados',
+                    detail: `${deletedCount} servicio${deletedCount !== 1 ? 's' : ''} eliminado${deletedCount !== 1 ? 's' : ''} exitosamente${errorCount > 0 ? `. ${errorCount} error${errorCount !== 1 ? 'es' : ''}` : ''}`,
+                    life: 5000
+                });
+            } else {
+                toast.add({
+                    severity: 'error',
+                    summary: '❌ Error al Eliminar',
+                    detail: 'No se pudo eliminar ningún servicio',
+                    life: 4000
+                });
+            }
+
+            // Recargar datos si se eliminó al menos uno
+            if (deletedCount > 0) {
+                await onMonthChange();
+            }
+        } catch (error) {
+            toast.add({
+                severity: 'error',
+                summary: '❌ Error al Eliminar',
+                detail: error.message || 'Ocurrió un error inesperado',
+                life: 4000
+            });
+        }
+    }
+    /**
      * Actualiza la comisión de un servicio individual
      */
     async function updateServiceCommission(serviceId, newCommission) {
@@ -600,6 +657,9 @@ export function useMedicalFeesActions(medicalFeesState, filtersState, computedSt
 
         // Edición manual de comisiones
         updateServiceCommission,
-        applyBulkCommission
+        applyBulkCommission,
+
+        // Eliminación de servicios
+        handleBulkDelete
     };
 }

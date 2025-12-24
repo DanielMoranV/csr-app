@@ -4,6 +4,7 @@ import { getStatusColor, getStatusLabel, getTypeColor } from '@/utils/medicalFee
 import Card from 'primevue/card';
 import Column from 'primevue/column';
 import DataTable from 'primevue/datatable';
+import Dialog from 'primevue/dialog';
 import Dropdown from 'primevue/dropdown';
 import IconField from 'primevue/iconfield';
 import InputIcon from 'primevue/inputicon';
@@ -27,7 +28,7 @@ const props = defineProps({
     }
 });
 
-const emit = defineEmits(['cell-edit-complete', 'update:filters', 'update-commission', 'bulk-update-commission']);
+const emit = defineEmits(['cell-edit-complete', 'update:filters', 'update-commission', 'bulk-update-commission', 'bulk-delete-services']);
 
 // Computed property para manejar v-model:filters
 const localFilters = computed({
@@ -46,6 +47,7 @@ const selectedServices = ref([]);
 const commissionPopover = ref();
 const currentService = ref(null);
 const showBulkDialog = ref(false);
+const showDeleteDialog = ref(false);
 
 /**
  * Calcula el porcentaje de comisión
@@ -96,6 +98,23 @@ function handleBulkApply(percentage) {
     selectedServices.value = [];
 }
 
+/**
+ * Abre el diálogo de confirmación de eliminación
+ */
+function openDeleteConfirmation() {
+    showDeleteDialog.value = true;
+}
+
+/**
+ * Confirma y ejecuta la eliminación de servicios
+ */
+function confirmDelete() {
+    const serviceIds = selectedServices.value.map((s) => s.id);
+    emit('bulk-delete-services', serviceIds);
+    selectedServices.value = [];
+    showDeleteDialog.value = false;
+}
+
 function handleCellEditComplete(event) {
     emit('cell-edit-complete', event);
 }
@@ -114,6 +133,7 @@ function handleCellEditComplete(event) {
                     </span>
                     <div class="flex gap-2">
                         <Button label="Aplicar Comisión" icon="pi pi-percentage" size="small" severity="success" @click="showBulkDialog = true" />
+                        <Button label="Eliminar" icon="pi pi-trash" size="small" severity="danger" @click="openDeleteConfirmation" />
                         <Button label="Limpiar" icon="pi pi-times" text size="small" @click="selectedServices = []" />
                     </div>
                 </div>
@@ -296,6 +316,22 @@ function handleCellEditComplete(event) {
             <ManualCommissionPopover ref="commissionPopover" :service="currentService" @apply="handleApplyCommission" />
 
             <BulkManualCommissionDialog v-model:visible="showBulkDialog" :selectedServices="selectedServices" @apply="handleBulkApply" />
+
+            <!-- Diálogo de confirmación de eliminación -->
+            <Dialog v-model:visible="showDeleteDialog" header="Confirmar Eliminación" :modal="true" :style="{ width: '450px' }">
+                <div class="flex align-items-center gap-3 mb-3">
+                    <i class="pi pi-exclamation-triangle text-orange-500" style="font-size: 2rem"></i>
+                    <div>
+                        <p class="m-0 font-semibold">¿Está seguro de eliminar los servicios seleccionados?</p>
+                        <p class="mt-2 mb-0 text-sm text-color-secondary">Se eliminarán {{ selectedServices.length }} servicio{{ selectedServices.length !== 1 ? 's' : '' }}. Esta acción no se puede deshacer.</p>
+                    </div>
+                </div>
+
+                <template #footer>
+                    <Button label="Cancelar" icon="pi pi-times" text @click="showDeleteDialog = false" />
+                    <Button label="Eliminar" icon="pi pi-trash" severity="danger" @click="confirmDelete" />
+                </template>
+            </Dialog>
         </template>
     </Card>
 </template>

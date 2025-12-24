@@ -156,6 +156,16 @@ class MedicalFeesService {
     }
 
     /**
+     * Elimina un servicio médico (soft delete)
+     * @param {number} id - ID del servicio
+     * @returns {Promise<Object>} Resultado de la eliminación
+     */
+    async deleteMedicalService(id) {
+        const response = await axios.delete(`/medical-services/${id}`);
+        return response.data;
+    }
+
+    /**
      * Crea un mapa de horarios por código de médico y fecha
      * @param {Array} schedules - Lista de horarios
      * @returns {Map} Mapa "code_date" -> horario[]

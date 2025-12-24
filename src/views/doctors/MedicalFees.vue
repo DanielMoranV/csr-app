@@ -110,6 +110,7 @@ onMounted(async () => {
                 @cell-edit-complete="actions.onCellEditComplete"
                 @update-commission="actions.updateServiceCommission"
                 @bulk-update-commission="actions.applyBulkCommission"
+                @bulk-delete-services="actions.handleBulkDelete"
             />
 
             <!-- Estado vacío -->
