@@ -249,6 +249,16 @@ export const MODULE_PERMISSIONS = {
         menuSection: 'Personal Médico'
     },
 
+    // Gestión de Tarifarios
+    tariffs: {
+        name: 'tariffs',
+        path: '/tarifarios',
+        positions: [POSITIONS.SISTEMAS, POSITIONS.DIRECTOR_MEDICO, POSITIONS.ADMINISTRACION, POSITIONS.CONTABILIDAD],
+        label: 'Tarifarios',
+        icon: 'pi pi-fw pi-money-bill',
+        menuSection: 'Personal Médico'
+    },
+
     // Mis Honorarios Médicos (Vista Personal)
     myMedicalFees: {
         name: 'myMedicalFees',

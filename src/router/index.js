@@ -118,6 +118,12 @@ const router = createRouter({
                     meta: { requiresAuth: true, positions: MODULE_PERMISSIONS.medicalFees.positions }
                 },
                 {
+                    path: MODULE_PERMISSIONS.tariffs.path,
+                    name: MODULE_PERMISSIONS.tariffs.name,
+                    component: () => import('@/views/doctors/Tariffs.vue'),
+                    meta: { requiresAuth: true, positions: MODULE_PERMISSIONS.tariffs.positions }
+                },
+                {
                     path: '/my-medical-fees',
                     name: 'myMedicalFees',
                     component: () => import('@/views/doctors/MyMedicalFees.vue'),
