@@ -88,7 +88,12 @@ export function useMedicalFees() {
             }
         }
         // Regla 2: Porcentaje variable para RETÉN con seguros/EPS
-        else if (isReten && company !== 'PARTICULAR') {
+        // Excluir específicamente los códigos de consulta 50.00.00 y 50.00.01 (igual que en PLANILLA)
+        // CORRECCIÓN: Esta exclusión NO aplica para seguros (todo entra a clínica y se paga después)
+        const isExcludedRetenCode = ['50.00.00', '50.00.01'].includes(segusCode);
+
+        // Para seguros SÍ calculamos comisión normalmente
+        if (isReten && company !== 'PARTICULAR') {
             // Usar insurance_commission_percentage si está configurado, sino usar 92.5% por defecto
             const insurancePercentage = doctor?.insurance_commission_percentage;
 
@@ -102,7 +107,8 @@ export function useMedicalFees() {
             }
         }
         // Regla 3: RETÉN + PARTICULAR con tarifario que indica todo para clínica
-        else if (isReten && company === 'PARTICULAR') {
+        // Aquí SÍ aplicamos la exclusión de códigos de consulta
+        else if (isReten && !isExcludedRetenCode && company === 'PARTICULAR') {
             // Buscar tarifario del médico para validar distribución de ingresos
             const tariff = doctorTariffsStore.allTariffs.find((t) => t.tariff_code === segusCode && t.doctor_code === doctorCode);
 
