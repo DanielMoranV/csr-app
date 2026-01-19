@@ -1,3362 +1,3291 @@
 [
-  {
-    "cod_sgp": "01001",
-    "nom_sgp": "HEMOGRAMA COMPLETO",
-    "cod_seg": "33.04.10"
-  },
-  {
-    "cod_sgp": "01002",
-    "nom_sgp": "HEMOGLOBINA",
-    "cod_seg": "33.08.05"
-  },
-  {
-    "cod_sgp": "02001",
-    "nom_sgp": "ORINA, EXAMEN COMPLETO",
-    "cod_seg": "33.05.05"
-  },
-  {
-    "cod_sgp": "06001",
-    "nom_sgp": "PARASITOLOGICO SIMPLE",
-    "cod_seg": "33.06.02"
-  },
-  {
-    "cod_sgp": "03001",
-    "nom_sgp": "GLUCOSA BASAL",
-    "cod_seg": "33.01.18"
-  },
-  {
-    "cod_sgp": "03002",
-    "nom_sgp": "COLESTEROL, FRACCIONES",
-    "cod_seg": "33.10.12"
-  },
-  {
-    "cod_sgp": "01007",
-    "nom_sgp": "HEMATOCRITO",
-    "cod_seg": "33.04.08"
-  },
-  {
-    "cod_sgp": "03003",
-    "nom_sgp": "GLUCOSA  POST PRANDIAL",
-    "cod_seg": "33.01.19"
-  },
-  {
-    "cod_sgp": "03004",
-    "nom_sgp": "CREATININA SIMPLE",
-    "cod_seg": "33.01.08"
-  },
-  {
-    "cod_sgp": "03005",
-    "nom_sgp": "UREA EN ORINA DE 24 HRS",
-    "cod_seg": ""
-  },
-  {
-    "cod_sgp": "03006",
-    "nom_sgp": "ACIDO URICO",
-    "cod_seg": "33.01.01"
-  },
-  {
-    "cod_sgp": "03007",
-    "nom_sgp": "COLESTEROL TOTAL",
-    "cod_seg": "33.01.07"
-  },
-  {
-    "cod_sgp": "03008",
-    "nom_sgp": "COLESTEROL HDL",
-    "cod_seg": "33.01.37"
-  },
-  {
-    "cod_sgp": "03009",
-    "nom_sgp": "COLESTEROL LDL",
-    "cod_seg": "33.01.50"
-  },
-  {
-    "cod_sgp": "03010",
-    "nom_sgp": "TRIGLICERIDOS",
-    "cod_seg": "33.01.34"
-  },
-  {
-    "cod_sgp": "04001",
-    "nom_sgp": "V.D.R.L.",
-    "cod_seg": "33.02.15"
-  },
-  {
-    "cod_sgp": "04002",
-    "nom_sgp": "AGLUTINACIONES FEBRILES",
-    "cod_seg": "33.02.01"
-  },
-  {
-    "cod_sgp": "01008",
-    "nom_sgp": "VELOCIDAD DE SEDIMENTACION GLOBULAR",
-    "cod_seg": "33.04.15"
-  },
-  {
-    "cod_sgp": "01009",
-    "nom_sgp": "RETICULOCITOS, PORCENTAJE",
-    "cod_seg": "33.04.12"
-  },
-  {
-    "cod_sgp": "01010",
-    "nom_sgp": "RECUENTO DE PLAQUETAS",
-    "cod_seg": "33.04.11"
-  },
-  {
-    "cod_sgp": "01011",
-    "nom_sgp": "TIEMPO DE COAGULACION",
-    "cod_seg": "33.04.01"
-  },
-  {
-    "cod_sgp": "01012",
-    "nom_sgp": "TIEMPO DE SANGRIA",
-    "cod_seg": ""
-  },
-  {
-    "cod_sgp": "01013",
-    "nom_sgp": "TIEMPO DE PROTROMBINA",
-    "cod_seg": "33.04.13"
-  },
-  {
-    "cod_sgp": "01014",
-    "nom_sgp": "TIEMPO PARCIAL DE (APTT)",
-    "cod_seg": "33.04.14"
-  },
-  {
-    "cod_sgp": "01016",
-    "nom_sgp": "FIBRINOGENO",
-    "cod_seg": "33.04.04"
-  },
-  {
-    "cod_sgp": "02003",
-    "nom_sgp": "THEVENON EN ORINA",
-    "cod_seg": ""
-  },
-  {
-    "cod_sgp": "03011",
-    "nom_sgp": "PROTEINAS TOTALES Y FRACCIONADAS",
-    "cod_seg": "33.01.24"
-  },
-  {
-    "cod_sgp": "03012",
-    "nom_sgp": "BILIRRUBINAS TOTALES Y FRACCIONADAS",
-    "cod_seg": "33.01.03"
-  },
-  {
-    "cod_sgp": "03013",
-    "nom_sgp": "AMILASA",
-    "cod_seg": "33.01.02"
-  },
-  {
-    "cod_sgp": "03014",
-    "nom_sgp": "<<<< SIN USO >>>>>LIPIDOS TOTALES",
-    "cod_seg": "33.01.22"
-  },
-  {
-    "cod_sgp": "03015",
-    "nom_sgp": "TOLERANCIA A LA GLUCOSA 1 - 2 HORAS",
-    "cod_seg": "33.01.30"
-  },
-  {
-    "cod_sgp": "03016",
-    "nom_sgp": "CREATININA, EN ORINA 24 HRS",
-    "cod_seg": "33.01.11"
-  },
-  {
-    "cod_sgp": "03017",
-    "nom_sgp": "PROTEINA, EN ORINA DE 24 HORAS",
-    "cod_seg": "33.05.01"
-  },
-  {
-    "cod_sgp": "03018",
-    "nom_sgp": "CALCIO SERICO",
-    "cod_seg": "33.01.04"
-  },
-  {
-    "cod_sgp": "03019",
-    "nom_sgp": "FOSFORO",
-    "cod_seg": "33.01.16"
-  },
-  {
-    "cod_sgp": "03020",
-    "nom_sgp": "CALCIO EN ORINA 24 HORAS",
-    "cod_seg": "33.05.03"
-  },
-  {
-    "cod_sgp": "03021",
-    "nom_sgp": "FOSFORO EN ORINA 24 HORAS",
-    "cod_seg": ""
-  },
-  {
-    "cod_sgp": "03022",
-    "nom_sgp": "DESHIDROGENASA LACTICA (DHL)",
-    "cod_seg": "33.01.40"
-  },
-  {
-    "cod_sgp": "03023",
-    "nom_sgp": "TRANSAMINASA ASAT (TGO)",
-    "cod_seg": "33.01.32"
-  },
-  {
-    "cod_sgp": "03024",
-    "nom_sgp": "FOSFATASA ALCALINA",
-    "cod_seg": "33.01.15"
-  },
-  {
-    "cod_sgp": "03025",
-    "nom_sgp": "<<<<< SI USO >>>>> FOSFATASA ACIDA TOTAL",
-    "cod_seg": ""
-  },
-  {
-    "cod_sgp": "03026",
-    "nom_sgp": "<<<<< SIN USO >>>> FOSFATASA ACIDA PROST",
-    "cod_seg": "33.01.13"
-  },
-  {
-    "cod_sgp": "04003",
-    "nom_sgp": "FACTOR REUMATOIDEO (NO USAR) CUALITATIVO",
-    "cod_seg": "33.02.13"
-  },
-  {
-    "cod_sgp": "04004",
-    "nom_sgp": "PROTEINA C REACTIVA NO USAR",
-    "cod_seg": ""
-  },
-  {
-    "cod_sgp": "04005",
-    "nom_sgp": "ANTIESTREPTOLISINA \"O\"",
-    "cod_seg": "33.02.06"
-  },
-  {
-    "cod_sgp": "04006",
-    "nom_sgp": "COOMBS DIRECTO",
-    "cod_seg": "33.02.17"
-  },
-  {
-    "cod_sgp": "04007",
-    "nom_sgp": "COOMBS INDIRECTO CUANTITATIVO",
-    "cod_seg": "33.02.18"
-  },
-  {
-    "cod_sgp": "04009",
-    "nom_sgp": "INVESTIGACION DE H.I.V",
-    "cod_seg": ""
-  },
-  {
-    "cod_sgp": "04010",
-    "nom_sgp": "ANTIGENO AUSTRALIANO (HBSAG)",
-    "cod_seg": "32.01.20"
-  },
-  {
-    "cod_sgp": "04011",
-    "nom_sgp": "HEPATITIS C -  PRUEBA RAPIDA",
-    "cod_seg": "32.01.34"
-  },
-  {
-    "cod_sgp": "05001",
-    "nom_sgp": "T4 TOTAL",
-    "cod_seg": "26.01.02"
-  },
-  {
-    "cod_sgp": "05002",
-    "nom_sgp": "T3  TOTAL",
-    "cod_seg": "26.01.01"
-  },
-  {
-    "cod_sgp": "05003",
-    "nom_sgp": "<<NO USAR>>--------  TIROTROFINA (TSH)",
-    "cod_seg": "30.01.17"
-  },
-  {
-    "cod_sgp": "05004",
-    "nom_sgp": "PROLACTINA",
-    "cod_seg": "26.01.08"
-  },
-  {
-    "cod_sgp": "05005",
-    "nom_sgp": "FOLICULOESTIMULANTE (FSH)",
-    "cod_seg": "26.01.07"
-  },
-  {
-    "cod_sgp": "05006",
-    "nom_sgp": "LH (HORMONA LUTEINICA)",
-    "cod_seg": "26.01.06"
-  },
-  {
-    "cod_sgp": "05007",
-    "nom_sgp": "ESTRADIOL",
-    "cod_seg": "26.01.11"
-  },
-  {
-    "cod_sgp": "05008",
-    "nom_sgp": "PROGESTERONA",
-    "cod_seg": "26.01.10"
-  },
-  {
-    "cod_sgp": "06002",
-    "nom_sgp": "DESABILITADO     T  H  E  V  E  N  O  N",
-    "cod_seg": "33.06.05"
-  },
-  {
-    "cod_sgp": "07001",
-    "nom_sgp": "CULTIVO Y ANTIBIOGRAMA",
-    "cod_seg": "33.03.09"
-  },
-  {
-    "cod_sgp": "03027",
-    "nom_sgp": "ACIDO URICO - ORINA 24 HRS",
-    "cod_seg": "33.05.13"
-  },
-  {
-    "cod_sgp": "06005",
-    "nom_sgp": "SUSTANCIAS REDUCTORAS",
-    "cod_seg": "33.08.24"
-  },
-  {
-    "cod_sgp": "06004",
-    "nom_sgp": "COPROCULTIVO",
-    "cod_seg": "33.03.04"
-  },
-  {
-    "cod_sgp": "06006",
-    "nom_sgp": "THEVENON SERIADO",
-    "cod_seg": ""
-  },
-  {
-    "cod_sgp": "07004",
-    "nom_sgp": "INVESTIGACION DE BK",
-    "cod_seg": "33.03.01"
-  },
-  {
-    "cod_sgp": "03028",
-    "nom_sgp": "TRANSAMINASA ALAT (TGP)",
-    "cod_seg": "33.01.33"
-  },
-  {
-    "cod_sgp": "01017",
-    "nom_sgp": "LEUCOCITOS, RECUENTO",
-    "cod_seg": ""
-  },
-  {
-    "cod_sgp": "05010",
-    "nom_sgp": "CORTISOL",
-    "cod_seg": "26.01.12"
-  },
-  {
-    "cod_sgp": "05011",
-    "nom_sgp": "SUBUNIDAD BETA HCG",
-    "cod_seg": "33.09.10"
-  },
-  {
-    "cod_sgp": "05015",
-    "nom_sgp": "ALFA FETO PROTEINAS (AFP)",
-    "cod_seg": "33.09.01"
-  },
-  {
-    "cod_sgp": "05016",
-    "nom_sgp": "ANTIGENO PROSTATICO ESPECIFICO (PSA) NO",
-    "cod_seg": "33.09.13"
-  },
-  {
-    "cod_sgp": "03029",
-    "nom_sgp": "TRANSAMINASAS",
-    "cod_seg": "33.01.90"
-  },
-  {
-    "cod_sgp": "03030",
-    "nom_sgp": "FLUIDOS",
-    "cod_seg": ""
-  },
-  {
-    "cod_sgp": "03031",
-    "nom_sgp": "ESPERMATOGRAMA",
-    "cod_seg": "33.08.15"
-  },
-  {
-    "cod_sgp": "06008",
-    "nom_sgp": "INVESTIGACION DE OXIUROS",
-    "cod_seg": ""
-  },
-  {
-    "cod_sgp": "04012",
-    "nom_sgp": "TEST DE EMBARAZO(SANGRE)",
-    "cod_seg": "33.05.07"
-  },
-  {
-    "cod_sgp": "09001",
-    "nom_sgp": "CITOMEGALOVIRUS Ig M",
-    "cod_seg": ""
-  },
-  {
-    "cod_sgp": "08003",
-    "nom_sgp": "TEST DE A.D.A",
-    "cod_seg": ""
-  },
-  {
-    "cod_sgp": "08004",
-    "nom_sgp": "HEMOGLOBINA GLUCOSILADA ( HbA1 )",
-    "cod_seg": "33.08.05"
-  },
-  {
-    "cod_sgp": "09002",
-    "nom_sgp": "TOXOPLASMA GONDII -  IG M",
-    "cod_seg": "33.08.51"
-  },
-  {
-    "cod_sgp": "09003",
-    "nom_sgp": "TOXOPLASMA  GONDII -  IG G",
-    "cod_seg": "33.08.51"
-  },
-  {
-    "cod_sgp": "04014",
-    "nom_sgp": "HIDATIDOSIS",
-    "cod_seg": ""
-  },
-  {
-    "cod_sgp": "03032",
-    "nom_sgp": "PROTEINAS BENCES JONES",
-    "cod_seg": ""
-  },
-  {
-    "cod_sgp": "03033",
-    "nom_sgp": "COLESTEROL VLDL",
-    "cod_seg": "33.01.51"
-  },
-  {
-    "cod_sgp": "01021",
-    "nom_sgp": "NUMERACION Y FORMULA",
-    "cod_seg": ""
-  },
-  {
-    "cod_sgp": "01022",
-    "nom_sgp": "HEMOGLOBINA Y  HEMATOCRITO",
-    "cod_seg": "33.04.07"
-  },
-  {
-    "cod_sgp": "01023",
-    "nom_sgp": "GRUPO - FACTOR",
-    "cod_seg": "33.02.09"
-  },
-  {
-    "cod_sgp": "01024",
-    "nom_sgp": "TIEMPO DE COAGULACION Y SANGRIA",
-    "cod_seg": "33.04.01"
-  },
-  {
-    "cod_sgp": "01025",
-    "nom_sgp": "HEMOCULTIVO/REMOVEDOR",
-    "cod_seg": "33.03.06"
-  },
-  {
-    "cod_sgp": "03034",
-    "nom_sgp": "CPK-MB (soenzima MB )",
-    "cod_seg": "33.01.09"
-  },
-  {
-    "cod_sgp": "03035",
-    "nom_sgp": "CPK - TOTAL",
-    "cod_seg": "33.01.09"
-  },
-  {
-    "cod_sgp": "10001",
-    "nom_sgp": "TRANSF. SANG. 1ERA UNIDAD",
-    "cod_seg": ""
-  },
-  {
-    "cod_sgp": "10002",
-    "nom_sgp": "TRANSF. SANG. 2DA UNIDAD-S/EQP.",
-    "cod_seg": ""
-  },
-  {
-    "cod_sgp": "10003",
-    "nom_sgp": "PLASMA 250-500 CC-S/EQP.",
-    "cod_seg": ""
-  },
-  {
-    "cod_sgp": "09004",
-    "nom_sgp": "PERFIL  TORCH  (  I G G )",
-    "cod_seg": "33.10.09"
-  },
-  {
-    "cod_sgp": "01026",
-    "nom_sgp": "CONSTANTES CORPUSCULARES",
-    "cod_seg": "33.04.03"
-  },
-  {
-    "cod_sgp": "10005",
-    "nom_sgp": "TRANSFUSIONES S/EQP-(INCL.PBAS.D/R)",
-    "cod_seg": ""
-  },
-  {
-    "cod_sgp": "05017",
-    "nom_sgp": "ANTIGENO CARCINO EMBRIONARIO (CEA)",
-    "cod_seg": "33.09.02"
-  },
-  {
-    "cod_sgp": "05018",
-    "nom_sgp": "CA 19-9",
-    "cod_seg": "33.09.09"
-  },
-  {
-    "cod_sgp": "05019",
-    "nom_sgp": "CA 125 (TUMORAL DE OVARIO)",
-    "cod_seg": "33.09.07"
-  },
-  {
-    "cod_sgp": "05020",
-    "nom_sgp": "CA 15-3 (ANT. TUMORAL DE MAMA)",
-    "cod_seg": ""
-  },
-  {
-    "cod_sgp": "08005",
-    "nom_sgp": "NO USAR ESTA DESHABILITADO SODIO",
-    "cod_seg": ""
-  },
-  {
-    "cod_sgp": "08006",
-    "nom_sgp": "POTASIO",
-    "cod_seg": ""
-  },
-  {
-    "cod_sgp": "01027",
-    "nom_sgp": "RETRACCION DEL COAGULO",
-    "cod_seg": "33.04.12"
-  },
-  {
-    "cod_sgp": "04015",
-    "nom_sgp": "HAV  (IGG)",
-    "cod_seg": ""
-  },
-  {
-    "cod_sgp": "04016",
-    "nom_sgp": "HAV  (IgM)",
-    "cod_seg": ""
-  },
-  {
-    "cod_sgp": "08008",
-    "nom_sgp": "EPSTEN BAR IG M",
-    "cod_seg": ""
-  },
-  {
-    "cod_sgp": "09005",
-    "nom_sgp": "CITOMEGALOVIRUS IgG",
-    "cod_seg": ""
-  },
-  {
-    "cod_sgp": "03036",
-    "nom_sgp": "GAMMA GLUTAMIL TRANSPEPTIDASA",
-    "cod_seg": "33.01.17"
-  },
-  {
-    "cod_sgp": "04017",
-    "nom_sgp": "PRUEBA COMPATIBILIDAD",
-    "cod_seg": "31.01.01"
-  },
-  {
-    "cod_sgp": "03037",
-    "nom_sgp": "LIPASA SERICA",
-    "cod_seg": "33.01.20"
-  },
-  {
-    "cod_sgp": "04018",
-    "nom_sgp": "FTA  ABS",
-    "cod_seg": "33.02.35"
-  },
-  {
-    "cod_sgp": "04019",
-    "nom_sgp": "HEPATITIS A  TOTAL(ELISA)",
-    "cod_seg": ""
-  },
-  {
-    "cod_sgp": "04020",
-    "nom_sgp": "ANTI  VHB",
-    "cod_seg": ""
-  },
-  {
-    "cod_sgp": "05021",
-    "nom_sgp": "<<NO USAR>>--------T4 LIBRE",
-    "cod_seg": "26.01.01"
-  },
-  {
-    "cod_sgp": "11001",
-    "nom_sgp": "ANTICUERPOS,  ANTINUCLEARES  (ANA)",
-    "cod_seg": "32.01.10"
-  },
-  {
-    "cod_sgp": "04023",
-    "nom_sgp": "CHAGAS, ANTICUERPOS",
-    "cod_seg": ""
-  },
-  {
-    "cod_sgp": "08009",
-    "nom_sgp": "PAUL BUNNELL",
-    "cod_seg": ""
-  },
-  {
-    "cod_sgp": "04024",
-    "nom_sgp": "HTLV-I-II",
-    "cod_seg": ""
-  },
-  {
-    "cod_sgp": "04025",
-    "nom_sgp": "HBc Total (Anticore Total)",
-    "cod_seg": "32.01.39"
-  },
-  {
-    "cod_sgp": "03038",
-    "nom_sgp": "CLORO",
-    "cod_seg": ""
-  },
-  {
-    "cod_sgp": "03039",
-    "nom_sgp": "SODIO",
-    "cod_seg": "33.01.29"
-  },
-  {
-    "cod_sgp": "03040",
-    "nom_sgp": "POTASIO",
-    "cod_seg": "33.01.23"
-  },
-  {
-    "cod_sgp": "03044",
-    "nom_sgp": "ALBUMINA EN ORINA",
-    "cod_seg": ""
-  },
-  {
-    "cod_sgp": "04032",
-    "nom_sgp": "ROTAVIRUS",
-    "cod_seg": ""
-  },
-  {
-    "cod_sgp": "04034",
-    "nom_sgp": "CHLAMYDIA",
-    "cod_seg": ""
-  },
-  {
-    "cod_sgp": "08001",
-    "nom_sgp": "ACIDO FOLICO (SUERO)",
-    "cod_seg": "33.08.58"
-  },
-  {
-    "cod_sgp": "08002",
-    "nom_sgp": "ACIDO LACTICO",
-    "cod_seg": ""
-  },
-  {
-    "cod_sgp": "06007",
-    "nom_sgp": "REACCION INFLAMATORIA",
-    "cod_seg": "33.08.23"
-  },
-  {
-    "cod_sgp": "07002",
-    "nom_sgp": "INVESTIGACION DE GERMENES (GRAM)",
-    "cod_seg": "33.03.02"
-  },
-  {
-    "cod_sgp": "07003",
-    "nom_sgp": "EXAMEN DIRECTO",
-    "cod_seg": "33.03.02"
-  },
-  {
-    "cod_sgp": "07006",
-    "nom_sgp": "INVESTIGACION DE HEMATOZOARIOS :",
-    "cod_seg": "33.04.07"
-  },
-  {
-    "cod_sgp": "07007",
-    "nom_sgp": "CULTIVO DE HONGOS",
-    "cod_seg": "33.03.09"
-  },
-  {
-    "cod_sgp": "04008",
-    "nom_sgp": "FENOMENO LE",
-    "cod_seg": ""
-  },
-  {
-    "cod_sgp": "04021",
-    "nom_sgp": "FENOMENO  LE ( SERIADO )",
-    "cod_seg": ""
-  },
-  {
-    "cod_sgp": "08007",
-    "nom_sgp": "CITOQUIMICO",
-    "cod_seg": "33.08.07"
-  },
-  {
-    "cod_sgp": "11002",
-    "nom_sgp": "ANTI MITOCONDRIALES (AMA)",
-    "cod_seg": "32.01.12"
-  },
-  {
-    "cod_sgp": "03042",
-    "nom_sgp": "LITIO",
-    "cod_seg": "33.08.29"
-  },
-  {
-    "cod_sgp": "04022",
-    "nom_sgp": "WALLER- ROSE, PRUEBA DE",
-    "cod_seg": "33.02.14"
-  },
-  {
-    "cod_sgp": "03043",
-    "nom_sgp": "BT",
-    "cod_seg": "33.09.04"
-  },
-  {
-    "cod_sgp": "03045",
-    "nom_sgp": "VITAMINA B 12",
-    "cod_seg": "33.08.59"
-  },
-  {
-    "cod_sgp": "03046",
-    "nom_sgp": "MICROALBUMINURIA OCASIONAL (SIMPLE)",
-    "cod_seg": "33.05.27"
-  },
-  {
-    "cod_sgp": "04026",
-    "nom_sgp": "PARATOHORMONA INTACTA",
-    "cod_seg": ""
-  },
-  {
-    "cod_sgp": "04027",
-    "nom_sgp": "PROLACTINA - POOL",
-    "cod_seg": "26.01.08"
-  },
-  {
-    "cod_sgp": "04028",
-    "nom_sgp": "DENGUE VIRUS, ANTIC. IGM",
-    "cod_seg": ""
-  },
-  {
-    "cod_sgp": "04029",
-    "nom_sgp": "DENGUE VIRUS , ANTIC. IgG",
-    "cod_seg": ""
-  },
-  {
-    "cod_sgp": "04030",
-    "nom_sgp": "HELICOBACTER PILORY IG G",
-    "cod_seg": "33.03.45"
-  },
-  {
-    "cod_sgp": "04031",
-    "nom_sgp": "PROTEINA C REACTIVA NO  USAR",
-    "cod_seg": ""
-  },
-  {
-    "cod_sgp": "04033",
-    "nom_sgp": "BRUCELLA - IgG",
-    "cod_seg": ""
-  },
-  {
-    "cod_sgp": "04036",
-    "nom_sgp": "PERFIL ANCA C Y P",
-    "cod_seg": "33.02.29"
-  },
-  {
-    "cod_sgp": "04037",
-    "nom_sgp": "C  - ANCA (ANTI PR3) NO USAR",
-    "cod_seg": "33.02.29"
-  },
-  {
-    "cod_sgp": "04038",
-    "nom_sgp": "P - ANCA  (ANTI MPO) NO USAR",
-    "cod_seg": ""
-  },
-  {
-    "cod_sgp": "04039",
-    "nom_sgp": "BRUCELLA - IgM",
-    "cod_seg": ""
-  },
-  {
-    "cod_sgp": "04040",
-    "nom_sgp": "ANTI CARDIOLIPINA IgG",
-    "cod_seg": ""
-  },
-  {
-    "cod_sgp": "04041",
-    "nom_sgp": "ANTI CARDIOLIPINA IgM",
-    "cod_seg": ""
-  },
-  {
-    "cod_sgp": "04044",
-    "nom_sgp": "CISTICERCOSIS - ELISA",
-    "cod_seg": ""
-  },
-  {
-    "cod_sgp": "04045",
-    "nom_sgp": "C3 COMPLEMENTO",
-    "cod_seg": "33.02.24"
-  },
-  {
-    "cod_sgp": "04046",
-    "nom_sgp": "C4 COMPLEMENTO",
-    "cod_seg": "33.02.25"
-  },
-  {
-    "cod_sgp": "04047",
-    "nom_sgp": "C 5",
-    "cod_seg": ""
-  },
-  {
-    "cod_sgp": "04048",
-    "nom_sgp": "ELECTROLITOS SERICOS",
-    "cod_seg": "33.01.12"
-  },
-  {
-    "cod_sgp": "04049",
-    "nom_sgp": "EPSTEIN BARR-EBNA (IgG)",
-    "cod_seg": ""
-  },
-  {
-    "cod_sgp": "04050",
-    "nom_sgp": "EPSTEIN BARR-EBNA (IgM)",
-    "cod_seg": ""
-  },
-  {
-    "cod_sgp": "04051",
-    "nom_sgp": "EPSTEIN BARR - VCA (IgG)",
-    "cod_seg": ""
-  },
-  {
-    "cod_sgp": "04052",
-    "nom_sgp": "EPSTEIN BARR - VCA (IgM)",
-    "cod_seg": ""
-  },
-  {
-    "cod_sgp": "04053",
-    "nom_sgp": "ESTRADIOL LIBRE",
-    "cod_seg": ""
-  },
-  {
-    "cod_sgp": "03047",
-    "nom_sgp": "FERRITINA",
-    "cod_seg": "33.08.62"
-  },
-  {
-    "cod_sgp": "03048",
-    "nom_sgp": "FENOBARBITAL",
-    "cod_seg": "33.07.04"
-  },
-  {
-    "cod_sgp": "03049",
-    "nom_sgp": "GASTRINA",
-    "cod_seg": ""
-  },
-  {
-    "cod_sgp": "04057",
-    "nom_sgp": "HBE - AG",
-    "cod_seg": ""
-  },
-  {
-    "cod_sgp": "04058",
-    "nom_sgp": "HCG TESTICULAR",
-    "cod_seg": ""
-  },
-  {
-    "cod_sgp": "04059",
-    "nom_sgp": "HELICOBACTER PYLORI IgM",
-    "cod_seg": "33.03.46"
-  },
-  {
-    "cod_sgp": "04060",
-    "nom_sgp": "HERPES I - IgG",
-    "cod_seg": ""
-  },
-  {
-    "cod_sgp": "04061",
-    "nom_sgp": "HERPES I - IgM",
-    "cod_seg": ""
-  },
-  {
-    "cod_sgp": "04062",
-    "nom_sgp": "HERPES II - IgG",
-    "cod_seg": "33.08.49"
-  },
-  {
-    "cod_sgp": "04063",
-    "nom_sgp": "HERPES II-  IgM",
-    "cod_seg": "32.01.33"
-  },
-  {
-    "cod_sgp": "04064",
-    "nom_sgp": "IgG",
-    "cod_seg": ""
-  },
-  {
-    "cod_sgp": "04065",
-    "nom_sgp": "IgM",
-    "cod_seg": ""
-  },
-  {
-    "cod_sgp": "04067",
-    "nom_sgp": "INSULINA POST PANDRIAL",
-    "cod_seg": "33.10.18"
-  },
-  {
-    "cod_sgp": "03051",
-    "nom_sgp": "COCAINA ( ORINA )",
-    "cod_seg": ""
-  },
-  {
-    "cod_sgp": "03052",
-    "nom_sgp": "MARIHUANA",
-    "cod_seg": ""
-  },
-  {
-    "cod_sgp": "04068",
-    "nom_sgp": "RUBEOLA -IgG",
-    "cod_seg": ""
-  },
-  {
-    "cod_sgp": "04069",
-    "nom_sgp": "RUBEOLA - IgM",
-    "cod_seg": ""
-  },
-  {
-    "cod_sgp": "08010",
-    "nom_sgp": "TRANSFERRINA",
-    "cod_seg": "33.08.14"
-  },
-  {
-    "cod_sgp": "04070",
-    "nom_sgp": "SARAMPION -IgG",
-    "cod_seg": ""
-  },
-  {
-    "cod_sgp": "04071",
-    "nom_sgp": "SARAMPION - IgM",
-    "cod_seg": ""
-  },
-  {
-    "cod_sgp": "04072",
-    "nom_sgp": "TESTOSTERONA LIBRE",
-    "cod_seg": "33.13.08"
-  },
-  {
-    "cod_sgp": "04073",
-    "nom_sgp": "TESTOSTERONA  TOTAL",
-    "cod_seg": "26.01.09"
-  },
-  {
-    "cod_sgp": "04074",
-    "nom_sgp": "TROPONINA CUANTITATIVA",
-    "cod_seg": "33.13.13"
-  },
-  {
-    "cod_sgp": "04075",
-    "nom_sgp": "ANTI MUSCULO LISO",
-    "cod_seg": "32.01.11"
-  },
-  {
-    "cod_sgp": "04076",
-    "nom_sgp": "ANTI SM",
-    "cod_seg": ""
-  },
-  {
-    "cod_sgp": "04077",
-    "nom_sgp": "ANTI SS-A   (ANTI -  RO)",
-    "cod_seg": ""
-  },
-  {
-    "cod_sgp": "04078",
-    "nom_sgp": "ANTI SS-B (ANTI -  LA)",
-    "cod_seg": ""
-  },
-  {
-    "cod_sgp": "04079",
-    "nom_sgp": "ANTI JO",
-    "cod_seg": ""
-  },
-  {
-    "cod_sgp": "03053",
-    "nom_sgp": "LACTOSA - PRUEBA DE TOLERACIA",
-    "cod_seg": "33.01.31"
-  },
-  {
-    "cod_sgp": "06009",
-    "nom_sgp": "SUDAN",
-    "cod_seg": ""
-  },
-  {
-    "cod_sgp": "06010",
-    "nom_sgp": "ROTAVIRUS EN HECES",
-    "cod_seg": ""
-  },
-  {
-    "cod_sgp": "08011",
-    "nom_sgp": "AGA Y ELECTROLITOS",
-    "cod_seg": ""
-  },
-  {
-    "cod_sgp": "06011",
-    "nom_sgp": "ADENOVIRUS ANTIGENO FECAL",
-    "cod_seg": ""
-  },
-  {
-    "cod_sgp": "08012",
-    "nom_sgp": "ENDOMISIO, AUTO ANTICI. (EMA)",
-    "cod_seg": ""
-  },
-  {
-    "cod_sgp": "08013",
-    "nom_sgp": "GLIADINA, ANTICUERPOS (IgA)",
-    "cod_seg": ""
-  },
-  {
-    "cod_sgp": "08014",
-    "nom_sgp": "GASES ARTERIALES",
-    "cod_seg": ""
-  },
-  {
-    "cod_sgp": "03041",
-    "nom_sgp": "PERFIL LIPIDICO",
-    "cod_seg": "33.10.02"
-  },
-  {
-    "cod_sgp": "03054",
-    "nom_sgp": "PERFIL HEPATICO",
-    "cod_seg": "33.10.03"
-  },
-  {
-    "cod_sgp": "01003",
-    "nom_sgp": "FROTIS DE LAMINA PERIFERICA",
-    "cod_seg": "33.02.03"
-  },
-  {
-    "cod_sgp": "06012",
-    "nom_sgp": "PARASITOLOGICO SERIADO (1RA. MUESTRA)",
-    "cod_seg": ""
-  },
-  {
-    "cod_sgp": "06013",
-    "nom_sgp": "PARASITOLOGICO SERIADO (2DA. MUESTRA)",
-    "cod_seg": ""
-  },
-  {
-    "cod_sgp": "03055",
-    "nom_sgp": "EXAMEN CUALITATIVO DE CALCULO URINARIO",
-    "cod_seg": ""
-  },
-  {
-    "cod_sgp": "01005",
-    "nom_sgp": "RECUENTO DE RETICULOCITOS",
-    "cod_seg": "33.11.11"
-  },
-  {
-    "cod_sgp": "03056",
-    "nom_sgp": "ANFETAMINA",
-    "cod_seg": ""
-  },
-  {
-    "cod_sgp": "03057",
-    "nom_sgp": "METANFETAMINA",
-    "cod_seg": ""
-  },
-  {
-    "cod_sgp": "03058",
-    "nom_sgp": "METADONA",
-    "cod_seg": ""
-  },
-  {
-    "cod_sgp": "03059",
-    "nom_sgp": "MORFINA",
-    "cod_seg": ""
-  },
-  {
-    "cod_sgp": "03060",
-    "nom_sgp": "FENZICLIDINA",
-    "cod_seg": ""
-  },
-  {
-    "cod_sgp": "03061",
-    "nom_sgp": "BARBITURICO (ORINA)",
-    "cod_seg": ""
-  },
-  {
-    "cod_sgp": "03062",
-    "nom_sgp": "BENZODIAZEPINA",
-    "cod_seg": ""
-  },
-  {
-    "cod_sgp": "03063",
-    "nom_sgp": "ANTIDEPRESIVOS TRICICLICOS",
-    "cod_seg": ""
-  },
-  {
-    "cod_sgp": "04080",
-    "nom_sgp": "CELULAS LE",
-    "cod_seg": ""
-  },
-  {
-    "cod_sgp": "04081",
-    "nom_sgp": "CELULAS LE (1ERA MUESTRA)",
-    "cod_seg": ""
-  },
-  {
-    "cod_sgp": "04082",
-    "nom_sgp": "CELULAS LE (2DA MUESTRA)",
-    "cod_seg": ""
-  },
-  {
-    "cod_sgp": "04083",
-    "nom_sgp": "CELULAS LE (3ERA MUESTRA)",
-    "cod_seg": ""
-  },
-  {
-    "cod_sgp": "03064",
-    "nom_sgp": "COTININA",
-    "cod_seg": ""
-  },
-  {
-    "cod_sgp": "11003",
-    "nom_sgp": "ANTI DNA",
-    "cod_seg": "32.01.16"
-  },
-  {
-    "cod_sgp": "05012",
-    "nom_sgp": "<<NO USAR>>-------- T3 LIBRE",
-    "cod_seg": "33.13.12"
-  },
-  {
-    "cod_sgp": "06014",
-    "nom_sgp": "TEST DE LACTOSA",
-    "cod_seg": ""
-  },
-  {
-    "cod_sgp": "06015",
-    "nom_sgp": "THEVENON I",
-    "cod_seg": ""
-  },
-  {
-    "cod_sgp": "06016",
-    "nom_sgp": "THEVENON II",
-    "cod_seg": ""
-  },
-  {
-    "cod_sgp": "06017",
-    "nom_sgp": "THEVENON III",
-    "cod_seg": ""
-  },
-  {
-    "cod_sgp": "08015",
-    "nom_sgp": "DHEA-S (Dehidroepiandrosterona)",
-    "cod_seg": "33.08.69"
-  },
-  {
-    "cod_sgp": "08016",
-    "nom_sgp": "ACIDO VALPROICO",
-    "cod_seg": "33.07.11"
-  },
-  {
-    "cod_sgp": "08017",
-    "nom_sgp": "ANTI - ANTIFOSFOLIPIDICOS (ACL IGM/IGG +",
-    "cod_seg": ""
-  },
-  {
-    "cod_sgp": "08019",
-    "nom_sgp": "ANTICOAGULANTE LUPICO",
-    "cod_seg": ""
-  },
-  {
-    "cod_sgp": "08020",
-    "nom_sgp": "DOSAJE CARBAMAZEPINA ( TEGRETOL )",
-    "cod_seg": ""
-  },
-  {
-    "cod_sgp": "05013",
-    "nom_sgp": "CA  72-4",
-    "cod_seg": ""
-  },
-  {
-    "cod_sgp": "08021",
-    "nom_sgp": "HIV 1-2 DE 4ª GENERACION - ELISA",
-    "cod_seg": "33.03.48"
-  },
-  {
-    "cod_sgp": "08022",
-    "nom_sgp": "HGH BASAL",
-    "cod_seg": ""
-  },
-  {
-    "cod_sgp": "08023",
-    "nom_sgp": "BRUCELLA, SET",
-    "cod_seg": ""
-  },
-  {
-    "cod_sgp": "02004",
-    "nom_sgp": "UROCULTIVO Y ANTIBIOGRAMA",
-    "cod_seg": "33.03.08"
-  },
-  {
-    "cod_sgp": "04013",
-    "nom_sgp": "VARICELA ZOSTER ( IgM )",
-    "cod_seg": ""
-  },
-  {
-    "cod_sgp": "07008",
-    "nom_sgp": "INVESTIGACION DE BK SERIADO",
-    "cod_seg": ""
-  },
-  {
-    "cod_sgp": "07009",
-    "nom_sgp": "INVESTIGACION DE BK SERIADO II",
-    "cod_seg": ""
-  },
-  {
-    "cod_sgp": "07010",
-    "nom_sgp": "INVESTIGACION DE BK SERIADO III",
-    "cod_seg": ""
-  },
-  {
-    "cod_sgp": "08024",
-    "nom_sgp": "HOMOCISTEINA DOSAJE",
-    "cod_seg": ""
-  },
-  {
-    "cod_sgp": "08025",
-    "nom_sgp": "ANTI - TG  (QUIMIOLUMINISCENCIA)",
-    "cod_seg": ""
-  },
-  {
-    "cod_sgp": "08026",
-    "nom_sgp": "ANTI TPO - ANTI PEROXIDASA",
-    "cod_seg": "33.15.13"
-  },
-  {
-    "cod_sgp": "08027",
-    "nom_sgp": "CHLAMYDIA TRACHOMATIS (IgG)",
-    "cod_seg": ""
-  },
-  {
-    "cod_sgp": "08028",
-    "nom_sgp": "CHLAMYDIA TRACHOMATIS (IgM)",
-    "cod_seg": ""
-  },
-  {
-    "cod_sgp": "08029",
-    "nom_sgp": "INMUNOGLOBULINA   E ( IgE )",
-    "cod_seg": "33.02.23"
-  },
-  {
-    "cod_sgp": "08030",
-    "nom_sgp": "INMUNOGLOBULINA A ( IgA )",
-    "cod_seg": ""
-  },
-  {
-    "cod_sgp": "08031",
-    "nom_sgp": "INMUNOGLOBULINA G (IgG)",
-    "cod_seg": ""
-  },
-  {
-    "cod_sgp": "08032",
-    "nom_sgp": "INMUNOGLOBULINA M (IgM)",
-    "cod_seg": ""
-  },
-  {
-    "cod_sgp": "08033",
-    "nom_sgp": "PERFIL ALERGICO ( PRUEBA RAST )",
-    "cod_seg": ""
-  },
-  {
-    "cod_sgp": "08034",
-    "nom_sgp": "ANTI  RNP",
-    "cod_seg": "33.02.27"
-  },
-  {
-    "cod_sgp": "03050",
-    "nom_sgp": "ANTIESTREPTOLISINA- O  (ASO)",
-    "cod_seg": "33.02.06"
-  },
-  {
-    "cod_sgp": "08035",
-    "nom_sgp": "Scl - 70, AUTOANTICUERPOS",
-    "cod_seg": ""
-  },
-  {
-    "cod_sgp": "06018",
-    "nom_sgp": "CAMPYLOBACTER  INVESTIGACIÓN",
-    "cod_seg": ""
-  },
-  {
-    "cod_sgp": "08036",
-    "nom_sgp": "HBSA (ANTIGENO DE SUPERFICIE)",
-    "cod_seg": ""
-  },
-  {
-    "cod_sgp": "08037",
-    "nom_sgp": "HIV  ( WESTERN BLOT )",
-    "cod_seg": ""
-  },
-  {
-    "cod_sgp": "08038",
-    "nom_sgp": "ANTI HBEAG (ANTI ANTIGENO E)",
-    "cod_seg": ""
-  },
-  {
-    "cod_sgp": "05014",
-    "nom_sgp": "ANTICUERPOS TIROIDEOS",
-    "cod_seg": ""
-  },
-  {
-    "cod_sgp": "08039",
-    "nom_sgp": "ANTI - HBSAG (ANTICUERPO)",
-    "cod_seg": ""
-  },
-  {
-    "cod_sgp": "08040",
-    "nom_sgp": "HEPATITIS B (PRUEBA RAPIDA)",
-    "cod_seg": "32.01.20"
-  },
-  {
-    "cod_sgp": "08041",
-    "nom_sgp": "NITROGENO UREICO ( BUN )",
-    "cod_seg": ""
-  },
-  {
-    "cod_sgp": "08042",
-    "nom_sgp": "NITROGENO UREICO ( ORINA 24 H)",
-    "cod_seg": ""
-  },
-  {
-    "cod_sgp": "08043",
-    "nom_sgp": "PERFIL  TORCH  ( I G M )",
-    "cod_seg": "33.10.09"
-  },
-  {
-    "cod_sgp": "05022",
-    "nom_sgp": "PSA LIBRE",
-    "cod_seg": "33.09.17"
-  },
-  {
-    "cod_sgp": "08044",
-    "nom_sgp": "TRANSGLUTAMINASA, AUTOANTICUERPOS ( IGA",
-    "cod_seg": ""
-  },
-  {
-    "cod_sgp": "08045",
-    "nom_sgp": "LAMOTRIGINE ( Lamictal )",
-    "cod_seg": ""
-  },
-  {
-    "cod_sgp": "05023",
-    "nom_sgp": "CA 27-29",
-    "cod_seg": ""
-  },
-  {
-    "cod_sgp": "08046",
-    "nom_sgp": "CA - 15 - 3",
-    "cod_seg": ""
-  },
-  {
-    "cod_sgp": "08047",
-    "nom_sgp": "DIFENILHDANTOINA ( EPAMIN)",
-    "cod_seg": "33.07.02"
-  },
-  {
-    "cod_sgp": "08048",
-    "nom_sgp": "ANTILK1 - LIVER/KLDNEY MICROSOMAL ( LKM",
-    "cod_seg": ""
-  },
-  {
-    "cod_sgp": "08049",
-    "nom_sgp": "17 - HIDROXIPROGESTERONA",
-    "cod_seg": "33.12.07"
-  },
-  {
-    "cod_sgp": "08050",
-    "nom_sgp": "PEPTIDO C",
-    "cod_seg": ""
-  },
-  {
-    "cod_sgp": "08051",
-    "nom_sgp": "CRIOGLOBULINAS",
-    "cod_seg": ""
-  },
-  {
-    "cod_sgp": "08052",
-    "nom_sgp": "LISTERIA MONOCYTOGENES, ANTICUERPOS",
-    "cod_seg": ""
-  },
-  {
-    "cod_sgp": "08053",
-    "nom_sgp": "DIMERO D ( CUANTITIVO )",
-    "cod_seg": "32.02.05"
-  },
-  {
-    "cod_sgp": "01004",
-    "nom_sgp": "TIEMPO TROMBINA",
-    "cod_seg": "33.11.14"
-  },
-  {
-    "cod_sgp": "06019",
-    "nom_sgp": "TEST GRAHAM",
-    "cod_seg": "33.06.01"
-  },
-  {
-    "cod_sgp": "03065",
-    "nom_sgp": "UREA SERICA",
-    "cod_seg": "33.01.35"
-  },
-  {
-    "cod_sgp": "03066",
-    "nom_sgp": "CPK-MB LIQUIDA PLUS",
-    "cod_seg": ""
-  },
-  {
-    "cod_sgp": "04035",
-    "nom_sgp": "ANTIGENO PROSTATICO",
-    "cod_seg": ""
-  },
-  {
-    "cod_sgp": "04042",
-    "nom_sgp": "HIV - PRUEBA RAPIDA",
-    "cod_seg": "31.01.11"
-  },
-  {
-    "cod_sgp": "004",
-    "nom_sgp": "THEVENON (SANGRE OCULTA)",
-    "cod_seg": "33.06.05"
-  },
-  {
-    "cod_sgp": "005",
-    "nom_sgp": "PSA TOTAL CLIA",
-    "cod_seg": "33.09.13"
-  },
-  {
-    "cod_sgp": "006",
-    "nom_sgp": "ANTI HBS AG (ELISA) NO USAR",
-    "cod_seg": "32.01.28"
-  },
-  {
-    "cod_sgp": "007",
-    "nom_sgp": "ANTI HBC - ANTICORE TOTAL - IGM  (ELISA)",
-    "cod_seg": "32.01.26"
-  },
-  {
-    "cod_sgp": "008",
-    "nom_sgp": "T DE TROMBOPLASTINA(PTA)",
-    "cod_seg": ""
-  },
-  {
-    "cod_sgp": "009",
-    "nom_sgp": "VARIANTE DU",
-    "cod_seg": ""
-  },
-  {
-    "cod_sgp": "011",
-    "nom_sgp": "ADA EN LIQUIDO ASCITICO",
-    "cod_seg": "33.12.19"
-  },
-  {
-    "cod_sgp": "012",
-    "nom_sgp": "AMILASA EN ORINA 24 HRS",
-    "cod_seg": ""
-  },
-  {
-    "cod_sgp": "013",
-    "nom_sgp": "DEPURACION DE CREATININA",
-    "cod_seg": "33.01.11"
-  },
-  {
-    "cod_sgp": "014",
-    "nom_sgp": "DEPURACION EN ACIDO URICO",
-    "cod_seg": ""
-  },
-  {
-    "cod_sgp": "015",
-    "nom_sgp": "DEPURACION EN AMILASA",
-    "cod_seg": ""
-  },
-  {
-    "cod_sgp": "016",
-    "nom_sgp": "UREA EN ORINA SIMPLE",
-    "cod_seg": ""
-  },
-  {
-    "cod_sgp": "017",
-    "nom_sgp": "WESTERN BLOT CISTICERCO",
-    "cod_seg": "33.08.43"
-  },
-  {
-    "cod_sgp": "019",
-    "nom_sgp": "AMILASA EN ORINA SIMPLE",
-    "cod_seg": ""
-  },
-  {
-    "cod_sgp": "021",
-    "nom_sgp": "PROTEINURIA OCACIONAL",
-    "cod_seg": ""
-  },
-  {
-    "cod_sgp": "022",
-    "nom_sgp": "ACAROS",
-    "cod_seg": ""
-  },
-  {
-    "cod_sgp": "023",
-    "nom_sgp": "GRAM",
-    "cod_seg": ""
-  },
-  {
-    "cod_sgp": "024",
-    "nom_sgp": "NO USAR - HEMOCULTIVO C/ CON REMOVEDOR D",
-    "cod_seg": ""
-  },
-  {
-    "cod_sgp": "025",
-    "nom_sgp": "INVESTIGACION DE HONGOS DIRECTO (KOH)",
-    "cod_seg": "33.03.49"
-  },
-  {
-    "cod_sgp": "027",
-    "nom_sgp": "CULTIVO DE SECRECION PLEURAL",
-    "cod_seg": ""
-  },
-  {
-    "cod_sgp": "028",
-    "nom_sgp": "CULTIVO DE EXUDADO URETRAL",
-    "cod_seg": "33.03.09"
-  },
-  {
-    "cod_sgp": "031",
-    "nom_sgp": "ESPERMACULTIVO NO USAR",
-    "cod_seg": "33.03.12"
-  },
-  {
-    "cod_sgp": "032",
-    "nom_sgp": "BK DIRECTO SERIADO (TRES MUESTRAS)",
-    "cod_seg": ""
-  },
-  {
-    "cod_sgp": "033",
-    "nom_sgp": "BK DIRECTO  UNA MUESTRA",
-    "cod_seg": ""
-  },
-  {
-    "cod_sgp": "035",
-    "nom_sgp": "COLORACION VAGO (CAMPYLOBACTER)",
-    "cod_seg": ""
-  },
-  {
-    "cod_sgp": "036",
-    "nom_sgp": "COLORACION KINYOUM",
-    "cod_seg": ""
-  },
-  {
-    "cod_sgp": "037",
-    "nom_sgp": "PPD (TUBERCULINA)",
-    "cod_seg": ""
-  },
-  {
-    "cod_sgp": "039",
-    "nom_sgp": "HCG  CUALITATIVO",
-    "cod_seg": ""
-  },
-  {
-    "cod_sgp": "XXXXX",
-    "nom_sgp": "ANTI- HVC (HEPATITIS C)",
-    "cod_seg": ""
-  },
-  {
-    "cod_sgp": "049",
-    "nom_sgp": "PERFIL NEONATAL",
-    "cod_seg": ""
-  },
-  {
-    "cod_sgp": "052",
-    "nom_sgp": "PERFIL MENOPAUSICO NO USAR",
-    "cod_seg": ""
-  },
-  {
-    "cod_sgp": "09006",
-    "nom_sgp": "PSA TOTAL CLIA",
-    "cod_seg": "33.09.13"
-  },
-  {
-    "cod_sgp": "01006",
-    "nom_sgp": "GOTA GRUESA",
-    "cod_seg": "33.04.07"
-  },
-  {
-    "cod_sgp": "04054",
-    "nom_sgp": "RPR CUANTITATIVO",
-    "cod_seg": "33.02.15"
-  },
-  {
-    "cod_sgp": "02002",
-    "nom_sgp": "TEST DE EMBARAZO ( ORINA )",
-    "cod_seg": ""
-  },
-  {
-    "cod_sgp": "03067",
-    "nom_sgp": "PERFIL RENAL",
-    "cod_seg": ""
-  },
-  {
-    "cod_sgp": "07005",
-    "nom_sgp": "UROCULTIVO CON REMOVEDOR",
-    "cod_seg": "33.03.08"
-  },
-  {
-    "cod_sgp": "10006",
-    "nom_sgp": "PRUEBAS DE TAMIZAJE DE UNIDAES DE SANGRE",
-    "cod_seg": ""
-  },
-  {
-    "cod_sgp": "04055",
-    "nom_sgp": "HELICOBACTER PYLORI - PRUEBA RAPIDA",
-    "cod_seg": "27.01.20"
-  },
-  {
-    "cod_sgp": "06021",
-    "nom_sgp": "PARASITOLOGICO SERIADO ( 3RA MUESTRA )",
-    "cod_seg": ""
-  },
-  {
-    "cod_sgp": "06023",
-    "nom_sgp": "COPROLOGICO FUNCIONAL",
-    "cod_seg": "33.06.06"
-  },
-  {
-    "cod_sgp": "07011",
-    "nom_sgp": "CULTIVO DE LIQUIDO SINOVIAL",
-    "cod_seg": ""
-  },
-  {
-    "cod_sgp": "07012",
-    "nom_sgp": "CULTIVO DE SECRECION NASO-FARINGEA",
-    "cod_seg": "33.03.20"
-  },
-  {
-    "cod_sgp": "05009",
-    "nom_sgp": "CA 19-9 ( PANCREAS - COLON )",
-    "cod_seg": "33.09.09"
-  },
-  {
-    "cod_sgp": "05024",
-    "nom_sgp": "CA 72 - 4 ( ESTOMAGO  )",
-    "cod_seg": ""
-  },
-  {
-    "cod_sgp": "12001",
-    "nom_sgp": "PAQUETE  QUIRURGICO",
-    "cod_seg": ""
-  },
-  {
-    "cod_sgp": "057",
-    "nom_sgp": "RETN LAB.",
-    "cod_seg": ""
-  },
-  {
-    "cod_sgp": "08018",
-    "nom_sgp": "PROTEINOGRAMA ELECTROFORETICO SERICO",
-    "cod_seg": "33.10.13"
-  },
-  {
-    "cod_sgp": "03071",
-    "nom_sgp": "COLESTEROL TOTAL",
-    "cod_seg": "33.01.07"
-  },
-  {
-    "cod_sgp": "04084",
-    "nom_sgp": "GONADOTROPINA SUB - UNIDA BETA",
-    "cod_seg": ""
-  },
-  {
-    "cod_sgp": "04085",
-    "nom_sgp": "HEPATITIS A  IGM",
-    "cod_seg": "32.01.27"
-  },
-  {
-    "cod_sgp": "09007",
-    "nom_sgp": "BIOPSIAS GRANDE RIÑON",
-    "cod_seg": ""
-  },
-  {
-    "cod_sgp": "04087",
-    "nom_sgp": "PCR   (CUANTITATIVO  )",
-    "cod_seg": "33.02.12"
-  },
-  {
-    "cod_sgp": "12002",
-    "nom_sgp": "PERFIL DE COAGULACION",
-    "cod_seg": "33.10.01"
-  },
-  {
-    "cod_sgp": "07013",
-    "nom_sgp": "CULTIVO DE SECRECION URETRAL",
-    "cod_seg": "33.03.13"
-  },
-  {
-    "cod_sgp": "01015",
-    "nom_sgp": "PERFIL  PRENATAL",
-    "cod_seg": ""
-  },
-  {
-    "cod_sgp": "07014",
-    "nom_sgp": "PAPANICOLAU  LIQUIDO PLEURAL( PAP )",
-    "cod_seg": "21.01.01"
-  },
-  {
-    "cod_sgp": "01018",
-    "nom_sgp": "BK EN ORINA 24 HRAS",
-    "cod_seg": ""
-  },
-  {
-    "cod_sgp": "07015",
-    "nom_sgp": "BIOPSIA MEDIANA",
-    "cod_seg": ""
-  },
-  {
-    "cod_sgp": "09008",
-    "nom_sgp": "BIOPSIA TEJIDO HEPATICO",
-    "cod_seg": ""
-  },
-  {
-    "cod_sgp": "05026",
-    "nom_sgp": "IG E SERICO",
-    "cod_seg": "33.02.23"
-  },
-  {
-    "cod_sgp": "05027",
-    "nom_sgp": "HIERRO SERICO",
-    "cod_seg": "33.08.63"
-  },
-  {
-    "cod_sgp": "07016",
-    "nom_sgp": "CULTIVO DE SECRECION LCR",
-    "cod_seg": "33.03.09"
-  },
-  {
-    "cod_sgp": "12003",
-    "nom_sgp": "PERFIL TIROIDEO",
-    "cod_seg": "33.10.05"
-  },
-  {
-    "cod_sgp": "04088",
-    "nom_sgp": "HIV 1 -2 ELISA",
-    "cod_seg": ""
-  },
-  {
-    "cod_sgp": "12004",
-    "nom_sgp": "PERFIL REUMATOIDEO",
-    "cod_seg": ""
-  },
-  {
-    "cod_sgp": "03072",
-    "nom_sgp": "PARASITOLOGICO SERIADO",
-    "cod_seg": "33.06.04"
-  },
-  {
-    "cod_sgp": "03073",
-    "nom_sgp": "PERFIL CARDIACO",
-    "cod_seg": ""
-  },
-  {
-    "cod_sgp": "03074",
-    "nom_sgp": "CLAMYDIA  IGM",
-    "cod_seg": ""
-  },
-  {
-    "cod_sgp": "03075",
-    "nom_sgp": "CLAMIDIAS IG G",
-    "cod_seg": ""
-  },
-  {
-    "cod_sgp": "02005",
-    "nom_sgp": "PRUEBA DE HELECHO",
-    "cod_seg": "33.05.28"
-  },
-  {
-    "cod_sgp": "09009",
-    "nom_sgp": "WESTERN BLOT HIDATIDOSIS",
-    "cod_seg": "33.99.99"
-  },
-  {
-    "cod_sgp": "03077",
-    "nom_sgp": "MAGNESIO",
-    "cod_seg": "33.01.36"
-  },
-  {
-    "cod_sgp": "04090",
-    "nom_sgp": "TSI",
-    "cod_seg": ""
-  },
-  {
-    "cod_sgp": "04091",
-    "nom_sgp": "ANTI TG - ANTI TIROGLOBULINA",
-    "cod_seg": "33.15.33"
-  },
-  {
-    "cod_sgp": "03078",
-    "nom_sgp": "PAQUETE DE ANALISIS ( CAMPAÑA)",
-    "cod_seg": ""
-  },
-  {
-    "cod_sgp": "03079",
-    "nom_sgp": "INSULINA BASAL",
-    "cod_seg": "33.10.16"
-  },
-  {
-    "cod_sgp": "02006",
-    "nom_sgp": "DEPURACION DE CREATININA ENDOGENA",
-    "cod_seg": ""
-  },
-  {
-    "cod_sgp": "03080",
-    "nom_sgp": "VDRL",
-    "cod_seg": ""
-  },
-  {
-    "cod_sgp": "09010",
-    "nom_sgp": "CY FRA 21 - 1 (PULMON)",
-    "cod_seg": ""
-  },
-  {
-    "cod_sgp": "05025",
-    "nom_sgp": "SATURACION DE TRANSFERRINA",
-    "cod_seg": "33.08.14"
-  },
-  {
-    "cod_sgp": "03069",
-    "nom_sgp": "ACTH",
-    "cod_seg": ""
-  },
-  {
-    "cod_sgp": "02007",
-    "nom_sgp": "CORTISOL LIBRE 24HRAS",
-    "cod_seg": ""
-  },
-  {
-    "cod_sgp": "001",
-    "nom_sgp": "TOLERANCIA A LA INSULINA (30, 60, 120)",
-    "cod_seg": "32.01.16"
-  },
-  {
-    "cod_sgp": "04043",
-    "nom_sgp": "ELECTROFORESIS DE HEMOGLOBINA",
-    "cod_seg": "33.08.61"
-  },
-  {
-    "cod_sgp": "03070",
-    "nom_sgp": "ANTI-CCP , IGG (PEPTIDO CICLICO CITRULIN",
-    "cod_seg": "32.01.35"
-  },
-  {
-    "cod_sgp": "03076",
-    "nom_sgp": "PCR (NO USAR)",
-    "cod_seg": ""
-  },
-  {
-    "cod_sgp": "04056",
-    "nom_sgp": "ANCA (IFI)",
-    "cod_seg": ""
-  },
-  {
-    "cod_sgp": "05028",
-    "nom_sgp": "ANTI CORE IGM - (HBC IGM)",
-    "cod_seg": ""
-  },
-  {
-    "cod_sgp": "05029",
-    "nom_sgp": "ANTI CORE IGG - (HBC IGG) NO USAR",
-    "cod_seg": ""
-  },
-  {
-    "cod_sgp": "03081",
-    "nom_sgp": "GLUCOSA AL AZAR",
-    "cod_seg": ""
-  },
-  {
-    "cod_sgp": "01019",
-    "nom_sgp": "COAGULOGRAMA",
-    "cod_seg": ""
-  },
-  {
-    "cod_sgp": "03082",
-    "nom_sgp": "COCAINA",
-    "cod_seg": ""
-  },
-  {
-    "cod_sgp": "04089",
-    "nom_sgp": "AGLUTINACIONES 2 MERCAPTOETANOL",
-    "cod_seg": "33.02.04"
-  },
-  {
-    "cod_sgp": "04092",
-    "nom_sgp": "ROSA DE BENGALA",
-    "cod_seg": "33.02.28"
-  },
-  {
-    "cod_sgp": "04093",
-    "nom_sgp": "FACTOR REUMATOIDEO CUANTITATIVO",
-    "cod_seg": "33.02.13"
-  },
-  {
-    "cod_sgp": "04094",
-    "nom_sgp": "LEPTOSPIRA , ANTICUERPOS IGM",
-    "cod_seg": ""
-  },
-  {
-    "cod_sgp": "01020",
-    "nom_sgp": "PRUEBA RAPIDA DENGUE IGG - IGM",
-    "cod_seg": "33.01.10"
-  },
-  {
-    "cod_sgp": "11004",
-    "nom_sgp": "ANTI DNA - DS (DOBLE CADENA)",
-    "cod_seg": ""
-  },
-  {
-    "cod_sgp": "08054",
-    "nom_sgp": "LEPTOSPIRA , ANTICUERPOS IgG",
-    "cod_seg": "  .  ."
-  },
-  {
-    "cod_sgp": "04095",
-    "nom_sgp": "BETA 2- GLICOPROTEINA IG G",
-    "cod_seg": ""
-  },
-  {
-    "cod_sgp": "04096",
-    "nom_sgp": "BETA 2 - GLICOPROTEINA IG M",
-    "cod_seg": ""
-  },
-  {
-    "cod_sgp": "04097",
-    "nom_sgp": "HORMONA ANTIMULLERIANA",
-    "cod_seg": ""
-  },
-  {
-    "cod_sgp": "01028",
-    "nom_sgp": "ERITROPOYETINA",
-    "cod_seg": ""
-  },
-  {
-    "cod_sgp": "03083",
-    "nom_sgp": "PROCALCITONINA",
-    "cod_seg": "33.09.05"
-  },
-  {
-    "cod_sgp": "04098",
-    "nom_sgp": "HEPATITIS A IG M (NO USAR)",
-    "cod_seg": "32.01.17"
-  },
-  {
-    "cod_sgp": "04099",
-    "nom_sgp": "PRUEBA ANTIGENA COVID 19",
-    "cod_seg": ""
-  },
-  {
-    "cod_sgp": "04100",
-    "nom_sgp": "NO USAR",
-    "cod_seg": ""
-  },
-  {
-    "cod_sgp": "04101",
-    "nom_sgp": "COVID19 AB CUANTITATIVO CSR",
-    "cod_seg": ""
-  },
-  {
-    "cod_sgp": "08055",
-    "nom_sgp": "DEPURACION DE CREATININA 24 HORAS",
-    "cod_seg": ""
-  },
-  {
-    "cod_sgp": "04102",
-    "nom_sgp": "COVID 19 AB CUANTITATIVO (INTERNO)",
-    "cod_seg": ""
-  },
-  {
-    "cod_sgp": "04103",
-    "nom_sgp": "COVID 19 AB CUANTITATIVO",
-    "cod_seg": "00.17.99"
-  },
-  {
-    "cod_sgp": "04104",
-    "nom_sgp": "TOMA DE MUESTRA DE PRUEBA CUALITATIVA",
-    "cod_seg": ""
-  },
-  {
-    "cod_sgp": "04105",
-    "nom_sgp": "PRUEBA RAPIDA CUALITATIVA",
-    "cod_seg": ""
-  },
-  {
-    "cod_sgp": "99001",
-    "nom_sgp": "RETEN LABORATORIO",
-    "cod_seg": ""
-  },
-  {
-    "cod_sgp": "04106",
-    "nom_sgp": "ASMA",
-    "cod_seg": ""
-  },
-  {
-    "cod_sgp": "05030",
-    "nom_sgp": "T4 LIBRE CLIA",
-    "cod_seg": "26.01.01"
-  },
-  {
-    "cod_sgp": "05031",
-    "nom_sgp": "T3 LIBRE CLIA",
-    "cod_seg": "33.13.12"
-  },
-  {
-    "cod_sgp": "05032",
-    "nom_sgp": "TSH CLIA",
-    "cod_seg": "30.01.17"
-  },
-  {
-    "cod_sgp": "13001",
-    "nom_sgp": "BIOPSIA APENDICE CECAL",
-    "cod_seg": "21.02.03"
-  },
-  {
-    "cod_sgp": "13002",
-    "nom_sgp": "BIOPSIA VESICULA BILIAR",
-    "cod_seg": "21.02.01"
-  },
-  {
-    "cod_sgp": "13003",
-    "nom_sgp": "BIOPSIA DE PIEL >2 FCOS",
-    "cod_seg": ""
-  },
-  {
-    "cod_sgp": "13004",
-    "nom_sgp": "BIOPSIA DE ESOFAGO >2 FCOS",
-    "cod_seg": ""
-  },
-  {
-    "cod_sgp": "13005",
-    "nom_sgp": "BIOPSIA GASTRICA > 2 FCOS",
-    "cod_seg": "21.02.01"
-  },
-  {
-    "cod_sgp": "13006",
-    "nom_sgp": "BIOPSIA DE COLON >2 FCOS",
-    "cod_seg": ""
-  },
-  {
-    "cod_sgp": "13007",
-    "nom_sgp": "BIOPSIA DE RECTO >2 FCOS",
-    "cod_seg": ""
-  },
-  {
-    "cod_sgp": "13008",
-    "nom_sgp": "BIOPSIA DE HIGADO(TRUCUT)H&E/PAS/TRI",
-    "cod_seg": ""
-  },
-  {
-    "cod_sgp": "13009",
-    "nom_sgp": "BIOPSIA DE MAMA(TRUCUT)H&E/ZIEHL NEELSEN",
-    "cod_seg": ""
-  },
-  {
-    "cod_sgp": "13010",
-    "nom_sgp": "BIOPSIA DE PROSTATA(TRUCUT)2 FRASCOS",
-    "cod_seg": ""
-  },
-  {
-    "cod_sgp": "13011",
-    "nom_sgp": "BIOPSIA DE PROSTATA POR RTU",
-    "cod_seg": ""
-  },
-  {
-    "cod_sgp": "13012",
-    "nom_sgp": "BIOPSIA DE CERVIX(<2FCOS)",
-    "cod_seg": ""
-  },
-  {
-    "cod_sgp": "13013",
-    "nom_sgp": "BIOPSIA DE ENDOMETRIO",
-    "cod_seg": ""
-  },
-  {
-    "cod_sgp": "13014",
-    "nom_sgp": "BIOPSIA DE RESTOS PLACENTARIOS",
-    "cod_seg": "21.02.01"
-  },
-  {
-    "cod_sgp": "13015",
-    "nom_sgp": "BIOPSIA DE PLACENTA",
-    "cod_seg": ""
-  },
-  {
-    "cod_sgp": "13016",
-    "nom_sgp": "BIOPSIA OSEA(>2FCOS)",
-    "cod_seg": ""
-  },
-  {
-    "cod_sgp": "13017",
-    "nom_sgp": "BIOPSIA DE MEDULA OSEA",
-    "cod_seg": ""
-  },
-  {
-    "cod_sgp": "13018",
-    "nom_sgp": "BIOPSIA DE PLEURA",
-    "cod_seg": ""
-  },
-  {
-    "cod_sgp": "13019",
-    "nom_sgp": "BIOPSIA PULMON 10-15 CM",
-    "cod_seg": ""
-  },
-  {
-    "cod_sgp": "13020",
-    "nom_sgp": "PULMON BIOPSIA > 15CM",
-    "cod_seg": ""
-  },
-  {
-    "cod_sgp": "13021",
-    "nom_sgp": "BIOPSIA CEREBRAL",
-    "cod_seg": ""
-  },
-  {
-    "cod_sgp": "13022",
-    "nom_sgp": "BIOPSIA BAZO PIEZA QUIRURGICA",
-    "cod_seg": ""
-  },
-  {
-    "cod_sgp": "13023",
-    "nom_sgp": "BIOPSIA ESTOMAGO PIEZA QUIRURGICA 10-15C",
-    "cod_seg": ""
-  },
-  {
-    "cod_sgp": "13024",
-    "nom_sgp": "COLON PIEZA QUIRURGICA NO ONCOLOGICA <10",
-    "cod_seg": ""
-  },
-  {
-    "cod_sgp": "13025",
-    "nom_sgp": "COLON PIEZA QUIRURGICA NO ONCOLOGICA >10",
-    "cod_seg": ""
-  },
-  {
-    "cod_sgp": "13026",
-    "nom_sgp": "BIOPSIA GANGLIO < 5CM",
-    "cod_seg": ""
-  },
-  {
-    "cod_sgp": "13027",
-    "nom_sgp": "BIOPSIA GANGLIO > 5CM",
-    "cod_seg": ""
-  },
-  {
-    "cod_sgp": "13028",
-    "nom_sgp": "BIOPSIA DE HEMORROIDES",
-    "cod_seg": ""
-  },
-  {
-    "cod_sgp": "13029",
-    "nom_sgp": "INTES.PIEZA QUIRURG. NO ONCOLOGICA 10-15",
-    "cod_seg": ""
-  },
-  {
-    "cod_sgp": "13030",
-    "nom_sgp": "INTES.PIEZA QUIRURG. NO ONCOLOGICA >15CM",
-    "cod_seg": ""
-  },
-  {
-    "cod_sgp": "13031",
-    "nom_sgp": "BIOPSIA DE LIPOMA < 5 CM",
-    "cod_seg": ""
-  },
-  {
-    "cod_sgp": "13032",
-    "nom_sgp": "BIOPSIA DE LIPOMA > 5 CM",
-    "cod_seg": ""
-  },
-  {
-    "cod_sgp": "13033",
-    "nom_sgp": "BIOPSIA DE MAMA TUMOR BENIGNO <3CM",
-    "cod_seg": ""
-  },
-  {
-    "cod_sgp": "13034",
-    "nom_sgp": "BIOPSIA DE MAMA TUMOR BENIGNO >3-5CM",
-    "cod_seg": ""
-  },
-  {
-    "cod_sgp": "13035",
-    "nom_sgp": "BIOPSIA DE MIOMA <5 CM",
-    "cod_seg": ""
-  },
-  {
-    "cod_sgp": "13036",
-    "nom_sgp": "BIOPSIA DE MIOMA >5 CM",
-    "cod_seg": ""
-  },
-  {
-    "cod_sgp": "13037",
-    "nom_sgp": "MIEMBRO INFERIOR PIEZA QUIRURGICA",
-    "cod_seg": ""
-  },
-  {
-    "cod_sgp": "13038",
-    "nom_sgp": "MIEMBRO SUPERIOR PIEZA QUIRURGICA",
-    "cod_seg": ""
-  },
-  {
-    "cod_sgp": "13039",
-    "nom_sgp": "TROMPA UTERINA PIEZA QUIRURGICA",
-    "cod_seg": ""
-  },
-  {
-    "cod_sgp": "13040",
-    "nom_sgp": "LIBRE",
-    "cod_seg": ""
-  },
-  {
-    "cod_sgp": "13041",
-    "nom_sgp": "OVARIO PIEZA QUIRURGICA NO ONCOLOGICA",
-    "cod_seg": ""
-  },
-  {
-    "cod_sgp": "13042",
-    "nom_sgp": "BIOPSIA OVARIO QUISTICO <5CM",
-    "cod_seg": "21.02.03"
-  },
-  {
-    "cod_sgp": "13043",
-    "nom_sgp": "BIOPSIA OVARIO QUISTICO >5CM",
-    "cod_seg": "21.02.03"
-  },
-  {
-    "cod_sgp": "13044",
-    "nom_sgp": "PROSTATA PIEZ.QUIRUR.NO ONCOLOGICA<8CM",
-    "cod_seg": ""
-  },
-  {
-    "cod_sgp": "13045",
-    "nom_sgp": "PROSTATA PIEZ.QUIRUR.NO ONCOLOGICA>8CM",
-    "cod_seg": ""
-  },
-  {
-    "cod_sgp": "13046",
-    "nom_sgp": "BIOPSIA TIROIDES PIEZA QUIRURGICA",
-    "cod_seg": ""
-  },
-  {
-    "cod_sgp": "13047",
-    "nom_sgp": "BIOPSIA DE TUMOR <3CM",
-    "cod_seg": ""
-  },
-  {
-    "cod_sgp": "13048",
-    "nom_sgp": "BIOPSIA DE TUMOR 3-5 CM",
-    "cod_seg": ""
-  },
-  {
-    "cod_sgp": "13049",
-    "nom_sgp": "BIOPSIA DE TUMOR 5-10 CM",
-    "cod_seg": ""
-  },
-  {
-    "cod_sgp": "13050",
-    "nom_sgp": "BIOPSIA DE TUMOR >10 CM",
-    "cod_seg": ""
-  },
-  {
-    "cod_sgp": "13051",
-    "nom_sgp": "TUMOR<DE 3 CM MALIGNO O SOSPECHOSO",
-    "cod_seg": ""
-  },
-  {
-    "cod_sgp": "13052",
-    "nom_sgp": "TUMOR O DE 3-5 CM MALIGNO O SOSPECHOSO",
-    "cod_seg": ""
-  },
-  {
-    "cod_sgp": "13053",
-    "nom_sgp": "TUMOR O DE 5-10 CM MALIGNO O SOSPECHOSO",
-    "cod_seg": "21.02.03"
-  },
-  {
-    "cod_sgp": "13054",
-    "nom_sgp": "TUMOR>O DE 10 CM MALIGNO O SOSPECHOSO",
-    "cod_seg": ""
-  },
-  {
-    "cod_sgp": "13055",
-    "nom_sgp": "UTERO CON ANEXOS CON MIOMAS",
-    "cod_seg": ""
-  },
-  {
-    "cod_sgp": "13056",
-    "nom_sgp": "UTERO SIN ANEXOS CON MIOMAS",
-    "cod_seg": "  .  ."
-  },
-  {
-    "cod_sgp": "13057",
-    "nom_sgp": "UTERO SIN ANEXOS(DISTOPIA/PROLAPSO)",
-    "cod_seg": ""
-  },
-  {
-    "cod_sgp": "13058",
-    "nom_sgp": "UTERO CON ANEXOS(DISTOPIA/PROLAPSO)",
-    "cod_seg": ""
-  },
-  {
-    "cod_sgp": "13059",
-    "nom_sgp": "CITOLOGIA CERVICO UTERINO(PAPANICOLAOU)",
-    "cod_seg": "21.01.01"
-  },
-  {
-    "cod_sgp": "13060",
-    "nom_sgp": "CITOLOGIA DE LIQUIDOS CORPORLES",
-    "cod_seg": ""
-  },
-  {
-    "cod_sgp": "13061",
-    "nom_sgp": "CITOLOGIA BAAF DE TIROIDES",
-    "cod_seg": ""
-  },
-  {
-    "cod_sgp": "13062",
-    "nom_sgp": "CITOLOGIA BAAF DE GANGLIO LINFATICO",
-    "cod_seg": ""
-  },
-  {
-    "cod_sgp": "13063",
-    "nom_sgp": "BIOPSIA COLON CON GANGLIOS",
-    "cod_seg": ""
-  },
-  {
-    "cod_sgp": "13064",
-    "nom_sgp": "BIOPSIA CERVIX CONO LEEP",
-    "cod_seg": ""
-  },
-  {
-    "cod_sgp": "13065",
-    "nom_sgp": "BIOPSIA ESTOMAGO CON GANGLIOS",
-    "cod_seg": ""
-  },
-  {
-    "cod_sgp": "13066",
-    "nom_sgp": "BIOPSIA MASTECTOMIA RADICAL MODIFICADA",
-    "cod_seg": ""
-  },
-  {
-    "cod_sgp": "13067",
-    "nom_sgp": "BIOPSIA OVARIO SOLO TUMOR MALIGNO",
-    "cod_seg": ""
-  },
-  {
-    "cod_sgp": "13068",
-    "nom_sgp": "BIOPSIA OVARIO CON ESTADIEAJE",
-    "cod_seg": ""
-  },
-  {
-    "cod_sgp": "13069",
-    "nom_sgp": "BIOPSIA PROSTATA CON GANGLIOS",
-    "cod_seg": ""
-  },
-  {
-    "cod_sgp": "13070",
-    "nom_sgp": "BIOPSIA UTERO CON GANGLIOS",
-    "cod_seg": ""
-  },
-  {
-    "cod_sgp": "13071",
-    "nom_sgp": "BIOPSIA VULVECTOMIA",
-    "cod_seg": ""
-  },
-  {
-    "cod_sgp": "13072",
-    "nom_sgp": "BIOPSIA VULVECTOMIA CON GANGLIOS",
-    "cod_seg": ""
-  },
-  {
-    "cod_sgp": "14001",
-    "nom_sgp": "CULTIVO DE SECRECION",
-    "cod_seg": ""
-  },
-  {
-    "cod_sgp": "09011",
-    "nom_sgp": "ANTI CENTROMERO",
-    "cod_seg": ""
-  },
-  {
-    "cod_sgp": "04107",
-    "nom_sgp": "COVID-19 ANTIGENO",
-    "cod_seg": "00.17.99"
-  },
-  {
-    "cod_sgp": "03084",
-    "nom_sgp": "NO UTILIZAR ---- DEPURACION DE CREATININ",
-    "cod_seg": ""
-  },
-  {
-    "cod_sgp": "04108",
-    "nom_sgp": "ANTI- HVC (HEPATITIS C) ELISA",
-    "cod_seg": "32.01.34"
-  },
-  {
-    "cod_sgp": "14002",
-    "nom_sgp": "EXAMEN DIRECTO DE SECRECION",
-    "cod_seg": ""
-  },
-  {
-    "cod_sgp": "04066",
-    "nom_sgp": "HEPATITIS A IG M PRUEBA RAPIDA",
-    "cod_seg": ""
-  },
-  {
-    "cod_sgp": "14003",
-    "nom_sgp": "CULTIVO DE SECRECION VAGINAL",
-    "cod_seg": "33.03.09"
-  },
-  {
-    "cod_sgp": "04086",
-    "nom_sgp": "DOSAJE DE VITAMINA D (25 HIDROXI)",
-    "cod_seg": ""
-  },
-  {
-    "cod_sgp": "04109",
-    "nom_sgp": "PERFIL ENA SCREEN",
-    "cod_seg": ""
-  },
-  {
-    "cod_sgp": "04110",
-    "nom_sgp": "BETA 2 MICROGLOBULINA",
-    "cod_seg": ""
-  },
-  {
-    "cod_sgp": "08056",
-    "nom_sgp": "HBSAG (ANTIGENO DE SUP) ELISA",
-    "cod_seg": ""
-  },
-  {
-    "cod_sgp": "04111",
-    "nom_sgp": "TIROGLOBULINA",
-    "cod_seg": "33.15.33"
-  },
-  {
-    "cod_sgp": "14004",
-    "nom_sgp": "CULTIVO DE EXUDADO VAGINAL",
-    "cod_seg": ""
-  },
-  {
-    "cod_sgp": "03068",
-    "nom_sgp": "ACIDO URICO EN ORINA OCASIONAL",
-    "cod_seg": ""
-  },
-  {
-    "cod_sgp": "04112",
-    "nom_sgp": "ANTI-HVA (HEPATITIS A)  IGM - ELISA",
-    "cod_seg": "32.01.29"
-  },
-  {
-    "cod_sgp": "08057",
-    "nom_sgp": "SOMATOMEDINA (IGF-1)",
-    "cod_seg": ""
-  },
-  {
-    "cod_sgp": "08058",
-    "nom_sgp": "IGFBP-3 (BINDING PROTEIN)",
-    "cod_seg": ""
-  },
-  {
-    "cod_sgp": "14005",
-    "nom_sgp": "ESPERMACULTIVO",
-    "cod_seg": ""
-  },
-  {
-    "cod_sgp": "01029",
-    "nom_sgp": "PLASMA RICO EN PLAQUETAS",
-    "cod_seg": ""
-  },
-  {
-    "cod_sgp": "04113",
-    "nom_sgp": "PERFIL MENOSPAUSICO",
-    "cod_seg": ""
-  },
-  {
-    "cod_sgp": "08059",
-    "nom_sgp": "ELECTROLITOS EN ORINA 24 HORAS",
-    "cod_seg": ""
-  },
-  {
-    "cod_sgp": "04114",
-    "nom_sgp": "PRO - BNP (PEPTIDO NATRIURETICO)",
-    "cod_seg": ""
-  },
-  {
-    "cod_sgp": "03085",
-    "nom_sgp": "MICROALBUMINURIA DE ORINA DE 24 HORAS",
-    "cod_seg": "33.05.01"
-  },
-  {
-    "cod_sgp": "04115",
-    "nom_sgp": "VITAMINA B6 NO SE REALIZA",
-    "cod_seg": ""
-  },
-  {
-    "cod_sgp": "08060",
-    "nom_sgp": "ACIDOS BILIARES",
-    "cod_seg": ""
-  },
-  {
-    "cod_sgp": "03086",
-    "nom_sgp": "COCIENTE ALBUMINA-CREATININA",
-    "cod_seg": ""
-  },
-  {
-    "cod_sgp": "03087",
-    "nom_sgp": "CALCIO IONIZADO",
-    "cod_seg": "  .  ."
-  },
-  {
-    "cod_sgp": "04116",
-    "nom_sgp": "ANDROSTENEDIONA",
-    "cod_seg": ""
-  },
-  {
-    "cod_sgp": "04117",
-    "nom_sgp": "ANTIGENO HLA-B27",
-    "cod_seg": ""
-  },
-  {
-    "cod_sgp": "04118",
-    "nom_sgp": "BARTONELLA HENSELAE ANTICUERPOS IGG",
-    "cod_seg": ""
-  },
-  {
-    "cod_sgp": "04119",
-    "nom_sgp": "BARTONELLA HENSELAE ANTICUERPOS IGM",
-    "cod_seg": "7 .  ."
-  },
-  {
-    "cod_sgp": "03088",
-    "nom_sgp": "CREATININA EN ORINA SIMPLE",
-    "cod_seg": ""
-  },
-  {
-    "cod_sgp": "03089",
-    "nom_sgp": "ACETIL COLINA RECEPTOR, ANTICUERPOS",
-    "cod_seg": ""
-  },
-  {
-    "cod_sgp": "04120",
-    "nom_sgp": "DOSAJE CALCITONINA",
-    "cod_seg": ""
-  },
-  {
-    "cod_sgp": "03090",
-    "nom_sgp": "DOSAJE DE OXALTOS EN ORINA 24 HORAS",
-    "cod_seg": ""
-  },
-  {
-    "cod_sgp": "03091",
-    "nom_sgp": "CISTINA EN ORINA DE 24 HORAS",
-    "cod_seg": ""
-  },
-  {
-    "cod_sgp": "03092",
-    "nom_sgp": "DOSAJE DE PLOMO EN SANGRE",
-    "cod_seg": ""
-  },
-  {
-    "cod_sgp": "04121",
-    "nom_sgp": "HTLV, WESTERN BLOT",
-    "cod_seg": ""
-  },
-  {
-    "cod_sgp": "04122",
-    "nom_sgp": "CA - 549",
-    "cod_seg": ""
-  },
-  {
-    "cod_sgp": "03093",
-    "nom_sgp": "OXALATOS EN ORINA 24 HORAS",
-    "cod_seg": ""
-  },
-  {
-    "cod_sgp": "03094",
-    "nom_sgp": "FOSFATOS EN ORINA DE 24 HORAS",
-    "cod_seg": ""
-  },
-  {
-    "cod_sgp": "03095",
-    "nom_sgp": "ACETONA SERICA",
-    "cod_seg": ""
-  },
-  {
-    "cod_sgp": "03096",
-    "nom_sgp": "ACIDO LACTICO",
-    "cod_seg": ""
-  },
-  {
-    "cod_sgp": "03097",
-    "nom_sgp": "17-HIDROXICORTICOIDES  (ORINA  24H)",
-    "cod_seg": ""
-  },
-  {
-    "cod_sgp": "04123",
-    "nom_sgp": "17-HIDROXIPROGESTERONA TAMIZAJE NEONATAL",
-    "cod_seg": ""
-  },
-  {
-    "cod_sgp": "04124",
-    "nom_sgp": "17-KETOESTEROIDES  (ORINA  24H)",
-    "cod_seg": ""
-  },
-  {
-    "cod_sgp": "04125",
-    "nom_sgp": "21-HIDROXILASA MUTACION (CYP21A2)",
-    "cod_seg": ""
-  },
-  {
-    "cod_sgp": "04126",
-    "nom_sgp": "2-MERCAPTOETANOL, PRUEBA DE",
-    "cod_seg": ""
-  },
-  {
-    "cod_sgp": "03099",
-    "nom_sgp": "5-HIDROXI INDOLACETICO (ORINA 24H)",
-    "cod_seg": ""
-  },
-  {
-    "cod_sgp": "04127",
-    "nom_sgp": "5-NUCLEOTIDASA",
-    "cod_seg": ""
-  },
-  {
-    "cod_sgp": "04128",
-    "nom_sgp": "ACETAMINOFEN",
-    "cod_seg": ""
-  },
-  {
-    "cod_sgp": "04129",
-    "nom_sgp": "ACETONA URINARIA",
-    "cod_seg": ""
-  },
-  {
-    "cod_sgp": "04130",
-    "nom_sgp": "ACIDO CITRICO (SEMEN)",
-    "cod_seg": ""
-  },
-  {
-    "cod_sgp": "04131",
-    "nom_sgp": "ACIDO DELTA AMINOLEVULINICO (ORINA 24H)",
-    "cod_seg": ""
-  },
-  {
-    "cod_sgp": "03098",
-    "nom_sgp": "ACIDO FENILGLIOXILICO (ORINA 24H)",
-    "cod_seg": ""
-  },
-  {
-    "cod_sgp": "03100",
-    "nom_sgp": "ACIDO FOLICO INTRAERITROCITARIO",
-    "cod_seg": ""
-  },
-  {
-    "cod_sgp": "04132",
-    "nom_sgp": "ACIDO HIPURICO (ORINA 24H)",
-    "cod_seg": ""
-  },
-  {
-    "cod_sgp": "03101",
-    "nom_sgp": "ACIDO HIPURICO (ORINA SIMPLE)",
-    "cod_seg": ""
-  },
-  {
-    "cod_sgp": "03102",
-    "nom_sgp": "ACIDO MANDELICO (ORINA 24H)",
-    "cod_seg": ""
-  },
-  {
-    "cod_sgp": "03103",
-    "nom_sgp": "ACIDO METILHIPURICO (ORINA SIMPLE)",
-    "cod_seg": ""
-  },
-  {
-    "cod_sgp": "03104",
-    "nom_sgp": "ACIDO METILMALONICO (ORINA SIMPLE)",
-    "cod_seg": ""
-  },
-  {
-    "cod_sgp": "04133",
-    "nom_sgp": "ACIDO METILMALONICO (SUERO)",
-    "cod_seg": ""
-  },
-  {
-    "cod_sgp": "04134",
-    "nom_sgp": "ACIDO S-FENILMERCAPTURICO (ORINA SIMPLE)",
-    "cod_seg": ""
-  },
-  {
-    "cod_sgp": "03105",
-    "nom_sgp": "ACIDO TRICLOROACETICO (ORINA 24H)",
-    "cod_seg": ""
-  },
-  {
-    "cod_sgp": "04135",
-    "nom_sgp": "ACIDO TRICLOROACETICO (ORINA SIMPLE)",
-    "cod_seg": ""
-  },
-  {
-    "cod_sgp": "04136",
-    "nom_sgp": "ACIDO TT MUCONICO (ORINA 24H)",
-    "cod_seg": ""
-  },
-  {
-    "cod_sgp": "02008",
-    "nom_sgp": "ACIDO TT MUCONICO (ORINA SIMPLE)",
-    "cod_seg": ""
-  },
-  {
-    "cod_sgp": "03106",
-    "nom_sgp": "ACIDO URICO (ORINA 24H)",
-    "cod_seg": ""
-  },
-  {
-    "cod_sgp": "03107",
-    "nom_sgp": "ACIDO URICO, DEPURACION",
-    "cod_seg": ""
-  },
-  {
-    "cod_sgp": "03108",
-    "nom_sgp": "ACIDO VANILMANDELICO (ORINA 24H)",
-    "cod_seg": ""
-  },
-  {
-    "cod_sgp": "04137",
-    "nom_sgp": "ACIDOS GRASOS LIBRES",
-    "cod_seg": ""
-  },
-  {
-    "cod_sgp": "04138",
-    "nom_sgp": "ACIDOS GRASOS LIBRES (180 MINUTOS)",
-    "cod_seg": ""
-  },
-  {
-    "cod_sgp": "04139",
-    "nom_sgp": "ACIDOS GRASOS LIBRES (360 MINUTOS)",
-    "cod_seg": ""
-  },
-  {
-    "cod_sgp": "03109",
-    "nom_sgp": "ACIDOS GRASOS LIBRES + INSULINA + TRIGLI",
-    "cod_seg": ""
-  },
-  {
-    "cod_sgp": "04140",
-    "nom_sgp": "ADAMTS 13",
-    "cod_seg": ""
-  },
-  {
-    "cod_sgp": "07017",
-    "nom_sgp": "ADENOVIRUS (HECES)",
-    "cod_seg": ""
-  },
-  {
-    "cod_sgp": "07018",
-    "nom_sgp": "ADENOVIRUS, ANTICUERPOS IGG",
-    "cod_seg": ""
-  },
-  {
-    "cod_sgp": "07019",
-    "nom_sgp": "ADENOVIRUS, ANTICUERPOS IGM",
-    "cod_seg": ""
-  },
-  {
-    "cod_sgp": "08061",
-    "nom_sgp": "AFP MATERNA (RIESGO FETAL I)",
-    "cod_seg": ""
-  },
-  {
-    "cod_sgp": "01030",
-    "nom_sgp": "AGREGACION PLAQUETARIA",
-    "cod_seg": ""
-  },
-  {
-    "cod_sgp": "08062",
-    "nom_sgp": "ALCOHOL ETILICO (SANGRE)",
-    "cod_seg": ""
-  },
-  {
-    "cod_sgp": "04141",
-    "nom_sgp": "INMUNOGLOBULINA D (IGD)",
-    "cod_seg": ""
-  },
-  {
-    "cod_sgp": "04142",
-    "nom_sgp": "ALCOHOL METILICO (SANGRE)",
-    "cod_seg": ""
-  },
-  {
-    "cod_sgp": "03110",
-    "nom_sgp": "ALDOLASA",
-    "cod_seg": ""
-  },
-  {
-    "cod_sgp": "04143",
-    "nom_sgp": "ALDOSTERONA (ORINA 24H)",
-    "cod_seg": ""
-  },
-  {
-    "cod_sgp": "04144",
-    "nom_sgp": "ALDOSTERONA SERICA",
-    "cod_seg": ""
-  },
-  {
-    "cod_sgp": "03111",
-    "nom_sgp": "ALFA GLUCOSIDASA (SEMEN)",
-    "cod_seg": ""
-  },
-  {
-    "cod_sgp": "04145",
-    "nom_sgp": "ALFA-1 ANTITRIPSINA",
-    "cod_seg": ""
-  },
-  {
-    "cod_sgp": "01031",
-    "nom_sgp": "ALFA-2 ANTIPLASMINA",
-    "cod_seg": ""
-  },
-  {
-    "cod_sgp": "04146",
-    "nom_sgp": "ALFA-2 MACROGLOBULINA",
-    "cod_seg": ""
-  },
-  {
-    "cod_sgp": "03112",
-    "nom_sgp": "ALUMINIO SERICO",
-    "cod_seg": ""
-  },
-  {
-    "cod_sgp": "06003",
-    "nom_sgp": "AMEBAS, EXAMEN DIRECTO (EN FRESCO))",
-    "cod_seg": ""
-  },
-  {
-    "cod_sgp": "03113",
-    "nom_sgp": "AMILASA (ORINA 12H)",
-    "cod_seg": ""
-  },
-  {
-    "cod_sgp": "03114",
-    "nom_sgp": "AMILASA, ISOENZIMAS",
-    "cod_seg": ""
-  },
-  {
-    "cod_sgp": "03115",
-    "nom_sgp": "AMILOIDE A (SAA-1)",
-    "cod_seg": ""
-  },
-  {
-    "cod_sgp": "03116",
-    "nom_sgp": "AMIODARONA SERICA",
-    "cod_seg": ""
-  },
-  {
-    "cod_sgp": "04147",
-    "nom_sgp": "AMONIO PLASMATICO",
-    "cod_seg": ""
-  },
-  {
-    "cod_sgp": "04148",
-    "nom_sgp": "ANDROSTANDIOL  GLUCURONIDO  (3  ALFA)",
-    "cod_seg": ""
-  },
-  {
-    "cod_sgp": "04149",
-    "nom_sgp": "ANDROSTENEDIONA",
-    "cod_seg": ""
-  },
-  {
-    "cod_sgp": "03117",
-    "nom_sgp": "ANFETAMINAS (ORINA SIMPLE)",
-    "cod_seg": ""
-  },
-  {
-    "cod_sgp": "04150",
-    "nom_sgp": "ANTI CORE TOTAL (HBC TOTAL)",
-    "cod_seg": ""
-  },
-  {
-    "cod_sgp": "04151",
-    "nom_sgp": "ANTI HBSAG CUANTITATIVO",
-    "cod_seg": ""
-  },
-  {
-    "cod_sgp": "04152",
-    "nom_sgp": "ANTI ISLOTE PANCREATICO",
-    "cod_seg": ""
-  },
-  {
-    "cod_sgp": "04153",
-    "nom_sgp": "ANTIFOSFOLÍPIDOS, (PANEL COMPLETO)",
-    "cod_seg": ""
-  },
-  {
-    "cod_sgp": "03118",
-    "nom_sgp": "ANTIMONIO (ORINA 24H)",
-    "cod_seg": ""
-  },
-  {
-    "cod_sgp": "03119",
-    "nom_sgp": "ANTIMONIO (ORINA SIMPLE)",
-    "cod_seg": ""
-  },
-  {
-    "cod_sgp": "03120",
-    "nom_sgp": "ANTIMONIO (SANGRE)",
-    "cod_seg": ""
-  },
-  {
-    "cod_sgp": "04154",
-    "nom_sgp": "ANTIOXIDANTES TOTALES (TAS)",
-    "cod_seg": ""
-  },
-  {
-    "cod_sgp": "01032",
-    "nom_sgp": "ANTITROMBINA III (NO USAR)",
-    "cod_seg": ""
-  },
-  {
-    "cod_sgp": "04155",
-    "nom_sgp": "APOLIPOPROTEINA A1",
-    "cod_seg": ""
-  },
-  {
-    "cod_sgp": "04156",
-    "nom_sgp": "APOLIPOPROTEINA B",
-    "cod_seg": ""
-  },
-  {
-    "cod_sgp": "03121",
-    "nom_sgp": "ARSENICO (ORINA 24H)",
-    "cod_seg": ""
-  },
-  {
-    "cod_sgp": "03122",
-    "nom_sgp": "ARSENICO (ORINA SIMPLE)",
-    "cod_seg": ""
-  },
-  {
-    "cod_sgp": "03123",
-    "nom_sgp": "ARSENICO (SANGRE TOTAL)",
-    "cod_seg": ""
-  },
-  {
-    "cod_sgp": "03124",
-    "nom_sgp": "ARSENICO / CREATININA (ORINA 12H)",
-    "cod_seg": ""
-  },
-  {
-    "cod_sgp": "03125",
-    "nom_sgp": "ARSENICO / CREATININA (ORINA 24H)",
-    "cod_seg": ""
-  },
-  {
-    "cod_sgp": "03126",
-    "nom_sgp": "ARSENICO / CREATININA (ORINA SIMPLE)",
-    "cod_seg": ""
-  },
-  {
-    "cod_sgp": "03127",
-    "nom_sgp": "ARSENICO SERICO",
-    "cod_seg": ""
-  },
-  {
-    "cod_sgp": "04157",
-    "nom_sgp": "ASCA IGA (SACCHAROMYCES CEREVISIAE)",
-    "cod_seg": ""
-  },
-  {
-    "cod_sgp": "04158",
-    "nom_sgp": "ASCA IGG (SACCHAROMYCES CEREVISIAE)",
-    "cod_seg": ""
-  },
-  {
-    "cod_sgp": "04159",
-    "nom_sgp": "ASPERGILLUS, ANTICUERPOS IGG",
-    "cod_seg": ""
-  },
-  {
-    "cod_sgp": "03128",
-    "nom_sgp": "BARBITURICOS (ORINA)",
-    "cod_seg": ""
-  },
-  {
-    "cod_sgp": "04160",
-    "nom_sgp": "BARTONELLA BACILIFORME",
-    "cod_seg": ""
-  },
-  {
-    "cod_sgp": "04161",
-    "nom_sgp": "BENCENO / FENOLES TOTALES (ORINA 24H)",
-    "cod_seg": ""
-  },
-  {
-    "cod_sgp": "04162",
-    "nom_sgp": "BENCENO / FENOLES TOTALES (ORINA SIMPLE)",
-    "cod_seg": ""
-  },
-  {
-    "cod_sgp": "03129",
-    "nom_sgp": "BENZODIACEPINAS (ORINA SIMPLE)",
-    "cod_seg": ""
-  },
-  {
-    "cod_sgp": "03130",
-    "nom_sgp": "BENZODIACEPINAS (SANGRE TOTAL)",
-    "cod_seg": ""
-  },
-  {
-    "cod_sgp": "03131",
-    "nom_sgp": "BETA 2 MICROGLOBULINA (ORINA 24H)",
-    "cod_seg": ""
-  },
-  {
-    "cod_sgp": "03132",
-    "nom_sgp": "BETA 2 MICROGLOBULINA (ORINA SIMPLE)",
-    "cod_seg": ""
-  },
-  {
-    "cod_sgp": "04163",
-    "nom_sgp": "BETA HCG LIBRE",
-    "cod_seg": ""
-  },
-  {
-    "cod_sgp": "06020",
-    "nom_sgp": "BORDETELLA PERTUSSIS",
-    "cod_seg": ""
-  },
-  {
-    "cod_sgp": "03133",
-    "nom_sgp": "SODIO EN ORINA OCASIONAL",
-    "cod_seg": ""
-  },
-  {
-    "cod_sgp": "04164",
-    "nom_sgp": "BORRELIA BURGDORFERI, ANTICUERPOS IGG (L",
-    "cod_seg": ""
-  },
-  {
-    "cod_sgp": "04165",
-    "nom_sgp": "BORRELIA BURGDORFERI, ANTICUERPOS IGM (L",
-    "cod_seg": ""
-  },
-  {
-    "cod_sgp": "03134",
-    "nom_sgp": "SODIO EN RINA DE 24 HORAS",
-    "cod_seg": ""
-  },
-  {
-    "cod_sgp": "04166",
-    "nom_sgp": " BRUCELLA: ANTICUERPOS BLOQUEADORES",
-    "cod_seg": ""
-  },
-  {
-    "cod_sgp": "04167",
-    "nom_sgp": "BRUCELLA, ANTICUERPOS IGG",
-    "cod_seg": ""
-  },
-  {
-    "cod_sgp": "04168",
-    "nom_sgp": "BRUCELLA, ANTICUERPOS IGM",
-    "cod_seg": ""
-  },
-  {
-    "cod_sgp": "04169",
-    "nom_sgp": "C1 ESTERASA INHIBIDOR",
-    "cod_seg": ""
-  },
-  {
-    "cod_sgp": "04170",
-    "nom_sgp": "C1Q COMPLEMENTO",
-    "cod_seg": ""
-  },
-  {
-    "cod_sgp": "04171",
-    "nom_sgp": "C5 COMPLEMENTO",
-    "cod_seg": ""
-  },
-  {
-    "cod_sgp": "04172",
-    "nom_sgp": "C8 COMPLEMENTO",
-    "cod_seg": ""
-  },
-  {
-    "cod_sgp": "04173",
-    "nom_sgp": "CADENAS LIGERAS KAPPA LIBRES (SUERO)",
-    "cod_seg": ""
-  },
-  {
-    "cod_sgp": "04174",
-    "nom_sgp": "CADENAS LIGERAS LIBRES KAPPA/LAMBDA (SUE",
-    "cod_seg": ""
-  },
-  {
-    "cod_sgp": "03135",
-    "nom_sgp": "CADMIO (ORINA 24H)",
-    "cod_seg": ""
-  },
-  {
-    "cod_sgp": "03136",
-    "nom_sgp": "CADMIO (ORINA)",
-    "cod_seg": ""
-  },
-  {
-    "cod_sgp": "04175",
-    "nom_sgp": "CADMIO (SUERO)",
-    "cod_seg": ""
-  },
-  {
-    "cod_sgp": "03137",
-    "nom_sgp": "CADMIO / CREATININA (ORINA 12H)",
-    "cod_seg": ""
-  },
-  {
-    "cod_sgp": "03138",
-    "nom_sgp": "CADMIO / CREATININA (ORINA 24H)",
-    "cod_seg": ""
-  },
-  {
-    "cod_sgp": "03139",
-    "nom_sgp": "CADMIO / CREATININA (ORINA OCASIONAL",
-    "cod_seg": ""
-  },
-  {
-    "cod_sgp": "03140",
-    "nom_sgp": "CALCIO (ORINA OCASIONAL)",
-    "cod_seg": ""
-  },
-  {
-    "cod_sgp": "08063",
-    "nom_sgp": "CALPROTECTINA (HECES)",
-    "cod_seg": ""
-  },
-  {
-    "cod_sgp": "04176",
-    "nom_sgp": "CAMPYLOBACTER JEJUNI, ANTICUERPOS",
-    "cod_seg": ""
-  },
-  {
-    "cod_sgp": "03141",
-    "nom_sgp": "CARBAMATOS",
-    "cod_seg": ""
-  },
-  {
-    "cod_sgp": "03142",
-    "nom_sgp": "CARBOXIHEMOGLOBINA",
-    "cod_seg": "  .  ."
-  },
-  {
-    "cod_sgp": "04177",
-    "nom_sgp": "CARDIOLIPINA, ANTICUERPOS IGA",
-    "cod_seg": ""
-  },
-  {
-    "cod_sgp": "04178",
-    "nom_sgp": "CARNITINA TOTAL - DOSAJE",
-    "cod_seg": ""
-  },
-  {
-    "cod_sgp": "04179",
-    "nom_sgp": "CATECOLAMINAS FRACCIONADAS (ORINA 24H)",
-    "cod_seg": ""
-  },
-  {
-    "cod_sgp": "04180",
-    "nom_sgp": "CATECOLAMINAS FRACCIONADAS (PLASMA)",
-    "cod_seg": ""
-  },
-  {
-    "cod_sgp": "04181",
-    "nom_sgp": "CATECOLAMINAS LIBRES (ORINA 24H)",
-    "cod_seg": ""
-  },
-  {
-    "cod_sgp": "08064",
-    "nom_sgp": "CELULA PARIETAL GASTRICA, ANTICUERPOS",
-    "cod_seg": ""
-  },
-  {
-    "cod_sgp": "04182",
-    "nom_sgp": "CENTROMERO B",
-    "cod_seg": ""
-  },
-  {
-    "cod_sgp": "04183",
-    "nom_sgp": "INMUNOGLOBULINA G, SUBCLASES",
-    "cod_seg": ""
-  },
-  {
-    "cod_sgp": "04184",
-    "nom_sgp": "INSULINA, ANTICUERPOS",
-    "cod_seg": ""
-  },
-  {
-    "cod_sgp": "04185",
-    "nom_sgp": "IODO PROTEICO",
-    "cod_seg": ""
-  },
-  {
-    "cod_sgp": "04186",
-    "nom_sgp": "JO, ANTICUERPOS",
-    "cod_seg": ""
-  },
-  {
-    "cod_sgp": "04187",
-    "nom_sgp": "LEGIONELLA PNEUMOPHILA, ANTICUERPOS IGG",
-    "cod_seg": ""
-  },
-  {
-    "cod_sgp": "04188",
-    "nom_sgp": "LEGIONELLA SP. ANTIGENO",
-    "cod_seg": ""
-  },
-  {
-    "cod_sgp": "04189",
-    "nom_sgp": "ANTICUERPO IGG CONTRA LEISHMANIA DONOVAN",
-    "cod_seg": ""
-  },
-  {
-    "cod_sgp": "04190",
-    "nom_sgp": "ANTICUERPO IGM CONTRA LEISHMANIA DONOVAN",
-    "cod_seg": ""
-  },
-  {
-    "cod_sgp": "04191",
-    "nom_sgp": "ANTICUERPO IGG; LEPTOSPIRA",
-    "cod_seg": ""
-  },
-  {
-    "cod_sgp": "04192",
-    "nom_sgp": "ANTICUERPO IGM; LEPTOSPIRA",
-    "cod_seg": ""
-  },
-  {
-    "cod_sgp": "04193",
-    "nom_sgp": "LIPIDOGRAMA",
-    "cod_seg": ""
-  },
-  {
-    "cod_sgp": "04194",
-    "nom_sgp": "DOSAJE DE LIPOPROTEINA (A)",
-    "cod_seg": ""
-  },
-  {
-    "cod_sgp": "03143",
-    "nom_sgp": "TEST DE ADDIS",
-    "cod_seg": ""
-  },
-  {
-    "cod_sgp": "04195",
-    "nom_sgp": "INMUNOFIJACION SUERO",
-    "cod_seg": ""
-  },
-  {
-    "cod_sgp": "04196",
-    "nom_sgp": "HORMONA DE CRECIMIENTO HUMANA (HGH / SOM",
-    "cod_seg": ""
-  },
-  {
-    "cod_sgp": "03144",
-    "nom_sgp": "TOLERANCIA A LA GLUCOSA 4 TOMAS",
-    "cod_seg": "33.01.30"
-  },
-  {
-    "cod_sgp": "04197",
-    "nom_sgp": "VITAMINA D (1,25 - DIHIDROXI)",
-    "cod_seg": ""
-  },
-  {
-    "cod_sgp": "03145",
-    "nom_sgp": "OSMOLARIDAD URINARIA",
-    "cod_seg": ""
-  },
-  {
-    "cod_sgp": "04198",
-    "nom_sgp": "VARICELA SOSTER, ANTICUERPOS IGG",
-    "cod_seg": ""
-  },
-  {
-    "cod_sgp": "04199",
-    "nom_sgp": "TRANSGLUTAMINASA TISULAR IGG",
-    "cod_seg": ""
-  },
-  {
-    "cod_sgp": "04200",
-    "nom_sgp": "VITAMNINA B-1 (TIAMINA)",
-    "cod_seg": ""
-  },
-  {
-    "cod_sgp": "04201",
-    "nom_sgp": "VITAMINA B2 (RIBOFLAVINA)",
-    "cod_seg": ""
-  },
-  {
-    "cod_sgp": "04202",
-    "nom_sgp": "CROMOGRANINA A",
-    "cod_seg": ""
-  },
-  {
-    "cod_sgp": "03146",
-    "nom_sgp": "GLUCOSA 6P DEHIDROG.",
-    "cod_seg": ""
-  },
-  {
-    "cod_sgp": "03147",
-    "nom_sgp": "HAPTOGLOBINA",
-    "cod_seg": ""
-  },
-  {
-    "cod_sgp": "03148",
-    "nom_sgp": "FTA ABS - IGM",
-    "cod_seg": ""
-  },
-  {
-    "cod_sgp": "04203",
-    "nom_sgp": "COLINESTERASA SERICA",
-    "cod_seg": ""
-  },
-  {
-    "cod_sgp": "14006",
-    "nom_sgp": "CONTEO DE EOSINOFILOS",
-    "cod_seg": ""
-  },
-  {
-    "cod_sgp": "04204",
-    "nom_sgp": "MIOGLOBINA",
-    "cod_seg": ""
-  },
-  {
-    "cod_sgp": "03149",
-    "nom_sgp": "ALBUMINA SERICA",
-    "cod_seg": ""
-  },
-  {
-    "cod_sgp": "X001",
-    "nom_sgp": "HEAPTITIS E IGG",
-    "cod_seg": ""
-  },
-  {
-    "cod_sgp": "03150",
-    "nom_sgp": "HEPATITIS E IGM",
-    "cod_seg": ""
-  },
-  {
-    "cod_sgp": "07020",
-    "nom_sgp": "HELICOBACTER EN HECES (PRUEBA RAPIDA)",
-    "cod_seg": ""
-  },
-  {
-    "cod_sgp": "04205",
-    "nom_sgp": "DOSAJE DE LAMOTRIGINIA",
-    "cod_seg": ""
-  },
-  {
-    "cod_sgp": "03151",
-    "nom_sgp": "CORTISOL PM",
-    "cod_seg": ""
-  },
-  {
-    "cod_sgp": "04206",
-    "nom_sgp": "ANTI SCL 70",
-    "cod_seg": ""
-  }
+    {
+        "cod_sgp": "01001",
+        "nom_sgp": "HEMOGRAMA COMPLETO",
+        "cod_seg": "33.04.10"
+    },
+    {
+        "cod_sgp": "01002",
+        "nom_sgp": "HEMOGLOBINA",
+        "cod_seg": "33.08.05"
+    },
+    {
+        "cod_sgp": "02001",
+        "nom_sgp": "ORINA, EXAMEN COMPLETO",
+        "cod_seg": "33.05.05"
+    },
+    {
+        "cod_sgp": "06001",
+        "nom_sgp": "PARASITOLOGICO SIMPLE",
+        "cod_seg": "33.06.02"
+    },
+    {
+        "cod_sgp": "03001",
+        "nom_sgp": "GLUCOSA BASAL",
+        "cod_seg": "33.01.18"
+    },
+    {
+        "cod_sgp": "03002",
+        "nom_sgp": "COLESTEROL, FRACCIONES",
+        "cod_seg": "33.10.12"
+    },
+    {
+        "cod_sgp": "01007",
+        "nom_sgp": "HEMATOCRITO",
+        "cod_seg": "33.04.08"
+    },
+    {
+        "cod_sgp": "03003",
+        "nom_sgp": "GLUCOSA  POST PRANDIAL",
+        "cod_seg": "33.01.19"
+    },
+    {
+        "cod_sgp": "03004",
+        "nom_sgp": "CREATININA SIMPLE",
+        "cod_seg": "33.01.08"
+    },
+    {
+        "cod_sgp": "03005",
+        "nom_sgp": "UREA EN ORINA DE 24 HRS",
+        "cod_seg": ""
+    },
+    {
+        "cod_sgp": "03006",
+        "nom_sgp": "ACIDO URICO",
+        "cod_seg": "33.01.01"
+    },
+    {
+        "cod_sgp": "03007",
+        "nom_sgp": "COLESTEROL TOTAL",
+        "cod_seg": "33.01.07"
+    },
+    {
+        "cod_sgp": "03008",
+        "nom_sgp": "COLESTEROL HDL",
+        "cod_seg": "33.01.37"
+    },
+    {
+        "cod_sgp": "03009",
+        "nom_sgp": "COLESTEROL LDL",
+        "cod_seg": "33.01.50"
+    },
+    {
+        "cod_sgp": "03010",
+        "nom_sgp": "TRIGLICERIDOS",
+        "cod_seg": "33.01.34"
+    },
+    {
+        "cod_sgp": "04001",
+        "nom_sgp": "V.D.R.L.",
+        "cod_seg": "33.02.15"
+    },
+    {
+        "cod_sgp": "04002",
+        "nom_sgp": "AGLUTINACIONES FEBRILES",
+        "cod_seg": "33.02.01"
+    },
+    {
+        "cod_sgp": "01008",
+        "nom_sgp": "VELOCIDAD DE SEDIMENTACION GLOBULAR",
+        "cod_seg": "33.04.15"
+    },
+    {
+        "cod_sgp": "01009",
+        "nom_sgp": "RETICULOCITOS, PORCENTAJE",
+        "cod_seg": "33.04.12"
+    },
+    {
+        "cod_sgp": "01010",
+        "nom_sgp": "RECUENTO DE PLAQUETAS",
+        "cod_seg": "33.04.11"
+    },
+    {
+        "cod_sgp": "01011",
+        "nom_sgp": "TIEMPO DE COAGULACION",
+        "cod_seg": "33.04.01"
+    },
+    {
+        "cod_sgp": "01012",
+        "nom_sgp": "TIEMPO DE SANGRIA",
+        "cod_seg": ""
+    },
+    {
+        "cod_sgp": "01013",
+        "nom_sgp": "TIEMPO DE PROTROMBINA",
+        "cod_seg": "33.04.13"
+    },
+    {
+        "cod_sgp": "01014",
+        "nom_sgp": "TIEMPO PARCIAL DE (APTT)",
+        "cod_seg": "33.04.14"
+    },
+    {
+        "cod_sgp": "01016",
+        "nom_sgp": "FIBRINOGENO",
+        "cod_seg": "33.04.04"
+    },
+    {
+        "cod_sgp": "02003",
+        "nom_sgp": "THEVENON EN ORINA",
+        "cod_seg": ""
+    },
+    {
+        "cod_sgp": "03011",
+        "nom_sgp": "PROTEINAS TOTALES Y FRACCIONADAS",
+        "cod_seg": "33.01.24"
+    },
+    {
+        "cod_sgp": "03012",
+        "nom_sgp": "BILIRRUBINAS TOTALES Y FRACCIONADAS",
+        "cod_seg": "33.01.03"
+    },
+    {
+        "cod_sgp": "03013",
+        "nom_sgp": "AMILASA",
+        "cod_seg": "33.01.02"
+    },
+    {
+        "cod_sgp": "03014",
+        "nom_sgp": "<<<< SIN USO >>>>>LIPIDOS TOTALES",
+        "cod_seg": "33.01.22"
+    },
+    {
+        "cod_sgp": "03015",
+        "nom_sgp": "TOLERANCIA A LA GLUCOSA 1 - 2 HORAS",
+        "cod_seg": "33.01.30"
+    },
+    {
+        "cod_sgp": "03016",
+        "nom_sgp": "CREATININA, EN ORINA 24 HRS",
+        "cod_seg": "33.01.11"
+    },
+    {
+        "cod_sgp": "03017",
+        "nom_sgp": "PROTEINA, EN ORINA DE 24 HORAS",
+        "cod_seg": "33.05.01"
+    },
+    {
+        "cod_sgp": "03018",
+        "nom_sgp": "CALCIO SERICO",
+        "cod_seg": "33.01.04"
+    },
+    {
+        "cod_sgp": "03019",
+        "nom_sgp": "FOSFORO",
+        "cod_seg": "33.01.16"
+    },
+    {
+        "cod_sgp": "03020",
+        "nom_sgp": "CALCIO EN ORINA 24 HORAS",
+        "cod_seg": "33.05.03"
+    },
+    {
+        "cod_sgp": "03021",
+        "nom_sgp": "FOSFORO EN ORINA 24 HORAS",
+        "cod_seg": ""
+    },
+    {
+        "cod_sgp": "03022",
+        "nom_sgp": "DESHIDROGENASA LACTICA (DHL)",
+        "cod_seg": "33.01.40"
+    },
+    {
+        "cod_sgp": "03023",
+        "nom_sgp": "TRANSAMINASA ASAT (TGO)",
+        "cod_seg": "33.01.32"
+    },
+    {
+        "cod_sgp": "03024",
+        "nom_sgp": "FOSFATASA ALCALINA",
+        "cod_seg": "33.01.15"
+    },
+    {
+        "cod_sgp": "03025",
+        "nom_sgp": "<<<<< SI USO >>>>> FOSFATASA ACIDA TOTAL",
+        "cod_seg": ""
+    },
+    {
+        "cod_sgp": "03026",
+        "nom_sgp": "<<<<< SIN USO >>>> FOSFATASA ACIDA PROST",
+        "cod_seg": "33.01.13"
+    },
+    {
+        "cod_sgp": "04005",
+        "nom_sgp": "ANTIESTREPTOLISINA \"O\"",
+        "cod_seg": "33.02.06"
+    },
+    {
+        "cod_sgp": "04006",
+        "nom_sgp": "COOMBS DIRECTO",
+        "cod_seg": "33.02.17"
+    },
+    {
+        "cod_sgp": "04007",
+        "nom_sgp": "COOMBS INDIRECTO CUANTITATIVO",
+        "cod_seg": "33.02.18"
+    },
+    {
+        "cod_sgp": "04009",
+        "nom_sgp": "INVESTIGACION DE H.I.V",
+        "cod_seg": ""
+    },
+    {
+        "cod_sgp": "04010",
+        "nom_sgp": "ANTIGENO AUSTRALIANO (HBSAG)",
+        "cod_seg": "32.01.20"
+    },
+    {
+        "cod_sgp": "04011",
+        "nom_sgp": "HEPATITIS C -  PRUEBA RAPIDA",
+        "cod_seg": "32.01.34"
+    },
+    {
+        "cod_sgp": "05001",
+        "nom_sgp": "T4 TOTAL",
+        "cod_seg": "26.01.02"
+    },
+    {
+        "cod_sgp": "05002",
+        "nom_sgp": "T3  TOTAL",
+        "cod_seg": "26.01.01"
+    },
+
+    {
+        "cod_sgp": "05004",
+        "nom_sgp": "PROLACTINA",
+        "cod_seg": "26.01.08"
+    },
+    {
+        "cod_sgp": "05005",
+        "nom_sgp": "FOLICULOESTIMULANTE (FSH)",
+        "cod_seg": "26.01.07"
+    },
+    {
+        "cod_sgp": "05006",
+        "nom_sgp": "LH (HORMONA LUTEINICA)",
+        "cod_seg": "26.01.06"
+    },
+    {
+        "cod_sgp": "05007",
+        "nom_sgp": "ESTRADIOL",
+        "cod_seg": "26.01.11"
+    },
+    {
+        "cod_sgp": "05008",
+        "nom_sgp": "PROGESTERONA",
+        "cod_seg": "26.01.10"
+    },
+    {
+        "cod_sgp": "06002",
+        "nom_sgp": "DESABILITADO     T  H  E  V  E  N  O  N",
+        "cod_seg": "33.06.05"
+    },
+    {
+        "cod_sgp": "07001",
+        "nom_sgp": "CULTIVO Y ANTIBIOGRAMA",
+        "cod_seg": "33.03.09"
+    },
+    {
+        "cod_sgp": "03027",
+        "nom_sgp": "ACIDO URICO - ORINA 24 HRS",
+        "cod_seg": "33.05.13"
+    },
+    {
+        "cod_sgp": "06005",
+        "nom_sgp": "SUSTANCIAS REDUCTORAS",
+        "cod_seg": "33.08.24"
+    },
+    {
+        "cod_sgp": "06004",
+        "nom_sgp": "COPROCULTIVO",
+        "cod_seg": "33.03.04"
+    },
+    {
+        "cod_sgp": "06006",
+        "nom_sgp": "THEVENON SERIADO",
+        "cod_seg": ""
+    },
+    {
+        "cod_sgp": "07004",
+        "nom_sgp": "INVESTIGACION DE BK",
+        "cod_seg": "33.03.01"
+    },
+    {
+        "cod_sgp": "03028",
+        "nom_sgp": "TRANSAMINASA ALAT (TGP)",
+        "cod_seg": "33.01.33"
+    },
+    {
+        "cod_sgp": "01017",
+        "nom_sgp": "LEUCOCITOS, RECUENTO",
+        "cod_seg": ""
+    },
+    {
+        "cod_sgp": "05010",
+        "nom_sgp": "CORTISOL",
+        "cod_seg": "26.01.12"
+    },
+    {
+        "cod_sgp": "05011",
+        "nom_sgp": "SUBUNIDAD BETA HCG",
+        "cod_seg": "33.09.10"
+    },
+    {
+        "cod_sgp": "05015",
+        "nom_sgp": "ALFA FETO PROTEINAS (AFP)",
+        "cod_seg": "33.09.01"
+    },
+    {
+        "cod_sgp": "05016",
+        "nom_sgp": "ANTIGENO PROSTATICO ESPECIFICO (PSA) NO",
+        "cod_seg": "33.09.13"
+    },
+    {
+        "cod_sgp": "03029",
+        "nom_sgp": "TRANSAMINASAS",
+        "cod_seg": "33.01.90"
+    },
+    {
+        "cod_sgp": "03030",
+        "nom_sgp": "FLUIDOS",
+        "cod_seg": ""
+    },
+    {
+        "cod_sgp": "03031",
+        "nom_sgp": "ESPERMATOGRAMA",
+        "cod_seg": "33.08.15"
+    },
+    {
+        "cod_sgp": "06008",
+        "nom_sgp": "INVESTIGACION DE OXIUROS",
+        "cod_seg": ""
+    },
+    {
+        "cod_sgp": "04012",
+        "nom_sgp": "TEST DE EMBARAZO(SANGRE)",
+        "cod_seg": "33.05.07"
+    },
+    {
+        "cod_sgp": "09001",
+        "nom_sgp": "CITOMEGALOVIRUS Ig M",
+        "cod_seg": ""
+    },
+    {
+        "cod_sgp": "08003",
+        "nom_sgp": "TEST DE A.D.A",
+        "cod_seg": ""
+    },
+    {
+        "cod_sgp": "08004",
+        "nom_sgp": "HEMOGLOBINA GLUCOSILADA ( HbA1 )",
+        "cod_seg": "33.08.05"
+    },
+    {
+        "cod_sgp": "09002",
+        "nom_sgp": "TOXOPLASMA GONDII -  IG M",
+        "cod_seg": "33.08.51"
+    },
+    {
+        "cod_sgp": "09003",
+        "nom_sgp": "TOXOPLASMA  GONDII -  IG G",
+        "cod_seg": "33.08.51"
+    },
+    {
+        "cod_sgp": "04014",
+        "nom_sgp": "HIDATIDOSIS",
+        "cod_seg": ""
+    },
+    {
+        "cod_sgp": "03032",
+        "nom_sgp": "PROTEINAS BENCES JONES",
+        "cod_seg": ""
+    },
+    {
+        "cod_sgp": "03033",
+        "nom_sgp": "COLESTEROL VLDL",
+        "cod_seg": "33.01.51"
+    },
+    {
+        "cod_sgp": "01021",
+        "nom_sgp": "NUMERACION Y FORMULA",
+        "cod_seg": ""
+    },
+    {
+        "cod_sgp": "01022",
+        "nom_sgp": "HEMOGLOBINA Y  HEMATOCRITO",
+        "cod_seg": "33.04.07"
+    },
+    {
+        "cod_sgp": "01023",
+        "nom_sgp": "GRUPO - FACTOR",
+        "cod_seg": "33.02.09"
+    },
+    {
+        "cod_sgp": "01024",
+        "nom_sgp": "TIEMPO DE COAGULACION Y SANGRIA",
+        "cod_seg": "33.04.01"
+    },
+    {
+        "cod_sgp": "01025",
+        "nom_sgp": "HEMOCULTIVO/REMOVEDOR",
+        "cod_seg": "33.03.06"
+    },
+    {
+        "cod_sgp": "03034",
+        "nom_sgp": "CPK-MB (soenzima MB )",
+        "cod_seg": "33.01.09"
+    },
+    {
+        "cod_sgp": "03035",
+        "nom_sgp": "CPK - TOTAL",
+        "cod_seg": "33.01.09"
+    },
+    {
+        "cod_sgp": "10001",
+        "nom_sgp": "TRANSF. SANG. 1ERA UNIDAD",
+        "cod_seg": ""
+    },
+    {
+        "cod_sgp": "10002",
+        "nom_sgp": "TRANSF. SANG. 2DA UNIDAD-S/EQP.",
+        "cod_seg": ""
+    },
+    {
+        "cod_sgp": "10003",
+        "nom_sgp": "PLASMA 250-500 CC-S/EQP.",
+        "cod_seg": ""
+    },
+    {
+        "cod_sgp": "09004",
+        "nom_sgp": "PERFIL  TORCH  (  I G G )",
+        "cod_seg": "33.10.09"
+    },
+    {
+        "cod_sgp": "01026",
+        "nom_sgp": "CONSTANTES CORPUSCULARES",
+        "cod_seg": "33.04.03"
+    },
+    {
+        "cod_sgp": "10005",
+        "nom_sgp": "TRANSFUSIONES S/EQP-(INCL.PBAS.D/R)",
+        "cod_seg": ""
+    },
+    {
+        "cod_sgp": "05017",
+        "nom_sgp": "ANTIGENO CARCINO EMBRIONARIO (CEA)",
+        "cod_seg": "33.09.02"
+    },
+    {
+        "cod_sgp": "05018",
+        "nom_sgp": "CA 19-9",
+        "cod_seg": "33.09.09"
+    },
+    {
+        "cod_sgp": "05019",
+        "nom_sgp": "CA 125 (TUMORAL DE OVARIO)",
+        "cod_seg": "33.09.07"
+    },
+    {
+        "cod_sgp": "05020",
+        "nom_sgp": "CA 15-3 (ANT. TUMORAL DE MAMA)",
+        "cod_seg": ""
+    },
+
+    {
+        "cod_sgp": "08006",
+        "nom_sgp": "POTASIO",
+        "cod_seg": ""
+    },
+    {
+        "cod_sgp": "01027",
+        "nom_sgp": "RETRACCION DEL COAGULO",
+        "cod_seg": "33.04.12"
+    },
+    {
+        "cod_sgp": "04015",
+        "nom_sgp": "HAV  (IGG)",
+        "cod_seg": ""
+    },
+    {
+        "cod_sgp": "04016",
+        "nom_sgp": "HAV  (IgM)",
+        "cod_seg": ""
+    },
+    {
+        "cod_sgp": "08008",
+        "nom_sgp": "EPSTEN BAR IG M",
+        "cod_seg": ""
+    },
+    {
+        "cod_sgp": "09005",
+        "nom_sgp": "CITOMEGALOVIRUS IgG",
+        "cod_seg": ""
+    },
+    {
+        "cod_sgp": "03036",
+        "nom_sgp": "GAMMA GLUTAMIL TRANSPEPTIDASA",
+        "cod_seg": "33.01.17"
+    },
+    {
+        "cod_sgp": "04017",
+        "nom_sgp": "PRUEBA COMPATIBILIDAD",
+        "cod_seg": "31.01.01"
+    },
+    {
+        "cod_sgp": "03037",
+        "nom_sgp": "LIPASA SERICA",
+        "cod_seg": "33.01.20"
+    },
+    {
+        "cod_sgp": "04018",
+        "nom_sgp": "FTA  ABS",
+        "cod_seg": "33.02.35"
+    },
+    {
+        "cod_sgp": "04019",
+        "nom_sgp": "HEPATITIS A  TOTAL(ELISA)",
+        "cod_seg": ""
+    },
+    {
+        "cod_sgp": "04020",
+        "nom_sgp": "ANTI  VHB",
+        "cod_seg": ""
+    },
+
+    {
+        "cod_sgp": "11001",
+        "nom_sgp": "ANTICUERPOS,  ANTINUCLEARES  (ANA)",
+        "cod_seg": "32.01.10"
+    },
+    {
+        "cod_sgp": "04023",
+        "nom_sgp": "CHAGAS, ANTICUERPOS",
+        "cod_seg": ""
+    },
+    {
+        "cod_sgp": "08009",
+        "nom_sgp": "PAUL BUNNELL",
+        "cod_seg": ""
+    },
+    {
+        "cod_sgp": "04024",
+        "nom_sgp": "HTLV-I-II",
+        "cod_seg": ""
+    },
+    {
+        "cod_sgp": "04025",
+        "nom_sgp": "HBc Total (Anticore Total)",
+        "cod_seg": "32.01.39"
+    },
+    {
+        "cod_sgp": "03038",
+        "nom_sgp": "CLORO",
+        "cod_seg": ""
+    },
+    {
+        "cod_sgp": "03039",
+        "nom_sgp": "SODIO",
+        "cod_seg": "33.01.29"
+    },
+    {
+        "cod_sgp": "03040",
+        "nom_sgp": "POTASIO",
+        "cod_seg": "33.01.23"
+    },
+    {
+        "cod_sgp": "03044",
+        "nom_sgp": "ALBUMINA EN ORINA",
+        "cod_seg": ""
+    },
+    {
+        "cod_sgp": "04032",
+        "nom_sgp": "ROTAVIRUS",
+        "cod_seg": ""
+    },
+    {
+        "cod_sgp": "04034",
+        "nom_sgp": "CHLAMYDIA",
+        "cod_seg": ""
+    },
+    {
+        "cod_sgp": "08001",
+        "nom_sgp": "ACIDO FOLICO (SUERO)",
+        "cod_seg": "33.08.58"
+    },
+    {
+        "cod_sgp": "08002",
+        "nom_sgp": "ACIDO LACTICO",
+        "cod_seg": ""
+    },
+    {
+        "cod_sgp": "06007",
+        "nom_sgp": "REACCION INFLAMATORIA",
+        "cod_seg": "33.08.23"
+    },
+    {
+        "cod_sgp": "07002",
+        "nom_sgp": "INVESTIGACION DE GERMENES (GRAM)",
+        "cod_seg": "33.03.02"
+    },
+    {
+        "cod_sgp": "07003",
+        "nom_sgp": "EXAMEN DIRECTO",
+        "cod_seg": "33.03.02"
+    },
+    {
+        "cod_sgp": "07006",
+        "nom_sgp": "INVESTIGACION DE HEMATOZOARIOS :",
+        "cod_seg": "33.04.07"
+    },
+    {
+        "cod_sgp": "07007",
+        "nom_sgp": "CULTIVO DE HONGOS",
+        "cod_seg": "33.03.09"
+    },
+    {
+        "cod_sgp": "04008",
+        "nom_sgp": "FENOMENO LE",
+        "cod_seg": ""
+    },
+    {
+        "cod_sgp": "04021",
+        "nom_sgp": "FENOMENO  LE ( SERIADO )",
+        "cod_seg": ""
+    },
+    {
+        "cod_sgp": "08007",
+        "nom_sgp": "CITOQUIMICO",
+        "cod_seg": "33.08.07"
+    },
+    {
+        "cod_sgp": "11002",
+        "nom_sgp": "ANTI MITOCONDRIALES (AMA)",
+        "cod_seg": "32.01.12"
+    },
+    {
+        "cod_sgp": "03042",
+        "nom_sgp": "LITIO",
+        "cod_seg": "33.08.29"
+    },
+    {
+        "cod_sgp": "04022",
+        "nom_sgp": "WALLER- ROSE, PRUEBA DE",
+        "cod_seg": "33.02.14"
+    },
+    {
+        "cod_sgp": "03043",
+        "nom_sgp": "BT",
+        "cod_seg": "33.09.04"
+    },
+    {
+        "cod_sgp": "03045",
+        "nom_sgp": "VITAMINA B 12",
+        "cod_seg": "33.08.59"
+    },
+    {
+        "cod_sgp": "03046",
+        "nom_sgp": "MICROALBUMINURIA OCASIONAL (SIMPLE)",
+        "cod_seg": "33.05.27"
+    },
+    {
+        "cod_sgp": "04026",
+        "nom_sgp": "PARATOHORMONA INTACTA",
+        "cod_seg": ""
+    },
+    {
+        "cod_sgp": "04027",
+        "nom_sgp": "PROLACTINA - POOL",
+        "cod_seg": "26.01.08"
+    },
+    {
+        "cod_sgp": "04028",
+        "nom_sgp": "DENGUE VIRUS, ANTIC. IGM",
+        "cod_seg": ""
+    },
+    {
+        "cod_sgp": "04029",
+        "nom_sgp": "DENGUE VIRUS , ANTIC. IgG",
+        "cod_seg": ""
+    },
+    {
+        "cod_sgp": "04030",
+        "nom_sgp": "HELICOBACTER PILORY IG G",
+        "cod_seg": "33.03.45"
+    },
+    {
+        "cod_sgp": "04031",
+        "nom_sgp": "PROTEINA C REACTIVA NO  USAR",
+        "cod_seg": ""
+    },
+    {
+        "cod_sgp": "04033",
+        "nom_sgp": "BRUCELLA - IgG",
+        "cod_seg": ""
+    },
+    {
+        "cod_sgp": "04036",
+        "nom_sgp": "PERFIL ANCA C Y P",
+        "cod_seg": "33.02.29"
+    },
+
+    {
+        "cod_sgp": "04039",
+        "nom_sgp": "BRUCELLA - IgM",
+        "cod_seg": ""
+    },
+    {
+        "cod_sgp": "04040",
+        "nom_sgp": "ANTI CARDIOLIPINA IgG",
+        "cod_seg": ""
+    },
+    {
+        "cod_sgp": "04041",
+        "nom_sgp": "ANTI CARDIOLIPINA IgM",
+        "cod_seg": ""
+    },
+    {
+        "cod_sgp": "04044",
+        "nom_sgp": "CISTICERCOSIS - ELISA",
+        "cod_seg": ""
+    },
+    {
+        "cod_sgp": "04045",
+        "nom_sgp": "C3 COMPLEMENTO",
+        "cod_seg": "33.02.24"
+    },
+    {
+        "cod_sgp": "04046",
+        "nom_sgp": "C4 COMPLEMENTO",
+        "cod_seg": "33.02.25"
+    },
+    {
+        "cod_sgp": "04047",
+        "nom_sgp": "C 5",
+        "cod_seg": ""
+    },
+    {
+        "cod_sgp": "04048",
+        "nom_sgp": "ELECTROLITOS SERICOS",
+        "cod_seg": "33.01.12"
+    },
+    {
+        "cod_sgp": "04049",
+        "nom_sgp": "EPSTEIN BARR-EBNA (IgG)",
+        "cod_seg": ""
+    },
+    {
+        "cod_sgp": "04050",
+        "nom_sgp": "EPSTEIN BARR-EBNA (IgM)",
+        "cod_seg": ""
+    },
+    {
+        "cod_sgp": "04051",
+        "nom_sgp": "EPSTEIN BARR - VCA (IgG)",
+        "cod_seg": ""
+    },
+    {
+        "cod_sgp": "04052",
+        "nom_sgp": "EPSTEIN BARR - VCA (IgM)",
+        "cod_seg": ""
+    },
+    {
+        "cod_sgp": "04053",
+        "nom_sgp": "ESTRADIOL LIBRE",
+        "cod_seg": ""
+    },
+    {
+        "cod_sgp": "03047",
+        "nom_sgp": "FERRITINA",
+        "cod_seg": "33.08.62"
+    },
+    {
+        "cod_sgp": "03048",
+        "nom_sgp": "FENOBARBITAL",
+        "cod_seg": "33.07.04"
+    },
+    {
+        "cod_sgp": "03049",
+        "nom_sgp": "GASTRINA",
+        "cod_seg": ""
+    },
+    {
+        "cod_sgp": "04057",
+        "nom_sgp": "HBE - AG",
+        "cod_seg": ""
+    },
+    {
+        "cod_sgp": "04058",
+        "nom_sgp": "HCG TESTICULAR",
+        "cod_seg": ""
+    },
+    {
+        "cod_sgp": "04059",
+        "nom_sgp": "HELICOBACTER PYLORI IgM",
+        "cod_seg": "33.03.46"
+    },
+    {
+        "cod_sgp": "04060",
+        "nom_sgp": "HERPES I - IgG",
+        "cod_seg": ""
+    },
+    {
+        "cod_sgp": "04061",
+        "nom_sgp": "HERPES I - IgM",
+        "cod_seg": ""
+    },
+    {
+        "cod_sgp": "04062",
+        "nom_sgp": "HERPES II - IgG",
+        "cod_seg": "33.08.49"
+    },
+    {
+        "cod_sgp": "04063",
+        "nom_sgp": "HERPES II-  IgM",
+        "cod_seg": "32.01.33"
+    },
+    {
+        "cod_sgp": "04064",
+        "nom_sgp": "IgG",
+        "cod_seg": ""
+    },
+    {
+        "cod_sgp": "04065",
+        "nom_sgp": "IgM",
+        "cod_seg": ""
+    },
+    {
+        "cod_sgp": "04067",
+        "nom_sgp": "INSULINA POST PANDRIAL",
+        "cod_seg": "33.10.18"
+    },
+    {
+        "cod_sgp": "03051",
+        "nom_sgp": "COCAINA ( ORINA )",
+        "cod_seg": ""
+    },
+    {
+        "cod_sgp": "03052",
+        "nom_sgp": "MARIHUANA",
+        "cod_seg": ""
+    },
+    {
+        "cod_sgp": "04068",
+        "nom_sgp": "RUBEOLA -IgG",
+        "cod_seg": ""
+    },
+    {
+        "cod_sgp": "04069",
+        "nom_sgp": "RUBEOLA - IgM",
+        "cod_seg": ""
+    },
+    {
+        "cod_sgp": "08010",
+        "nom_sgp": "TRANSFERRINA",
+        "cod_seg": "33.08.14"
+    },
+    {
+        "cod_sgp": "04070",
+        "nom_sgp": "SARAMPION -IgG",
+        "cod_seg": ""
+    },
+    {
+        "cod_sgp": "04071",
+        "nom_sgp": "SARAMPION - IgM",
+        "cod_seg": ""
+    },
+    {
+        "cod_sgp": "04072",
+        "nom_sgp": "TESTOSTERONA LIBRE",
+        "cod_seg": "33.13.08"
+    },
+    {
+        "cod_sgp": "04073",
+        "nom_sgp": "TESTOSTERONA  TOTAL",
+        "cod_seg": "26.01.09"
+    },
+    {
+        "cod_sgp": "04074",
+        "nom_sgp": "TROPONINA CUANTITATIVA",
+        "cod_seg": "33.13.13"
+    },
+    {
+        "cod_sgp": "04075",
+        "nom_sgp": "ANTI MUSCULO LISO",
+        "cod_seg": "32.01.11"
+    },
+    {
+        "cod_sgp": "04076",
+        "nom_sgp": "ANTI SM",
+        "cod_seg": ""
+    },
+    {
+        "cod_sgp": "04077",
+        "nom_sgp": "ANTI SS-A   (ANTI -  RO)",
+        "cod_seg": ""
+    },
+    {
+        "cod_sgp": "04078",
+        "nom_sgp": "ANTI SS-B (ANTI -  LA)",
+        "cod_seg": ""
+    },
+    {
+        "cod_sgp": "04079",
+        "nom_sgp": "ANTI JO",
+        "cod_seg": ""
+    },
+    {
+        "cod_sgp": "03053",
+        "nom_sgp": "LACTOSA - PRUEBA DE TOLERACIA",
+        "cod_seg": "33.01.31"
+    },
+    {
+        "cod_sgp": "06009",
+        "nom_sgp": "SUDAN",
+        "cod_seg": ""
+    },
+    {
+        "cod_sgp": "06010",
+        "nom_sgp": "ROTAVIRUS EN HECES",
+        "cod_seg": ""
+    },
+    {
+        "cod_sgp": "08011",
+        "nom_sgp": "AGA Y ELECTROLITOS",
+        "cod_seg": ""
+    },
+    {
+        "cod_sgp": "06011",
+        "nom_sgp": "ADENOVIRUS ANTIGENO FECAL",
+        "cod_seg": ""
+    },
+    {
+        "cod_sgp": "08012",
+        "nom_sgp": "ENDOMISIO, AUTO ANTICI. (EMA)",
+        "cod_seg": ""
+    },
+    {
+        "cod_sgp": "08013",
+        "nom_sgp": "GLIADINA, ANTICUERPOS (IgA)",
+        "cod_seg": ""
+    },
+    {
+        "cod_sgp": "08014",
+        "nom_sgp": "GASES ARTERIALES",
+        "cod_seg": ""
+    },
+    {
+        "cod_sgp": "03041",
+        "nom_sgp": "PERFIL LIPIDICO",
+        "cod_seg": "33.10.02"
+    },
+    {
+        "cod_sgp": "03054",
+        "nom_sgp": "PERFIL HEPATICO",
+        "cod_seg": "33.10.03"
+    },
+    {
+        "cod_sgp": "01003",
+        "nom_sgp": "FROTIS DE LAMINA PERIFERICA",
+        "cod_seg": "33.02.03"
+    },
+    {
+        "cod_sgp": "06012",
+        "nom_sgp": "PARASITOLOGICO SERIADO (1RA. MUESTRA)",
+        "cod_seg": ""
+    },
+    {
+        "cod_sgp": "06013",
+        "nom_sgp": "PARASITOLOGICO SERIADO (2DA. MUESTRA)",
+        "cod_seg": ""
+    },
+    {
+        "cod_sgp": "03055",
+        "nom_sgp": "EXAMEN CUALITATIVO DE CALCULO URINARIO",
+        "cod_seg": ""
+    },
+    {
+        "cod_sgp": "01005",
+        "nom_sgp": "RECUENTO DE RETICULOCITOS",
+        "cod_seg": "33.11.11"
+    },
+    {
+        "cod_sgp": "03056",
+        "nom_sgp": "ANFETAMINA",
+        "cod_seg": ""
+    },
+    {
+        "cod_sgp": "03057",
+        "nom_sgp": "METANFETAMINA",
+        "cod_seg": ""
+    },
+    {
+        "cod_sgp": "03058",
+        "nom_sgp": "METADONA",
+        "cod_seg": ""
+    },
+    {
+        "cod_sgp": "03059",
+        "nom_sgp": "MORFINA",
+        "cod_seg": ""
+    },
+    {
+        "cod_sgp": "03060",
+        "nom_sgp": "FENZICLIDINA",
+        "cod_seg": ""
+    },
+    {
+        "cod_sgp": "03061",
+        "nom_sgp": "BARBITURICO (ORINA)",
+        "cod_seg": ""
+    },
+    {
+        "cod_sgp": "03062",
+        "nom_sgp": "BENZODIAZEPINA",
+        "cod_seg": ""
+    },
+    {
+        "cod_sgp": "03063",
+        "nom_sgp": "ANTIDEPRESIVOS TRICICLICOS",
+        "cod_seg": ""
+    },
+    {
+        "cod_sgp": "04080",
+        "nom_sgp": "CELULAS LE",
+        "cod_seg": ""
+    },
+    {
+        "cod_sgp": "04081",
+        "nom_sgp": "CELULAS LE (1ERA MUESTRA)",
+        "cod_seg": ""
+    },
+    {
+        "cod_sgp": "04082",
+        "nom_sgp": "CELULAS LE (2DA MUESTRA)",
+        "cod_seg": ""
+    },
+    {
+        "cod_sgp": "04083",
+        "nom_sgp": "CELULAS LE (3ERA MUESTRA)",
+        "cod_seg": ""
+    },
+    {
+        "cod_sgp": "03064",
+        "nom_sgp": "COTININA",
+        "cod_seg": ""
+    },
+    {
+        "cod_sgp": "11003",
+        "nom_sgp": "ANTI DNA",
+        "cod_seg": "32.01.16"
+    },
+
+    {
+        "cod_sgp": "06014",
+        "nom_sgp": "TEST DE LACTOSA",
+        "cod_seg": ""
+    },
+    {
+        "cod_sgp": "06015",
+        "nom_sgp": "THEVENON I",
+        "cod_seg": ""
+    },
+    {
+        "cod_sgp": "06016",
+        "nom_sgp": "THEVENON II",
+        "cod_seg": ""
+    },
+    {
+        "cod_sgp": "06017",
+        "nom_sgp": "THEVENON III",
+        "cod_seg": ""
+    },
+    {
+        "cod_sgp": "08015",
+        "nom_sgp": "DHEA-S (Dehidroepiandrosterona)",
+        "cod_seg": "33.08.69"
+    },
+    {
+        "cod_sgp": "08016",
+        "nom_sgp": "ACIDO VALPROICO",
+        "cod_seg": "33.07.11"
+    },
+    {
+        "cod_sgp": "08017",
+        "nom_sgp": "ANTI - ANTIFOSFOLIPIDICOS (ACL IGM/IGG +",
+        "cod_seg": ""
+    },
+    {
+        "cod_sgp": "08019",
+        "nom_sgp": "ANTICOAGULANTE LUPICO",
+        "cod_seg": ""
+    },
+    {
+        "cod_sgp": "08020",
+        "nom_sgp": "DOSAJE CARBAMAZEPINA ( TEGRETOL )",
+        "cod_seg": ""
+    },
+    {
+        "cod_sgp": "05013",
+        "nom_sgp": "CA  72-4",
+        "cod_seg": ""
+    },
+    {
+        "cod_sgp": "08021",
+        "nom_sgp": "HIV 1-2 DE 4ª GENERACION - ELISA",
+        "cod_seg": "33.03.48"
+    },
+    {
+        "cod_sgp": "08022",
+        "nom_sgp": "HGH BASAL",
+        "cod_seg": ""
+    },
+    {
+        "cod_sgp": "08023",
+        "nom_sgp": "BRUCELLA, SET",
+        "cod_seg": ""
+    },
+    {
+        "cod_sgp": "02004",
+        "nom_sgp": "UROCULTIVO Y ANTIBIOGRAMA",
+        "cod_seg": "33.03.08"
+    },
+    {
+        "cod_sgp": "04013",
+        "nom_sgp": "VARICELA ZOSTER ( IgM )",
+        "cod_seg": ""
+    },
+    {
+        "cod_sgp": "07008",
+        "nom_sgp": "INVESTIGACION DE BK SERIADO",
+        "cod_seg": ""
+    },
+    {
+        "cod_sgp": "07009",
+        "nom_sgp": "INVESTIGACION DE BK SERIADO II",
+        "cod_seg": ""
+    },
+    {
+        "cod_sgp": "07010",
+        "nom_sgp": "INVESTIGACION DE BK SERIADO III",
+        "cod_seg": ""
+    },
+    {
+        "cod_sgp": "08024",
+        "nom_sgp": "HOMOCISTEINA DOSAJE",
+        "cod_seg": ""
+    },
+    {
+        "cod_sgp": "08025",
+        "nom_sgp": "ANTI - TG  (QUIMIOLUMINISCENCIA)",
+        "cod_seg": ""
+    },
+    {
+        "cod_sgp": "08026",
+        "nom_sgp": "ANTI TPO - ANTI PEROXIDASA",
+        "cod_seg": "33.15.13"
+    },
+    {
+        "cod_sgp": "08027",
+        "nom_sgp": "CHLAMYDIA TRACHOMATIS (IgG)",
+        "cod_seg": ""
+    },
+    {
+        "cod_sgp": "08028",
+        "nom_sgp": "CHLAMYDIA TRACHOMATIS (IgM)",
+        "cod_seg": ""
+    },
+    {
+        "cod_sgp": "08029",
+        "nom_sgp": "INMUNOGLOBULINA   E ( IgE )",
+        "cod_seg": "33.02.23"
+    },
+    {
+        "cod_sgp": "08030",
+        "nom_sgp": "INMUNOGLOBULINA A ( IgA )",
+        "cod_seg": ""
+    },
+    {
+        "cod_sgp": "08031",
+        "nom_sgp": "INMUNOGLOBULINA G (IgG)",
+        "cod_seg": ""
+    },
+    {
+        "cod_sgp": "08032",
+        "nom_sgp": "INMUNOGLOBULINA M (IgM)",
+        "cod_seg": ""
+    },
+    {
+        "cod_sgp": "08033",
+        "nom_sgp": "PERFIL ALERGICO ( PRUEBA RAST )",
+        "cod_seg": ""
+    },
+    {
+        "cod_sgp": "08034",
+        "nom_sgp": "ANTI  RNP",
+        "cod_seg": "33.02.27"
+    },
+    {
+        "cod_sgp": "03050",
+        "nom_sgp": "ANTIESTREPTOLISINA- O  (ASO)",
+        "cod_seg": "33.02.06"
+    },
+    {
+        "cod_sgp": "08035",
+        "nom_sgp": "Scl - 70, AUTOANTICUERPOS",
+        "cod_seg": ""
+    },
+    {
+        "cod_sgp": "06018",
+        "nom_sgp": "CAMPYLOBACTER  INVESTIGACIÓN",
+        "cod_seg": ""
+    },
+    {
+        "cod_sgp": "08036",
+        "nom_sgp": "HBSA (ANTIGENO DE SUPERFICIE)",
+        "cod_seg": ""
+    },
+    {
+        "cod_sgp": "08037",
+        "nom_sgp": "HIV  ( WESTERN BLOT )",
+        "cod_seg": ""
+    },
+    {
+        "cod_sgp": "08038",
+        "nom_sgp": "ANTI HBEAG (ANTI ANTIGENO E)",
+        "cod_seg": ""
+    },
+    {
+        "cod_sgp": "05014",
+        "nom_sgp": "ANTICUERPOS TIROIDEOS",
+        "cod_seg": ""
+    },
+    {
+        "cod_sgp": "08039",
+        "nom_sgp": "ANTI - HBSAG (ANTICUERPO)",
+        "cod_seg": ""
+    },
+    {
+        "cod_sgp": "08040",
+        "nom_sgp": "HEPATITIS B (PRUEBA RAPIDA)",
+        "cod_seg": "32.01.20"
+    },
+    {
+        "cod_sgp": "08041",
+        "nom_sgp": "NITROGENO UREICO ( BUN )",
+        "cod_seg": ""
+    },
+    {
+        "cod_sgp": "08042",
+        "nom_sgp": "NITROGENO UREICO ( ORINA 24 H)",
+        "cod_seg": ""
+    },
+    {
+        "cod_sgp": "08043",
+        "nom_sgp": "PERFIL  TORCH  ( I G M )",
+        "cod_seg": "33.10.09"
+    },
+    {
+        "cod_sgp": "05022",
+        "nom_sgp": "PSA LIBRE",
+        "cod_seg": "33.09.17"
+    },
+    {
+        "cod_sgp": "08044",
+        "nom_sgp": "TRANSGLUTAMINASA, AUTOANTICUERPOS ( IGA",
+        "cod_seg": ""
+    },
+    {
+        "cod_sgp": "08045",
+        "nom_sgp": "LAMOTRIGINE ( Lamictal )",
+        "cod_seg": ""
+    },
+    {
+        "cod_sgp": "05023",
+        "nom_sgp": "CA 27-29",
+        "cod_seg": ""
+    },
+    {
+        "cod_sgp": "08046",
+        "nom_sgp": "CA - 15 - 3",
+        "cod_seg": ""
+    },
+    {
+        "cod_sgp": "08047",
+        "nom_sgp": "DIFENILHDANTOINA ( EPAMIN)",
+        "cod_seg": "33.07.02"
+    },
+    {
+        "cod_sgp": "08048",
+        "nom_sgp": "ANTILK1 - LIVER/KLDNEY MICROSOMAL ( LKM",
+        "cod_seg": ""
+    },
+    {
+        "cod_sgp": "08049",
+        "nom_sgp": "17 - HIDROXIPROGESTERONA",
+        "cod_seg": "33.12.07"
+    },
+    {
+        "cod_sgp": "08050",
+        "nom_sgp": "PEPTIDO C",
+        "cod_seg": ""
+    },
+    {
+        "cod_sgp": "08051",
+        "nom_sgp": "CRIOGLOBULINAS",
+        "cod_seg": ""
+    },
+    {
+        "cod_sgp": "08052",
+        "nom_sgp": "LISTERIA MONOCYTOGENES, ANTICUERPOS",
+        "cod_seg": ""
+    },
+    {
+        "cod_sgp": "08053",
+        "nom_sgp": "DIMERO D ( CUANTITIVO )",
+        "cod_seg": "32.02.05"
+    },
+    {
+        "cod_sgp": "01004",
+        "nom_sgp": "TIEMPO TROMBINA",
+        "cod_seg": "33.11.14"
+    },
+    {
+        "cod_sgp": "06019",
+        "nom_sgp": "TEST GRAHAM",
+        "cod_seg": "33.06.01"
+    },
+    {
+        "cod_sgp": "03065",
+        "nom_sgp": "UREA SERICA",
+        "cod_seg": "33.01.35"
+    },
+    {
+        "cod_sgp": "03066",
+        "nom_sgp": "CPK-MB LIQUIDA PLUS",
+        "cod_seg": ""
+    },
+    {
+        "cod_sgp": "04035",
+        "nom_sgp": "ANTIGENO PROSTATICO",
+        "cod_seg": ""
+    },
+    {
+        "cod_sgp": "04042",
+        "nom_sgp": "HIV - PRUEBA RAPIDA",
+        "cod_seg": "31.01.11"
+    },
+    {
+        "cod_sgp": "004",
+        "nom_sgp": "THEVENON (SANGRE OCULTA)",
+        "cod_seg": "33.06.05"
+    },
+    {
+        "cod_sgp": "005",
+        "nom_sgp": "PSA TOTAL CLIA",
+        "cod_seg": "33.09.13"
+    },
+
+    {
+        "cod_sgp": "007",
+        "nom_sgp": "ANTI HBC - ANTICORE TOTAL - IGM  (ELISA)",
+        "cod_seg": "32.01.26"
+    },
+    {
+        "cod_sgp": "008",
+        "nom_sgp": "T DE TROMBOPLASTINA(PTA)",
+        "cod_seg": ""
+    },
+    {
+        "cod_sgp": "009",
+        "nom_sgp": "VARIANTE DU",
+        "cod_seg": ""
+    },
+    {
+        "cod_sgp": "011",
+        "nom_sgp": "ADA EN LIQUIDO ASCITICO",
+        "cod_seg": "33.12.19"
+    },
+    {
+        "cod_sgp": "012",
+        "nom_sgp": "AMILASA EN ORINA 24 HRS",
+        "cod_seg": ""
+    },
+    {
+        "cod_sgp": "013",
+        "nom_sgp": "DEPURACION DE CREATININA",
+        "cod_seg": "33.01.11"
+    },
+    {
+        "cod_sgp": "014",
+        "nom_sgp": "DEPURACION EN ACIDO URICO",
+        "cod_seg": ""
+    },
+    {
+        "cod_sgp": "015",
+        "nom_sgp": "DEPURACION EN AMILASA",
+        "cod_seg": ""
+    },
+    {
+        "cod_sgp": "016",
+        "nom_sgp": "UREA EN ORINA SIMPLE",
+        "cod_seg": ""
+    },
+    {
+        "cod_sgp": "017",
+        "nom_sgp": "WESTERN BLOT CISTICERCO",
+        "cod_seg": "33.08.43"
+    },
+    {
+        "cod_sgp": "019",
+        "nom_sgp": "AMILASA EN ORINA SIMPLE",
+        "cod_seg": ""
+    },
+    {
+        "cod_sgp": "021",
+        "nom_sgp": "PROTEINURIA OCACIONAL",
+        "cod_seg": ""
+    },
+    {
+        "cod_sgp": "022",
+        "nom_sgp": "ACAROS",
+        "cod_seg": ""
+    },
+    {
+        "cod_sgp": "023",
+        "nom_sgp": "GRAM",
+        "cod_seg": ""
+    },
+
+    {
+        "cod_sgp": "025",
+        "nom_sgp": "INVESTIGACION DE HONGOS DIRECTO (KOH)",
+        "cod_seg": "33.03.49"
+    },
+    {
+        "cod_sgp": "027",
+        "nom_sgp": "CULTIVO DE SECRECION PLEURAL",
+        "cod_seg": ""
+    },
+    {
+        "cod_sgp": "028",
+        "nom_sgp": "CULTIVO DE EXUDADO URETRAL",
+        "cod_seg": "33.03.09"
+    },
+
+    {
+        "cod_sgp": "032",
+        "nom_sgp": "BK DIRECTO SERIADO (TRES MUESTRAS)",
+        "cod_seg": ""
+    },
+    {
+        "cod_sgp": "033",
+        "nom_sgp": "BK DIRECTO  UNA MUESTRA",
+        "cod_seg": ""
+    },
+    {
+        "cod_sgp": "035",
+        "nom_sgp": "COLORACION VAGO (CAMPYLOBACTER)",
+        "cod_seg": ""
+    },
+    {
+        "cod_sgp": "036",
+        "nom_sgp": "COLORACION KINYOUM",
+        "cod_seg": ""
+    },
+    {
+        "cod_sgp": "037",
+        "nom_sgp": "PPD (TUBERCULINA)",
+        "cod_seg": ""
+    },
+    {
+        "cod_sgp": "039",
+        "nom_sgp": "HCG  CUALITATIVO",
+        "cod_seg": ""
+    },
+    {
+        "cod_sgp": "XXXXX",
+        "nom_sgp": "ANTI- HVC (HEPATITIS C)",
+        "cod_seg": ""
+    },
+    {
+        "cod_sgp": "049",
+        "nom_sgp": "PERFIL NEONATAL",
+        "cod_seg": ""
+    },
+
+    {
+        "cod_sgp": "09006",
+        "nom_sgp": "PSA TOTAL CLIA",
+        "cod_seg": "33.09.13"
+    },
+    {
+        "cod_sgp": "01006",
+        "nom_sgp": "GOTA GRUESA",
+        "cod_seg": "33.04.07"
+    },
+    {
+        "cod_sgp": "04054",
+        "nom_sgp": "RPR CUANTITATIVO",
+        "cod_seg": "33.02.15"
+    },
+    {
+        "cod_sgp": "02002",
+        "nom_sgp": "TEST DE EMBARAZO ( ORINA )",
+        "cod_seg": ""
+    },
+    {
+        "cod_sgp": "03067",
+        "nom_sgp": "PERFIL RENAL",
+        "cod_seg": ""
+    },
+    {
+        "cod_sgp": "07005",
+        "nom_sgp": "UROCULTIVO CON REMOVEDOR",
+        "cod_seg": "33.03.08"
+    },
+    {
+        "cod_sgp": "10006",
+        "nom_sgp": "PRUEBAS DE TAMIZAJE DE UNIDAES DE SANGRE",
+        "cod_seg": ""
+    },
+    {
+        "cod_sgp": "04055",
+        "nom_sgp": "HELICOBACTER PYLORI - PRUEBA RAPIDA",
+        "cod_seg": "27.01.20"
+    },
+    {
+        "cod_sgp": "06021",
+        "nom_sgp": "PARASITOLOGICO SERIADO ( 3RA MUESTRA )",
+        "cod_seg": ""
+    },
+    {
+        "cod_sgp": "06023",
+        "nom_sgp": "COPROLOGICO FUNCIONAL",
+        "cod_seg": "33.06.06"
+    },
+    {
+        "cod_sgp": "07011",
+        "nom_sgp": "CULTIVO DE LIQUIDO SINOVIAL",
+        "cod_seg": ""
+    },
+    {
+        "cod_sgp": "07012",
+        "nom_sgp": "CULTIVO DE SECRECION NASO-FARINGEA",
+        "cod_seg": "33.03.20"
+    },
+    {
+        "cod_sgp": "05009",
+        "nom_sgp": "CA 19-9 ( PANCREAS - COLON )",
+        "cod_seg": "33.09.09"
+    },
+    {
+        "cod_sgp": "05024",
+        "nom_sgp": "CA 72 - 4 ( ESTOMAGO  )",
+        "cod_seg": ""
+    },
+    {
+        "cod_sgp": "12001",
+        "nom_sgp": "PAQUETE  QUIRURGICO",
+        "cod_seg": ""
+    },
+    {
+        "cod_sgp": "057",
+        "nom_sgp": "RETN LAB.",
+        "cod_seg": ""
+    },
+    {
+        "cod_sgp": "08018",
+        "nom_sgp": "PROTEINOGRAMA ELECTROFORETICO SERICO",
+        "cod_seg": "33.10.13"
+    },
+    {
+        "cod_sgp": "03071",
+        "nom_sgp": "COLESTEROL TOTAL",
+        "cod_seg": "33.01.07"
+    },
+    {
+        "cod_sgp": "04084",
+        "nom_sgp": "GONADOTROPINA SUB - UNIDA BETA",
+        "cod_seg": ""
+    },
+    {
+        "cod_sgp": "04085",
+        "nom_sgp": "HEPATITIS A  IGM",
+        "cod_seg": "32.01.27"
+    },
+    {
+        "cod_sgp": "09007",
+        "nom_sgp": "BIOPSIAS GRANDE RIÑON",
+        "cod_seg": ""
+    },
+    {
+        "cod_sgp": "04087",
+        "nom_sgp": "PCR   (CUANTITATIVO  )",
+        "cod_seg": "33.02.12"
+    },
+    {
+        "cod_sgp": "12002",
+        "nom_sgp": "PERFIL DE COAGULACION",
+        "cod_seg": "33.10.01"
+    },
+    {
+        "cod_sgp": "07013",
+        "nom_sgp": "CULTIVO DE SECRECION URETRAL",
+        "cod_seg": "33.03.13"
+    },
+    {
+        "cod_sgp": "01015",
+        "nom_sgp": "PERFIL  PRENATAL",
+        "cod_seg": ""
+    },
+    {
+        "cod_sgp": "07014",
+        "nom_sgp": "PAPANICOLAU  LIQUIDO PLEURAL( PAP )",
+        "cod_seg": "21.01.01"
+    },
+    {
+        "cod_sgp": "01018",
+        "nom_sgp": "BK EN ORINA 24 HRAS",
+        "cod_seg": ""
+    },
+    {
+        "cod_sgp": "07015",
+        "nom_sgp": "BIOPSIA MEDIANA",
+        "cod_seg": ""
+    },
+    {
+        "cod_sgp": "09008",
+        "nom_sgp": "BIOPSIA TEJIDO HEPATICO",
+        "cod_seg": ""
+    },
+    {
+        "cod_sgp": "05026",
+        "nom_sgp": "IG E SERICO",
+        "cod_seg": "33.02.23"
+    },
+    {
+        "cod_sgp": "05027",
+        "nom_sgp": "HIERRO SERICO",
+        "cod_seg": "33.08.63"
+    },
+    {
+        "cod_sgp": "07016",
+        "nom_sgp": "CULTIVO DE SECRECION LCR",
+        "cod_seg": "33.03.09"
+    },
+    {
+        "cod_sgp": "12003",
+        "nom_sgp": "PERFIL TIROIDEO",
+        "cod_seg": "33.10.05"
+    },
+    {
+        "cod_sgp": "04088",
+        "nom_sgp": "HIV 1 -2 ELISA",
+        "cod_seg": ""
+    },
+    {
+        "cod_sgp": "12004",
+        "nom_sgp": "PERFIL REUMATOIDEO",
+        "cod_seg": ""
+    },
+    {
+        "cod_sgp": "03072",
+        "nom_sgp": "PARASITOLOGICO SERIADO",
+        "cod_seg": "33.06.04"
+    },
+    {
+        "cod_sgp": "03073",
+        "nom_sgp": "PERFIL CARDIACO",
+        "cod_seg": ""
+    },
+    {
+        "cod_sgp": "03074",
+        "nom_sgp": "CLAMYDIA  IGM",
+        "cod_seg": ""
+    },
+    {
+        "cod_sgp": "03075",
+        "nom_sgp": "CLAMIDIAS IG G",
+        "cod_seg": ""
+    },
+    {
+        "cod_sgp": "02005",
+        "nom_sgp": "PRUEBA DE HELECHO",
+        "cod_seg": "33.05.28"
+    },
+    {
+        "cod_sgp": "09009",
+        "nom_sgp": "WESTERN BLOT HIDATIDOSIS",
+        "cod_seg": "33.99.99"
+    },
+    {
+        "cod_sgp": "03077",
+        "nom_sgp": "MAGNESIO",
+        "cod_seg": "33.01.36"
+    },
+    {
+        "cod_sgp": "04090",
+        "nom_sgp": "TSI",
+        "cod_seg": ""
+    },
+    {
+        "cod_sgp": "04091",
+        "nom_sgp": "ANTI TG - ANTI TIROGLOBULINA",
+        "cod_seg": "33.15.33"
+    },
+    {
+        "cod_sgp": "03078",
+        "nom_sgp": "PAQUETE DE ANALISIS ( CAMPAÑA)",
+        "cod_seg": ""
+    },
+    {
+        "cod_sgp": "03079",
+        "nom_sgp": "INSULINA BASAL",
+        "cod_seg": "33.10.16"
+    },
+    {
+        "cod_sgp": "02006",
+        "nom_sgp": "DEPURACION DE CREATININA ENDOGENA",
+        "cod_seg": ""
+    },
+    {
+        "cod_sgp": "03080",
+        "nom_sgp": "VDRL",
+        "cod_seg": ""
+    },
+    {
+        "cod_sgp": "09010",
+        "nom_sgp": "CY FRA 21 - 1 (PULMON)",
+        "cod_seg": ""
+    },
+    {
+        "cod_sgp": "05025",
+        "nom_sgp": "SATURACION DE TRANSFERRINA",
+        "cod_seg": "33.08.14"
+    },
+    {
+        "cod_sgp": "03069",
+        "nom_sgp": "ACTH",
+        "cod_seg": ""
+    },
+    {
+        "cod_sgp": "02007",
+        "nom_sgp": "CORTISOL LIBRE 24HRAS",
+        "cod_seg": ""
+    },
+    {
+        "cod_sgp": "001",
+        "nom_sgp": "TOLERANCIA A LA INSULINA (30, 60, 120)",
+        "cod_seg": "32.01.16"
+    },
+    {
+        "cod_sgp": "04043",
+        "nom_sgp": "ELECTROFORESIS DE HEMOGLOBINA",
+        "cod_seg": "33.08.61"
+    },
+    {
+        "cod_sgp": "03070",
+        "nom_sgp": "ANTI-CCP , IGG (PEPTIDO CICLICO CITRULIN",
+        "cod_seg": "32.01.35"
+    },
+
+    {
+        "cod_sgp": "04056",
+        "nom_sgp": "ANCA (IFI)",
+        "cod_seg": ""
+    },
+    {
+        "cod_sgp": "05028",
+        "nom_sgp": "ANTI CORE IGM - (HBC IGM)",
+        "cod_seg": ""
+    },
+
+    {
+        "cod_sgp": "03081",
+        "nom_sgp": "GLUCOSA AL AZAR",
+        "cod_seg": ""
+    },
+    {
+        "cod_sgp": "01019",
+        "nom_sgp": "COAGULOGRAMA",
+        "cod_seg": ""
+    },
+    {
+        "cod_sgp": "03082",
+        "nom_sgp": "COCAINA",
+        "cod_seg": ""
+    },
+    {
+        "cod_sgp": "04089",
+        "nom_sgp": "AGLUTINACIONES 2 MERCAPTOETANOL",
+        "cod_seg": "33.02.04"
+    },
+    {
+        "cod_sgp": "04092",
+        "nom_sgp": "ROSA DE BENGALA",
+        "cod_seg": "33.02.28"
+    },
+    {
+        "cod_sgp": "04093",
+        "nom_sgp": "FACTOR REUMATOIDEO CUANTITATIVO",
+        "cod_seg": "33.02.13"
+    },
+    {
+        "cod_sgp": "04094",
+        "nom_sgp": "LEPTOSPIRA , ANTICUERPOS IGM",
+        "cod_seg": ""
+    },
+    {
+        "cod_sgp": "01020",
+        "nom_sgp": "PRUEBA RAPIDA DENGUE IGG - IGM",
+        "cod_seg": "33.01.10"
+    },
+    {
+        "cod_sgp": "11004",
+        "nom_sgp": "ANTI DNA - DS (DOBLE CADENA)",
+        "cod_seg": ""
+    },
+    {
+        "cod_sgp": "08054",
+        "nom_sgp": "LEPTOSPIRA , ANTICUERPOS IgG",
+        "cod_seg": "  .  ."
+    },
+    {
+        "cod_sgp": "04095",
+        "nom_sgp": "BETA 2- GLICOPROTEINA IG G",
+        "cod_seg": ""
+    },
+    {
+        "cod_sgp": "04096",
+        "nom_sgp": "BETA 2 - GLICOPROTEINA IG M",
+        "cod_seg": ""
+    },
+    {
+        "cod_sgp": "04097",
+        "nom_sgp": "HORMONA ANTIMULLERIANA",
+        "cod_seg": ""
+    },
+    {
+        "cod_sgp": "01028",
+        "nom_sgp": "ERITROPOYETINA",
+        "cod_seg": ""
+    },
+    {
+        "cod_sgp": "03083",
+        "nom_sgp": "PROCALCITONINA",
+        "cod_seg": "33.09.05"
+    },
+
+    {
+        "cod_sgp": "04099",
+        "nom_sgp": "PRUEBA ANTIGENA COVID 19",
+        "cod_seg": ""
+    },
+
+    {
+        "cod_sgp": "04101",
+        "nom_sgp": "COVID19 AB CUANTITATIVO CSR",
+        "cod_seg": ""
+    },
+    {
+        "cod_sgp": "08055",
+        "nom_sgp": "DEPURACION DE CREATININA 24 HORAS",
+        "cod_seg": ""
+    },
+    {
+        "cod_sgp": "04102",
+        "nom_sgp": "COVID 19 AB CUANTITATIVO (INTERNO)",
+        "cod_seg": ""
+    },
+    {
+        "cod_sgp": "04103",
+        "nom_sgp": "COVID 19 AB CUANTITATIVO",
+        "cod_seg": "00.17.99"
+    },
+    {
+        "cod_sgp": "04104",
+        "nom_sgp": "TOMA DE MUESTRA DE PRUEBA CUALITATIVA",
+        "cod_seg": ""
+    },
+    {
+        "cod_sgp": "04105",
+        "nom_sgp": "PRUEBA RAPIDA CUALITATIVA",
+        "cod_seg": ""
+    },
+    {
+        "cod_sgp": "99001",
+        "nom_sgp": "RETEN LABORATORIO",
+        "cod_seg": ""
+    },
+    {
+        "cod_sgp": "04106",
+        "nom_sgp": "ASMA",
+        "cod_seg": ""
+    },
+    {
+        "cod_sgp": "05030",
+        "nom_sgp": "T4 LIBRE CLIA",
+        "cod_seg": "26.01.01"
+    },
+    {
+        "cod_sgp": "05031",
+        "nom_sgp": "T3 LIBRE CLIA",
+        "cod_seg": "33.13.12"
+    },
+    {
+        "cod_sgp": "05032",
+        "nom_sgp": "TSH CLIA",
+        "cod_seg": "30.01.17"
+    },
+    {
+        "cod_sgp": "13001",
+        "nom_sgp": "BIOPSIA APENDICE CECAL",
+        "cod_seg": "21.02.03"
+    },
+    {
+        "cod_sgp": "13002",
+        "nom_sgp": "BIOPSIA VESICULA BILIAR",
+        "cod_seg": "21.02.01"
+    },
+    {
+        "cod_sgp": "13003",
+        "nom_sgp": "BIOPSIA DE PIEL >2 FCOS",
+        "cod_seg": ""
+    },
+    {
+        "cod_sgp": "13004",
+        "nom_sgp": "BIOPSIA DE ESOFAGO >2 FCOS",
+        "cod_seg": ""
+    },
+    {
+        "cod_sgp": "13005",
+        "nom_sgp": "BIOPSIA GASTRICA > 2 FCOS",
+        "cod_seg": "21.02.01"
+    },
+    {
+        "cod_sgp": "13006",
+        "nom_sgp": "BIOPSIA DE COLON >2 FCOS",
+        "cod_seg": ""
+    },
+    {
+        "cod_sgp": "13007",
+        "nom_sgp": "BIOPSIA DE RECTO >2 FCOS",
+        "cod_seg": ""
+    },
+    {
+        "cod_sgp": "13008",
+        "nom_sgp": "BIOPSIA DE HIGADO(TRUCUT)H&E/PAS/TRI",
+        "cod_seg": ""
+    },
+    {
+        "cod_sgp": "13009",
+        "nom_sgp": "BIOPSIA DE MAMA(TRUCUT)H&E/ZIEHL NEELSEN",
+        "cod_seg": ""
+    },
+    {
+        "cod_sgp": "13010",
+        "nom_sgp": "BIOPSIA DE PROSTATA(TRUCUT)2 FRASCOS",
+        "cod_seg": ""
+    },
+    {
+        "cod_sgp": "13011",
+        "nom_sgp": "BIOPSIA DE PROSTATA POR RTU",
+        "cod_seg": ""
+    },
+    {
+        "cod_sgp": "13012",
+        "nom_sgp": "BIOPSIA DE CERVIX(<2FCOS)",
+        "cod_seg": ""
+    },
+    {
+        "cod_sgp": "13013",
+        "nom_sgp": "BIOPSIA DE ENDOMETRIO",
+        "cod_seg": ""
+    },
+    {
+        "cod_sgp": "13014",
+        "nom_sgp": "BIOPSIA DE RESTOS PLACENTARIOS",
+        "cod_seg": "21.02.01"
+    },
+    {
+        "cod_sgp": "13015",
+        "nom_sgp": "BIOPSIA DE PLACENTA",
+        "cod_seg": ""
+    },
+    {
+        "cod_sgp": "13016",
+        "nom_sgp": "BIOPSIA OSEA(>2FCOS)",
+        "cod_seg": ""
+    },
+    {
+        "cod_sgp": "13017",
+        "nom_sgp": "BIOPSIA DE MEDULA OSEA",
+        "cod_seg": ""
+    },
+    {
+        "cod_sgp": "13018",
+        "nom_sgp": "BIOPSIA DE PLEURA",
+        "cod_seg": ""
+    },
+    {
+        "cod_sgp": "13019",
+        "nom_sgp": "BIOPSIA PULMON 10-15 CM",
+        "cod_seg": ""
+    },
+    {
+        "cod_sgp": "13020",
+        "nom_sgp": "PULMON BIOPSIA > 15CM",
+        "cod_seg": ""
+    },
+    {
+        "cod_sgp": "13021",
+        "nom_sgp": "BIOPSIA CEREBRAL",
+        "cod_seg": ""
+    },
+    {
+        "cod_sgp": "13022",
+        "nom_sgp": "BIOPSIA BAZO PIEZA QUIRURGICA",
+        "cod_seg": ""
+    },
+    {
+        "cod_sgp": "13023",
+        "nom_sgp": "BIOPSIA ESTOMAGO PIEZA QUIRURGICA 10-15C",
+        "cod_seg": ""
+    },
+    {
+        "cod_sgp": "13024",
+        "nom_sgp": "COLON PIEZA QUIRURGICA NO ONCOLOGICA <10",
+        "cod_seg": ""
+    },
+    {
+        "cod_sgp": "13025",
+        "nom_sgp": "COLON PIEZA QUIRURGICA NO ONCOLOGICA >10",
+        "cod_seg": ""
+    },
+    {
+        "cod_sgp": "13026",
+        "nom_sgp": "BIOPSIA GANGLIO < 5CM",
+        "cod_seg": ""
+    },
+    {
+        "cod_sgp": "13027",
+        "nom_sgp": "BIOPSIA GANGLIO > 5CM",
+        "cod_seg": ""
+    },
+    {
+        "cod_sgp": "13028",
+        "nom_sgp": "BIOPSIA DE HEMORROIDES",
+        "cod_seg": ""
+    },
+    {
+        "cod_sgp": "13029",
+        "nom_sgp": "INTES.PIEZA QUIRURG. NO ONCOLOGICA 10-15",
+        "cod_seg": ""
+    },
+    {
+        "cod_sgp": "13030",
+        "nom_sgp": "INTES.PIEZA QUIRURG. NO ONCOLOGICA >15CM",
+        "cod_seg": ""
+    },
+    {
+        "cod_sgp": "13031",
+        "nom_sgp": "BIOPSIA DE LIPOMA < 5 CM",
+        "cod_seg": ""
+    },
+    {
+        "cod_sgp": "13032",
+        "nom_sgp": "BIOPSIA DE LIPOMA > 5 CM",
+        "cod_seg": ""
+    },
+    {
+        "cod_sgp": "13033",
+        "nom_sgp": "BIOPSIA DE MAMA TUMOR BENIGNO <3CM",
+        "cod_seg": ""
+    },
+    {
+        "cod_sgp": "13034",
+        "nom_sgp": "BIOPSIA DE MAMA TUMOR BENIGNO >3-5CM",
+        "cod_seg": ""
+    },
+    {
+        "cod_sgp": "13035",
+        "nom_sgp": "BIOPSIA DE MIOMA <5 CM",
+        "cod_seg": ""
+    },
+    {
+        "cod_sgp": "13036",
+        "nom_sgp": "BIOPSIA DE MIOMA >5 CM",
+        "cod_seg": ""
+    },
+    {
+        "cod_sgp": "13037",
+        "nom_sgp": "MIEMBRO INFERIOR PIEZA QUIRURGICA",
+        "cod_seg": ""
+    },
+    {
+        "cod_sgp": "13038",
+        "nom_sgp": "MIEMBRO SUPERIOR PIEZA QUIRURGICA",
+        "cod_seg": ""
+    },
+    {
+        "cod_sgp": "13039",
+        "nom_sgp": "TROMPA UTERINA PIEZA QUIRURGICA",
+        "cod_seg": ""
+    },
+    {
+        "cod_sgp": "13040",
+        "nom_sgp": "LIBRE",
+        "cod_seg": ""
+    },
+    {
+        "cod_sgp": "13041",
+        "nom_sgp": "OVARIO PIEZA QUIRURGICA NO ONCOLOGICA",
+        "cod_seg": ""
+    },
+    {
+        "cod_sgp": "13042",
+        "nom_sgp": "BIOPSIA OVARIO QUISTICO <5CM",
+        "cod_seg": "21.02.03"
+    },
+    {
+        "cod_sgp": "13043",
+        "nom_sgp": "BIOPSIA OVARIO QUISTICO >5CM",
+        "cod_seg": "21.02.03"
+    },
+    {
+        "cod_sgp": "13044",
+        "nom_sgp": "PROSTATA PIEZ.QUIRUR.NO ONCOLOGICA<8CM",
+        "cod_seg": ""
+    },
+    {
+        "cod_sgp": "13045",
+        "nom_sgp": "PROSTATA PIEZ.QUIRUR.NO ONCOLOGICA>8CM",
+        "cod_seg": ""
+    },
+    {
+        "cod_sgp": "13046",
+        "nom_sgp": "BIOPSIA TIROIDES PIEZA QUIRURGICA",
+        "cod_seg": ""
+    },
+    {
+        "cod_sgp": "13047",
+        "nom_sgp": "BIOPSIA DE TUMOR <3CM",
+        "cod_seg": ""
+    },
+    {
+        "cod_sgp": "13048",
+        "nom_sgp": "BIOPSIA DE TUMOR 3-5 CM",
+        "cod_seg": ""
+    },
+    {
+        "cod_sgp": "13049",
+        "nom_sgp": "BIOPSIA DE TUMOR 5-10 CM",
+        "cod_seg": ""
+    },
+    {
+        "cod_sgp": "13050",
+        "nom_sgp": "BIOPSIA DE TUMOR >10 CM",
+        "cod_seg": ""
+    },
+    {
+        "cod_sgp": "13051",
+        "nom_sgp": "TUMOR<DE 3 CM MALIGNO O SOSPECHOSO",
+        "cod_seg": ""
+    },
+    {
+        "cod_sgp": "13052",
+        "nom_sgp": "TUMOR O DE 3-5 CM MALIGNO O SOSPECHOSO",
+        "cod_seg": ""
+    },
+    {
+        "cod_sgp": "13053",
+        "nom_sgp": "TUMOR O DE 5-10 CM MALIGNO O SOSPECHOSO",
+        "cod_seg": "21.02.03"
+    },
+    {
+        "cod_sgp": "13054",
+        "nom_sgp": "TUMOR>O DE 10 CM MALIGNO O SOSPECHOSO",
+        "cod_seg": ""
+    },
+    {
+        "cod_sgp": "13055",
+        "nom_sgp": "UTERO CON ANEXOS CON MIOMAS",
+        "cod_seg": ""
+    },
+    {
+        "cod_sgp": "13056",
+        "nom_sgp": "UTERO SIN ANEXOS CON MIOMAS",
+        "cod_seg": "  .  ."
+    },
+    {
+        "cod_sgp": "13057",
+        "nom_sgp": "UTERO SIN ANEXOS(DISTOPIA/PROLAPSO)",
+        "cod_seg": ""
+    },
+    {
+        "cod_sgp": "13058",
+        "nom_sgp": "UTERO CON ANEXOS(DISTOPIA/PROLAPSO)",
+        "cod_seg": ""
+    },
+    {
+        "cod_sgp": "13059",
+        "nom_sgp": "CITOLOGIA CERVICO UTERINO(PAPANICOLAOU)",
+        "cod_seg": "21.01.01"
+    },
+    {
+        "cod_sgp": "13060",
+        "nom_sgp": "CITOLOGIA DE LIQUIDOS CORPORLES",
+        "cod_seg": ""
+    },
+    {
+        "cod_sgp": "13061",
+        "nom_sgp": "CITOLOGIA BAAF DE TIROIDES",
+        "cod_seg": ""
+    },
+    {
+        "cod_sgp": "13062",
+        "nom_sgp": "CITOLOGIA BAAF DE GANGLIO LINFATICO",
+        "cod_seg": ""
+    },
+    {
+        "cod_sgp": "13063",
+        "nom_sgp": "BIOPSIA COLON CON GANGLIOS",
+        "cod_seg": ""
+    },
+    {
+        "cod_sgp": "13064",
+        "nom_sgp": "BIOPSIA CERVIX CONO LEEP",
+        "cod_seg": ""
+    },
+    {
+        "cod_sgp": "13065",
+        "nom_sgp": "BIOPSIA ESTOMAGO CON GANGLIOS",
+        "cod_seg": ""
+    },
+    {
+        "cod_sgp": "13066",
+        "nom_sgp": "BIOPSIA MASTECTOMIA RADICAL MODIFICADA",
+        "cod_seg": ""
+    },
+    {
+        "cod_sgp": "13067",
+        "nom_sgp": "BIOPSIA OVARIO SOLO TUMOR MALIGNO",
+        "cod_seg": ""
+    },
+    {
+        "cod_sgp": "13068",
+        "nom_sgp": "BIOPSIA OVARIO CON ESTADIEAJE",
+        "cod_seg": ""
+    },
+    {
+        "cod_sgp": "13069",
+        "nom_sgp": "BIOPSIA PROSTATA CON GANGLIOS",
+        "cod_seg": ""
+    },
+    {
+        "cod_sgp": "13070",
+        "nom_sgp": "BIOPSIA UTERO CON GANGLIOS",
+        "cod_seg": ""
+    },
+    {
+        "cod_sgp": "13071",
+        "nom_sgp": "BIOPSIA VULVECTOMIA",
+        "cod_seg": ""
+    },
+    {
+        "cod_sgp": "13072",
+        "nom_sgp": "BIOPSIA VULVECTOMIA CON GANGLIOS",
+        "cod_seg": ""
+    },
+    {
+        "cod_sgp": "14001",
+        "nom_sgp": "CULTIVO DE SECRECION",
+        "cod_seg": ""
+    },
+    {
+        "cod_sgp": "09011",
+        "nom_sgp": "ANTI CENTROMERO",
+        "cod_seg": ""
+    },
+    {
+        "cod_sgp": "04107",
+        "nom_sgp": "COVID-19 ANTIGENO",
+        "cod_seg": "00.17.99"
+    },
+    {
+        "cod_sgp": "03084",
+        "nom_sgp": "NO UTILIZAR ---- DEPURACION DE CREATININ",
+        "cod_seg": ""
+    },
+    {
+        "cod_sgp": "04108",
+        "nom_sgp": "ANTI- HVC (HEPATITIS C) ELISA",
+        "cod_seg": "32.01.34"
+    },
+    {
+        "cod_sgp": "14002",
+        "nom_sgp": "EXAMEN DIRECTO DE SECRECION",
+        "cod_seg": ""
+    },
+    {
+        "cod_sgp": "04066",
+        "nom_sgp": "HEPATITIS A IG M PRUEBA RAPIDA",
+        "cod_seg": ""
+    },
+    {
+        "cod_sgp": "14003",
+        "nom_sgp": "CULTIVO DE SECRECION VAGINAL",
+        "cod_seg": "33.03.09"
+    },
+    {
+        "cod_sgp": "04086",
+        "nom_sgp": "DOSAJE DE VITAMINA D (25 HIDROXI)",
+        "cod_seg": ""
+    },
+    {
+        "cod_sgp": "04109",
+        "nom_sgp": "PERFIL ENA SCREEN",
+        "cod_seg": ""
+    },
+    {
+        "cod_sgp": "04110",
+        "nom_sgp": "BETA 2 MICROGLOBULINA",
+        "cod_seg": ""
+    },
+    {
+        "cod_sgp": "08056",
+        "nom_sgp": "HBSAG (ANTIGENO DE SUP) ELISA",
+        "cod_seg": ""
+    },
+    {
+        "cod_sgp": "04111",
+        "nom_sgp": "TIROGLOBULINA",
+        "cod_seg": "33.15.33"
+    },
+    {
+        "cod_sgp": "14004",
+        "nom_sgp": "CULTIVO DE EXUDADO VAGINAL",
+        "cod_seg": ""
+    },
+    {
+        "cod_sgp": "03068",
+        "nom_sgp": "ACIDO URICO EN ORINA OCASIONAL",
+        "cod_seg": ""
+    },
+    {
+        "cod_sgp": "04112",
+        "nom_sgp": "ANTI-HVA (HEPATITIS A)  IGM - ELISA",
+        "cod_seg": "32.01.29"
+    },
+    {
+        "cod_sgp": "08057",
+        "nom_sgp": "SOMATOMEDINA (IGF-1)",
+        "cod_seg": ""
+    },
+    {
+        "cod_sgp": "08058",
+        "nom_sgp": "IGFBP-3 (BINDING PROTEIN)",
+        "cod_seg": ""
+    },
+    {
+        "cod_sgp": "14005",
+        "nom_sgp": "ESPERMACULTIVO",
+        "cod_seg": ""
+    },
+    {
+        "cod_sgp": "01029",
+        "nom_sgp": "PLASMA RICO EN PLAQUETAS",
+        "cod_seg": ""
+    },
+    {
+        "cod_sgp": "04113",
+        "nom_sgp": "PERFIL MENOSPAUSICO",
+        "cod_seg": ""
+    },
+    {
+        "cod_sgp": "08059",
+        "nom_sgp": "ELECTROLITOS EN ORINA 24 HORAS",
+        "cod_seg": ""
+    },
+    {
+        "cod_sgp": "04114",
+        "nom_sgp": "PRO - BNP (PEPTIDO NATRIURETICO)",
+        "cod_seg": ""
+    },
+    {
+        "cod_sgp": "03085",
+        "nom_sgp": "MICROALBUMINURIA DE ORINA DE 24 HORAS",
+        "cod_seg": "33.05.01"
+    },
+    {
+        "cod_sgp": "04115",
+        "nom_sgp": "VITAMINA B6 NO SE REALIZA",
+        "cod_seg": ""
+    },
+    {
+        "cod_sgp": "08060",
+        "nom_sgp": "ACIDOS BILIARES",
+        "cod_seg": ""
+    },
+    {
+        "cod_sgp": "03086",
+        "nom_sgp": "COCIENTE ALBUMINA-CREATININA",
+        "cod_seg": ""
+    },
+    {
+        "cod_sgp": "03087",
+        "nom_sgp": "CALCIO IONIZADO",
+        "cod_seg": "  .  ."
+    },
+    {
+        "cod_sgp": "04116",
+        "nom_sgp": "ANDROSTENEDIONA",
+        "cod_seg": ""
+    },
+    {
+        "cod_sgp": "04117",
+        "nom_sgp": "ANTIGENO HLA-B27",
+        "cod_seg": ""
+    },
+    {
+        "cod_sgp": "04118",
+        "nom_sgp": "BARTONELLA HENSELAE ANTICUERPOS IGG",
+        "cod_seg": ""
+    },
+    {
+        "cod_sgp": "04119",
+        "nom_sgp": "BARTONELLA HENSELAE ANTICUERPOS IGM",
+        "cod_seg": "7 .  ."
+    },
+    {
+        "cod_sgp": "03088",
+        "nom_sgp": "CREATININA EN ORINA SIMPLE",
+        "cod_seg": ""
+    },
+    {
+        "cod_sgp": "03089",
+        "nom_sgp": "ACETIL COLINA RECEPTOR, ANTICUERPOS",
+        "cod_seg": ""
+    },
+    {
+        "cod_sgp": "04120",
+        "nom_sgp": "DOSAJE CALCITONINA",
+        "cod_seg": ""
+    },
+    {
+        "cod_sgp": "03090",
+        "nom_sgp": "DOSAJE DE OXALTOS EN ORINA 24 HORAS",
+        "cod_seg": ""
+    },
+    {
+        "cod_sgp": "03091",
+        "nom_sgp": "CISTINA EN ORINA DE 24 HORAS",
+        "cod_seg": ""
+    },
+    {
+        "cod_sgp": "03092",
+        "nom_sgp": "DOSAJE DE PLOMO EN SANGRE",
+        "cod_seg": ""
+    },
+    {
+        "cod_sgp": "04121",
+        "nom_sgp": "HTLV, WESTERN BLOT",
+        "cod_seg": ""
+    },
+    {
+        "cod_sgp": "04122",
+        "nom_sgp": "CA - 549",
+        "cod_seg": ""
+    },
+    {
+        "cod_sgp": "03093",
+        "nom_sgp": "OXALATOS EN ORINA 24 HORAS",
+        "cod_seg": ""
+    },
+    {
+        "cod_sgp": "03094",
+        "nom_sgp": "FOSFATOS EN ORINA DE 24 HORAS",
+        "cod_seg": ""
+    },
+    {
+        "cod_sgp": "03095",
+        "nom_sgp": "ACETONA SERICA",
+        "cod_seg": ""
+    },
+    {
+        "cod_sgp": "03096",
+        "nom_sgp": "ACIDO LACTICO",
+        "cod_seg": ""
+    },
+    {
+        "cod_sgp": "03097",
+        "nom_sgp": "17-HIDROXICORTICOIDES  (ORINA  24H)",
+        "cod_seg": ""
+    },
+    {
+        "cod_sgp": "04123",
+        "nom_sgp": "17-HIDROXIPROGESTERONA TAMIZAJE NEONATAL",
+        "cod_seg": ""
+    },
+    {
+        "cod_sgp": "04124",
+        "nom_sgp": "17-KETOESTEROIDES  (ORINA  24H)",
+        "cod_seg": ""
+    },
+    {
+        "cod_sgp": "04125",
+        "nom_sgp": "21-HIDROXILASA MUTACION (CYP21A2)",
+        "cod_seg": ""
+    },
+    {
+        "cod_sgp": "04126",
+        "nom_sgp": "2-MERCAPTOETANOL, PRUEBA DE",
+        "cod_seg": ""
+    },
+    {
+        "cod_sgp": "03099",
+        "nom_sgp": "5-HIDROXI INDOLACETICO (ORINA 24H)",
+        "cod_seg": ""
+    },
+    {
+        "cod_sgp": "04127",
+        "nom_sgp": "5-NUCLEOTIDASA",
+        "cod_seg": ""
+    },
+    {
+        "cod_sgp": "04128",
+        "nom_sgp": "ACETAMINOFEN",
+        "cod_seg": ""
+    },
+    {
+        "cod_sgp": "04129",
+        "nom_sgp": "ACETONA URINARIA",
+        "cod_seg": ""
+    },
+    {
+        "cod_sgp": "04130",
+        "nom_sgp": "ACIDO CITRICO (SEMEN)",
+        "cod_seg": ""
+    },
+    {
+        "cod_sgp": "04131",
+        "nom_sgp": "ACIDO DELTA AMINOLEVULINICO (ORINA 24H)",
+        "cod_seg": ""
+    },
+    {
+        "cod_sgp": "03098",
+        "nom_sgp": "ACIDO FENILGLIOXILICO (ORINA 24H)",
+        "cod_seg": ""
+    },
+    {
+        "cod_sgp": "03100",
+        "nom_sgp": "ACIDO FOLICO INTRAERITROCITARIO",
+        "cod_seg": ""
+    },
+    {
+        "cod_sgp": "04132",
+        "nom_sgp": "ACIDO HIPURICO (ORINA 24H)",
+        "cod_seg": ""
+    },
+    {
+        "cod_sgp": "03101",
+        "nom_sgp": "ACIDO HIPURICO (ORINA SIMPLE)",
+        "cod_seg": ""
+    },
+    {
+        "cod_sgp": "03102",
+        "nom_sgp": "ACIDO MANDELICO (ORINA 24H)",
+        "cod_seg": ""
+    },
+    {
+        "cod_sgp": "03103",
+        "nom_sgp": "ACIDO METILHIPURICO (ORINA SIMPLE)",
+        "cod_seg": ""
+    },
+    {
+        "cod_sgp": "03104",
+        "nom_sgp": "ACIDO METILMALONICO (ORINA SIMPLE)",
+        "cod_seg": ""
+    },
+    {
+        "cod_sgp": "04133",
+        "nom_sgp": "ACIDO METILMALONICO (SUERO)",
+        "cod_seg": ""
+    },
+    {
+        "cod_sgp": "04134",
+        "nom_sgp": "ACIDO S-FENILMERCAPTURICO (ORINA SIMPLE)",
+        "cod_seg": ""
+    },
+    {
+        "cod_sgp": "03105",
+        "nom_sgp": "ACIDO TRICLOROACETICO (ORINA 24H)",
+        "cod_seg": ""
+    },
+    {
+        "cod_sgp": "04135",
+        "nom_sgp": "ACIDO TRICLOROACETICO (ORINA SIMPLE)",
+        "cod_seg": ""
+    },
+    {
+        "cod_sgp": "04136",
+        "nom_sgp": "ACIDO TT MUCONICO (ORINA 24H)",
+        "cod_seg": ""
+    },
+    {
+        "cod_sgp": "02008",
+        "nom_sgp": "ACIDO TT MUCONICO (ORINA SIMPLE)",
+        "cod_seg": ""
+    },
+    {
+        "cod_sgp": "03106",
+        "nom_sgp": "ACIDO URICO (ORINA 24H)",
+        "cod_seg": ""
+    },
+    {
+        "cod_sgp": "03107",
+        "nom_sgp": "ACIDO URICO, DEPURACION",
+        "cod_seg": ""
+    },
+    {
+        "cod_sgp": "03108",
+        "nom_sgp": "ACIDO VANILMANDELICO (ORINA 24H)",
+        "cod_seg": ""
+    },
+    {
+        "cod_sgp": "04137",
+        "nom_sgp": "ACIDOS GRASOS LIBRES",
+        "cod_seg": ""
+    },
+    {
+        "cod_sgp": "04138",
+        "nom_sgp": "ACIDOS GRASOS LIBRES (180 MINUTOS)",
+        "cod_seg": ""
+    },
+    {
+        "cod_sgp": "04139",
+        "nom_sgp": "ACIDOS GRASOS LIBRES (360 MINUTOS)",
+        "cod_seg": ""
+    },
+    {
+        "cod_sgp": "03109",
+        "nom_sgp": "ACIDOS GRASOS LIBRES + INSULINA + TRIGLI",
+        "cod_seg": ""
+    },
+    {
+        "cod_sgp": "04140",
+        "nom_sgp": "ADAMTS 13",
+        "cod_seg": ""
+    },
+    {
+        "cod_sgp": "07017",
+        "nom_sgp": "ADENOVIRUS (HECES)",
+        "cod_seg": ""
+    },
+    {
+        "cod_sgp": "07018",
+        "nom_sgp": "ADENOVIRUS, ANTICUERPOS IGG",
+        "cod_seg": ""
+    },
+    {
+        "cod_sgp": "07019",
+        "nom_sgp": "ADENOVIRUS, ANTICUERPOS IGM",
+        "cod_seg": ""
+    },
+    {
+        "cod_sgp": "08061",
+        "nom_sgp": "AFP MATERNA (RIESGO FETAL I)",
+        "cod_seg": ""
+    },
+    {
+        "cod_sgp": "01030",
+        "nom_sgp": "AGREGACION PLAQUETARIA",
+        "cod_seg": ""
+    },
+    {
+        "cod_sgp": "08062",
+        "nom_sgp": "ALCOHOL ETILICO (SANGRE)",
+        "cod_seg": ""
+    },
+    {
+        "cod_sgp": "04141",
+        "nom_sgp": "INMUNOGLOBULINA D (IGD)",
+        "cod_seg": ""
+    },
+    {
+        "cod_sgp": "04142",
+        "nom_sgp": "ALCOHOL METILICO (SANGRE)",
+        "cod_seg": ""
+    },
+    {
+        "cod_sgp": "03110",
+        "nom_sgp": "ALDOLASA",
+        "cod_seg": ""
+    },
+    {
+        "cod_sgp": "04143",
+        "nom_sgp": "ALDOSTERONA (ORINA 24H)",
+        "cod_seg": ""
+    },
+    {
+        "cod_sgp": "04144",
+        "nom_sgp": "ALDOSTERONA SERICA",
+        "cod_seg": ""
+    },
+    {
+        "cod_sgp": "03111",
+        "nom_sgp": "ALFA GLUCOSIDASA (SEMEN)",
+        "cod_seg": ""
+    },
+    {
+        "cod_sgp": "04145",
+        "nom_sgp": "ALFA-1 ANTITRIPSINA",
+        "cod_seg": ""
+    },
+    {
+        "cod_sgp": "01031",
+        "nom_sgp": "ALFA-2 ANTIPLASMINA",
+        "cod_seg": ""
+    },
+    {
+        "cod_sgp": "04146",
+        "nom_sgp": "ALFA-2 MACROGLOBULINA",
+        "cod_seg": ""
+    },
+    {
+        "cod_sgp": "03112",
+        "nom_sgp": "ALUMINIO SERICO",
+        "cod_seg": ""
+    },
+    {
+        "cod_sgp": "06003",
+        "nom_sgp": "AMEBAS, EXAMEN DIRECTO (EN FRESCO))",
+        "cod_seg": ""
+    },
+    {
+        "cod_sgp": "03113",
+        "nom_sgp": "AMILASA (ORINA 12H)",
+        "cod_seg": ""
+    },
+    {
+        "cod_sgp": "03114",
+        "nom_sgp": "AMILASA, ISOENZIMAS",
+        "cod_seg": ""
+    },
+    {
+        "cod_sgp": "03115",
+        "nom_sgp": "AMILOIDE A (SAA-1)",
+        "cod_seg": ""
+    },
+    {
+        "cod_sgp": "03116",
+        "nom_sgp": "AMIODARONA SERICA",
+        "cod_seg": ""
+    },
+    {
+        "cod_sgp": "04147",
+        "nom_sgp": "AMONIO PLASMATICO",
+        "cod_seg": ""
+    },
+    {
+        "cod_sgp": "04148",
+        "nom_sgp": "ANDROSTANDIOL  GLUCURONIDO  (3  ALFA)",
+        "cod_seg": ""
+    },
+    {
+        "cod_sgp": "04149",
+        "nom_sgp": "ANDROSTENEDIONA",
+        "cod_seg": ""
+    },
+    {
+        "cod_sgp": "03117",
+        "nom_sgp": "ANFETAMINAS (ORINA SIMPLE)",
+        "cod_seg": ""
+    },
+    {
+        "cod_sgp": "04150",
+        "nom_sgp": "ANTI CORE TOTAL (HBC TOTAL)",
+        "cod_seg": ""
+    },
+    {
+        "cod_sgp": "04151",
+        "nom_sgp": "ANTI HBSAG CUANTITATIVO",
+        "cod_seg": ""
+    },
+    {
+        "cod_sgp": "04152",
+        "nom_sgp": "ANTI ISLOTE PANCREATICO",
+        "cod_seg": ""
+    },
+    {
+        "cod_sgp": "04153",
+        "nom_sgp": "ANTIFOSFOLÍPIDOS, (PANEL COMPLETO)",
+        "cod_seg": ""
+    },
+    {
+        "cod_sgp": "03118",
+        "nom_sgp": "ANTIMONIO (ORINA 24H)",
+        "cod_seg": ""
+    },
+    {
+        "cod_sgp": "03119",
+        "nom_sgp": "ANTIMONIO (ORINA SIMPLE)",
+        "cod_seg": ""
+    },
+    {
+        "cod_sgp": "03120",
+        "nom_sgp": "ANTIMONIO (SANGRE)",
+        "cod_seg": ""
+    },
+    {
+        "cod_sgp": "04154",
+        "nom_sgp": "ANTIOXIDANTES TOTALES (TAS)",
+        "cod_seg": ""
+    },
+
+    {
+        "cod_sgp": "04155",
+        "nom_sgp": "APOLIPOPROTEINA A1",
+        "cod_seg": ""
+    },
+    {
+        "cod_sgp": "04156",
+        "nom_sgp": "APOLIPOPROTEINA B",
+        "cod_seg": ""
+    },
+    {
+        "cod_sgp": "03121",
+        "nom_sgp": "ARSENICO (ORINA 24H)",
+        "cod_seg": ""
+    },
+    {
+        "cod_sgp": "03122",
+        "nom_sgp": "ARSENICO (ORINA SIMPLE)",
+        "cod_seg": ""
+    },
+    {
+        "cod_sgp": "03123",
+        "nom_sgp": "ARSENICO (SANGRE TOTAL)",
+        "cod_seg": ""
+    },
+    {
+        "cod_sgp": "03124",
+        "nom_sgp": "ARSENICO / CREATININA (ORINA 12H)",
+        "cod_seg": ""
+    },
+    {
+        "cod_sgp": "03125",
+        "nom_sgp": "ARSENICO / CREATININA (ORINA 24H)",
+        "cod_seg": ""
+    },
+    {
+        "cod_sgp": "03126",
+        "nom_sgp": "ARSENICO / CREATININA (ORINA SIMPLE)",
+        "cod_seg": ""
+    },
+    {
+        "cod_sgp": "03127",
+        "nom_sgp": "ARSENICO SERICO",
+        "cod_seg": ""
+    },
+    {
+        "cod_sgp": "04157",
+        "nom_sgp": "ASCA IGA (SACCHAROMYCES CEREVISIAE)",
+        "cod_seg": ""
+    },
+    {
+        "cod_sgp": "04158",
+        "nom_sgp": "ASCA IGG (SACCHAROMYCES CEREVISIAE)",
+        "cod_seg": ""
+    },
+    {
+        "cod_sgp": "04159",
+        "nom_sgp": "ASPERGILLUS, ANTICUERPOS IGG",
+        "cod_seg": ""
+    },
+    {
+        "cod_sgp": "03128",
+        "nom_sgp": "BARBITURICOS (ORINA)",
+        "cod_seg": ""
+    },
+    {
+        "cod_sgp": "04160",
+        "nom_sgp": "BARTONELLA BACILIFORME",
+        "cod_seg": ""
+    },
+    {
+        "cod_sgp": "04161",
+        "nom_sgp": "BENCENO / FENOLES TOTALES (ORINA 24H)",
+        "cod_seg": ""
+    },
+    {
+        "cod_sgp": "04162",
+        "nom_sgp": "BENCENO / FENOLES TOTALES (ORINA SIMPLE)",
+        "cod_seg": ""
+    },
+    {
+        "cod_sgp": "03129",
+        "nom_sgp": "BENZODIACEPINAS (ORINA SIMPLE)",
+        "cod_seg": ""
+    },
+    {
+        "cod_sgp": "03130",
+        "nom_sgp": "BENZODIACEPINAS (SANGRE TOTAL)",
+        "cod_seg": ""
+    },
+    {
+        "cod_sgp": "03131",
+        "nom_sgp": "BETA 2 MICROGLOBULINA (ORINA 24H)",
+        "cod_seg": ""
+    },
+    {
+        "cod_sgp": "03132",
+        "nom_sgp": "BETA 2 MICROGLOBULINA (ORINA SIMPLE)",
+        "cod_seg": ""
+    },
+    {
+        "cod_sgp": "04163",
+        "nom_sgp": "BETA HCG LIBRE",
+        "cod_seg": ""
+    },
+    {
+        "cod_sgp": "06020",
+        "nom_sgp": "BORDETELLA PERTUSSIS",
+        "cod_seg": ""
+    },
+    {
+        "cod_sgp": "03133",
+        "nom_sgp": "SODIO EN ORINA OCASIONAL",
+        "cod_seg": ""
+    },
+    {
+        "cod_sgp": "04164",
+        "nom_sgp": "BORRELIA BURGDORFERI, ANTICUERPOS IGG (L",
+        "cod_seg": ""
+    },
+    {
+        "cod_sgp": "04165",
+        "nom_sgp": "BORRELIA BURGDORFERI, ANTICUERPOS IGM (L",
+        "cod_seg": ""
+    },
+    {
+        "cod_sgp": "03134",
+        "nom_sgp": "SODIO EN RINA DE 24 HORAS",
+        "cod_seg": ""
+    },
+    {
+        "cod_sgp": "04166",
+        "nom_sgp": " BRUCELLA: ANTICUERPOS BLOQUEADORES",
+        "cod_seg": ""
+    },
+    {
+        "cod_sgp": "04167",
+        "nom_sgp": "BRUCELLA, ANTICUERPOS IGG",
+        "cod_seg": ""
+    },
+    {
+        "cod_sgp": "04168",
+        "nom_sgp": "BRUCELLA, ANTICUERPOS IGM",
+        "cod_seg": ""
+    },
+    {
+        "cod_sgp": "04169",
+        "nom_sgp": "C1 ESTERASA INHIBIDOR",
+        "cod_seg": ""
+    },
+    {
+        "cod_sgp": "04170",
+        "nom_sgp": "C1Q COMPLEMENTO",
+        "cod_seg": ""
+    },
+    {
+        "cod_sgp": "04171",
+        "nom_sgp": "C5 COMPLEMENTO",
+        "cod_seg": ""
+    },
+    {
+        "cod_sgp": "04172",
+        "nom_sgp": "C8 COMPLEMENTO",
+        "cod_seg": ""
+    },
+    {
+        "cod_sgp": "04173",
+        "nom_sgp": "CADENAS LIGERAS KAPPA LIBRES (SUERO)",
+        "cod_seg": ""
+    },
+    {
+        "cod_sgp": "04174",
+        "nom_sgp": "CADENAS LIGERAS LIBRES KAPPA/LAMBDA (SUE",
+        "cod_seg": ""
+    },
+    {
+        "cod_sgp": "03135",
+        "nom_sgp": "CADMIO (ORINA 24H)",
+        "cod_seg": ""
+    },
+    {
+        "cod_sgp": "03136",
+        "nom_sgp": "CADMIO (ORINA)",
+        "cod_seg": ""
+    },
+    {
+        "cod_sgp": "04175",
+        "nom_sgp": "CADMIO (SUERO)",
+        "cod_seg": ""
+    },
+    {
+        "cod_sgp": "03137",
+        "nom_sgp": "CADMIO / CREATININA (ORINA 12H)",
+        "cod_seg": ""
+    },
+    {
+        "cod_sgp": "03138",
+        "nom_sgp": "CADMIO / CREATININA (ORINA 24H)",
+        "cod_seg": ""
+    },
+    {
+        "cod_sgp": "03139",
+        "nom_sgp": "CADMIO / CREATININA (ORINA OCASIONAL",
+        "cod_seg": ""
+    },
+    {
+        "cod_sgp": "03140",
+        "nom_sgp": "CALCIO (ORINA OCASIONAL)",
+        "cod_seg": ""
+    },
+    {
+        "cod_sgp": "08063",
+        "nom_sgp": "CALPROTECTINA (HECES)",
+        "cod_seg": ""
+    },
+    {
+        "cod_sgp": "04176",
+        "nom_sgp": "CAMPYLOBACTER JEJUNI, ANTICUERPOS",
+        "cod_seg": ""
+    },
+    {
+        "cod_sgp": "03141",
+        "nom_sgp": "CARBAMATOS",
+        "cod_seg": ""
+    },
+    {
+        "cod_sgp": "03142",
+        "nom_sgp": "CARBOXIHEMOGLOBINA",
+        "cod_seg": "  .  ."
+    },
+    {
+        "cod_sgp": "04177",
+        "nom_sgp": "CARDIOLIPINA, ANTICUERPOS IGA",
+        "cod_seg": ""
+    },
+    {
+        "cod_sgp": "04178",
+        "nom_sgp": "CARNITINA TOTAL - DOSAJE",
+        "cod_seg": ""
+    },
+    {
+        "cod_sgp": "04179",
+        "nom_sgp": "CATECOLAMINAS FRACCIONADAS (ORINA 24H)",
+        "cod_seg": ""
+    },
+    {
+        "cod_sgp": "04180",
+        "nom_sgp": "CATECOLAMINAS FRACCIONADAS (PLASMA)",
+        "cod_seg": ""
+    },
+    {
+        "cod_sgp": "04181",
+        "nom_sgp": "CATECOLAMINAS LIBRES (ORINA 24H)",
+        "cod_seg": ""
+    },
+    {
+        "cod_sgp": "08064",
+        "nom_sgp": "CELULA PARIETAL GASTRICA, ANTICUERPOS",
+        "cod_seg": ""
+    },
+    {
+        "cod_sgp": "04182",
+        "nom_sgp": "CENTROMERO B",
+        "cod_seg": ""
+    },
+    {
+        "cod_sgp": "04183",
+        "nom_sgp": "INMUNOGLOBULINA G, SUBCLASES",
+        "cod_seg": ""
+    },
+    {
+        "cod_sgp": "04184",
+        "nom_sgp": "INSULINA, ANTICUERPOS",
+        "cod_seg": ""
+    },
+    {
+        "cod_sgp": "04185",
+        "nom_sgp": "IODO PROTEICO",
+        "cod_seg": ""
+    },
+    {
+        "cod_sgp": "04186",
+        "nom_sgp": "JO, ANTICUERPOS",
+        "cod_seg": ""
+    },
+    {
+        "cod_sgp": "04187",
+        "nom_sgp": "LEGIONELLA PNEUMOPHILA, ANTICUERPOS IGG",
+        "cod_seg": ""
+    },
+    {
+        "cod_sgp": "04188",
+        "nom_sgp": "LEGIONELLA SP. ANTIGENO",
+        "cod_seg": ""
+    },
+    {
+        "cod_sgp": "04189",
+        "nom_sgp": "ANTICUERPO IGG CONTRA LEISHMANIA DONOVAN",
+        "cod_seg": ""
+    },
+    {
+        "cod_sgp": "04190",
+        "nom_sgp": "ANTICUERPO IGM CONTRA LEISHMANIA DONOVAN",
+        "cod_seg": ""
+    },
+    {
+        "cod_sgp": "04191",
+        "nom_sgp": "ANTICUERPO IGG; LEPTOSPIRA",
+        "cod_seg": ""
+    },
+    {
+        "cod_sgp": "04192",
+        "nom_sgp": "ANTICUERPO IGM; LEPTOSPIRA",
+        "cod_seg": ""
+    },
+    {
+        "cod_sgp": "04193",
+        "nom_sgp": "LIPIDOGRAMA",
+        "cod_seg": ""
+    },
+    {
+        "cod_sgp": "04194",
+        "nom_sgp": "DOSAJE DE LIPOPROTEINA (A)",
+        "cod_seg": ""
+    },
+    {
+        "cod_sgp": "03143",
+        "nom_sgp": "TEST DE ADDIS",
+        "cod_seg": ""
+    },
+    {
+        "cod_sgp": "04195",
+        "nom_sgp": "INMUNOFIJACION SUERO",
+        "cod_seg": ""
+    },
+    {
+        "cod_sgp": "04196",
+        "nom_sgp": "HORMONA DE CRECIMIENTO HUMANA (HGH / SOM",
+        "cod_seg": ""
+    },
+    {
+        "cod_sgp": "03144",
+        "nom_sgp": "TOLERANCIA A LA GLUCOSA 4 TOMAS",
+        "cod_seg": "33.01.30"
+    },
+    {
+        "cod_sgp": "04197",
+        "nom_sgp": "VITAMINA D (1,25 - DIHIDROXI)",
+        "cod_seg": ""
+    },
+    {
+        "cod_sgp": "03145",
+        "nom_sgp": "OSMOLARIDAD URINARIA",
+        "cod_seg": ""
+    },
+    {
+        "cod_sgp": "04198",
+        "nom_sgp": "VARICELA SOSTER, ANTICUERPOS IGG",
+        "cod_seg": ""
+    },
+    {
+        "cod_sgp": "04199",
+        "nom_sgp": "TRANSGLUTAMINASA TISULAR IGG",
+        "cod_seg": ""
+    },
+    {
+        "cod_sgp": "04200",
+        "nom_sgp": "VITAMNINA B-1 (TIAMINA)",
+        "cod_seg": ""
+    },
+    {
+        "cod_sgp": "04201",
+        "nom_sgp": "VITAMINA B2 (RIBOFLAVINA)",
+        "cod_seg": ""
+    },
+    {
+        "cod_sgp": "04202",
+        "nom_sgp": "CROMOGRANINA A",
+        "cod_seg": ""
+    },
+    {
+        "cod_sgp": "03146",
+        "nom_sgp": "GLUCOSA 6P DEHIDROG.",
+        "cod_seg": ""
+    },
+    {
+        "cod_sgp": "03147",
+        "nom_sgp": "HAPTOGLOBINA",
+        "cod_seg": ""
+    },
+    {
+        "cod_sgp": "03148",
+        "nom_sgp": "FTA ABS - IGM",
+        "cod_seg": ""
+    },
+    {
+        "cod_sgp": "04203",
+        "nom_sgp": "COLINESTERASA SERICA",
+        "cod_seg": ""
+    },
+    {
+        "cod_sgp": "14006",
+        "nom_sgp": "CONTEO DE EOSINOFILOS",
+        "cod_seg": ""
+    },
+    {
+        "cod_sgp": "04204",
+        "nom_sgp": "MIOGLOBINA",
+        "cod_seg": ""
+    },
+    {
+        "cod_sgp": "03149",
+        "nom_sgp": "ALBUMINA SERICA",
+        "cod_seg": ""
+    },
+    {
+        "cod_sgp": "X001",
+        "nom_sgp": "HEAPTITIS E IGG",
+        "cod_seg": ""
+    },
+    {
+        "cod_sgp": "03150",
+        "nom_sgp": "HEPATITIS E IGM",
+        "cod_seg": ""
+    },
+    {
+        "cod_sgp": "07020",
+        "nom_sgp": "HELICOBACTER EN HECES (PRUEBA RAPIDA)",
+        "cod_seg": ""
+    },
+    {
+        "cod_sgp": "04205",
+        "nom_sgp": "DOSAJE DE LAMOTRIGINIA",
+        "cod_seg": ""
+    },
+    {
+        "cod_sgp": "03151",
+        "nom_sgp": "CORTISOL PM",
+        "cod_seg": ""
+    },
+    {
+        "cod_sgp": "04206",
+        "nom_sgp": "ANTI SCL 70",
+        "cod_seg": ""
+    }
 ]

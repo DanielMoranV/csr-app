@@ -1,6 +1,7 @@
 <script setup>
 import { users as usersApi } from '@/api'; // Import users API directly
 import { apiUtils } from '@/api/axios';
+import labTestsData from '@/data/laboratorio.json';
 import { useTasksStore } from '@/store/tasksStore';
 import { useUsersStore } from '@/store/usersStore';
 import { storeToRefs } from 'pinia';
@@ -195,20 +196,46 @@ const updateDescriptionWithLabTests = () => {
         return;
     }
 
-    // Create a formatted list of lab tests
-    const testsList = selectedLabTests.value
-        .map((test) => {
-            const code = test.cod_seg ? ` (${test.cod_seg})` : '';
-            return `• ${test.nom_sgp}${code}`;
-        })
-        .join('\n');
+    // Group items by category
+    const grouped = selectedLabTests.value.reduce((acc, item) => {
+        const cat = item.category || 'Varios';
+        if (!acc[cat]) acc[cat] = [];
+        acc[cat].push(item);
+        return acc;
+    }, {});
+
+    // Build the formatted list
+    let testsList = '';
+    for (const category in grouped) {
+        const header = category.replace(/_/g, ' ').toUpperCase();
+        testsList += `${header}:\n`;
+
+        const items = grouped[category]
+            .map((test) => {
+                let text = `• ${test.nom_sgp}`;
+                if (test.isProfile && test.description) {
+                    text += ` (${test.description})`;
+                }
+                return text;
+            })
+            .join('\n');
+
+        testsList += items + '\n\n';
+    }
+    testsList = testsList.trim(); // Remove trailing newlines
 
     // Get current description without test list
     let currentDesc = task.value.description || '';
 
-    // Remove old lists if exists (lines starting with •)
+    // Identify known headers to strip
+    const knownHeaders = Object.keys(labTestsData).map((k) => k.replace(/_/g, ' ').toUpperCase() + ':');
+
+    // Remove old lists if exists (lines starting with • or known headers)
     const lines = currentDesc.split('\n');
-    const nonListLines = lines.filter((line) => !line.trim().startsWith('•'));
+    const nonListLines = lines.filter((line) => {
+        const trimmed = line.trim();
+        return !trimmed.startsWith('•') && !knownHeaders.includes(trimmed);
+    });
     const baseDescription = nonListLines.join('\n').trim();
 
     // Combine base description with new tests list
@@ -239,6 +266,7 @@ watch(
 );
 
 // Watch for lab test deselection through description editing
+// Watch for lab test deselection through description editing
 watch(
     () => task.value.description,
     (newDesc) => {
@@ -246,14 +274,15 @@ watch(
 
         // Check if any selected test was removed from description
         const removedTests = selectedLabTests.value.filter((test) => {
-            const code = test.cod_seg ? ` (${test.cod_seg})` : '';
-            const testText = `• ${test.nom_sgp}${code}`;
+            // Match exactly the formatted string used in description
+            const testText = `• ${test.nom_sgp}`;
             return !newDesc.includes(testText);
         });
 
         if (removedTests.length > 0) {
             // Remove from selected tests
-            selectedLabTests.value = selectedLabTests.value.filter((test) => !removedTests.find((removed) => removed.cod_sgp === test.cod_sgp));
+            // Use unique ID if available, otherwise fallback to nom_sgp matching
+            selectedLabTests.value = selectedLabTests.value.filter((test) => !removedTests.find((removed) => (test.id && removed.id ? test.id === removed.id : test.nom_sgp === removed.nom_sgp)));
         }
     }
 );
