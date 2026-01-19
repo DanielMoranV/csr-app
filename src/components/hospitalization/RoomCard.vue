@@ -391,6 +391,7 @@ const hasPendingTasks = (bed) => {
                             </div>
                             <div class="bed-alerts">
                                 <i v-if="bed.notes" class="pi pi-file-edit text-info" title="Tiene notas"></i>
+                                <i v-if="!bed.attention.cie10 || bed.attention.cie10.length === 0" class="pi pi-exclamation-circle text-red-600 text-2xl blink-icon" v-tooltip.top="'atencion sin diagnostico cie10'"></i>
                                 <i v-if="hasDetailField(bed.attention.details, 'ram')" class="pi pi-exclamation-circle text-warning" title="Tiene RAM registradas"></i>
                                 <i v-if="!bed.attention.discharge_date && !bed.attention.exit_date" class="pi pi-exclamation-triangle text-danger" title="Sin alta/salida registrada"></i>
                                 <Badge v-if="getPendingTasksCount(bed.attention.tasks)" :value="getPendingTasksCount(bed.attention.tasks)" severity="danger" size="small" v-tooltip.top="getTasksTooltip(bed.attention.tasks)" />
@@ -742,6 +743,22 @@ const hasPendingTasks = (bed) => {
 .bed-indicator:hover {
     transform: translateY(-2px);
     box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+}
+
+.blink-icon {
+    animation: blink-red 1.5s infinite;
+}
+
+@keyframes blink-red {
+    0% {
+        opacity: 1;
+    }
+    50% {
+        opacity: 0.3;
+    }
+    100% {
+        opacity: 1;
+    }
 }
 
 .bed-indicator--occupied {
