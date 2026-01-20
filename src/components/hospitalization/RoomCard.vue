@@ -391,7 +391,10 @@ const hasPendingTasks = (bed) => {
                             </div>
                             <div class="bed-alerts">
                                 <i v-if="bed.notes" class="pi pi-file-edit text-info" title="Tiene notas"></i>
-                                <i v-if="!bed.attention.cie10 || bed.attention.cie10.length === 0" class="pi pi-exclamation-circle text-red-600 text-2xl blink-icon" v-tooltip.top="'atencion sin diagnostico cie10'"></i>
+                                <span v-if="!bed.attention.cie10 || bed.attention.cie10.length === 0" class="cie10-alert-container" v-tooltip.top="'atencion sin diagnostico cie10'">
+                                    <i class="pi pi-exclamation-circle text-red-600 text-2xl blink-icon"></i>
+                                    <span class="cie10-alert-label">Dx</span>
+                                </span>
                                 <i v-if="hasDetailField(bed.attention.details, 'ram')" class="pi pi-exclamation-circle text-warning" title="Tiene RAM registradas"></i>
                                 <i v-if="!bed.attention.discharge_date && !bed.attention.exit_date" class="pi pi-exclamation-triangle text-danger" title="Sin alta/salida registrada"></i>
                                 <Badge v-if="getPendingTasksCount(bed.attention.tasks)" :value="getPendingTasksCount(bed.attention.tasks)" severity="danger" size="small" v-tooltip.top="getTasksTooltip(bed.attention.tasks)" />
@@ -759,6 +762,19 @@ const hasPendingTasks = (bed) => {
     100% {
         opacity: 1;
     }
+}
+
+.cie10-alert-container {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.25rem;
+}
+
+.cie10-alert-label {
+    font-size: 0.875rem;
+    font-weight: 700;
+    color: #dc2626;
+    animation: blink-red 1.5s infinite;
 }
 
 .bed-indicator--occupied {
