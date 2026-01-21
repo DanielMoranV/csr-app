@@ -665,7 +665,7 @@ export function useMedicalFees() {
                         // Manejar formato "YYYY-MM-DD HH:MM:SS" o ISO "YYYY-MM-DDTHH:MM:SS.000Z"
                         const parts = apiService.service_datetime.replace('T', ' ').replace('Z', '').split(' ');
                         date = parts[0];
-                        time = parts[1] ? parts[1].split('.')[0] : ''; // Quitar milisegundos si existen
+                        time = parts[1] ? parts[1].split(/[.+-]/)[0] : ''; // Quitar milisegundos y zona horaria
                     }
 
                     let doctor = apiService.doctor;

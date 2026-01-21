@@ -1,6 +1,6 @@
 <script setup>
 import { GLOBAL_FILTER_FIELDS, PAGINATION_CONFIG, STATUS_OPTIONS } from '@/utils/medicalFees/constants';
-import { getStatusColor, getStatusLabel, getTypeColor } from '@/utils/medicalFees/formatters';
+import { formatDate, formatTime, getStatusColor, getStatusLabel, getTypeColor } from '@/utils/medicalFees/formatters';
 import Card from 'primevue/card';
 import Column from 'primevue/column';
 import DataTable from 'primevue/datatable';
@@ -196,8 +196,8 @@ function handleCellEditComplete(event) {
                 <!-- Fecha y Hora -->
                 <Column header="Fecha y Hora" sortable field="date" style="min-width: 150px">
                     <template #body="slotProps">
-                        {{ slotProps.data.date }} <br />
-                        <small class="text-gray-500">{{ slotProps.data.time }}</small>
+                        {{ formatDate(slotProps.data.date) }} <br />
+                        <small class="text-gray-500">{{ formatTime(slotProps.data.time) }}</small>
                     </template>
                 </Column>
 

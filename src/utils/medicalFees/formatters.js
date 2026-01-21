@@ -58,6 +58,35 @@ export function formatDateTime(date) {
 }
 
 /**
+ * Formatea solo la hora de una fecha en formato local (es-PE)
+ * @param {Date|string} date - Fecha/Hora a formatear
+ * @returns {string} Hora formateada (ej: 12:00:00 PM)
+ */
+export function formatTime(date) {
+    if (!date) return '';
+
+    let dateObj;
+    if (typeof date === 'string') {
+        // Reemplazar espacio por T para formato ISO si es necesario (mayor compatibilidad)
+        // Ejemplo: "2025-12-31 12:06:31-05:00" -> "2025-12-31T12:06:31-05:00"
+        const isoDate = date.trim().replace(' ', 'T');
+        dateObj = new Date(isoDate);
+    } else {
+        dateObj = date;
+    }
+
+    // Si no es una fecha válida, devolvemos el valor original (o cadena vacía si se prefiere)
+    if (isNaN(dateObj.getTime())) return typeof date === 'string' ? date : '';
+
+    return dateObj.toLocaleTimeString('es-PE', {
+        hour: '2-digit',
+        minute: '2-digit',
+        second: '2-digit',
+        hour12: true
+    });
+}
+
+/**
  * Obtiene el color de severidad para un tipo de servicio
  * @param {string} type - Tipo de servicio (PLANILLA, RETEN)
  * @returns {string} Color de severidad de PrimeVue
