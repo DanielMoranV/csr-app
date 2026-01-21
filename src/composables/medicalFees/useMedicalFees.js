@@ -706,7 +706,25 @@ export function useMedicalFees() {
                             comprobante: apiService.receipt_number,
                             area: apiService.area,
                             cod_seg: apiService.insurance_code || apiService.segus_code
-                        }
+                        },
+                        // Nuevos campos detallados
+                        digitalHistory: apiService.historia_digital
+                            ? {
+                                  story: apiService.historia_digital.relato,
+                                  reason: apiService.historia_digital.motivo_consulta,
+                                  hasSignature: apiService.historia_digital.firma_digital,
+                                  createdAt: apiService.historia_digital.fecha_hora_creacion,
+                                  updatedAt: apiService.historia_digital.fecha_hora_modificacion
+                              }
+                            : null,
+                        shift: apiService.turno_atencion
+                            ? {
+                                  number: apiService.turno_atencion.numero_turno,
+                                  type: apiService.turno_atencion.tipo_turno,
+                                  status: apiService.turno_atencion.estado_turno,
+                                  date: apiService.turno_atencion.fecha_hora_turno
+                              }
+                            : null
                     };
                 });
 

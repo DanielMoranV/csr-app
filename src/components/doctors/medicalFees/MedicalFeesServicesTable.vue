@@ -1,6 +1,6 @@
 <script setup>
 import { GLOBAL_FILTER_FIELDS, PAGINATION_CONFIG, STATUS_OPTIONS } from '@/utils/medicalFees/constants';
-import { formatDate, formatTime, getStatusColor, getStatusLabel, getTypeColor } from '@/utils/medicalFees/formatters';
+import { formatDate, formatDateTime, formatTime, getAttentionTypeDetails, getStatusColor, getStatusLabel, getTypeColor, truncateText } from '@/utils/medicalFees/formatters';
 import Card from 'primevue/card';
 import Column from 'primevue/column';
 import DataTable from 'primevue/datatable';
@@ -115,6 +115,29 @@ function confirmDelete() {
     showDeleteDialog.value = false;
 }
 
+/**
+ * Obtiene el tooltip para la historia digital
+ */
+function getHistoryTooltip(history) {
+    if (!history) return 'Sin historia digital';
+    return `
+        Motivo: ${truncateText(history.reason || 'No especificado', 40)}
+        Relato: ${truncateText(history.story || 'No especificado', 80)}
+    `;
+}
+
+/**
+ * Obtiene el tooltip para el turno
+ */
+function getShiftTooltip(shift) {
+    if (!shift) return 'Sin turno asociado';
+    return `
+        N° Turno: ${shift.number}
+        Tipo: ${shift.type}
+        Estado: ${shift.status}
+    `;
+}
+
 function handleCellEditComplete(event) {
     emit('cell-edit-complete', event);
 }
@@ -183,6 +206,15 @@ function handleCellEditComplete(event) {
                     </template>
                 </Column>
 
+                <!-- Firma Digital (Nueva Columna) -->
+                <Column header="F" style="width: 3rem; text-align: center">
+                    <template #body="slotProps">
+                        <i v-if="slotProps.data.digitalHistory?.hasSignature" class="pi pi-verified text-green-500 text-xl cursor-pointer" v-tooltip.left="getHistoryTooltip(slotProps.data.digitalHistory)"></i>
+                        <i v-else-if="slotProps.data.digitalHistory" class="pi pi-exclamation-circle text-orange-500 text-xl cursor-pointer" v-tooltip.left="getHistoryTooltip(slotProps.data.digitalHistory) + '\n(Sin Firma Digital)'"></i>
+                        <i v-else class="pi pi-times-circle text-gray-400 text-xl" v-tooltip.left="'Sin historia digital'"></i>
+                    </template>
+                </Column>
+
                 <!-- Paciente -->
                 <Column field="patientName" header="Paciente" sortable style="min-width: 200px">
                     <template #body="slotProps">
@@ -198,6 +230,12 @@ function handleCellEditComplete(event) {
                     <template #body="slotProps">
                         {{ formatDate(slotProps.data.date) }} <br />
                         <small class="text-gray-500">{{ formatTime(slotProps.data.time) }}</small>
+
+                        <!-- Iconos de fechas adicionales -->
+                        <div class="flex gap-2 mt-1">
+                            <i v-if="slotProps.data.digitalHistory" class="pi pi-file text-primary cursor-pointer text-sm" v-tooltip.top="'Historia: ' + formatDateTime(slotProps.data.digitalHistory.createdAt)"></i>
+                            <i v-if="slotProps.data.shift" class="pi pi-ticket text-orange-500 cursor-pointer text-sm" v-tooltip.top="'Turno (' + slotProps.data.shift.number + '): ' + formatDateTime(slotProps.data.shift.date)"></i>
+                        </div>
                     </template>
                 </Column>
 
@@ -238,13 +276,15 @@ function handleCellEditComplete(event) {
                     </template>
                 </Column>
 
-                <!-- Tipo Ate -->
-                <Column field="tipoate" header="Tipo Ate" sortable style="min-width: 120px">
+                <!-- Tipo Ate (Optimizado) -->
+                <Column field="tipoate" header="T. Ate" sortable style="width: 4rem; text-align: center">
                     <template #body="slotProps">
-                        {{ slotProps.data.tipoate }}
+                        <div class="flex justify-content-center">
+                            <i :class="[getAttentionTypeDetails(slotProps.data.tipoate).icon, getAttentionTypeDetails(slotProps.data.tipoate).color, 'text-xl cursor-pointer']" v-tooltip.top="getAttentionTypeDetails(slotProps.data.tipoate).label"></i>
+                        </div>
                     </template>
                     <template #filter="{ filterModel }">
-                        <InputText v-model="filterModel.value" type="text" class="p-column-filter" placeholder="Buscar por tipo ate" />
+                        <InputText v-model="filterModel.value" type="text" class="p-column-filter" placeholder="Buscar" />
                     </template>
                 </Column>
 

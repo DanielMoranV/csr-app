@@ -180,3 +180,16 @@ export function formatDoctorCode(doctor) {
     if (!doctor) return 'N/A';
     return doctor.code || 'SIN_CODIGO';
 }
+
+/**
+ * Obtiene el color para el tipo de atención
+ * @param {string} type - Tipo de atención (AMBULATORIO, HOSPITALARIO, EMERGENCIA)
+ * @returns {object} - Objeto con icono, color y etiqueta
+ */
+export function getAttentionTypeDetails(type) {
+    const normalized = String(type || '').toUpperCase();
+    if (normalized.includes('AMBULATORIO')) return { icon: 'pi pi-user', color: 'text-blue-500', label: type };
+    if (normalized.includes('HOSPITALARIO')) return { icon: 'pi pi-building', color: 'text-purple-500', label: type };
+    if (normalized.includes('EMERGENCIA')) return { icon: 'pi pi-heart-fill', color: 'text-red-500', label: type };
+    return { icon: 'pi pi-cog', color: 'text-gray-500', label: type || 'Desconocido' };
+}
