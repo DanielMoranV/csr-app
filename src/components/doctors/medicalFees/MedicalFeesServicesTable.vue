@@ -218,7 +218,7 @@ function handleCellEditComplete(event) {
                 <!-- Paciente -->
                 <Column field="patientName" header="Paciente" sortable style="min-width: 200px">
                     <template #body="slotProps">
-                        <div class="font-medium">{{ slotProps.data.patientName || 'N/A' }}</div>
+                        <div class="font-medium text-sm">{{ slotProps.data.patientName || 'N/A' }}</div>
                     </template>
                     <template #filter="{ filterModel }">
                         <InputText v-model="filterModel.value" type="text" class="p-column-filter" placeholder="Buscar paciente" />
@@ -242,7 +242,7 @@ function handleCellEditComplete(event) {
                 <!-- Médico -->
                 <Column field="doctor.name" header="Médico" sortable style="min-width: 200px">
                     <template #body="slotProps">
-                        <div class="font-medium">{{ slotProps.data.doctor?.name || 'N/A' }}</div>
+                        <div class="font-medium text-sm">{{ slotProps.data.doctor?.name || 'N/A' }}</div>
                     </template>
                     <template #filter="{ filterModel }">
                         <InputText v-model="filterModel.value" type="text" class="p-column-filter" placeholder="Buscar por médico" />
@@ -253,7 +253,7 @@ function handleCellEditComplete(event) {
                 <Column field="rawData.segus" header="Servicio Medico" sortable style="min-width: 200px">
                     <template #body="slotProps">
                         <div style="display: flex; flex-direction: column; gap: 2px">
-                            <span class="font-semibold" style="font-size: 0.875rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 180px" v-tooltip.top="slotProps.data.generalTariff?.name">
+                            <span class="font-semibold text-sm" style="white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 180px" v-tooltip.top="slotProps.data.generalTariff?.name">
                                 {{ slotProps.data.generalTariff?.name || 'N/A' }}
                             </span>
                             <span style="font-size: 0.75rem; color: #6c757d">
@@ -269,7 +269,7 @@ function handleCellEditComplete(event) {
                 <!-- Cia -->
                 <Column field="cia" header="Cia" sortable style="min-width: 120px">
                     <template #body="slotProps">
-                        {{ slotProps.data.cia }}
+                        <span class="text-sm">{{ slotProps.data.cia }}</span>
                     </template>
                     <template #filter="{ filterModel }">
                         <InputText v-model="filterModel.value" type="text" class="p-column-filter" placeholder="Buscar por cia" />
