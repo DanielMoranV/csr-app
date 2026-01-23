@@ -264,11 +264,14 @@ const isSyncing = ref(false);
 // Orquestar migración
 const orchestrateMigration = (event) => {
     confirm.require({
-        target: event.currentTarget,
-        message: '¿Estás seguro de que deseas sincronizar las hospitalizaciones? Esto puede tomar unos segundos.',
-        icon: 'pi pi-exclamation-triangle',
-        acceptLabel: 'Sí, sincronizar',
+        header: 'Sincronización con Sisclin',
+        message: 'Se actualizarán las hospitalizaciones de los últimos 7 días desde Sisclin. ¿Deseas continuar?',
+        icon: 'pi pi-refresh',
+        acceptIcon: 'pi pi-check',
+        rejectIcon: 'pi pi-times',
+        acceptLabel: 'Sincronizar',
         rejectLabel: 'Cancelar',
+        acceptClass: 'p-button-primary',
         accept: async () => {
             isSyncing.value = true;
             try {
