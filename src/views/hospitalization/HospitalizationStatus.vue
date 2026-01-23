@@ -1,4 +1,5 @@
 <script setup>
+import { migrations } from '@/api/migrations';
 import RoomCard from '@/components/hospitalization/RoomCard.vue';
 import { useRealtimeEvents } from '@/composables/useRealtimeEvents';
 import { useHospitalizationStore } from '@/store/hospitalizationStore';
@@ -10,6 +11,8 @@ import Card from 'primevue/card';
 import Checkbox from 'primevue/checkbox';
 import Select from 'primevue/select';
 import Tag from 'primevue/tag';
+import { useConfirm } from 'primevue/useconfirm';
+import { useToast } from 'primevue/usetoast';
 import { computed, onMounted, onUnmounted, ref } from 'vue';
 import { useRouter } from 'vue-router';
 
@@ -254,6 +257,65 @@ const handleRefreshFromChild = async () => {
 };
 
 const refreshInterval = ref(null);
+const toast = useToast();
+const confirm = useConfirm();
+const isSyncing = ref(false);
+
+// Orquestar migración
+const orchestrateMigration = (event) => {
+    confirm.require({
+        target: event.currentTarget,
+        message: '¿Estás seguro de que deseas sincronizar las hospitalizaciones? Esto puede tomar unos segundos.',
+        icon: 'pi pi-exclamation-triangle',
+        acceptLabel: 'Sí, sincronizar',
+        rejectLabel: 'Cancelar',
+        accept: async () => {
+            isSyncing.value = true;
+            try {
+                // Por defecto sincronizamos los últimos 7 días como dice la documentación recomendada
+                const response = await migrations.orchestrateHospitalizations({ days_back: 7 });
+
+                if (response.status === 'completed') {
+                    toast.add({
+                        severity: 'success',
+                        summary: 'Sincronización Exitosa',
+                        detail: 'Las hospitalizaciones han sido sincronizadas correctamente.',
+                        life: 3000
+                    });
+
+                    // Refrescar datos después de una sincronización exitosa
+                    await refreshData();
+                } else {
+                    toast.add({
+                        severity: 'warn',
+                        summary: 'Atención',
+                        detail: 'El proceso finalizó pero con un estado inesperado: ' + response.status,
+                        life: 5000
+                    });
+                }
+            } catch (error) {
+                console.error('Error durante la sincronización:', error);
+
+                // Extraer mensaje de error si está disponible
+                let errorDetails = 'Ocurrió un error al intentar sincronizar las hospitalizaciones.';
+                if (error.response && error.response.data && error.response.data.message) {
+                    errorDetails = error.response.data.message;
+                } else if (error.message) {
+                    errorDetails = error.message;
+                }
+
+                toast.add({
+                    severity: 'error',
+                    summary: 'Error de Sincronización',
+                    detail: errorDetails,
+                    life: 5000
+                });
+            } finally {
+                isSyncing.value = false;
+            }
+        }
+    });
+};
 
 onMounted(async () => {
     await store.fetchHospitalizationStatus();
@@ -314,6 +376,7 @@ onUnmounted(() => {
                         :class="{ 'smart-sort-active': smartSortEnabled }"
                     />
                     <Button icon="pi pi-refresh" :loading="state.isLoading" @click="refreshData" severity="secondary" outlined v-tooltip.bottom="'Actualizar datos manualmente'" />
+                    <Button icon="pi pi-sync" label="Sincronizar" :loading="isSyncing" @click="orchestrateMigration" severity="primary" v-tooltip.bottom="'Sincronizar hospitalizaciones desde Sisclin'" />
                     <Button :icon="showFilters ? 'pi pi-filter-slash' : 'pi pi-filter'" @click="showFilters = !showFilters" severity="secondary" outlined v-tooltip.bottom="showFilters ? 'Ocultar filtros' : 'Mostrar filtros'" />
                     <Button :icon="showStats ? 'pi pi-eye-slash' : 'pi pi-eye'" @click="showStats = !showStats" severity="secondary" outlined v-tooltip.bottom="showStats ? 'Ocultar estadísticas' : 'Mostrar estadísticas'" />
                 </div>
