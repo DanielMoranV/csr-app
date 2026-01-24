@@ -8,12 +8,16 @@ import { usePermissions, USER_POSITIONS } from '@/composables/usePermissions';
 import { useRealtimeEvents } from '@/composables/useRealtimeEvents';
 import { useHospitalAttentionsStore } from '@/store/hospitalAttentionsStore';
 import { FilterMatchMode } from '@primevue/core/api';
+import { useConfirm } from 'primevue/useconfirm';
+import { useToast } from 'primevue/usetoast';
 import { computed, onMounted, onUnmounted, ref, watch } from 'vue';
 
 const hospitalAttentionsStore = useHospitalAttentionsStore();
 const { startListening, stopListening } = useRealtimeEvents();
 const { hasPosition } = usePermissions();
 const { exportToExcel } = useExcelExport();
+const confirm = useConfirm();
+const toast = useToast();
 
 const attentions = computed(() => hospitalAttentionsStore.allAttentions);
 const isLoading = computed(() => hospitalAttentionsStore.isLoading);
@@ -29,6 +33,8 @@ const canEditAudits = computed(() => hasPosition(USER_POSITIONS.DIRECTOR_MEDICO)
 
 // PERMISOS DE APROBACIÓN: Solo DIRECTOR_MEDICO puede aprobar alta de atención
 const isDirectorMedico = computed(() => hasPosition(USER_POSITIONS.DIRECTOR_MEDICO));
+
+const canDelete = computed(() => hasPosition(USER_POSITIONS.SISTEMAS));
 
 // Verificar si se puede editar la atención de detalles (debe estar activa)
 const canEditDetails = computed(() => {
@@ -207,6 +213,26 @@ const handleDeleteAudit = async (auditId) => {
 
 const handleMarkAuditAsAudited = async (auditId) => {
     await hospitalAttentionsStore.markAuditAsAudited(auditId);
+};
+
+const handleDeleteAttention = (event, attention) => {
+    confirm.require({
+        target: event.currentTarget,
+        message: '¿Está seguro de que desea eliminar esta atención? Esta acción no se puede deshacer.',
+        icon: 'pi pi-exclamation-triangle',
+        acceptClass: 'p-button-danger',
+        accept: async () => {
+            try {
+                await hospitalAttentionsStore.deleteAttention(attention.id);
+                toast.add({ severity: 'success', summary: 'Confirmado', detail: 'Atención eliminada correctamente', life: 3000 });
+            } catch (error) {
+                toast.add({ severity: 'error', summary: 'Error', detail: 'No se pudo eliminar la atención', life: 3000 });
+            }
+        },
+        reject: () => {
+            // Optional: handle rejection
+        }
+    });
 };
 
 const canApproveAttention = (attention) => {
@@ -633,6 +659,7 @@ const exportData = () => {
                             <Button icon="pi pi-list-check" class="p-button-rounded p-button-secondary p-button-sm" @click="openTasksSidebar(data)" v-tooltip.top="'Ver Tareas'" />
                             <Button icon="pi pi-check-square" class="p-button-rounded p-button-help p-button-sm" @click="openAuditsSidebar(data)" v-tooltip.top="'Ver Auditorías Médicas'" />
                             <Button v-if="canApproveAttention(data)" icon="pi pi-check" class="p-button-rounded p-button-success p-button-sm" @click="openApproveDialog(data)" v-tooltip.top="'Aprobar alta de atención'" />
+                            <Button v-if="canDelete" icon="pi pi-trash" class="p-button-rounded p-button-danger p-button-sm" @click="handleDeleteAttention($event, data)" v-tooltip.top="'Eliminar Atención'" />
                             <div v-if="data.tasks && data.tasks.length > 0" class="flex items-center gap-1 ml-1">
                                 <Tag :value="data.tasks.length" :severity="getTasksSeverity(data.tasks)" class="text-xs" v-tooltip.top="'Número de tareas'" />
                                 <i v-if="hasPendingTasks(data.tasks)" class="pi pi-exclamation-triangle text-warning" v-tooltip.top="'Tiene tareas pendientes'"></i>
@@ -850,6 +877,7 @@ const exportData = () => {
                 </div>
             </template>
         </Dialog>
+        <Toast />
     </div>
 </template>
 
