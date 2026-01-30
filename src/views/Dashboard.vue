@@ -209,12 +209,13 @@ const handleRefresh = async () => {
     isRefreshing.value = true;
 
     try {
-        const params = dateRange.value && dateRange.value.length === 2
-            ? {
-                start_date: dateRange.value[0].toISOString().split('T')[0],
-                end_date: dateRange.value[1].toISOString().split('T')[0]
-            }
-            : {};
+        const params =
+            dateRange.value && dateRange.value.length === 2
+                ? {
+                      start_date: dateRange.value[0].toISOString().split('T')[0],
+                      end_date: dateRange.value[1].toISOString().split('T')[0]
+                  }
+                : {};
 
         console.log('🔄 [DASHBOARD] Iniciando refresco manual del dashboard...');
 
@@ -264,10 +265,7 @@ const initializeDateRange = () => {
     } else if (cachedDateRange && cachedDateRange.start_date && cachedDateRange.end_date) {
         // Restaurar rango personalizado desde caché
         console.log('📂 [DASHBOARD] Restaurando rango personalizado desde caché:', cachedDateRange);
-        dateRange.value = [
-            new Date(cachedDateRange.start_date),
-            new Date(cachedDateRange.end_date)
-        ];
+        dateRange.value = [new Date(cachedDateRange.start_date), new Date(cachedDateRange.end_date)];
         selectedMonth.value = null;
 
         console.log('✅ [DASHBOARD] Rango personalizado restaurado:', cachedDateRange);
@@ -282,9 +280,9 @@ const initializeDateRange = () => {
 
         console.log('✅ [DASHBOARD] Mes inicial:', formatMonthYear(selectedMonth.value));
         console.log('📅 [DASHBOARD] Rango inicial:', {
-            'Desde': monthRange.start_date,
-            'Hasta': monthRange.end_date,
-            'Días': monthRange.end.getDate()
+            Desde: monthRange.start_date,
+            Hasta: monthRange.end_date,
+            Días: monthRange.end.getDate()
         });
 
         // Guardar en caché el mes inicial
@@ -368,7 +366,14 @@ onMounted(async () => {
     // Cargar estadísticas del dashboard con filtro de fechas
     try {
         console.log('📊 [DASHBOARD] Cargando datos iniciales...');
-        await fetchDashboard();
+        if (dateRange.value && dateRange.value.length === 2) {
+            await fetchDashboard({
+                start_date: dateRange.value[0].toISOString().split('T')[0],
+                end_date: dateRange.value[1].toISOString().split('T')[0]
+            });
+        } else {
+            await fetchDashboard();
+        }
         console.log('✅ [DASHBOARD] Datos cargados exitosamente');
     } catch (err) {
         console.error('❌ [DASHBOARD] Error loading dashboard data:', err);
