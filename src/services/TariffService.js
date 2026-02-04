@@ -77,7 +77,19 @@ class TariffService {
      */
     async syncTariffs() {
         const response = await axios.post('/tariffs/sync');
-        return response.data;
+
+        // Compatibilidad: manejar diferentes formatos de respuesta
+        // Si la respuesta ya tiene success, devolverla tal cual
+        if (response.data && typeof response.data.success !== 'undefined') {
+            return response.data;
+        }
+
+        // Si no tiene success, envolver en formato estándar
+        return {
+            success: true,
+            data: response.data,
+            message: 'Sincronización completada'
+        };
     }
 
     /**
