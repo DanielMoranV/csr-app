@@ -1,18 +1,25 @@
 <script setup>
+import { medicalSpecialties } from '@/api/medicalSpecialties';
 import { useTariffConsultation } from '@/composables/useTariffConsultation';
+import MedicalFeesService from '@/services/medicalFees/MedicalFeesService';
 import { useDebounceFn } from '@vueuse/core';
 import Column from 'primevue/column';
 import DataTable from 'primevue/datatable';
+import Dropdown from 'primevue/dropdown';
 import IconField from 'primevue/iconfield';
 import InputIcon from 'primevue/inputicon';
 import InputText from 'primevue/inputtext';
-import Tag from 'primevue/tag';
-import { onMounted, ref, watch } from 'vue';
+import { computed, onMounted, ref, watch } from 'vue';
 
 // Composable
 const { tariffs, isLoading, fetchTariffs, searchTariffs } = useTariffConsultation();
 
 const searchQuery = ref('');
+const selectedSpecialty = ref(null);
+const selectedDoctor = ref(null);
+const specialties = ref([]);
+const allDoctors = ref([]);
+const loadingFilters = ref(false);
 
 // Búsqueda con debounce
 const debouncedSearch = useDebounceFn(async (query) => {
@@ -23,9 +30,124 @@ watch(searchQuery, (newQuery) => {
     debouncedSearch(newQuery);
 });
 
+// Médicos filtrados por especialidad
+const filteredDoctors = computed(() => {
+    console.log('🔍 Filtrando médicos...');
+    console.log('  Especialidad seleccionada:', selectedSpecialty.value);
+    console.log('  Total médicos:', allDoctors.value.length);
+
+    if (!selectedSpecialty.value) {
+        console.log('  ✅ Sin filtro - mostrando todos los médicos');
+        return allDoctors.value;
+    }
+
+    // Mostrar estructura de un médico de ejemplo
+    if (allDoctors.value.length > 0) {
+        console.log('  📋 Ejemplo de médico:', allDoctors.value[0]);
+        console.log('  🔑 Campos del médico:', Object.keys(allDoctors.value[0]));
+        console.log('  🏥 Especialidades del médico:', allDoctors.value[0].specialties);
+    }
+
+    const filtered = allDoctors.value.filter((doctor) => {
+        // Los médicos tienen un array de especialidades
+        if (Array.isArray(doctor.specialties)) {
+            const match = doctor.specialties.some((specialty) => specialty.id === selectedSpecialty.value.id);
+            if (match) {
+                console.log('    ✓ Médico coincide:', doctor.name);
+            }
+            return match;
+        }
+        return false;
+    });
+
+    console.log('  ✅ Médicos filtrados:', filtered.length);
+    return filtered;
+});
+
+// Tarifarios filtrados
+const filteredTariffs = computed(() => {
+    let result = tariffs.value;
+
+    // Filtrar por doctor seleccionado
+    if (selectedDoctor.value) {
+        result = result.filter((tariff) => tariff.is_personalized && tariff.doctor_code === selectedDoctor.value.code);
+    }
+    // Si no hay doctor pero hay especialidad, mostrar todos los tarifarios de doctores de esa especialidad
+    else if (selectedSpecialty.value) {
+        const specialtyDoctorCodes = filteredDoctors.value.map((d) => d.code);
+        result = result.filter((tariff) => tariff.is_personalized && specialtyDoctorCodes.includes(tariff.doctor_code));
+    }
+
+    return result;
+});
+
+// Cargar especialidades
+const loadSpecialties = async () => {
+    try {
+        loadingFilters.value = true;
+        const response = await medicalSpecialties.getAll();
+
+        console.log('📋 Respuesta especialidades:', response);
+
+        // Validar que response.data sea un array
+        if (response && Array.isArray(response.data)) {
+            specialties.value = response.data;
+        } else if (response && response.data && Array.isArray(response.data.data)) {
+            specialties.value = response.data.data;
+        } else {
+            console.warn('Formato inesperado de especialidades:', response);
+            specialties.value = [];
+        }
+
+        console.log('✅ Especialidades cargadas:', specialties.value.length);
+    } catch (error) {
+        console.error('❌ Error al cargar especialidades:', error);
+        specialties.value = [];
+    } finally {
+        loadingFilters.value = false;
+    }
+};
+
+// Cargar médicos
+const loadDoctors = async () => {
+    try {
+        loadingFilters.value = true;
+        const doctors = await MedicalFeesService.getDoctors();
+
+        console.log('👨‍⚕️ Respuesta médicos:', doctors);
+
+        // Validar que doctors sea un array
+        if (Array.isArray(doctors)) {
+            allDoctors.value = doctors;
+        } else {
+            console.warn('Formato inesperado de médicos:', doctors);
+            allDoctors.value = [];
+        }
+
+        console.log('✅ Médicos cargados:', allDoctors.value.length);
+    } catch (error) {
+        console.error('❌ Error al cargar médicos:', error);
+        allDoctors.value = [];
+    } finally {
+        loadingFilters.value = false;
+    }
+};
+
+// Limpiar filtros
+const clearFilters = () => {
+    selectedSpecialty.value = null;
+    selectedDoctor.value = null;
+    searchQuery.value = '';
+};
+
+// Watch para limpiar doctor cuando cambia especialidad
+watch(selectedSpecialty, () => {
+    selectedDoctor.value = null;
+});
+
 // Inicialización
 onMounted(async () => {
-    await fetchTariffs();
+    await Promise.all([fetchTariffs(), loadSpecialties(), loadDoctors()]);
 });
 
 // Formateo de moneda
@@ -52,18 +174,76 @@ const formatCurrency = (value) => {
                 </div>
             </div>
 
-            <!-- Barra de búsqueda -->
-            <div class="search-section mb-4">
-                <IconField iconPosition="left" class="w-full">
-                    <InputIcon>
-                        <i class="pi pi-search" />
-                    </InputIcon>
-                    <InputText v-model="searchQuery" placeholder="Buscar por código, nombre del tarifario o nombre del doctor..." class="w-full" />
-                </IconField>
+            <!-- Filtros -->
+            <div class="filters-section mb-4">
+                <div class="filters-grid">
+                    <!-- Filtro por Especialidad -->
+                    <div class="filter-item">
+                        <label class="filter-label">
+                            <i class="pi pi-heart mr-2"></i>
+                            Especialidad
+                        </label>
+                        <Dropdown v-model="selectedSpecialty" :options="specialties" optionLabel="name" placeholder="Todas las especialidades" :loading="loadingFilters" :showClear="true" class="w-full" />
+                    </div>
+
+                    <!-- Filtro por Doctor -->
+                    <div class="filter-item">
+                        <label class="filter-label">
+                            <i class="pi pi-user mr-2"></i>
+                            Doctor
+                        </label>
+                        <Dropdown
+                            v-model="selectedDoctor"
+                            :options="filteredDoctors"
+                            optionLabel="name"
+                            placeholder="Todos los doctores"
+                            :loading="loadingFilters"
+                            :showClear="true"
+                            :disabled="!selectedSpecialty && filteredDoctors.length === 0"
+                            class="w-full"
+                        >
+                            <template #value="slotProps">
+                                <div v-if="slotProps.value" class="flex align-items-center gap-2">
+                                    <span>{{ slotProps.value.name }}</span>
+                                    <span class="text-xs text-gray-400">({{ slotProps.value.code }})</span>
+                                </div>
+                                <span v-else>{{ slotProps.placeholder }}</span>
+                            </template>
+                            <template #option="slotProps">
+                                <div class="flex align-items-center gap-2">
+                                    <span>{{ slotProps.option.name }}</span>
+                                    <span class="text-xs text-gray-400">({{ slotProps.option.code }})</span>
+                                </div>
+                            </template>
+                        </Dropdown>
+                    </div>
+
+                    <!-- Búsqueda -->
+                    <div class="filter-item filter-search">
+                        <label class="filter-label">
+                            <i class="pi pi-search mr-2"></i>
+                            Búsqueda
+                        </label>
+                        <IconField iconPosition="left" class="w-full">
+                            <InputIcon>
+                                <i class="pi pi-search" />
+                            </InputIcon>
+                            <InputText v-model="searchQuery" placeholder="Código, nombre o doctor..." class="w-full" />
+                        </IconField>
+                    </div>
+                </div>
+
+                <!-- Botón limpiar filtros -->
+                <div v-if="selectedSpecialty || selectedDoctor || searchQuery" class="mt-3">
+                    <button @click="clearFilters" class="clear-filters-btn">
+                        <i class="pi pi-times mr-2"></i>
+                        Limpiar filtros
+                    </button>
+                </div>
             </div>
 
             <!-- DataTable -->
-            <DataTable :value="tariffs" :loading="isLoading" :paginator="true" :rows="25" :rowsPerPageOptions="[25, 50, 100]" responsiveLayout="scroll" stripedRows showGridlines sortField="code" :sortOrder="1" :rowClass="rowClass">
+            <DataTable :value="filteredTariffs" :loading="isLoading || loadingFilters" :paginator="true" :rows="25" :rowsPerPageOptions="[25, 50, 100]" responsiveLayout="scroll" stripedRows showGridlines sortField="code" :sortOrder="1">
                 <template #empty>
                     <div class="text-center p-4">
                         <i class="pi pi-inbox text-4xl text-gray-400 mb-3"></i>
@@ -82,7 +262,7 @@ const formatCurrency = (value) => {
                     <template #body="{ data }">
                         <div class="flex align-items-center gap-2">
                             <span>{{ data.name }}</span>
-                            <Tag v-if="data.is_personalized" severity="info" value="Personalizado" />
+                            <i v-if="data.is_personalized" v-tooltip.top="'Tarifario personalizado por doctor'" class="pi pi-user-edit text-primary" style="font-size: 0.875rem"></i>
                         </div>
                     </template>
                 </Column>
@@ -117,22 +297,29 @@ const formatCurrency = (value) => {
                     <div class="stat-card">
                         <i class="pi pi-list stat-icon"></i>
                         <div class="stat-content">
-                            <span class="stat-label">Total Tarifarios</span>
+                            <span class="stat-label">Mostrando</span>
+                            <span class="stat-value">{{ filteredTariffs.length }}</span>
+                        </div>
+                    </div>
+                    <div class="stat-card">
+                        <i class="pi pi-database stat-icon"></i>
+                        <div class="stat-content">
+                            <span class="stat-label">Total</span>
                             <span class="stat-value">{{ tariffs.length }}</span>
                         </div>
                     </div>
-                    <div class="stat-card">
-                        <i class="pi pi-file stat-icon"></i>
+                    <div class="stat-card" v-if="selectedSpecialty">
+                        <i class="pi pi-heart stat-icon"></i>
                         <div class="stat-content">
-                            <span class="stat-label">Generales</span>
-                            <span class="stat-value">{{ tariffs.filter((t) => !t.is_personalized).length }}</span>
+                            <span class="stat-label">Especialidad</span>
+                            <span class="stat-value text-sm">{{ selectedSpecialty.name }}</span>
                         </div>
                     </div>
-                    <div class="stat-card">
-                        <i class="pi pi-user-edit stat-icon"></i>
+                    <div class="stat-card" v-if="selectedDoctor">
+                        <i class="pi pi-user stat-icon"></i>
                         <div class="stat-content">
-                            <span class="stat-label">Personalizados</span>
-                            <span class="stat-value">{{ tariffs.filter((t) => t.is_personalized).length }}</span>
+                            <span class="stat-label">Doctor</span>
+                            <span class="stat-value text-sm">{{ selectedDoctor.name }}</span>
                         </div>
                     </div>
                 </div>
@@ -305,6 +492,66 @@ const formatCurrency = (value) => {
    ============================================================================ */
 .search-section {
     margin-bottom: 1.5rem;
+}
+
+/* ============================================================================
+   FILTERS SECTION
+   ============================================================================ */
+.filters-section {
+    margin-bottom: 1.5rem;
+}
+
+.filters-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+    gap: 1rem;
+    margin-bottom: 0.5rem;
+}
+
+.filter-item {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+}
+
+.filter-label {
+    font-size: 0.875rem;
+    font-weight: 600;
+    color: var(--text-color);
+    display: flex;
+    align-items: center;
+}
+
+.filter-label i {
+    color: var(--primary-color);
+}
+
+.clear-filters-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.5rem 1rem;
+    background: var(--surface-ground);
+    border: 1px solid var(--surface-border);
+    border-radius: 8px;
+    color: var(--text-color);
+    font-size: 0.875rem;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.clear-filters-btn:hover {
+    background: var(--surface-hover);
+    border-color: var(--primary-color);
+    color: var(--primary-color);
+}
+
+:global(.dark) .clear-filters-btn {
+    background: rgba(255, 255, 255, 0.05);
+}
+
+:global(.dark) .clear-filters-btn:hover {
+    background: rgba(255, 255, 255, 0.1);
 }
 
 /* ============================================================================

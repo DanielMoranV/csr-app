@@ -86,6 +86,16 @@ class TariffService {
      */
     async getTariffs() {
         const response = await axios.get('/tariffs/consultation');
+
+        // Compatibilidad temporal: el servidor puede devolver directamente un array
+        // TODO: Remover cuando el backend devuelva la estructura estándar
+        if (Array.isArray(response.data)) {
+            return {
+                success: true,
+                data: response.data
+            };
+        }
+
         return response.data;
     }
 
@@ -98,6 +108,16 @@ class TariffService {
         const response = await axios.get('/tariffs/consultation/search', {
             params: { q: query }
         });
+
+        // Compatibilidad temporal: el servidor puede devolver directamente un array
+        // TODO: Remover cuando el backend devuelva la estructura estándar
+        if (Array.isArray(response.data)) {
+            return {
+                success: true,
+                data: response.data
+            };
+        }
+
         return response.data;
     }
 }
