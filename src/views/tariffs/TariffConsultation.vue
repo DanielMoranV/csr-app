@@ -24,7 +24,10 @@ const scheduleModalVisible = ref(false);
 
 // Búsqueda con debounce
 const debouncedSearch = useDebounceFn(async (query) => {
-    await searchTariffs(query);
+    // Solo buscar si hay 3 o más caracteres, o si está vacío (para mostrar todos)
+    if (query.trim() === '' || query.trim().length >= 3) {
+        await searchTariffs(query);
+    }
 }, 300);
 
 watch(searchQuery, (newQuery) => {
