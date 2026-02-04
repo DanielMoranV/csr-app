@@ -278,7 +278,7 @@ export const MODULE_PERMISSIONS = {
             POSITIONS.SISTEMAS
         ],
         label: 'Consulta de Tarifarios',
-        icon: 'pi pi-fw pi-search-dollar',
+        icon: 'pi pi-fw pi-search',
         menuSection: 'Personal Médico'
     },
 

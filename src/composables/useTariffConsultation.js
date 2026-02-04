@@ -22,24 +22,14 @@ export function useTariffConsultation() {
         try {
             const result = await TariffService.getTariffs();
 
-            // Debug: Ver qué devuelve el servidor
-            console.log('📊 Respuesta del servidor:', result);
-            console.log('📊 Success:', result.success);
-            console.log('📊 Data:', result.data);
-            console.log('📊 Message:', result.message);
-
             if (result.success) {
                 tariffs.value = result.data;
                 return result.data;
             } else {
-                console.error('❌ El servidor respondió con success: false');
                 throw new Error(result.message || 'Error al obtener tarifarios');
             }
         } catch (err) {
             error.value = err.message;
-            console.error('❌ Error completo:', err);
-            console.error('❌ Error response:', err.response);
-            console.error('❌ Error response data:', err.response?.data);
 
             toast.add({
                 severity: 'error',
@@ -78,7 +68,6 @@ export function useTariffConsultation() {
             }
         } catch (err) {
             error.value = err.message;
-            console.error('Error al buscar tarifarios:', err);
 
             toast.add({
                 severity: 'error',

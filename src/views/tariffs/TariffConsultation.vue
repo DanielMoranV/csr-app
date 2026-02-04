@@ -20,6 +20,7 @@ const selectedDoctor = ref(null);
 const specialties = ref([]);
 const allDoctors = ref([]);
 const loadingFilters = ref(false);
+const scheduleModalVisible = ref(false);
 
 // Búsqueda con debounce
 const debouncedSearch = useDebounceFn(async (query) => {
@@ -32,35 +33,18 @@ watch(searchQuery, (newQuery) => {
 
 // Médicos filtrados por especialidad
 const filteredDoctors = computed(() => {
-    console.log('🔍 Filtrando médicos...');
-    console.log('  Especialidad seleccionada:', selectedSpecialty.value);
-    console.log('  Total médicos:', allDoctors.value.length);
-
     if (!selectedSpecialty.value) {
-        console.log('  ✅ Sin filtro - mostrando todos los médicos');
         return allDoctors.value;
-    }
-
-    // Mostrar estructura de un médico de ejemplo
-    if (allDoctors.value.length > 0) {
-        console.log('  📋 Ejemplo de médico:', allDoctors.value[0]);
-        console.log('  🔑 Campos del médico:', Object.keys(allDoctors.value[0]));
-        console.log('  🏥 Especialidades del médico:', allDoctors.value[0].specialties);
     }
 
     const filtered = allDoctors.value.filter((doctor) => {
         // Los médicos tienen un array de especialidades
         if (Array.isArray(doctor.specialties)) {
-            const match = doctor.specialties.some((specialty) => specialty.id === selectedSpecialty.value.id);
-            if (match) {
-                console.log('    ✓ Médico coincide:', doctor.name);
-            }
-            return match;
+            return doctor.specialties.some((specialty) => specialty.id === selectedSpecialty.value.id);
         }
         return false;
     });
 
-    console.log('  ✅ Médicos filtrados:', filtered.length);
     return filtered;
 });
 
@@ -87,21 +71,15 @@ const loadSpecialties = async () => {
         loadingFilters.value = true;
         const response = await medicalSpecialties.getAll();
 
-        console.log('📋 Respuesta especialidades:', response);
-
         // Validar que response.data sea un array
         if (response && Array.isArray(response.data)) {
             specialties.value = response.data;
         } else if (response && response.data && Array.isArray(response.data.data)) {
             specialties.value = response.data.data;
         } else {
-            console.warn('Formato inesperado de especialidades:', response);
             specialties.value = [];
         }
-
-        console.log('✅ Especialidades cargadas:', specialties.value.length);
     } catch (error) {
-        console.error('❌ Error al cargar especialidades:', error);
         specialties.value = [];
     } finally {
         loadingFilters.value = false;
@@ -114,19 +92,13 @@ const loadDoctors = async () => {
         loadingFilters.value = true;
         const doctors = await MedicalFeesService.getDoctors();
 
-        console.log('👨‍⚕️ Respuesta médicos:', doctors);
-
         // Validar que doctors sea un array
         if (Array.isArray(doctors)) {
             allDoctors.value = doctors;
         } else {
-            console.warn('Formato inesperado de médicos:', doctors);
             allDoctors.value = [];
         }
-
-        console.log('✅ Médicos cargados:', allDoctors.value.length);
     } catch (error) {
-        console.error('❌ Error al cargar médicos:', error);
         allDoctors.value = [];
     } finally {
         loadingFilters.value = false;
@@ -144,6 +116,13 @@ const clearFilters = () => {
 watch(selectedSpecialty, () => {
     selectedDoctor.value = null;
 });
+
+// Mostrar horarios del doctor
+const showDoctorSchedules = () => {
+    if (selectedDoctor.value) {
+        scheduleModalVisible.value = true;
+    }
+};
 
 // Inicialización
 onMounted(async () => {
@@ -183,7 +162,18 @@ const formatCurrency = (value) => {
                             <i class="pi pi-heart mr-2"></i>
                             Especialidad
                         </label>
-                        <Dropdown v-model="selectedSpecialty" :options="specialties" optionLabel="name" placeholder="Todas las especialidades" :loading="loadingFilters" :showClear="true" class="w-full" />
+                        <Dropdown
+                            v-model="selectedSpecialty"
+                            :options="specialties"
+                            optionLabel="name"
+                            placeholder="Todas las especialidades"
+                            :loading="loadingFilters"
+                            :showClear="true"
+                            :filter="true"
+                            :editable="true"
+                            filterPlaceholder="Buscar especialidad..."
+                            class="w-full"
+                        />
                     </div>
 
                     <!-- Filtro por Doctor -->
@@ -192,30 +182,36 @@ const formatCurrency = (value) => {
                             <i class="pi pi-user mr-2"></i>
                             Doctor
                         </label>
-                        <Dropdown
-                            v-model="selectedDoctor"
-                            :options="filteredDoctors"
-                            optionLabel="name"
-                            placeholder="Todos los doctores"
-                            :loading="loadingFilters"
-                            :showClear="true"
-                            :disabled="!selectedSpecialty && filteredDoctors.length === 0"
-                            class="w-full"
-                        >
-                            <template #value="slotProps">
-                                <div v-if="slotProps.value" class="flex align-items-center gap-2">
-                                    <span>{{ slotProps.value.name }}</span>
-                                    <span class="text-xs text-gray-400">({{ slotProps.value.code }})</span>
-                                </div>
-                                <span v-else>{{ slotProps.placeholder }}</span>
-                            </template>
-                            <template #option="slotProps">
-                                <div class="flex align-items-center gap-2">
-                                    <span>{{ slotProps.option.name }}</span>
-                                    <span class="text-xs text-gray-400">({{ slotProps.option.code }})</span>
-                                </div>
-                            </template>
-                        </Dropdown>
+                        <div class="doctor-filter-wrapper">
+                            <Dropdown
+                                v-model="selectedDoctor"
+                                :options="filteredDoctors"
+                                optionLabel="name"
+                                placeholder="Todos los doctores"
+                                :loading="loadingFilters"
+                                :showClear="true"
+                                :disabled="!selectedSpecialty && filteredDoctors.length === 0"
+                                :filter="true"
+                                :editable="true"
+                                filterPlaceholder="Buscar doctor..."
+                                class="flex-1"
+                            >
+                                <template #value="slotProps">
+                                    <div v-if="slotProps.value" class="flex align-items-center gap-2">
+                                        <span>{{ slotProps.value.name }}</span>
+                                        <span class="text-xs text-gray-400">({{ slotProps.value.code }})</span>
+                                    </div>
+                                    <span v-else>{{ slotProps.placeholder }}</span>
+                                </template>
+                                <template #option="slotProps">
+                                    <div class="flex align-items-center gap-2">
+                                        <span>{{ slotProps.option.name }}</span>
+                                        <span class="text-xs text-gray-400">({{ slotProps.option.code }})</span>
+                                    </div>
+                                </template>
+                            </Dropdown>
+                            <Button v-if="selectedDoctor" icon="pi pi-calendar" severity="secondary" outlined @click="showDoctorSchedules" v-tooltip.top="'Ver horarios del mes actual'" class="schedule-btn" />
+                        </div>
                     </div>
 
                     <!-- Búsqueda -->
@@ -290,41 +286,10 @@ const formatCurrency = (value) => {
                     </template>
                 </Column>
             </DataTable>
-
-            <!-- Footer con estadísticas -->
-            <div class="footer-stats mt-4">
-                <div class="stats-grid">
-                    <div class="stat-card">
-                        <i class="pi pi-list stat-icon"></i>
-                        <div class="stat-content">
-                            <span class="stat-label">Mostrando</span>
-                            <span class="stat-value">{{ filteredTariffs.length }}</span>
-                        </div>
-                    </div>
-                    <div class="stat-card">
-                        <i class="pi pi-database stat-icon"></i>
-                        <div class="stat-content">
-                            <span class="stat-label">Total</span>
-                            <span class="stat-value">{{ tariffs.length }}</span>
-                        </div>
-                    </div>
-                    <div class="stat-card" v-if="selectedSpecialty">
-                        <i class="pi pi-heart stat-icon"></i>
-                        <div class="stat-content">
-                            <span class="stat-label">Especialidad</span>
-                            <span class="stat-value text-sm">{{ selectedSpecialty.name }}</span>
-                        </div>
-                    </div>
-                    <div class="stat-card" v-if="selectedDoctor">
-                        <i class="pi pi-user stat-icon"></i>
-                        <div class="stat-content">
-                            <span class="stat-label">Doctor</span>
-                            <span class="stat-value text-sm">{{ selectedDoctor.name }}</span>
-                        </div>
-                    </div>
-                </div>
-            </div>
         </div>
+
+        <!-- Doctor Schedule Modal -->
+        <DoctorScheduleModal v-model:visible="scheduleModalVisible" :doctor-id="selectedDoctor?.id" :doctor-name="selectedDoctor?.name" />
     </div>
 </template>
 
@@ -524,6 +489,21 @@ const formatCurrency = (value) => {
 
 .filter-label i {
     color: var(--primary-color);
+}
+
+.doctor-filter-wrapper {
+    display: flex;
+    gap: 0.5rem;
+    align-items: center;
+}
+
+.doctor-filter-wrapper .flex-1 {
+    flex: 1;
+}
+
+.schedule-btn {
+    flex-shrink: 0;
+    height: 2.75rem;
 }
 
 .clear-filters-btn {
