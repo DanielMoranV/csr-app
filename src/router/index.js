@@ -124,6 +124,12 @@ const router = createRouter({
                     meta: { requiresAuth: true, positions: MODULE_PERMISSIONS.tariffs.positions }
                 },
                 {
+                    path: MODULE_PERMISSIONS.tariffConsultation.path,
+                    name: MODULE_PERMISSIONS.tariffConsultation.name,
+                    component: () => import('@/views/tariffs/TariffConsultation.vue'),
+                    meta: { requiresAuth: true, positions: MODULE_PERMISSIONS.tariffConsultation.positions }
+                },
+                {
                     path: '/my-medical-fees',
                     name: 'myMedicalFees',
                     component: () => import('@/views/doctors/MyMedicalFees.vue'),

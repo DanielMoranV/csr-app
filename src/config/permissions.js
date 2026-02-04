@@ -259,6 +259,29 @@ export const MODULE_PERMISSIONS = {
         menuSection: 'Personal Médico'
     },
 
+    // Consulta de Tarifarios (Admisión)
+    tariffConsultation: {
+        name: 'tariff-consultation',
+        path: '/consulta-tarifarios',
+        positions: [
+            POSITIONS.FACTURACION,
+            POSITIONS.FARMACIA,
+            POSITIONS.DIRECTOR_MEDICO,
+            POSITIONS.ADMINISTRACION,
+            POSITIONS.MEDICOS,
+            POSITIONS.EMERGENCIA,
+            POSITIONS.HOSPITALIZACION,
+            POSITIONS.QUIROFANO,
+            POSITIONS.ADMISION,
+            POSITIONS.LABORATORIO,
+            POSITIONS.RAYOS_X,
+            POSITIONS.SISTEMAS
+        ],
+        label: 'Consulta de Tarifarios',
+        icon: 'pi pi-fw pi-search-dollar',
+        menuSection: 'Personal Médico'
+    },
+
     // Mis Honorarios Médicos (Vista Personal)
     myMedicalFees: {
         name: 'myMedicalFees',

@@ -138,3 +138,71 @@ export function useDoctorTariffs() {
         importTariffs
     };
 }
+
+/**
+ * Composable para sincronización de tarifarios desde Sisclin
+ */
+export function useTariffSync() {
+    const toast = useToast();
+    const isLoading = ref(false);
+    const syncStats = ref(null);
+    const error = ref(null);
+
+    const syncTariffs = async () => {
+        isLoading.value = true;
+        error.value = null;
+        syncStats.value = null;
+
+        try {
+            const result = await TariffService.syncTariffs();
+
+            if (result.success) {
+                syncStats.value = result.data;
+
+                toast.add({
+                    severity: 'success',
+                    summary: 'Sincronización Exitosa',
+                    detail: result.message,
+                    life: 5000
+                });
+
+                // Advertir sobre registros huérfanos si existen
+                const orphanedCount = result.data.doctor_tariffs?.orphaned_records?.length || 0;
+                if (orphanedCount > 0) {
+                    toast.add({
+                        severity: 'warn',
+                        summary: 'Registros Ignorados',
+                        detail: `Se ignoraron ${orphanedCount} registros huérfanos. Revisa los logs para más detalles.`,
+                        life: 5000
+                    });
+                }
+
+                return result.data;
+            } else {
+                throw new Error(result.message || 'Error al sincronizar');
+            }
+        } catch (err) {
+            error.value = err.message;
+
+            const errorMessage = err.response?.data?.message || err.message || 'Error al sincronizar tarifarios';
+
+            toast.add({
+                severity: 'error',
+                summary: 'Error en Sincronización',
+                detail: errorMessage,
+                life: 5000
+            });
+
+            throw err;
+        } finally {
+            isLoading.value = false;
+        }
+    };
+
+    return {
+        isLoading,
+        syncStats,
+        error,
+        syncTariffs
+    };
+}

@@ -1,9 +1,12 @@
 <script setup>
 import TariffImportDialog from '@/components/doctors/TariffImportDialog.vue';
-import { useDoctorTariffs, useGeneralTariffs } from '@/composables/useTariffs';
+import { useDoctorTariffs, useGeneralTariffs, useTariffSync } from '@/composables/useTariffs';
 import Button from 'primevue/button';
+import Card from 'primevue/card';
 import Column from 'primevue/column';
+import ConfirmDialog from 'primevue/confirmdialog';
 import DataTable from 'primevue/datatable';
+import Divider from 'primevue/divider';
 import IconField from 'primevue/iconfield';
 import InputIcon from 'primevue/inputicon';
 import InputText from 'primevue/inputtext';
@@ -11,11 +14,14 @@ import TabPanel from 'primevue/tabpanel';
 import TabView from 'primevue/tabview';
 import Tag from 'primevue/tag';
 import Toolbar from 'primevue/toolbar';
+import { useConfirm } from 'primevue/useconfirm';
 import { onMounted, ref } from 'vue';
 
 // Composables
 const generalTariffs = useGeneralTariffs();
 const doctorTariffs = useDoctorTariffs();
+const { isLoading: isSyncing, syncStats, syncTariffs } = useTariffSync();
+const confirm = useConfirm();
 
 // Estado de diálogos
 const showImportDialog = ref(false);
@@ -43,6 +49,33 @@ const handleTabChange = async (event) => {
     }
 };
 
+// Sincronización de tarifarios
+const confirmSync = () => {
+    confirm.require({
+        message: '¿Deseas sincronizar los tarifarios desde Sisclin? Esta acción actualizará todos los tarifarios generales y personalizados de doctores.',
+        header: 'Confirmar Sincronización',
+        icon: 'pi pi-exclamation-triangle',
+        acceptLabel: 'Sí, sincronizar',
+        rejectLabel: 'Cancelar',
+        accept: async () => {
+            await executeSync();
+        }
+    });
+};
+
+const executeSync = async () => {
+    try {
+        await syncTariffs();
+        // Recargar datos después de la sincronización
+        await generalTariffs.loadTariffs();
+        if (doctorTariffs.tariffs.value.length > 0) {
+            await doctorTariffs.loadTariffs();
+        }
+    } catch (error) {
+        console.error('Error en sincronización:', error);
+    }
+};
+
 // Formateo de moneda
 const formatCurrency = (value) => {
     if (!value) return '-';
@@ -65,7 +98,85 @@ const formatCurrency = (value) => {
                         Administración de tarifarios generales y personalizados
                     </p>
                 </div>
+                <div class="header-actions">
+                    <Button label="Sincronizar desde Sisclin" icon="pi pi-sync" class="p-button-warning" @click="confirmSync" :loading="isSyncing" :disabled="isSyncing" />
+                </div>
             </div>
+
+            <!-- Estadísticas de Sincronización -->
+            <Card v-if="syncStats" class="sync-stats-card mb-4">
+                <template #title>
+                    <div class="flex align-items-center gap-2">
+                        <i class="pi pi-check-circle text-green-500"></i>
+                        <span>Resultados de Sincronización</span>
+                    </div>
+                </template>
+                <template #content>
+                    <div class="grid">
+                        <div class="col-12 md:col-6">
+                            <div class="stats-section">
+                                <h4 class="stats-title">
+                                    <i class="pi pi-list mr-2"></i>
+                                    Tarifarios Generales
+                                </h4>
+                                <div class="stats-content">
+                                    <div class="stat-item">
+                                        <span class="stat-label">✅ Creados:</span>
+                                        <span class="stat-value">{{ syncStats.general_tariffs.created }}</span>
+                                    </div>
+                                    <div class="stat-item">
+                                        <span class="stat-label">🔄 Actualizados:</span>
+                                        <span class="stat-value">{{ syncStats.general_tariffs.updated }}</span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-12 md:col-6">
+                            <div class="stats-section">
+                                <h4 class="stats-title">
+                                    <i class="pi pi-user-edit mr-2"></i>
+                                    Tarifarios de Doctores
+                                </h4>
+                                <div class="stats-content">
+                                    <div class="stat-item">
+                                        <span class="stat-label">✅ Creados:</span>
+                                        <span class="stat-value">{{ syncStats.doctor_tariffs.created }}</span>
+                                    </div>
+                                    <div class="stat-item">
+                                        <span class="stat-label">🔄 Actualizados:</span>
+                                        <span class="stat-value">{{ syncStats.doctor_tariffs.updated }}</span>
+                                    </div>
+                                    <div class="stat-item">
+                                        <span class="stat-label">⏭️ Ignorados:</span>
+                                        <span class="stat-value">{{ syncStats.doctor_tariffs.skipped }}</span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <Divider />
+                    <div class="text-center">
+                        <p class="text-sm text-color-secondary mb-0">
+                            <i class="pi pi-clock mr-2"></i>
+                            Duración: {{ (syncStats.total_duration_ms / 1000).toFixed(2) }} segundos
+                        </p>
+                    </div>
+
+                    <!-- Registros Huérfanos -->
+                    <div v-if="syncStats.doctor_tariffs.orphaned_records?.length > 0" class="mt-3">
+                        <Divider />
+                        <div class="orphaned-records">
+                            <h4 class="orphaned-title">
+                                <i class="pi pi-exclamation-triangle text-orange-500 mr-2"></i>
+                                Registros Ignorados ({{ syncStats.doctor_tariffs.orphaned_records.length }})
+                            </h4>
+                            <ul class="orphaned-list">
+                                <li v-for="(record, index) in syncStats.doctor_tariffs.orphaned_records" :key="index" class="orphaned-item">{{ record.message }} (Doctor: {{ record.doctor_code }}, Código: {{ record.codigo_segus }})</li>
+                            </ul>
+                        </div>
+                    </div>
+                </template>
+            </Card>
 
             <!-- TabView -->
             <TabView @tab-change="handleTabChange">
@@ -246,6 +357,9 @@ const formatCurrency = (value) => {
 
         <!-- Dialog de importación -->
         <TariffImportDialog v-model:visible="showImportDialog" :type="importType" @import-success="handleImportSuccess" />
+
+        <!-- Dialog de confirmación -->
+        <ConfirmDialog />
     </div>
 </template>
 
@@ -409,6 +523,111 @@ const formatCurrency = (value) => {
 }
 
 /* ============================================================================
+   HEADER ACTIONS
+   ============================================================================ */
+.header-actions {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+}
+
+/* ============================================================================
+   SYNC STATISTICS CARD
+   ============================================================================ */
+.sync-stats-card {
+    animation: fadeIn 0.5s ease-out;
+}
+
+.stats-section {
+    background: var(--surface-ground);
+    border-radius: 12px;
+    padding: 1.25rem;
+    height: 100%;
+    border: 1px solid var(--surface-border);
+}
+
+:global(.dark) .stats-section {
+    background: rgba(255, 255, 255, 0.02);
+}
+
+.stats-title {
+    font-size: 1rem;
+    font-weight: 600;
+    margin: 0 0 1rem 0;
+    color: var(--text-color);
+    display: flex;
+    align-items: center;
+}
+
+.stats-content {
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+}
+
+.stat-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 0.5rem 0;
+    border-bottom: 1px solid var(--surface-border);
+}
+
+.stat-item:last-child {
+    border-bottom: none;
+}
+
+.stat-label {
+    font-size: 0.95rem;
+    color: var(--text-color-secondary);
+}
+
+.stat-value {
+    font-size: 1.1rem;
+    font-weight: 700;
+    color: var(--primary-color);
+}
+
+/* ============================================================================
+   ORPHANED RECORDS
+   ============================================================================ */
+.orphaned-records {
+    background: rgba(255, 152, 0, 0.05);
+    border: 1px solid rgba(255, 152, 0, 0.2);
+    border-radius: 8px;
+    padding: 1rem;
+}
+
+:global(.dark) .orphaned-records {
+    background: rgba(255, 152, 0, 0.1);
+}
+
+.orphaned-title {
+    font-size: 0.95rem;
+    font-weight: 600;
+    margin: 0 0 0.75rem 0;
+    color: var(--text-color);
+    display: flex;
+    align-items: center;
+}
+
+.orphaned-list {
+    margin: 0;
+    padding-left: 1.5rem;
+    list-style-type: disc;
+}
+
+.orphaned-item {
+    font-size: 0.875rem;
+    color: var(--text-color-secondary);
+    margin-bottom: 0.5rem;
+}
+
+.orphaned-item:last-child {
+    margin-bottom: 0;
+}
+
+/* ============================================================================
    RESPONSIVE DESIGN
    ============================================================================ */
 @media (max-width: 768px) {
@@ -423,6 +642,8 @@ const formatCurrency = (value) => {
 
     .header-section {
         gap: 1rem;
+        flex-direction: column;
+        align-items: flex-start;
     }
 
     .header-icon-wrapper {
@@ -440,6 +661,32 @@ const formatCurrency = (value) => {
 
     .header-subtitle {
         font-size: 0.875rem;
+    }
+
+    .header-actions {
+        width: 100%;
+    }
+
+    .header-actions .p-button {
+        width: 100%;
+    }
+
+    .stats-section {
+        padding: 1rem;
+    }
+
+    .stat-item {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 0.25rem;
+    }
+
+    .orphaned-list {
+        padding-left: 1rem;
+    }
+
+    .orphaned-item {
+        font-size: 0.8rem;
     }
 }
 </style>

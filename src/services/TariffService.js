@@ -70,6 +70,36 @@ class TariffService {
         });
         return response.data;
     }
+
+    /**
+     * Sincronizar tarifarios desde Sisclin
+     * @returns {Promise<Object>}
+     */
+    async syncTariffs() {
+        const response = await axios.post('/tariffs/sync');
+        return response.data;
+    }
+
+    /**
+     * Obtener todos los tarifarios para consulta (general + personalizados)
+     * @returns {Promise<Array>}
+     */
+    async getTariffs() {
+        const response = await axios.get('/tariffs/consultation');
+        return response.data;
+    }
+
+    /**
+     * Buscar tarifarios por término de búsqueda
+     * @param {string} query - Término de búsqueda
+     * @returns {Promise<Array>}
+     */
+    async searchTariffs(query) {
+        const response = await axios.get('/tariffs/consultation/search', {
+            params: { q: query }
+        });
+        return response.data;
+    }
 }
 
 export default new TariffService();
