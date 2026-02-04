@@ -4,7 +4,6 @@ import { useDoctorTariffs, useGeneralTariffs, useTariffSync } from '@/composable
 import Button from 'primevue/button';
 import Card from 'primevue/card';
 import Column from 'primevue/column';
-import ConfirmDialog from 'primevue/confirmdialog';
 import DataTable from 'primevue/datatable';
 import Divider from 'primevue/divider';
 import IconField from 'primevue/iconfield';
@@ -357,9 +356,6 @@ const formatCurrency = (value) => {
 
         <!-- Dialog de importación -->
         <TariffImportDialog v-model:visible="showImportDialog" :type="importType" @import-success="handleImportSuccess" />
-
-        <!-- Dialog de confirmación -->
-        <ConfirmDialog />
     </div>
 </template>
 

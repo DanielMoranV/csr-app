@@ -78,6 +78,12 @@ class TariffService {
     async syncTariffs() {
         const response = await axios.post('/tariffs/sync');
 
+        // DEBUG: Ver qué devuelve el backend
+        console.log('🔄 Respuesta del backend /tariffs/sync:', response.data);
+        console.log('🔄 Tipo de response.data:', typeof response.data);
+        console.log('🔄 Tiene success?:', response.data?.success);
+        console.log('🔄 Estructura completa:', JSON.stringify(response.data, null, 2));
+
         // Compatibilidad: manejar diferentes formatos de respuesta
         // Si la respuesta ya tiene success, devolverla tal cual
         if (response.data && typeof response.data.success !== 'undefined') {
