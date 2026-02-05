@@ -69,7 +69,7 @@ const enableDoctorFilter = ref(false); // Control if doctor filter is applied to
 // Quick Fill Mode
 const quickFillMode = ref(false);
 const quickFillConfig = reactive({
-    shiftId: null,
+    shiftIds: [],
     category: 'ambulatory',
     status: 'pending',
     isPaymentPayroll: true,
@@ -696,7 +696,7 @@ const handleQuickDateSelect = (dateInfo) => {
         return;
     }
 
-    // Validation for Custom Time vs Shift
+    // Validation for Custom Time vs Shifts
     if (quickFillConfig.isCustom) {
         if (!quickFillConfig.startTime || !quickFillConfig.endTime) {
             confirm.require({
@@ -710,9 +710,9 @@ const handleQuickDateSelect = (dateInfo) => {
             return;
         }
     } else {
-        if (!quickFillConfig.shiftId) {
+        if (!quickFillConfig.shiftIds || quickFillConfig.shiftIds.length === 0) {
             confirm.require({
-                message: 'Debe seleccionar un turno antes de agregar días',
+                message: 'Debe seleccionar al menos un turno antes de agregar días',
                 header: 'Turno Requerido',
                 icon: 'pi pi-exclamation-triangle',
                 acceptLabel: 'Entendido',
@@ -725,36 +725,62 @@ const handleQuickDateSelect = (dateInfo) => {
 
     const dateStr = dateInfo.startStr.split('T')[0];
 
-    // Check if this exact day+shift combination already exists
     // For custom times, we check if start/end times match exactly
+    // For standard shifts, we check if the EXACT combination of shifts is already selected
     const existingDayShift = selectedDays.value.find((d) => {
         if (d.date !== dateStr) return false;
 
         if (quickFillConfig.isCustom) {
             return d.isCustom && d.startTime === quickFillConfig.startTime && d.endTime === quickFillConfig.endTime;
         } else {
-            return !d.isCustom && d.shiftIds.includes(quickFillConfig.shiftId);
+            // Check if arrays have same elements (ignoring order)
+            if (d.isCustom) return false;
+            if (d.shiftIds.length !== quickFillConfig.shiftIds.length) return false;
+            return quickFillConfig.shiftIds.every((id) => d.shiftIds.includes(id));
         }
     });
 
     if (existingDayShift) {
-        // This exact day+shift is already selected, ignore
+        // This exact day+shift combination is already selected, ignore
         return;
     }
 
-    // Detect conflicts
-    const hasConflict = detectConflict(dateStr, quickFillConfig.shiftId, quickFillConfig.isCustom, quickFillConfig.startTime, quickFillConfig.endTime);
+    // Detect conflicts - check for ANY of the selected shifts
+    // For custom, allow multiple IDs to be passed as empty array and check custom times
+    // For standard, pass array of IDs
+    const shiftsToCheck = quickFillConfig.isCustom ? [] : quickFillConfig.shiftIds;
+
+    // We'll consider a conflict if ANY of the selected shifts has a conflict
+    let hasConflict = false;
+
+    if (quickFillConfig.isCustom) {
+        hasConflict = detectConflict(dateStr, null, true, quickFillConfig.startTime, quickFillConfig.endTime);
+    } else {
+        // Check conflict for each shift
+        hasConflict = shiftsToCheck.some((id) => detectConflict(dateStr, id, false));
+    }
 
     // Get doctor information
     const doctor = getDoctorById(doctorFilter.value);
     const doctorName = doctor?.name || '';
 
     // Get shift display
+    // If multiple shifts, join their abbreviations or descriptions
     let shiftDisplay = '';
     if (quickFillConfig.isCustom) {
         shiftDisplay = `<span class="text-xs font-semibold bg-gray-100 text-gray-700 px-1 rounded border border-gray-300">${quickFillConfig.startTime}-${quickFillConfig.endTime}</span>`;
     } else {
-        shiftDisplay = getShiftDisplay(quickFillConfig.shiftId);
+        // Generate display for multiple shifts
+        // Assuming getShiftDisplay handles single ID. modifying it might be complex if it returns HTML
+        // Instead, let's look up the shifts and create a string
+        const selectedShifts = medicalShifts.value.filter((s) => quickFillConfig.shiftIds.includes(s.id));
+
+        // Strategy: Use badges for each shift
+        const badges = selectedShifts.map((s) => {
+            return getShiftDisplay(s.id);
+        });
+
+        shiftDisplay = `<div class="flex gap-1">${badges.join('')}</div>`;
     }
 
     selectedDays.value.push({
@@ -762,7 +788,7 @@ const handleQuickDateSelect = (dateInfo) => {
         hasConflict,
         doctorId: doctorFilter.value,
         doctorName: doctorName,
-        shiftIds: quickFillConfig.isCustom ? [] : [quickFillConfig.shiftId],
+        shiftIds: quickFillConfig.isCustom ? [] : [...quickFillConfig.shiftIds], // Clone array
         shiftDisplay: shiftDisplay,
         // Custom properties
         isCustom: quickFillConfig.isCustom,
@@ -860,9 +886,9 @@ const handleSendBatch = async () => {
     }
 
     // Validation: Check if shift is selected (only if NOT custom)
-    if (!quickFillConfig.isCustom && !quickFillConfig.shiftId) {
+    if (!quickFillConfig.isCustom && (!quickFillConfig.shiftIds || quickFillConfig.shiftIds.length === 0)) {
         confirm.require({
-            message: 'Debe seleccionar un turno antes de enviar los horarios',
+            message: 'Debe seleccionar al menos un turno antes de enviar los horarios',
             header: 'Turno Requerido',
             icon: 'pi pi-exclamation-triangle',
             acceptLabel: 'Entendido',

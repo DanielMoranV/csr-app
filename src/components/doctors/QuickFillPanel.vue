@@ -1,10 +1,10 @@
 <script setup>
 import Button from 'primevue/button';
-import Select from 'primevue/select';
-import Textarea from 'primevue/textarea';
 import Checkbox from 'primevue/checkbox';
 import Chip from 'primevue/chip';
 import InputText from 'primevue/inputtext';
+import Select from 'primevue/select';
+import Textarea from 'primevue/textarea';
 import { computed } from 'vue';
 
 const props = defineProps({
@@ -60,12 +60,12 @@ const updateConfig = (field, value) => {
     // Logic to clear incompatible fields
     if (field === 'isCustom') {
         if (value) {
-            newConfig.shiftId = null;
+            newConfig.shiftIds = [];
         } else {
             newConfig.startTime = '';
             newConfig.endTime = '';
         }
-    } else if (field === 'shiftId' && value) {
+    } else if (field === 'shiftIds' && value && value.length > 0) {
         newConfig.isCustom = false;
         newConfig.startTime = '';
         newConfig.endTime = '';
@@ -140,16 +140,17 @@ const getPlainShiftDisplay = (shiftDisplay) => {
                     </div>
 
                     <div v-if="!config.isCustom">
-                        <Select
+                        <MultiSelect
                             id="quick-shift"
-                            :modelValue="config.shiftId"
-                            @update:modelValue="updateConfig('shiftId', $event)"
+                            :modelValue="config.shiftIds"
+                            @update:modelValue="updateConfig('shiftIds', $event)"
                             :options="shiftOptions"
                             optionLabel="label"
                             optionValue="value"
-                            placeholder="Seleccionar turno"
+                            placeholder="Seleccionar turnos"
                             class="w-full"
                             :disabled="disabled"
+                            display="chip"
                         />
                     </div>
 
