@@ -3,6 +3,7 @@ import { medicalSpecialties } from '@/api/medicalSpecialties';
 import { useTariffConsultation } from '@/composables/useTariffConsultation';
 import MedicalFeesService from '@/services/medicalFees/MedicalFeesService';
 import { useDebounceFn } from '@vueuse/core';
+import Button from 'primevue/button';
 import Column from 'primevue/column';
 import DataTable from 'primevue/datatable';
 import Dropdown from 'primevue/dropdown';
@@ -10,6 +11,7 @@ import IconField from 'primevue/iconfield';
 import InputIcon from 'primevue/inputicon';
 import InputText from 'primevue/inputtext';
 import { computed, onMounted, ref, watch } from 'vue';
+import * as XLSX from 'xlsx';
 
 // Composable
 const { tariffs, isLoading, fetchTariffs, searchTariffs } = useTariffConsultation();
@@ -134,8 +136,46 @@ onMounted(async () => {
 
 // Formateo de moneda
 const formatCurrency = (value) => {
-    if (!value) return '-';
+    if (value === null || value === undefined || value === '') return '-';
     return `S/ ${parseFloat(value).toFixed(2)}`;
+};
+
+// Exportar a Excel
+const exportToExcel = () => {
+    if (!filteredTariffs.value.length) return;
+
+    // Preparar datos
+    const data = filteredTariffs.value.map((t) => ({
+        Código: t.code,
+        Nombre: t.name,
+        'Comisión Clínica': t.clinic_commission ? parseFloat(t.clinic_commission) : 0,
+        'Comisión Doctor': t.doctor_commission ? parseFloat(t.doctor_commission) : 0,
+        Total: parseFloat(t.total),
+        Doctor: t.doctor_name || '-',
+        'Cód. Doctor': t.doctor_code || '-',
+        Personalizado: t.is_personalized ? 'SI' : 'NO'
+    }));
+
+    // Crear hoja
+    const ws = XLSX.utils.json_to_sheet(data);
+    const wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, ws, 'Tarifarios');
+
+    // Ajustar anchos de columna
+    const wscols = [
+        { wch: 15 }, // Código
+        { wch: 50 }, // Nombre
+        { wch: 15 }, // Com. Clínica
+        { wch: 15 }, // Com. Doctor
+        { wch: 15 }, // Total
+        { wch: 30 }, // Doctor
+        { wch: 15 }, // Cód. Doctor
+        { wch: 12 } // Personalizado
+    ];
+    ws['!cols'] = wscols;
+
+    // Generar archivo
+    XLSX.writeFile(wb, `reporte_tarifarios_${new Date().toISOString().slice(0, 10)}.xlsx`);
 };
 </script>
 
@@ -243,6 +283,11 @@ const formatCurrency = (value) => {
 
             <!-- DataTable -->
             <DataTable :value="filteredTariffs" :loading="isLoading || loadingFilters" :paginator="true" :rows="25" :rowsPerPageOptions="[25, 50, 100]" responsiveLayout="scroll" stripedRows showGridlines sortField="code" :sortOrder="1">
+                <template #header>
+                    <div class="flex justify-content-end">
+                        <Button icon="pi pi-file-excel" label="Exportar Excel" severity="success" @click="exportToExcel" :disabled="!filteredTariffs.length" />
+                    </div>
+                </template>
                 <template #empty>
                     <div class="text-center p-4">
                         <i class="pi pi-inbox text-4xl text-gray-400 mb-3"></i>
@@ -263,6 +308,18 @@ const formatCurrency = (value) => {
                             <span>{{ data.name }}</span>
                             <i v-if="data.is_personalized" v-tooltip.top="'Tarifario personalizado por doctor'" class="pi pi-user-edit text-primary" style="font-size: 0.875rem"></i>
                         </div>
+                    </template>
+                </Column>
+
+                <Column field="clinic_commission" header="Clínica" :sortable="true" style="min-width: 130px">
+                    <template #body="{ data }">
+                        <span :class="{ 'text-gray-400': !data.clinic_commission }">{{ formatCurrency(data.clinic_commission) }}</span>
+                    </template>
+                </Column>
+
+                <Column field="doctor_commission" header="Médico" :sortable="true" style="min-width: 130px">
+                    <template #body="{ data }">
+                        <span :class="{ 'text-gray-400': !data.doctor_commission }">{{ formatCurrency(data.doctor_commission) }}</span>
                     </template>
                 </Column>
 
