@@ -159,22 +159,23 @@ export function useTariffSync() {
             if (result.success) {
                 syncStats.value = result.data;
 
+                // Crear resumen simple para el usuario
+                const general = result.data.general_tariffs || {};
+                const doctors = result.data.doctor_tariffs || {};
+
+                const summary = [`Generales: ${general.created || 0} nuevos, ${general.updated || 0} act.`, `Médicos: ${doctors.created || 0} nuevos, ${doctors.updated || 0} act.`].join(' | ');
+
                 toast.add({
                     severity: 'success',
-                    summary: 'Sincronización Exitosa',
-                    detail: result.message,
-                    life: 5000
+                    summary: 'Sincronización Completada',
+                    detail: summary,
+                    life: 4000
                 });
 
-                // Advertir sobre registros huérfanos si existen
-                const orphanedCount = result.data.doctor_tariffs?.orphaned_records?.length || 0;
+                // Advertir sobre registros huérfanos solo si son muchos
+                const orphanedCount = doctors.orphaned_records?.length || 0;
                 if (orphanedCount > 0) {
-                    toast.add({
-                        severity: 'warn',
-                        summary: 'Registros Ignorados',
-                        detail: `Se ignoraron ${orphanedCount} registros huérfanos. Revisa los logs para más detalles.`,
-                        life: 5000
-                    });
+                    console.warn(`Se ignoraron ${orphanedCount} registros huérfanos`);
                 }
 
                 return result.data;
