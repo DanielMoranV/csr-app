@@ -4,6 +4,7 @@ import Select from 'primevue/select';
 import Textarea from 'primevue/textarea';
 import Checkbox from 'primevue/checkbox';
 import Chip from 'primevue/chip';
+import InputText from 'primevue/inputtext';
 import { computed } from 'vue';
 
 const props = defineProps({
@@ -54,7 +55,23 @@ const shiftOptions = computed(() => {
 });
 
 const updateConfig = (field, value) => {
-    emit('update:config', { ...props.config, [field]: value });
+    const newConfig = { ...props.config, [field]: value };
+
+    // Logic to clear incompatible fields
+    if (field === 'isCustom') {
+        if (value) {
+            newConfig.shiftId = null;
+        } else {
+            newConfig.startTime = '';
+            newConfig.endTime = '';
+        }
+    } else if (field === 'shiftId' && value) {
+        newConfig.isCustom = false;
+        newConfig.startTime = '';
+        newConfig.endTime = '';
+    }
+
+    emit('update:config', newConfig);
 };
 
 const hasConflicts = computed(() => {
@@ -62,9 +79,7 @@ const hasConflicts = computed(() => {
 });
 
 const conflictDays = computed(() => {
-    return props.selectedDays.filter(day => 
-        props.conflicts.some(conflict => conflict.date === day.date)
-    );
+    return props.selectedDays.filter((day) => props.conflicts.some((conflict) => conflict.date === day.date));
 });
 
 const formatDate = (dateStr) => {
@@ -112,23 +127,42 @@ const getPlainShiftDisplay = (shiftDisplay) => {
         <!-- Configuration Section -->
         <div class="config-section">
             <div class="config-grid">
-                <!-- Shift Selector -->
+                <!-- Shift Selector or Custom Time -->
                 <div class="field">
-                    <label for="quick-shift" class="field-label">
+                    <label class="field-label mb-2">
                         <i class="pi pi-clock mr-2"></i>
-                        Turno
+                        Horario
                     </label>
-                    <Select
-                        id="quick-shift"
-                        :modelValue="config.shiftId"
-                        @update:modelValue="updateConfig('shiftId', $event)"
-                        :options="shiftOptions"
-                        optionLabel="label"
-                        optionValue="value"
-                        placeholder="Seleccionar turno"
-                        class="w-full"
-                        :disabled="disabled"
-                    />
+
+                    <div class="flex items-center gap-2 mb-2">
+                        <Checkbox :modelValue="config.isCustom" @update:modelValue="updateConfig('isCustom', $event)" inputId="use-custom-time" binary :disabled="disabled" />
+                        <label for="use-custom-time" class="cursor-pointer text-sm">Usar horario personalizado</label>
+                    </div>
+
+                    <div v-if="!config.isCustom">
+                        <Select
+                            id="quick-shift"
+                            :modelValue="config.shiftId"
+                            @update:modelValue="updateConfig('shiftId', $event)"
+                            :options="shiftOptions"
+                            optionLabel="label"
+                            optionValue="value"
+                            placeholder="Seleccionar turno"
+                            class="w-full"
+                            :disabled="disabled"
+                        />
+                    </div>
+
+                    <div v-else class="grid grid-cols-2 gap-2">
+                        <div>
+                            <label for="start-time" class="text-xs mb-1 block">Inicio</label>
+                            <InputText id="start-time" type="time" :modelValue="config.startTime" @update:modelValue="updateConfig('startTime', $event)" class="w-full" :disabled="disabled" />
+                        </div>
+                        <div>
+                            <label for="end-time" class="text-xs mb-1 block">Fin</label>
+                            <InputText id="end-time" type="time" :modelValue="config.endTime" @update:modelValue="updateConfig('endTime', $event)" class="w-full" :disabled="disabled" />
+                        </div>
+                    </div>
                 </div>
 
                 <!-- Category Selector -->
@@ -172,13 +206,7 @@ const getPlainShiftDisplay = (shiftDisplay) => {
                 <!-- Payment Payroll Checkbox -->
                 <div class="field checkbox-field">
                     <div class="flex items-center gap-2">
-                        <Checkbox
-                            :modelValue="config.isPaymentPayroll"
-                            @update:modelValue="updateConfig('isPaymentPayroll', $event)"
-                            inputId="quick-payroll"
-                            binary
-                            :disabled="disabled"
-                        />
+                        <Checkbox :modelValue="config.isPaymentPayroll" @update:modelValue="updateConfig('isPaymentPayroll', $event)" inputId="quick-payroll" binary :disabled="disabled" />
                         <label for="quick-payroll" class="field-label mb-0 cursor-pointer">
                             <i class="pi pi-wallet mr-2"></i>
                             Incluir en planilla
@@ -193,15 +221,7 @@ const getPlainShiftDisplay = (shiftDisplay) => {
                     <i class="pi pi-file-edit mr-2"></i>
                     Notas (opcional)
                 </label>
-                <Textarea
-                    id="quick-notes"
-                    :modelValue="config.notes"
-                    @update:modelValue="updateConfig('notes', $event)"
-                    rows="2"
-                    placeholder="Notas que se aplicarán a todos los horarios..."
-                    class="w-full"
-                    :disabled="disabled"
-                />
+                <Textarea id="quick-notes" :modelValue="config.notes" @update:modelValue="updateConfig('notes', $event)" rows="2" placeholder="Notas que se aplicarán a todos los horarios..." class="w-full" :disabled="disabled" />
             </div>
         </div>
 
@@ -213,38 +233,18 @@ const getPlainShiftDisplay = (shiftDisplay) => {
                     Días Seleccionados
                     <span class="days-count">{{ selectedDays.length }}</span>
                 </h4>
-                <Button
-                    label="Limpiar Todo"
-                    icon="pi pi-times"
-                    severity="secondary"
-                    text
-                    size="small"
-                    @click="emit('clear-all')"
-                    :disabled="disabled"
-                />
+                <Button label="Limpiar Todo" icon="pi pi-times" severity="secondary" text size="small" @click="emit('clear-all')" :disabled="disabled" />
             </div>
 
             <!-- Conflict Warning -->
             <div v-if="hasConflicts" class="conflict-warning">
                 <i class="pi pi-exclamation-triangle"></i>
-                <span>
-                    {{ conflictDays.length }} día(s) con posibles conflictos de horario
-                </span>
+                <span> {{ conflictDays.length }} día(s) con posibles conflictos de horario </span>
             </div>
 
             <!-- Days List -->
             <div class="days-list">
-                <Chip
-                    v-for="day in selectedDays"
-                    :key="day.date"
-                    :class="[
-                        'day-chip',
-                        { 'conflict-chip': day.hasConflict },
-                        day.doctorId ? getDoctorColorClass(day.doctorId) : ''
-                    ]"
-                    removable
-                    @remove="emit('remove-day', day.date)"
-                >
+                <Chip v-for="day in selectedDays" :key="day.date" :class="['day-chip', { 'conflict-chip': day.hasConflict }, day.doctorId ? getDoctorColorClass(day.doctorId) : '']" removable @remove="emit('remove-day', day.date)">
                     <template #icon>
                         <i v-if="day.hasConflict" class="pi pi-exclamation-circle"></i>
                         <i v-else class="pi pi-calendar"></i>
@@ -263,17 +263,8 @@ const getPlainShiftDisplay = (shiftDisplay) => {
 
             <!-- Send Button -->
             <div class="send-section">
-                <Button
-                    label="Enviar Horarios"
-                    icon="pi pi-send"
-                    class="send-button"
-                    @click="emit('send-batch')"
-                    :disabled="disabled || selectedDays.length === 0"
-                    :loading="disabled"
-                />
-                <p class="send-hint">
-                    Se crearán {{ selectedDays.length }} horario(s) con la configuración seleccionada
-                </p>
+                <Button label="Enviar Horarios" icon="pi pi-send" class="send-button" @click="emit('send-batch')" :disabled="disabled || selectedDays.length === 0" :loading="disabled" />
+                <p class="send-hint">Se crearán {{ selectedDays.length }} horario(s) con la configuración seleccionada</p>
             </div>
         </div>
 
@@ -301,7 +292,8 @@ const getPlainShiftDisplay = (shiftDisplay) => {
 }
 
 @keyframes pulse {
-    0%, 100% {
+    0%,
+    100% {
         opacity: 1;
     }
     50% {

@@ -1,7 +1,7 @@
 <script setup>
-import ScheduleDialog from '@/components/doctors/ScheduleDialog.vue';
-import QuickFillPanel from '@/components/doctors/QuickFillPanel.vue';
 import BatchProgressDialog from '@/components/doctors/BatchProgressDialog.vue';
+import QuickFillPanel from '@/components/doctors/QuickFillPanel.vue';
+import ScheduleDialog from '@/components/doctors/ScheduleDialog.vue';
 import { useDoctorSchedules } from '@/composables/useDoctorSchedules';
 import { useDoctors } from '@/composables/useDoctors';
 import { useMedicalSpecialties } from '@/composables/useMedicalSpecialties';
@@ -9,19 +9,19 @@ import { usePdfScheduleExport } from '@/composables/usePdfScheduleExport';
 import Button from 'primevue/button';
 import Checkbox from 'primevue/checkbox';
 
+import { getHolidayInfo, isHoliday } from '@/data/holidays-pe';
 import DatePicker from 'primevue/datepicker';
 import Select from 'primevue/select';
 import { useConfirm } from 'primevue/useconfirm';
 import { useToast } from 'primevue/usetoast';
-import { computed, onMounted, ref, reactive, watch } from 'vue';
-import { isHoliday, getHolidayInfo } from '@/data/holidays-pe';
+import { computed, onMounted, reactive, ref, watch } from 'vue';
 
 // FullCalendar Imports
-import FullCalendar from '@fullcalendar/vue3';
-import dayGridPlugin from '@fullcalendar/daygrid';
-import timeGridPlugin from '@fullcalendar/timegrid';
-import interactionPlugin from '@fullcalendar/interaction';
 import esLocale from '@fullcalendar/core/locales/es';
+import dayGridPlugin from '@fullcalendar/daygrid';
+import interactionPlugin from '@fullcalendar/interaction';
+import timeGridPlugin from '@fullcalendar/timegrid';
+import FullCalendar from '@fullcalendar/vue3';
 
 const {
     schedules,
@@ -73,7 +73,10 @@ const quickFillConfig = reactive({
     category: 'ambulatory',
     status: 'pending',
     isPaymentPayroll: true,
-    notes: ''
+    notes: '',
+    isCustom: false,
+    startTime: '',
+    endTime: ''
 });
 const selectedDays = ref([]); // Structure: { date, hasConflict, doctorId, doctorName, shiftIds: [], shiftDisplay }
 const batchProgressVisible = ref(false);
@@ -89,22 +92,22 @@ const filteredDoctors = computed(() => {
     if (!specialtyFilter.value) {
         return doctors.value;
     }
-    
+
     // Filter doctors that have the selected specialty in their specialties array
-    return doctors.value.filter(doctor => {
+    return doctors.value.filter((doctor) => {
         // Check if doctor has specialties array
         if (!doctor.specialties || !Array.isArray(doctor.specialties)) {
             return false;
         }
-        
+
         // Check if any specialty in the array matches the selected specialty
-        return doctor.specialties.some(specialty => specialty.id === specialtyFilter.value);
+        return doctor.specialties.some((specialty) => specialty.id === specialtyFilter.value);
     });
 });
 
 watch(specialtyFilter, (newVal) => {
     // Clear doctorFilter if the selected specialty no longer contains the previously selected doctor
-    if (doctorFilter.value && !filteredDoctors.value.some(d => d.id === doctorFilter.value)) {
+    if (doctorFilter.value && !filteredDoctors.value.some((d) => d.id === doctorFilter.value)) {
         doctorFilter.value = null;
         setDoctorFilter(null);
     }
@@ -121,7 +124,7 @@ onMounted(async () => {
 
     // Load specialties first to set default filter
     await fetchSpecialties();
-    
+
     // Set default specialty filter to Pediatrics (ID 32) to reduce initial load
     specialtyFilter.value = 32;
     setSpecialtyFilter(32);
@@ -230,7 +233,7 @@ const handleSpecialtyFilter = (value) => {
 
 const handleDoctorFilter = (value) => {
     doctorFilter.value = value;
-    
+
     // Apply doctor filter to backend only if enabled
     if (enableDoctorFilter.value && value) {
         setDoctorFilter(value);
@@ -247,7 +250,7 @@ const handleDoctorFilter = (value) => {
 // Handle enable/disable doctor filter
 const handleToggleDoctorFilter = (enabled) => {
     enableDoctorFilter.value = enabled;
-    
+
     if (enabled && doctorFilter.value) {
         // Enable: apply doctor filter to backend
         setDoctorFilter(doctorFilter.value);
@@ -295,19 +298,19 @@ const handleExportPDF = async () => {
 
     try {
         isExportingPDF.value = true;
-        
+
         // Get current month and year from calendar
         const calendarApi = calendarRef.value?.getApi();
         const currentDate = calendarApi?.getDate() || new Date();
         const month = currentDate.getMonth() + 1; // 0-indexed
         const year = currentDate.getFullYear();
-        
+
         // Get selected specialty object
-        const specialty = medicalSpecialties.value.find(s => s.id === specialtyFilter.value);
-        
+        const specialty = medicalSpecialties.value.find((s) => s.id === specialtyFilter.value);
+
         // Generate PDF
         const fileName = generatePDF(schedules.value, specialty, month, year, medicalShifts.value);
-        
+
         toast.add({
             severity: 'success',
             summary: 'PDF Generado',
@@ -338,7 +341,7 @@ const getShiftAbbreviation = (shiftDescription) => {
 };
 
 const getShiftDisplay = (shiftId) => {
-    const shift = medicalShifts.value.find(s => s.id === shiftId);
+    const shift = medicalShifts.value.find((s) => s.id === shiftId);
     if (!shift) return '';
 
     const abbrev = getShiftAbbreviation(shift.description);
@@ -360,12 +363,12 @@ const truncateDoctorName = (name, maxLength = 12) => {
 };
 
 const getDoctorById = (doctorId) => {
-    return doctors.value.find(d => d.id === doctorId);
+    return doctors.value.find((d) => d.id === doctorId);
 };
 
 // Create a consistent color mapping for all doctors in selectedDays
 const doctorColorMap = computed(() => {
-    const uniqueDoctorIds = [...new Set(selectedDays.value.map(day => day.doctorId))];
+    const uniqueDoctorIds = [...new Set(selectedDays.value.map((day) => day.doctorId))];
     const colorMap = {};
     uniqueDoctorIds.forEach((doctorId, index) => {
         colorMap[doctorId] = index % 6; // Cycle through 6 colors
@@ -377,7 +380,7 @@ const groupShiftsByDoctor = (selectedDaysForDate) => {
     // Group shifts by doctor and combine their shift displays
     const grouped = {};
 
-    selectedDaysForDate.forEach(day => {
+    selectedDaysForDate.forEach((day) => {
         const key = day.doctorId;
         if (!grouped[key]) {
             grouped[key] = {
@@ -387,11 +390,11 @@ const groupShiftsByDoctor = (selectedDaysForDate) => {
                 hasConflict: false
             };
         }
-        grouped[key].shifts.push(...day.shiftIds.map(id => getShiftDisplay(id)));
+        grouped[key].shifts.push(...day.shiftIds.map((id) => getShiftDisplay(id)));
         grouped[key].hasConflict = grouped[key].hasConflict || day.hasConflict;
     });
 
-    return Object.values(grouped).map(group => ({
+    return Object.values(grouped).map((group) => ({
         ...group,
         shiftsDisplay: group.shifts.join('')
     }));
@@ -440,7 +443,7 @@ const calendarOptions = ref({
         }
     },
     eventClick: (arg) => {
-        const originalSchedule = schedules.value.find(s => s.id == arg.event.id);
+        const originalSchedule = schedules.value.find((s) => s.id == arg.event.id);
         if (originalSchedule) {
             editSchedule(originalSchedule);
         }
@@ -471,10 +474,7 @@ const calendarOptions = ref({
         // This way the name will adapt to the available space automatically
 
         // Status icons
-        const statusIcon = status === 'pending' ? '⏳' :
-                         status === 'confirmed' ? '✓' :
-                         status === 'completed' ? '✓✓' :
-                         status === 'cancelled' ? '✕' : '';
+        const statusIcon = status === 'pending' ? '⏳' : status === 'confirmed' ? '✓' : status === 'completed' ? '✓✓' : status === 'cancelled' ? '✕' : '';
 
         // Build HTML content
         const container = document.createElement('div');
@@ -484,7 +484,7 @@ const calendarOptions = ref({
         const nameDiv = document.createElement('div');
         nameDiv.className = 'event-doctor-name';
         nameDiv.title = doctorName; // Full name on hover
-        
+
         // Add retén indicator BEFORE the name if applicable
         if (isReten) {
             const retenBadge = document.createElement('span');
@@ -493,11 +493,11 @@ const calendarOptions = ref({
             retenBadge.title = 'Turno Retén';
             nameDiv.appendChild(retenBadge);
         }
-        
+
         // Add doctor name text
         const nameText = document.createTextNode(doctorName);
         nameDiv.appendChild(nameText);
-        
+
         container.appendChild(nameDiv);
 
         // Shift display div
@@ -521,6 +521,39 @@ const calendarOptions = ref({
             }
 
             container.appendChild(shiftDiv);
+        } else {
+            // Custom time display (Personalized schedule)
+            const startTime = extendedProps.start_time?.substring(0, 5) || '';
+            const endTime = extendedProps.end_time?.substring(0, 5) || '';
+
+            if (startTime && endTime) {
+                const timeDiv = document.createElement('div');
+                timeDiv.className = 'event-shift-display'; // Reuse layout class
+
+                const timeSpan = document.createElement('span');
+                timeSpan.className = 'shift-custom-time';
+                // Add default styling for visibility
+                timeSpan.style.fontSize = '0.7rem';
+                timeSpan.style.backgroundColor = '#f1f5f9';
+                timeSpan.style.padding = '1px 3px';
+                timeSpan.style.borderRadius = '3px';
+                timeSpan.style.color = '#334155';
+                timeSpan.style.border = '1px solid #cbd5e1';
+
+                timeSpan.textContent = `${startTime}-${endTime}`;
+
+                timeDiv.appendChild(timeSpan);
+
+                // Add status icon
+                if (statusIcon) {
+                    const iconSpan = document.createElement('span');
+                    iconSpan.className = 'status-icon';
+                    iconSpan.textContent = ` ${statusIcon}`;
+                    timeDiv.appendChild(iconSpan);
+                }
+
+                container.appendChild(timeDiv);
+            }
         }
 
         return { domNodes: [container] };
@@ -528,7 +561,7 @@ const calendarOptions = ref({
     dayCellContent: (arg) => {
         // Always return custom HTML to ensure day numbers are always visible
         const dateStr = arg.date.toISOString().split('T')[0];
-        const selectedDaysForDate = selectedDays.value.filter(d => d.date === dateStr);
+        const selectedDaysForDate = selectedDays.value.filter((d) => d.date === dateStr);
 
         // Check if it's Sunday (0 = Sunday) or a Holiday
         const isSunday = arg.date.getDay() === 0;
@@ -537,11 +570,9 @@ const calendarOptions = ref({
 
         // Get holiday name if applicable
         const holidayName = isHol ? getHolidayInfo(dateStr) : null;
-        const stripeTitle = isHol ? holidayName : (isSunday ? 'Domingo' : '');
+        const stripeTitle = isHol ? holidayName : isSunday ? 'Domingo' : '';
 
-        const nonWorkingDayStripe = isNonWorkingDay
-            ? `<div class="sunday-stripe" title="${stripeTitle}"></div>`
-            : '';
+        const nonWorkingDayStripe = isNonWorkingDay ? `<div class="sunday-stripe" title="${stripeTitle}"></div>` : '';
 
         // Build indicators HTML - ONLY for quick-fill mode
         // Existing schedules are now rendered as native FullCalendar events
@@ -554,15 +585,17 @@ const calendarOptions = ref({
 
             indicatorsHtml = `
                 <div class="quick-fill-indicators-container count-${indicatorCount}">
-                    ${groupedDoctors.map((group) => {
-                        const colorIndex = doctorColorMap.value[group.doctorId] || 0;
-                        return `
+                    ${groupedDoctors
+                        .map((group) => {
+                            const colorIndex = doctorColorMap.value[group.doctorId] || 0;
+                            return `
                             <div class="quick-fill-indicator doctor-${colorIndex} ${group.hasConflict ? 'has-conflict' : ''}">
-                                <div class="doctor-name" title="${group.doctorName}">${truncateDoctorName(group.doctorName, indicatorCount === 1 ? 15 : (indicatorCount === 2 ? 10 : 8))}</div>
+                                <div class="doctor-name" title="${group.doctorName}">${truncateDoctorName(group.doctorName, indicatorCount === 1 ? 15 : indicatorCount === 2 ? 10 : 8)}</div>
                                 <div class="shift-display">${group.shiftsDisplay}</div>
                             </div>
                         `;
-                    }).join('')}
+                        })
+                        .join('')}
                 </div>
             `;
         }
@@ -580,26 +613,26 @@ const calendarOptions = ref({
     },
     events: computed(() => {
         // Create a consistent color mapping for all doctors currently visible
-        const visibleDoctorIds = [...new Set(schedules.value.map(s => s.id_doctors))];
+        const visibleDoctorIds = [...new Set(schedules.value.map((s) => s.id_doctors))];
         const doctorColorMapping = {};
         visibleDoctorIds.forEach((doctorId, index) => {
             doctorColorMapping[doctorId] = index % 6; // Cycle through 6 colors
         });
-        
-        const calendarEvents = schedules.value.map(schedule => {
+
+        const calendarEvents = schedules.value.map((schedule) => {
             // Find the full doctor data from the doctors store to get specialty info
-            const fullDoctor = doctors.value.find(d => d.id === schedule.id_doctors);
-            
+            const fullDoctor = doctors.value.find((d) => d.id === schedule.id_doctors);
+
             // Get the first specialty's color if available
             const specialtyColor = fullDoctor?.specialties?.[0]?.color || '#3788d8';
-            
+
             // Get consistent doctor color index
             const doctorColorIndex = doctorColorMapping[schedule.id_doctors] || 0;
-            
+
             // Use the same date for start and end (don't extend to next day)
             const startDateTime = `${schedule.date}T${schedule.start_time}`;
             const endDateTime = `${schedule.date}T${schedule.end_time}`;
-            
+
             // Don't truncate - let CSS handle it with text-overflow: ellipsis
             const doctorName = schedule.doctor?.name || '';
 
@@ -627,12 +660,7 @@ const calendarOptions = ref({
                 borderColor: 'transparent', // Use CSS for border
                 textColor: '#1f2937', // Dark text
                 // Add visual styling based on status and doctor
-                classNames: [
-                    `status-${schedule.status}`,
-                    `doctor-color-${doctorColorIndex}`,
-                    schedule.medical_shift?.crosses_midnight ? 'crosses-midnight' : '',
-                    shiftColorClass
-                ]
+                classNames: [`status-${schedule.status}`, `doctor-color-${doctorColorIndex}`, schedule.medical_shift?.crosses_midnight ? 'crosses-midnight' : '', shiftColorClass]
             };
         });
 
@@ -681,72 +709,88 @@ const handleQuickDateSelect = (dateInfo) => {
     }
 
     const dateStr = dateInfo.startStr.split('T')[0];
-    
+
     // Check if this exact day+shift combination already exists
-    const existingDayShift = selectedDays.value.find(
-        d => d.date === dateStr && d.shiftIds.includes(quickFillConfig.shiftId)
-    );
-    
+    const existingDayShift = selectedDays.value.find((d) => d.date === dateStr && d.shiftIds.includes(quickFillConfig.shiftId));
+
     if (existingDayShift) {
         // This exact day+shift is already selected, ignore
         return;
     }
 
     // Detect conflicts
-    const hasConflict = detectConflict(dateStr, quickFillConfig.shiftId);
-    
+    const hasConflict = detectConflict(dateStr, quickFillConfig.shiftId, quickFillConfig.isCustom, quickFillConfig.startTime, quickFillConfig.endTime);
+
     // Get doctor information
     const doctor = getDoctorById(doctorFilter.value);
     const doctorName = doctor?.name || '';
-    
+
     // Get shift display
-    const shiftDisplay = getShiftDisplay(quickFillConfig.shiftId);
+    let shiftDisplay = '';
+    if (quickFillConfig.isCustom) {
+        shiftDisplay = `<span class="text-xs font-semibold bg-gray-100 text-gray-700 px-1 rounded border border-gray-300">${quickFillConfig.startTime}-${quickFillConfig.endTime}</span>`;
+    } else {
+        shiftDisplay = getShiftDisplay(quickFillConfig.shiftId);
+    }
 
     selectedDays.value.push({
         date: dateStr,
         hasConflict,
         doctorId: doctorFilter.value,
         doctorName: doctorName,
-        shiftIds: [quickFillConfig.shiftId],
-        shiftDisplay: shiftDisplay
+        shiftIds: quickFillConfig.isCustom ? [] : [quickFillConfig.shiftId],
+        shiftDisplay: shiftDisplay,
+        // Custom properties
+        isCustom: quickFillConfig.isCustom,
+        startTime: quickFillConfig.startTime,
+        endTime: quickFillConfig.endTime
     });
 
     // Force calendar re-render to show the new selection
     refreshCalendar();
 };
 
-const detectConflict = (date, shiftId) => {
+const detectConflict = (date, shiftId, isCustom, customStart, customEnd) => {
     if (!specialtyFilter.value) return false;
 
-    const shift = medicalShifts.value.find(s => s.id === shiftId);
-    if (!shift) return false;
+    // Get times to check
+    let checkStart, checkEnd;
 
-    return schedules.value.some(schedule => {
+    if (isCustom) {
+        checkStart = customStart;
+        checkEnd = customEnd;
+    } else {
+        const shift = medicalShifts.value.find((s) => s.id === shiftId);
+        if (!shift) return false;
+        checkStart = shift.start_time;
+        checkEnd = shift.end_time;
+    }
+
+    return schedules.value.some((schedule) => {
         if (schedule.date !== date) return false;
-        
-        const doctorHasSpecialty = schedule.doctor?.specialties?.some(
-            specialty => specialty.id === specialtyFilter.value
-        );
-        
+
+        const doctorHasSpecialty = schedule.doctor?.specialties?.some((specialty) => specialty.id === specialtyFilter.value);
+
         if (!doctorHasSpecialty) return false;
-        
+
         const scheduleStart = schedule.start_time;
         const scheduleEnd = schedule.end_time;
-        const shiftStart = shift.start_time;
-        const shiftEnd = shift.end_time;
 
-        return (shiftStart < scheduleEnd && shiftEnd > scheduleStart);
+        // Basic overlap check
+        return checkStart < scheduleEnd && checkEnd > scheduleStart;
     });
 };
 
 const conflicts = computed(() => {
-    return selectedDays.value.filter(day => day.hasConflict).map(day => ({
-        date: day.date
-    }));
+    return selectedDays.value
+        .filter((day) => day.hasConflict)
+        .map((day) => ({
+            date: day.date
+        }));
 });
 
 const handleRemoveDay = (date) => {
-    const index = selectedDays.value.findIndex(d => d.date === date);
+    const index = selectedDays.value.findIndex((d) => d.date === date);
     if (index !== -1) {
         selectedDays.value.splice(index, 1);
         // Force calendar re-render to remove the visual indicator
@@ -791,8 +835,8 @@ const handleSendBatch = async () => {
         return;
     }
 
-    // Validation: Check if shift is selected
-    if (!quickFillConfig.shiftId) {
+    // Validation: Check if shift is selected (only if NOT custom)
+    if (!quickFillConfig.isCustom && !quickFillConfig.shiftId) {
         confirm.require({
             message: 'Debe seleccionar un turno antes de enviar los horarios',
             header: 'Turno Requerido',
@@ -804,7 +848,19 @@ const handleSendBatch = async () => {
         return;
     }
 
-    // Build schedules array - each day with multiple shifts creates multiple records
+    // Validation: Custom times
+    if (quickFillConfig.isCustom && (!quickFillConfig.startTime || !quickFillConfig.endTime)) {
+        confirm.require({
+            message: 'Los horarios personalizados deben tener hora de inicio y fin',
+            header: 'Horario Incompleto',
+            icon: 'pi pi-exclamation-triangle',
+            acceptLabel: 'Entendido',
+            rejectLabel: null,
+            rejectClass: 'hidden'
+        });
+        return;
+    }
+
     const schedulesArray = [];
 
     try {
@@ -818,41 +874,56 @@ const handleSendBatch = async () => {
             const isHol = isHoliday(day.date);
             const isNonWorkingDay = isSunday || isHol;
 
-            // Iterate through each shift for this day
-            for (const shiftId of day.shiftIds) {
-                const shift = medicalShifts.value.find(s => s.id === shiftId);
-                if (!shift) {
-                    console.warn(`Turno con ID ${shiftId} no encontrado`);
-                    continue;
-                }
-
-                // Validate time formats
-                if (!shift.start_time || !shift.end_time) {
-                    console.warn(`Turno ${shift.description} no tiene horarios definidos`);
-                    continue;
-                }
-
-                // Determine if it's a night shift
-                const shiftAbbrev = getShiftAbbreviation(shift.description);
-                const isNightShift = shiftAbbrev === 'N';
-
-                // Set is_payment_payroll to false if it's:
-                // - A night shift, OR
-                // - A Sunday, OR
-                // - A Holiday
-                const shouldIncludeInPayroll = !isNightShift && !isNonWorkingDay && quickFillConfig.isPaymentPayroll;
-
+            if (day.isCustom) {
+                // Custom Schedule Logic
                 schedulesArray.push({
                     id_doctors: day.doctorId,
-                    id_medical_shift: shiftId,
+                    id_medical_shift: null,
                     date: day.date,
-                    start_time: shift.start_time,
-                    end_time: shift.end_time,
+                    start_time: day.startTime,
+                    end_time: day.endTime,
                     category: quickFillConfig.category,
                     status: quickFillConfig.status,
-                    is_payment_payroll: shouldIncludeInPayroll, // false for night shifts, Sundays, and Holidays
+                    is_payment_payroll: quickFillConfig.isPaymentPayroll,
                     notes: quickFillConfig.notes || null
                 });
+            } else {
+                // Standard Shift Logic
+                for (const shiftId of day.shiftIds) {
+                    const shift = medicalShifts.value.find((s) => s.id === shiftId);
+                    if (!shift) {
+                        console.warn(`Turno con ID ${shiftId} no encontrado`);
+                        continue;
+                    }
+
+                    // Validate time formats
+                    if (!shift.start_time || !shift.end_time) {
+                        console.warn(`Turno ${shift.description} no tiene horarios definidos`);
+                        continue;
+                    }
+
+                    // Determine if it's a night shift
+                    const shiftAbbrev = getShiftAbbreviation(shift.description);
+                    const isNightShift = shiftAbbrev === 'N';
+
+                    // Set is_payment_payroll to false if it's:
+                    // - A night shift, OR
+                    // - A Sunday, OR
+                    // - A Holiday
+                    const shouldIncludeInPayroll = !isNightShift && !isNonWorkingDay && quickFillConfig.isPaymentPayroll;
+
+                    schedulesArray.push({
+                        id_doctors: day.doctorId,
+                        id_medical_shift: shiftId,
+                        date: day.date,
+                        start_time: shift.start_time,
+                        end_time: shift.end_time,
+                        category: quickFillConfig.category,
+                        status: quickFillConfig.status,
+                        is_payment_payroll: shouldIncludeInPayroll,
+                        notes: quickFillConfig.notes || null
+                    });
+                }
             }
         }
     } catch (error) {
@@ -883,11 +954,11 @@ const handleSendBatch = async () => {
     try {
         isSendingBatch.value = true;
         batchProgressVisible.value = true;
-        
+
         const results = await createScheduleBatch(schedulesArray);
-        
+
         console.log('📊 [Batch Results] Resultados recibidos:', results);
-        
+
         // Ensure the results have the correct structure
         batchResults.value = {
             successful: results.successful || [],
@@ -895,12 +966,12 @@ const handleSendBatch = async () => {
             total: results.total || schedulesArray.length,
             message: results.message || ''
         };
-        
+
         console.log('📊 [Batch Results] Resultados procesados:', batchResults.value);
-        
+
         // Refresh schedules to show the new ones in the calendar
-        await fetchSchedules();
-        
+        fetchSchedules();
+
         // Clear selected days on success
         if (batchResults.value.successful.length > 0) {
             selectedDays.value = [];
@@ -909,7 +980,7 @@ const handleSendBatch = async () => {
         }
     } catch (error) {
         console.error('❌ [Batch Error] Error al enviar batch:', error);
-        
+
         // Set error results
         batchResults.value = {
             successful: [],
@@ -958,7 +1029,6 @@ onMounted(() => {
     fetchSchedules();
     fetchSpecialties();
 });
-
 </script>
 
 <template>
@@ -985,28 +1055,21 @@ onMounted(() => {
                     <Select v-model="specialtyFilter" :options="medicalSpecialties" optionLabel="name" optionValue="id" placeholder="Filtrar por Especialidad" class="w-full" @change="handleSpecialtyFilter($event.value)" showClear filter />
 
                     <div class="flex flex-col gap-2 w-full">
-                        <Select 
-                            v-model="doctorFilter" 
-                            :options="filteredDoctors" 
-                            :optionLabel="(option) => option.name + (option.medical_specialty ? ` (${option.medical_specialty.name})` : '')" 
-                            optionValue="id" 
-                            placeholder="Filtrar por Médico" 
-                            class="w-full" 
+                        <Select
+                            v-model="doctorFilter"
+                            :options="filteredDoctors"
+                            :optionLabel="(option) => option.name + (option.medical_specialty ? ` (${option.medical_specialty.name})` : '')"
+                            optionValue="id"
+                            placeholder="Filtrar por Médico"
+                            class="w-full"
                             :disabled="!specialtyFilter"
-                            @change="handleDoctorFilter($event.value)" 
-                            showClear 
-                            filter 
+                            @change="handleDoctorFilter($event.value)"
+                            showClear
+                            filter
                         />
                         <div class="flex items-center gap-2" v-if="doctorFilter">
-                            <Checkbox 
-                                v-model="enableDoctorFilter" 
-                                inputId="enableDoctorFilter" 
-                                binary 
-                                @update:modelValue="handleToggleDoctorFilter"
-                            />
-                            <label for="enableDoctorFilter" class="cursor-pointer text-sm">
-                                Aplicar filtro de médico
-                            </label>
+                            <Checkbox v-model="enableDoctorFilter" inputId="enableDoctorFilter" binary @update:modelValue="handleToggleDoctorFilter" />
+                            <label for="enableDoctorFilter" class="cursor-pointer text-sm"> Aplicar filtro de médico </label>
                         </div>
                     </div>
 
@@ -1020,23 +1083,9 @@ onMounted(() => {
                         </label>
                     </div>
 
-                    <Button 
-                        v-if="hasActiveFilters" 
-                        label="Limpiar Filtros" 
-                        icon="pi pi-filter-slash" 
-                        severity="secondary" 
-                        outlined 
-                        @click="handleClearFilters" 
-                    />
-                    
-                    <Button 
-                        label="Exportar PDF" 
-                        icon="pi pi-file-pdf" 
-                        severity="help" 
-                        :disabled="!specialtyFilter || isExportingPDF" 
-                        :loading="isExportingPDF"
-                        @click="handleExportPDF" 
-                    />
+                    <Button v-if="hasActiveFilters" label="Limpiar Filtros" icon="pi pi-filter-slash" severity="secondary" outlined @click="handleClearFilters" />
+
+                    <Button label="Exportar PDF" icon="pi pi-file-pdf" severity="help" :disabled="!specialtyFilter || isExportingPDF" :loading="isExportingPDF" @click="handleExportPDF" />
                 </div>
             </div>
 
@@ -1060,24 +1109,9 @@ onMounted(() => {
         </div>
 
         <!-- Diálogos -->
-        <ScheduleDialog
-            v-model:visible="scheduleDialogVisible"
-            :schedule="selectedSchedule"
-            :doctors="doctors"
-            :medical-shifts="medicalShifts"
-            :saving="isSaving"
-            @save-schedule="handleSaveSchedule"
-            @delete-schedule="confirmDeleteSchedule"
-        />
+        <ScheduleDialog v-model:visible="scheduleDialogVisible" :schedule="selectedSchedule" :doctors="doctors" :medical-shifts="medicalShifts" :saving="isSaving" @save-schedule="handleSaveSchedule" @delete-schedule="confirmDeleteSchedule" />
 
-        <BatchProgressDialog
-            v-model:visible="batchProgressVisible"
-            :results="batchResults"
-            :loading="isSendingBatch"
-            @close="handleCloseBatchProgress"
-        />
-
-
+        <BatchProgressDialog v-model:visible="batchProgressVisible" :results="batchResults" :loading="isSendingBatch" @close="handleCloseBatchProgress" />
     </div>
 </template>
 
@@ -1513,7 +1547,8 @@ onMounted(() => {
 }
 
 @keyframes pulse-conflict {
-    0%, 100% {
+    0%,
+    100% {
         box-shadow: 0 2px 4px rgba(251, 146, 60, 0.15);
     }
     50% {
@@ -1538,13 +1573,7 @@ onMounted(() => {
 :deep(.quick-fill-indicator.status-cancelled) {
     opacity: 0.5;
     text-decoration: line-through;
-    background: repeating-linear-gradient(
-        45deg,
-        rgba(239, 68, 68, 0.1),
-        rgba(239, 68, 68, 0.1) 10px,
-        rgba(239, 68, 68, 0.2) 10px,
-        rgba(239, 68, 68, 0.2) 20px
-    ) !important;
+    background: repeating-linear-gradient(45deg, rgba(239, 68, 68, 0.1), rgba(239, 68, 68, 0.1) 10px, rgba(239, 68, 68, 0.2) 10px, rgba(239, 68, 68, 0.2) 20px) !important;
 }
 
 /* Make existing schedule indicators clickable */
@@ -1785,7 +1814,8 @@ onMounted(() => {
 }
 
 @keyframes pulse-conflict-dark {
-    0%, 100% {
+    0%,
+    100% {
         box-shadow: 0 2px 4px rgba(251, 146, 60, 0.25);
     }
     50% {
@@ -2273,13 +2303,7 @@ onMounted(() => {
 :deep(.fc-event.status-cancelled) {
     opacity: 0.5 !important;
     text-decoration: line-through !important;
-    background: repeating-linear-gradient(
-        45deg,
-        rgba(239, 68, 68, 0.1),
-        rgba(239, 68, 68, 0.1) 10px,
-        rgba(239, 68, 68, 0.2) 10px,
-        rgba(239, 68, 68, 0.2) 20px
-    ) !important;
+    background: repeating-linear-gradient(45deg, rgba(239, 68, 68, 0.1), rgba(239, 68, 68, 0.1) 10px, rgba(239, 68, 68, 0.2) 10px, rgba(239, 68, 68, 0.2) 20px) !important;
 }
 
 :deep(.fc-event.status-cancelled)::before {
@@ -2364,6 +2388,4 @@ onMounted(() => {
     color: #d8b4fe;
     background: rgba(192, 132, 252, 0.2);
 }
-
-
 </style>

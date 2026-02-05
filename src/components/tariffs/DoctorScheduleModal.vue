@@ -85,6 +85,10 @@ const calendarOptions = computed(() => ({
                 displayText = `${schedule.start_time?.substring(0, 5)}-${schedule.end_time?.substring(0, 5)}`;
                 shiftType = 'custom';
             }
+        } else {
+            // Sin turno médico asignado (Personalizado puro)
+            displayText = `${schedule.start_time?.substring(0, 5)}-${schedule.end_time?.substring(0, 5)}`;
+            shiftType = 'custom';
         }
 
         return {
