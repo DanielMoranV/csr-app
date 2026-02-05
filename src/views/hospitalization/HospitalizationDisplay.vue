@@ -98,7 +98,14 @@ const activeRooms = computed(() => {
                 beds: activeBeds
             };
         })
-        .filter((room) => room.beds.length > 0); // Solo habitaciones con camas ocupadas
+        .filter((room) => room.beds.length > 0) // Solo habitaciones con camas ocupadas
+        .sort((a, b) => {
+            // Ordenar por número de habitación (ascendente)
+            // Usamos localeCompare con numeric: true para manejar correctamente números como strings (ej: "2" vs "10")
+            const roomA = String(a.room_number);
+            const roomB = String(b.room_number);
+            return roomA.localeCompare(roomB, undefined, { numeric: true, sensitivity: 'base' });
+        });
 
     return filtered;
 });
@@ -538,11 +545,7 @@ onUnmounted(() => {
                             <div class="vr-patient">
                                 <div class="vr-patient-name">
                                     {{ bed.patient_name }}
-                                    <span 
-                                        class="insurance-badge-inline" 
-                                        :style="{ backgroundColor: bed.insurance_color }"
-                                        v-tooltip.top="`${bed.insurance_name} (${bed.code_insurance})`"
-                                    >
+                                    <span class="insurance-badge-inline" :style="{ backgroundColor: bed.insurance_color }" v-tooltip.top="`${bed.insurance_name} (${bed.code_insurance})`">
                                         {{ bed.insurance_label }}
                                     </span>
                                 </div>
@@ -576,11 +579,7 @@ onUnmounted(() => {
                             <div class="vr-patient">
                                 <div class="vr-patient-name">
                                     {{ bed.patient_name }}
-                                    <span 
-                                        class="insurance-badge-inline" 
-                                        :style="{ backgroundColor: bed.insurance_color }"
-                                        v-tooltip.top="`${bed.insurance_name} (${bed.code_insurance})`"
-                                    >
+                                    <span class="insurance-badge-inline" :style="{ backgroundColor: bed.insurance_color }" v-tooltip.top="`${bed.insurance_name} (${bed.code_insurance})`">
                                         {{ bed.insurance_label }}
                                     </span>
                                 </div>
@@ -625,11 +624,7 @@ onUnmounted(() => {
                             <div class="vr-patient">
                                 <div class="vr-patient-name">
                                     {{ bed.patient_name }}
-                                    <span 
-                                        class="insurance-badge-inline" 
-                                        :style="{ backgroundColor: bed.insurance_color }"
-                                        v-tooltip.top="`${bed.insurance_name} (${bed.code_insurance})`"
-                                    >
+                                    <span class="insurance-badge-inline" :style="{ backgroundColor: bed.insurance_color }" v-tooltip.top="`${bed.insurance_name} (${bed.code_insurance})`">
                                         {{ bed.insurance_label }}
                                     </span>
                                 </div>
@@ -668,11 +663,7 @@ onUnmounted(() => {
                 </div>
                 <div class="bed-card-patient">
                     {{ bed.patient_name }}
-                    <span 
-                        class="insurance-badge-inline-card" 
-                        :style="{ backgroundColor: bed.insurance_color }"
-                        v-tooltip.top="`${bed.insurance_name} (${bed.code_insurance})`"
-                    >
+                    <span class="insurance-badge-inline-card" :style="{ backgroundColor: bed.insurance_color }" v-tooltip.top="`${bed.insurance_name} (${bed.code_insurance})`">
                         {{ bed.insurance_label }}
                     </span>
                 </div>
