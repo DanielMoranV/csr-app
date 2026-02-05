@@ -696,22 +696,46 @@ const handleQuickDateSelect = (dateInfo) => {
         return;
     }
 
-    if (!quickFillConfig.shiftId) {
-        confirm.require({
-            message: 'Debe seleccionar un turno antes de agregar días',
-            header: 'Turno Requerido',
-            icon: 'pi pi-exclamation-triangle',
-            acceptLabel: 'Entendido',
-            rejectLabel: null,
-            rejectClass: 'hidden'
-        });
-        return;
+    // Validation for Custom Time vs Shift
+    if (quickFillConfig.isCustom) {
+        if (!quickFillConfig.startTime || !quickFillConfig.endTime) {
+            confirm.require({
+                message: 'Debe ingresar horas de inicio y fin para el horario personalizado',
+                header: 'Horario Incompleto',
+                icon: 'pi pi-exclamation-triangle',
+                acceptLabel: 'Entendido',
+                rejectLabel: null,
+                rejectClass: 'hidden'
+            });
+            return;
+        }
+    } else {
+        if (!quickFillConfig.shiftId) {
+            confirm.require({
+                message: 'Debe seleccionar un turno antes de agregar días',
+                header: 'Turno Requerido',
+                icon: 'pi pi-exclamation-triangle',
+                acceptLabel: 'Entendido',
+                rejectLabel: null,
+                rejectClass: 'hidden'
+            });
+            return;
+        }
     }
 
     const dateStr = dateInfo.startStr.split('T')[0];
 
     // Check if this exact day+shift combination already exists
-    const existingDayShift = selectedDays.value.find((d) => d.date === dateStr && d.shiftIds.includes(quickFillConfig.shiftId));
+    // For custom times, we check if start/end times match exactly
+    const existingDayShift = selectedDays.value.find((d) => {
+        if (d.date !== dateStr) return false;
+
+        if (quickFillConfig.isCustom) {
+            return d.isCustom && d.startTime === quickFillConfig.startTime && d.endTime === quickFillConfig.endTime;
+        } else {
+            return !d.isCustom && d.shiftIds.includes(quickFillConfig.shiftId);
+        }
+    });
 
     if (existingDayShift) {
         // This exact day+shift is already selected, ignore
@@ -875,13 +899,17 @@ const handleSendBatch = async () => {
             const isNonWorkingDay = isSunday || isHol;
 
             if (day.isCustom) {
+                // Ensure time is in HH:MM:SS format
+                const startTimeFormatted = day.startTime.length === 5 ? `${day.startTime}:00` : day.startTime;
+                const endTimeFormatted = day.endTime.length === 5 ? `${day.endTime}:00` : day.endTime;
+
                 // Custom Schedule Logic
                 schedulesArray.push({
                     id_doctors: day.doctorId,
                     id_medical_shift: null,
                     date: day.date,
-                    start_time: day.startTime,
-                    end_time: day.endTime,
+                    start_time: startTimeFormatted,
+                    end_time: endTimeFormatted,
                     category: quickFillConfig.category,
                     status: quickFillConfig.status,
                     is_payment_payroll: quickFillConfig.isPaymentPayroll,
