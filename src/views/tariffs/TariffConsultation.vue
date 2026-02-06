@@ -504,7 +504,7 @@ const exportToExcel = () => {
                         </div>
                     </template>
                 </Column>
-
+                <!-- 
                 <Column field="fecha_hora_turno" header="Hora" :sortable="true" style="min-width: 100px">
                     <template #body="{ data }">
                         <div class="time-cell">
@@ -512,7 +512,7 @@ const exportToExcel = () => {
                             <span>{{ data.fecha_hora_turno ? new Date(data.fecha_hora_turno).toLocaleTimeString('es-PE', { hour: '2-digit', minute: '2-digit' }) : '-' }}</span>
                         </div>
                     </template>
-                </Column>
+                </Column> -->
 
                 <Column field="nombre_paciente" header="Paciente" :sortable="true" style="min-width: 250px">
                     <template #body="{ data }">
