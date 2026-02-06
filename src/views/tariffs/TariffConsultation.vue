@@ -64,8 +64,8 @@ const fetchDoctorShifts = async () => {
 
         const response = await customMigrations.getTurnosByService(payload);
 
-        if (response.data && response.data.success && response.data.data && Array.isArray(response.data.data.data)) {
-            shiftList.value = response.data.data.data;
+        if (response && response.success && response.data && Array.isArray(response.data.data)) {
+            shiftList.value = response.data.data;
         } else {
             shiftList.value = [];
         }
@@ -442,10 +442,15 @@ const exportToExcel = () => {
                     </template>
                 </Column>
 
-                <Column field="fecha_hora_turno" header="Hora" :sortable="true" style="width: 120px">
+                <!-- <Column field="fecha_hora_turno" header="Fecha y Hora" :sortable="true" style="width: 180px">
                     <template #body="{ data }">
-                        <!-- Extract time from ISO string -->
-                        <span>{{ data.fecha_hora_turno ? new Date(data.fecha_hora_turno).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : '-' }}</span>
+                        <span>{{ data.fecha_hora_turno ? new Date(data.fecha_hora_turno).toLocaleString([], { year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit' }) : '-' }}</span>
+                    </template>
+                </Column> -->
+
+                <Column field="usuario_creacion" header="Asignado por" :sortable="true" style="width: 150px">
+                    <template #body="{ data }">
+                        <span class="text-sm">{{ data.usuario_creacion || '-' }}</span>
                     </template>
                 </Column>
 
