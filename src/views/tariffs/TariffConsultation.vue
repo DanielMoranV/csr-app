@@ -200,6 +200,27 @@ const formatCurrency = (value) => {
     return `S/ ${parseFloat(value).toFixed(2)}`;
 };
 
+// Helper methods for shift modal
+const getEstadoSeverity = (estado) => {
+    const estadoMap = {
+        ATENDIDO: 'success',
+        PENDIENTE: 'warning',
+        CANCELADO: 'danger',
+        EN_PROCESO: 'info'
+    };
+    return estadoMap[estado] || 'secondary';
+};
+
+const getEstadoIcon = (estado) => {
+    const iconMap = {
+        ATENDIDO: 'pi-check-circle',
+        PENDIENTE: 'pi-clock',
+        CANCELADO: 'pi-times-circle',
+        EN_PROCESO: 'pi-spinner'
+    };
+    return iconMap[estado] || 'pi-circle';
+};
+
 // Exportar a Excel
 const exportToExcel = () => {
     if (!filteredTariffs.value.length) return;
@@ -413,64 +434,129 @@ const exportToExcel = () => {
         <DoctorScheduleModal v-model:visible="scheduleModalVisible" :doctor-id="selectedDoctor?.id" :doctor-name="selectedDoctor?.name" />
 
         <!-- Shift List Modal -->
-        <Dialog v-model:visible="shiftModalVisible" modal header="Lista de Turnos" :style="{ width: '80vw', maxWidth: '1000px' }" :breakpoints="{ '960px': '90vw' }">
+        <Dialog v-model:visible="shiftModalVisible" modal :style="{ width: '90vw', maxWidth: '1200px' }" :breakpoints="{ '1400px': '95vw', '960px': '98vw' }" class="shift-modal">
             <template #header>
-                <div class="flex flex-column gap-2">
-                    <span class="text-xl font-bold">Lista de Turnos - {{ selectedDoctor?.name }}</span>
-                    <div class="flex align-items-center gap-2">
-                        <span class="text-sm font-semibold">Fecha:</span>
-                        <Calendar v-model="selectedShiftDate" dateFormat="yy-mm-dd" :showIcon="true" class="p-inputtext-sm" />
-                        <Button icon="pi pi-refresh" text rounded @click="fetchDoctorShifts" :loading="loadingShifts" />
+                <div class="shift-modal-header">
+                    <div class="header-top">
+                        <div class="header-title-section">
+                            <i class="pi pi-calendar-clock text-primary mr-2"></i>
+                            <div>
+                                <h3 class="modal-title">Lista de Turnos</h3>
+                                <p class="modal-subtitle">{{ selectedDoctor?.name }}</p>
+                            </div>
+                        </div>
+                        <div class="header-actions">
+                            <div class="date-picker-wrapper">
+                                <label class="date-label">
+                                    <i class="pi pi-calendar mr-1"></i>
+                                    Fecha:
+                                </label>
+                                <Calendar v-model="selectedShiftDate" dateFormat="dd/mm/yy" :showIcon="true" iconDisplay="input" class="compact-calendar" placeholder="Seleccionar fecha" />
+                            </div>
+                            <Button icon="pi pi-refresh" severity="secondary" outlined rounded @click="fetchDoctorShifts" :loading="loadingShifts" v-tooltip.top="'Actualizar lista'" />
+                        </div>
+                    </div>
+
+                    <!-- Stats Bar -->
+                    <div v-if="!loadingShifts && shiftList.length > 0" class="stats-bar">
+                        <div class="stat-item">
+                            <i class="pi pi-list"></i>
+                            <span class="stat-value">{{ shiftList.length }}</span>
+                            <span class="stat-label">Turnos</span>
+                        </div>
+                        <div class="stat-item">
+                            <i class="pi pi-check-circle text-green-500"></i>
+                            <span class="stat-value">{{ shiftList.filter((s) => s.estado_turno === 'ATENDIDO').length }}</span>
+                            <span class="stat-label">Atendidos</span>
+                        </div>
+                        <div class="stat-item">
+                            <i class="pi pi-clock text-orange-500"></i>
+                            <span class="stat-value">{{ shiftList.filter((s) => s.estado_turno === 'PENDIENTE').length }}</span>
+                            <span class="stat-label">Pendientes</span>
+                        </div>
                     </div>
                 </div>
             </template>
 
-            <div v-if="loadingShifts" class="flex justify-content-center p-6">
-                <i class="pi pi-spin pi-spinner text-4xl text-primary"></i>
+            <!-- Loading State -->
+            <div v-if="loadingShifts" class="loading-state">
+                <i class="pi pi-spin pi-spinner text-5xl text-primary mb-3"></i>
+                <p class="text-lg font-semibold">Cargando turnos...</p>
+                <p class="text-sm text-gray-500">Por favor espere</p>
             </div>
 
-            <DataTable v-else :value="shiftList" :paginator="true" :rows="10" :rowsPerPageOptions="[10, 20, 50]" stripedRows showGridlines responsiveLayout="scroll" class="p-datatable-sm">
+            <!-- Data Table -->
+            <DataTable v-else :value="shiftList" :paginator="true" :rows="15" :rowsPerPageOptions="[10, 15, 25, 50]" stripedRows showGridlines responsiveLayout="scroll" class="shift-table" sortField="numero_turno" :sortOrder="1">
                 <template #empty>
-                    <div class="text-center p-4">
-                        <p class="text-gray-500">No hay turnos para la fecha seleccionada.</p>
+                    <div class="empty-state">
+                        <i class="pi pi-inbox text-6xl text-gray-300 mb-4"></i>
+                        <h4 class="text-xl font-semibold mb-2">No hay turnos registrados</h4>
+                        <p class="text-gray-500">No se encontraron turnos para la fecha seleccionada.</p>
+                        <p class="text-sm text-gray-400 mt-2">Intenta seleccionar otra fecha</p>
                     </div>
                 </template>
 
-                <Column field="numero_turno" header="Nº Turno" :sortable="true" style="width: 100px">
+                <Column field="numero_turno" header="N° Turno" :sortable="true" style="min-width: 100px">
                     <template #body="{ data }">
-                        <span class="font-mono font-bold">{{ data.numero_turno }}</span>
+                        <div class="turno-badge">
+                            <i class="pi pi-hashtag text-xs"></i>
+                            <span class="font-mono font-bold">{{ data.numero_turno }}</span>
+                        </div>
                     </template>
                 </Column>
 
-                <!-- <Column field="fecha_hora_turno" header="Fecha y Hora" :sortable="true" style="width: 180px">
+                <Column field="fecha_hora_turno" header="Hora" :sortable="true" style="min-width: 100px">
                     <template #body="{ data }">
-                        <span>{{ data.fecha_hora_turno ? new Date(data.fecha_hora_turno).toLocaleString([], { year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit' }) : '-' }}</span>
-                    </template>
-                </Column> -->
-
-                <Column field="usuario_creacion" header="Asignado por" :sortable="true" style="width: 150px">
-                    <template #body="{ data }">
-                        <span class="text-sm">{{ data.usuario_creacion || '-' }}</span>
+                        <div class="time-cell">
+                            <i class="pi pi-clock text-primary mr-1"></i>
+                            <span>{{ data.fecha_hora_turno ? new Date(data.fecha_hora_turno).toLocaleTimeString('es-PE', { hour: '2-digit', minute: '2-digit' }) : '-' }}</span>
+                        </div>
                     </template>
                 </Column>
 
-                <Column field="nombre_paciente" header="Paciente" :sortable="true">
+                <Column field="nombre_paciente" header="Paciente" :sortable="true" style="min-width: 250px">
                     <template #body="{ data }">
-                        <span class="font-medium">{{ data.nombre_paciente }}</span>
+                        <div class="patient-cell">
+                            <i class="pi pi-user text-primary mr-2"></i>
+                            <span class="font-medium">{{ data.nombre_paciente }}</span>
+                        </div>
                     </template>
                 </Column>
 
-                <Column field="estado_turno" header="Estado" :sortable="true" style="width: 150px">
+                <Column field="tipo_turno" header="Tipo" :sortable="true" style="min-width: 180px">
                     <template #body="{ data }">
-                        <Tag :value="data.estado_turno" :severity="data.estado_turno === 'A' ? 'success' : 'info'" />
+                        <div class="tipo-cell">
+                            <i class="pi pi-tag mr-1"></i>
+                            <span class="text-sm">{{ data.tipo_turno || '-' }}</span>
+                        </div>
+                    </template>
+                </Column>
+
+                <Column field="estado_turno" header="Estado" :sortable="true" style="min-width: 130px">
+                    <template #body="{ data }">
+                        <Tag :value="data.estado_turno" :severity="getEstadoSeverity(data.estado_turno)" :icon="getEstadoIcon(data.estado_turno)" />
+                    </template>
+                </Column>
+
+                <Column field="usuario_creacion" header="Asignado por" :sortable="true" style="min-width: 150px">
+                    <template #body="{ data }">
+                        <div class="user-cell">
+                            <i class="pi pi-user-edit text-gray-400 mr-1"></i>
+                            <span class="text-sm">{{ data.usuario_creacion || '-' }}</span>
+                        </div>
                     </template>
                 </Column>
             </DataTable>
 
             <template #footer>
-                <div class="flex justify-content-between align-items-center w-full">
-                    <span class="text-sm text-gray-500" v-if="shiftList.length">Total: {{ shiftList.length }} turnos</span>
-                    <Button label="Cerrar" icon="pi pi-times" @click="shiftModalVisible = false" text />
+                <div class="shift-modal-footer">
+                    <div class="footer-info">
+                        <i class="pi pi-info-circle mr-2"></i>
+                        <span v-if="shiftList.length" class="text-sm">
+                            Mostrando <strong>{{ shiftList.length }}</strong> {{ shiftList.length === 1 ? 'turno' : 'turnos' }}
+                        </span>
+                    </div>
+                    <Button label="Cerrar" icon="pi pi-times" @click="shiftModalVisible = false" text severity="secondary" />
                 </div>
             </template>
         </Dialog>
@@ -811,6 +897,232 @@ const exportToExcel = () => {
 
     .stats-grid {
         grid-template-columns: 1fr;
+    }
+}
+
+/* ============================================================================
+   SHIFT MODAL STYLES
+   ============================================================================ */
+.shift-modal-header {
+    width: 100%;
+}
+
+.header-top {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    gap: 1rem;
+    margin-bottom: 1rem;
+    flex-wrap: wrap;
+}
+
+.header-title-section {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+}
+
+.header-title-section i {
+    font-size: 1.75rem;
+}
+
+.modal-title {
+    margin: 0;
+    font-size: 1.5rem;
+    font-weight: 700;
+    color: var(--text-color);
+    line-height: 1.2;
+}
+
+.modal-subtitle {
+    margin: 0.25rem 0 0 0;
+    font-size: 0.875rem;
+    color: var(--text-color-secondary);
+    font-weight: 500;
+}
+
+.header-actions {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    flex-wrap: wrap;
+}
+
+.date-picker-wrapper {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.date-label {
+    font-size: 0.875rem;
+    font-weight: 600;
+    color: var(--text-color);
+    display: flex;
+    align-items: center;
+    white-space: nowrap;
+}
+
+.compact-calendar {
+    min-width: 180px;
+}
+
+/* Stats Bar */
+.stats-bar {
+    display: flex;
+    gap: 1rem;
+    padding: 1rem;
+    background: var(--surface-ground);
+    border-radius: 8px;
+    border: 1px solid var(--surface-border);
+}
+
+.stat-item {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.5rem 1rem;
+    background: var(--surface-card);
+    border-radius: 6px;
+    flex: 1;
+    min-width: 0;
+}
+
+.stat-item i {
+    font-size: 1.25rem;
+    color: var(--primary-color);
+}
+
+.stat-value {
+    font-size: 1.25rem;
+    font-weight: 700;
+    color: var(--text-color);
+}
+
+.stat-label {
+    font-size: 0.75rem;
+    color: var(--text-color-secondary);
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+/* Loading State */
+.loading-state {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 4rem 2rem;
+    text-align: center;
+}
+
+/* Empty State */
+.empty-state {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 4rem 2rem;
+    text-align: center;
+}
+
+/* Table Cells */
+.turno-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.25rem;
+    padding: 0.25rem 0.75rem;
+    background: var(--primary-color);
+    color: white;
+    border-radius: 6px;
+    font-size: 0.875rem;
+}
+
+.time-cell,
+.patient-cell,
+.tipo-cell,
+.user-cell {
+    display: flex;
+    align-items: center;
+}
+
+.patient-cell {
+    font-size: 0.95rem;
+}
+
+.tipo-cell {
+    color: var(--text-color-secondary);
+}
+
+.user-cell {
+    font-size: 0.875rem;
+}
+
+/* Modal Footer */
+.shift-modal-footer {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    width: 100%;
+    gap: 1rem;
+}
+
+.footer-info {
+    display: flex;
+    align-items: center;
+    color: var(--text-color-secondary);
+}
+
+/* Responsive Shift Modal */
+@media (max-width: 960px) {
+    .header-top {
+        flex-direction: column;
+        align-items: stretch;
+    }
+
+    .header-actions {
+        justify-content: space-between;
+    }
+
+    .stats-bar {
+        flex-direction: column;
+        gap: 0.5rem;
+    }
+
+    .stat-item {
+        justify-content: center;
+    }
+}
+
+@media (max-width: 640px) {
+    .modal-title {
+        font-size: 1.25rem;
+    }
+
+    .stats-bar {
+        padding: 0.75rem;
+    }
+
+    .stat-item {
+        padding: 0.5rem;
+    }
+
+    .stat-value {
+        font-size: 1.1rem;
+    }
+
+    .stat-label {
+        font-size: 0.7rem;
+    }
+
+    .date-picker-wrapper {
+        flex-direction: column;
+        align-items: stretch;
+        width: 100%;
+    }
+
+    .compact-calendar {
+        width: 100%;
     }
 }
 </style>
