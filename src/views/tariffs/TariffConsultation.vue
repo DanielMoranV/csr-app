@@ -1094,35 +1094,231 @@ const exportToExcel = () => {
     }
 }
 
+/* Mobile Portrait Optimizations */
 @media (max-width: 640px) {
-    .modal-title {
-        font-size: 1.25rem;
+    /* Modal adjustments */
+    .shift-modal :deep(.p-dialog) {
+        margin: 0.5rem;
     }
 
-    .stats-bar {
+    .shift-modal :deep(.p-dialog-content) {
         padding: 0.75rem;
     }
 
-    .stat-item {
+    /* Compact header */
+    .modal-title {
+        font-size: 1.1rem;
+        line-height: 1.3;
+    }
+
+    .modal-subtitle {
+        font-size: 0.75rem;
+        line-height: 1.2;
+    }
+
+    .header-title-section i {
+        font-size: 1.25rem;
+    }
+
+    /* Stats bar - more compact */
+    .stats-bar {
         padding: 0.5rem;
+        gap: 0.375rem;
+    }
+
+    .stat-item {
+        padding: 0.375rem 0.5rem;
+        gap: 0.375rem;
+    }
+
+    .stat-item i {
+        font-size: 1rem;
     }
 
     .stat-value {
-        font-size: 1.1rem;
+        font-size: 1rem;
     }
 
     .stat-label {
-        font-size: 0.7rem;
+        font-size: 0.65rem;
     }
 
+    /* Date picker - full width stacked */
     .date-picker-wrapper {
         flex-direction: column;
         align-items: stretch;
         width: 100%;
+        gap: 0.375rem;
+    }
+
+    .date-label {
+        font-size: 0.75rem;
     }
 
     .compact-calendar {
         width: 100%;
+        min-width: auto;
+    }
+
+    .compact-calendar :deep(.p-inputtext) {
+        font-size: 0.875rem;
+        padding: 0.5rem;
+    }
+
+    /* Refresh button - full width on very small screens */
+    .header-actions {
+        gap: 0.5rem;
+    }
+
+    /* Table optimizations */
+    .shift-table :deep(.p-datatable-wrapper) {
+        font-size: 0.8rem;
+    }
+
+    .shift-table :deep(.p-datatable-thead > tr > th) {
+        padding: 0.5rem 0.375rem;
+        font-size: 0.75rem;
+    }
+
+    .shift-table :deep(.p-datatable-tbody > tr > td) {
+        padding: 0.5rem 0.375rem;
+    }
+
+    /* Compact table cells */
+    .turno-badge {
+        padding: 0.2rem 0.5rem;
+        font-size: 0.75rem;
+    }
+
+    .turno-badge i {
+        font-size: 0.65rem;
+    }
+
+    .time-cell,
+    .patient-cell,
+    .tipo-cell,
+    .user-cell {
+        font-size: 0.8rem;
+    }
+
+    .time-cell i,
+    .patient-cell i,
+    .tipo-cell i,
+    .user-cell i {
+        font-size: 0.75rem;
+        margin-right: 0.25rem;
+    }
+
+    .patient-cell {
+        font-size: 0.85rem;
+    }
+
+    /* Tags smaller */
+    .shift-table :deep(.p-tag) {
+        font-size: 0.7rem;
+        padding: 0.25rem 0.5rem;
+    }
+
+    .shift-table :deep(.p-tag .p-tag-icon) {
+        font-size: 0.65rem;
+    }
+
+    /* Paginator */
+    .shift-table :deep(.p-paginator) {
+        padding: 0.5rem;
+        font-size: 0.75rem;
+    }
+
+    .shift-table :deep(.p-paginator .p-paginator-pages .p-paginator-page) {
+        min-width: 2rem;
+        height: 2rem;
+    }
+
+    /* Empty and loading states */
+    .empty-state,
+    .loading-state {
+        padding: 2rem 1rem;
+    }
+
+    .empty-state i {
+        font-size: 3rem;
+        margin-bottom: 1rem;
+    }
+
+    .empty-state h4 {
+        font-size: 1rem;
+        margin-bottom: 0.5rem;
+    }
+
+    .empty-state p {
+        font-size: 0.85rem;
+    }
+
+    .loading-state i {
+        font-size: 2.5rem;
+        margin-bottom: 0.75rem;
+    }
+
+    .loading-state p {
+        font-size: 0.9rem;
+    }
+
+    /* Footer */
+    .shift-modal-footer {
+        flex-direction: column;
+        gap: 0.5rem;
+        align-items: stretch;
+    }
+
+    .footer-info {
+        justify-content: center;
+        font-size: 0.8rem;
+    }
+
+    .shift-modal-footer :deep(.p-button) {
+        width: 100%;
+        justify-content: center;
+    }
+}
+
+/* Extra small devices (< 400px) */
+@media (max-width: 400px) {
+    .modal-title {
+        font-size: 1rem;
+    }
+
+    .stats-bar {
+        padding: 0.375rem;
+    }
+
+    .stat-item {
+        padding: 0.25rem 0.375rem;
+        font-size: 0.7rem;
+    }
+
+    .stat-value {
+        font-size: 0.9rem;
+    }
+
+    .stat-label {
+        font-size: 0.6rem;
+    }
+
+    /* Hide icons in table cells to save space */
+    .time-cell i,
+    .tipo-cell i,
+    .user-cell i {
+        display: none;
+    }
+
+    /* Keep patient icon as it's important */
+    .patient-cell i {
+        font-size: 0.7rem;
+    }
+
+    .shift-table :deep(.p-datatable-thead > tr > th),
+    .shift-table :deep(.p-datatable-tbody > tr > td) {
+        padding: 0.375rem 0.25rem;
     }
 }
 </style>
