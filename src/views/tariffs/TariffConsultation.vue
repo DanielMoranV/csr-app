@@ -1,15 +1,19 @@
 <script setup>
+import { customMigrations } from '@/api';
 import { medicalSpecialties } from '@/api/medicalSpecialties';
 import { useTariffConsultation } from '@/composables/useTariffConsultation';
 import MedicalFeesService from '@/services/medicalFees/MedicalFeesService';
 import { useDebounceFn } from '@vueuse/core';
 import Button from 'primevue/button';
+import Calendar from 'primevue/calendar';
 import Column from 'primevue/column';
 import DataTable from 'primevue/datatable';
+import Dialog from 'primevue/dialog';
 import Dropdown from 'primevue/dropdown';
 import IconField from 'primevue/iconfield';
 import InputIcon from 'primevue/inputicon';
 import InputText from 'primevue/inputtext';
+import Tag from 'primevue/tag';
 import { computed, onMounted, ref, watch } from 'vue';
 import * as XLSX from 'xlsx';
 
@@ -23,6 +27,62 @@ const specialties = ref([]);
 const allDoctors = ref([]);
 const loadingFilters = ref(false);
 const scheduleModalVisible = ref(false);
+
+// Shift List Logic
+const shiftModalVisible = ref(false);
+const shiftList = ref([]);
+const loadingShifts = ref(false);
+const selectedShiftDate = ref(new Date());
+
+const showShiftList = async () => {
+    if (selectedDoctor.value) {
+        shiftModalVisible.value = true;
+        // Reset date to today if needed or keep last selected
+        if (!selectedShiftDate.value) {
+            selectedShiftDate.value = new Date();
+        }
+        await fetchDoctorShifts();
+    }
+};
+
+const fetchDoctorShifts = async () => {
+    if (!selectedDoctor.value || !selectedShiftDate.value) return;
+
+    try {
+        loadingShifts.value = true;
+
+        // Format date to YYYY-MM-DD
+        const date = selectedShiftDate.value;
+        const formattedDate = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`;
+
+        const payload = {
+            codigo_servicio: selectedDoctor.value.code, // Assuming doctor.code is the service code
+            start_date: formattedDate,
+            end_date: formattedDate,
+            dry_run: false
+        };
+
+        const response = await customMigrations.getTurnosByService(payload);
+
+        if (response.data && response.data.success && response.data.data && Array.isArray(response.data.data.data)) {
+            shiftList.value = response.data.data.data;
+        } else {
+            shiftList.value = [];
+        }
+    } catch (error) {
+        console.error('Error fetching shifts:', error);
+        shiftList.value = [];
+    } finally {
+        loadingShifts.value = false;
+    }
+};
+
+// Watch for date changes in the modal
+watch(selectedShiftDate, async (newDate) => {
+    if (shiftModalVisible.value && newDate) {
+        await fetchDoctorShifts();
+    }
+});
 
 // Búsqueda con debounce
 const debouncedSearch = useDebounceFn(async (query) => {
@@ -254,6 +314,7 @@ const exportToExcel = () => {
                                 </template>
                             </Dropdown>
                             <Button v-if="selectedDoctor" icon="pi pi-calendar" severity="secondary" outlined @click="showDoctorSchedules" v-tooltip.top="'Ver horarios del mes actual'" class="schedule-btn" />
+                            <Button v-if="selectedDoctor" icon="pi pi-list" severity="info" outlined @click="showShiftList" v-tooltip.top="'Ver lista de turnos'" class="schedule-btn" />
                         </div>
                     </div>
 
@@ -350,6 +411,64 @@ const exportToExcel = () => {
 
         <!-- Doctor Schedule Modal -->
         <DoctorScheduleModal v-model:visible="scheduleModalVisible" :doctor-id="selectedDoctor?.id" :doctor-name="selectedDoctor?.name" />
+
+        <!-- Shift List Modal -->
+        <Dialog v-model:visible="shiftModalVisible" modal header="Lista de Turnos" :style="{ width: '80vw', maxWidth: '1000px' }" :breakpoints="{ '960px': '90vw' }">
+            <template #header>
+                <div class="flex flex-column gap-2">
+                    <span class="text-xl font-bold">Lista de Turnos - {{ selectedDoctor?.name }}</span>
+                    <div class="flex align-items-center gap-2">
+                        <span class="text-sm font-semibold">Fecha:</span>
+                        <Calendar v-model="selectedShiftDate" dateFormat="yy-mm-dd" :showIcon="true" class="p-inputtext-sm" />
+                        <Button icon="pi pi-refresh" text rounded @click="fetchDoctorShifts" :loading="loadingShifts" />
+                    </div>
+                </div>
+            </template>
+
+            <div v-if="loadingShifts" class="flex justify-content-center p-6">
+                <i class="pi pi-spin pi-spinner text-4xl text-primary"></i>
+            </div>
+
+            <DataTable v-else :value="shiftList" :paginator="true" :rows="10" :rowsPerPageOptions="[10, 20, 50]" stripedRows showGridlines responsiveLayout="scroll" class="p-datatable-sm">
+                <template #empty>
+                    <div class="text-center p-4">
+                        <p class="text-gray-500">No hay turnos para la fecha seleccionada.</p>
+                    </div>
+                </template>
+
+                <Column field="numero_turno" header="Nº Turno" :sortable="true" style="width: 100px">
+                    <template #body="{ data }">
+                        <span class="font-mono font-bold">{{ data.numero_turno }}</span>
+                    </template>
+                </Column>
+
+                <Column field="fecha_hora_turno" header="Hora" :sortable="true" style="width: 120px">
+                    <template #body="{ data }">
+                        <!-- Extract time from ISO string -->
+                        <span>{{ data.fecha_hora_turno ? new Date(data.fecha_hora_turno).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : '-' }}</span>
+                    </template>
+                </Column>
+
+                <Column field="nombre_paciente" header="Paciente" :sortable="true">
+                    <template #body="{ data }">
+                        <span class="font-medium">{{ data.nombre_paciente }}</span>
+                    </template>
+                </Column>
+
+                <Column field="estado_turno" header="Estado" :sortable="true" style="width: 150px">
+                    <template #body="{ data }">
+                        <Tag :value="data.estado_turno" :severity="data.estado_turno === 'A' ? 'success' : 'info'" />
+                    </template>
+                </Column>
+            </DataTable>
+
+            <template #footer>
+                <div class="flex justify-content-between align-items-center w-full">
+                    <span class="text-sm text-gray-500" v-if="shiftList.length">Total: {{ shiftList.length }} turnos</span>
+                    <Button label="Cerrar" icon="pi pi-times" @click="shiftModalVisible = false" text />
+                </div>
+            </template>
+        </Dialog>
     </div>
 </template>
 

@@ -78,6 +78,12 @@ export const sisclin = {
     bulkImportHospitalizations: (data) => axios.post('/sisclin/hospitalization/bulk', data)
 };
 
+// Custom Migrations
+export const customMigrations = {
+    // Obtener turnos por servicio
+    getTurnosByService: (payload) => axios.post('/custom-migrations/turnos-by-service', payload)
+};
+
 // Hospital Attentions Management
 export { hospitalAttentions } from './hospitalAttentions';
 
