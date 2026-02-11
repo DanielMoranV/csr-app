@@ -77,6 +77,7 @@ export const useHospitalizationStore = defineStore('hospitalization', () => {
                                     doctor: newHospitalization.doctor,
                                     insurance: newHospitalization.insurance,
                                     type_attention: newHospitalization.type_attention,
+                                    cie10: newHospitalization.cie10,
                                     details: newHospitalization.details_attention || [],
                                     tasks: newHospitalization.tasks || []
                                 };
@@ -158,6 +159,7 @@ export const useHospitalizationStore = defineStore('hospitalization', () => {
                                     doctor: updatedHospitalization.doctor,
                                     insurance: updatedHospitalization.insurance,
                                     type_attention: updatedHospitalization.type_attention,
+                                    cie10: updatedHospitalization.cie10,
                                     details: updatedHospitalization.details_attention || [],
                                     tasks: updatedHospitalization.tasks || []
                                 };
