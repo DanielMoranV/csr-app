@@ -1,6 +1,8 @@
 <script setup>
 import { customMigrations } from '@/api';
 import { medicalSpecialties } from '@/api/medicalSpecialties';
+import { reservationService } from '@/api/reservations';
+import ReservationDetailDialog from '@/components/reservations/ReservationDetailDialog.vue';
 import { useTariffConsultation } from '@/composables/useTariffConsultation';
 import MedicalFeesService from '@/services/medicalFees/MedicalFeesService';
 import { useDebounceFn } from '@vueuse/core';
@@ -27,6 +29,64 @@ const specialties = ref([]);
 const allDoctors = ref([]);
 const loadingFilters = ref(false);
 const scheduleModalVisible = ref(false);
+
+// Reservation Logic
+const reservationDialogVisible = ref(false);
+const currentReservation = ref(null);
+const selectedScheduleId = ref(null);
+const selectedScheduleDate = ref('');
+
+const handleScheduleClick = async (event) => {
+    // event comes from DoctorScheduleModal: { id, date, doctor_id, ... }
+    selectedScheduleId.value = event.id;
+    // Format date for display
+    const d = new Date(event.date);
+    selectedScheduleDate.value = d.toLocaleDateString('es-ES', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' });
+
+    // Check if reservation list exists for this schedule
+    try {
+        console.log('Checking reservation for schedule:', event.id);
+        // We use the list endpoint filtering by schedule_id (as per user clarification)
+        const response = await reservationService.listDocs({
+            schedule_id: event.id
+        });
+
+        console.log('Reservation check response:', response.data);
+
+        let reservations = [];
+        // Handle response.data being the array directly or wrapped in data property
+        if (Array.isArray(response.data)) {
+            reservations = response.data;
+        } else if (response.data?.data && Array.isArray(response.data.data)) {
+            reservations = response.data.data;
+        }
+
+        if (reservations.length > 0) {
+            // Edit existing (take the first one found - usually 1 per schedule)
+            // We need to fetch full details including patients
+            const fullRes = await reservationService.getDoc(reservations[0].id);
+
+            // Handle response structure (direct object or wrapped in data)
+            currentReservation.value = fullRes.data.data || fullRes.data;
+        } else {
+            // New reservation
+            currentReservation.value = null;
+        }
+
+        reservationDialogVisible.value = true;
+    } catch (error) {
+        console.error('Error checking reservation:', error);
+        // On error, we might assume no reservation or show error
+        // Let's allow creating new one if check fails or assume none
+        currentReservation.value = null;
+        reservationDialogVisible.value = true;
+    }
+};
+
+const onReservationSaved = () => {
+    // Optionally refresh something, or just close
+    reservationDialogVisible.value = false;
+};
 
 // Shift List Logic
 const shiftModalVisible = ref(false);
@@ -431,7 +491,17 @@ const exportToExcel = () => {
         </div>
 
         <!-- Doctor Schedule Modal -->
-        <DoctorScheduleModal v-model:visible="scheduleModalVisible" :doctor-id="selectedDoctor?.id" :doctor-name="selectedDoctor?.name" />
+        <DoctorScheduleModal v-model:visible="scheduleModalVisible" :doctor-id="selectedDoctor?.id" :doctor-name="selectedDoctor?.name" @schedule-click="handleScheduleClick" />
+
+        <!-- Reservation Detail Dialog -->
+        <ReservationDetailDialog
+            v-model:visible="reservationDialogVisible"
+            :reservation="currentReservation"
+            :doctor-id="selectedDoctor?.id || 0"
+            :doctor-schedule-id="selectedScheduleId || 0"
+            :schedule-date="selectedScheduleDate"
+            @saved="onReservationSaved"
+        />
 
         <!-- Shift List Modal -->
         <Dialog v-model:visible="shiftModalVisible" modal :style="{ width: '90vw', maxWidth: '1200px' }" :breakpoints="{ '1400px': '95vw', '960px': '98vw' }" class="shift-modal">

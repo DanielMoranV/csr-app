@@ -45,7 +45,7 @@ const props = defineProps({
     }
 });
 
-const emit = defineEmits(['update:visible']);
+const emit = defineEmits(['update:visible', 'schedule-click']);
 
 const schedules = ref([]);
 const isLoading = ref(false);
@@ -119,6 +119,19 @@ const calendarOptions = computed(() => ({
                 </div>
             `
         };
+    },
+    eventClick: (info) => {
+        const event = info.event;
+        const extendedProps = event.extendedProps;
+
+        emit('schedule-click', {
+            id: parseInt(event.id),
+            date: event.start, // Date object
+            doctor_id: props.doctorId,
+            // Pass other relevant info if needed
+            status: extendedProps.status,
+            shift: extendedProps.shift
+        });
     }
 }));
 
@@ -247,6 +260,7 @@ const handleClose = () => {
     padding: 1px 3px;
     border-radius: 3px;
     font-size: 0.7rem;
+    cursor: pointer; /* Change cursor to indicate interactivity */
 }
 
 /* Colores por tipo de turno */
