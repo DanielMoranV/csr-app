@@ -6,6 +6,7 @@ import ReservationDetailDialog from '@/components/reservations/ReservationDetail
 import { useTariffConsultation } from '@/composables/useTariffConsultation';
 import MedicalFeesService from '@/services/medicalFees/MedicalFeesService';
 import { useDebounceFn } from '@vueuse/core';
+import AutoComplete from 'primevue/autocomplete';
 import Button from 'primevue/button';
 import Calendar from 'primevue/calendar';
 import Column from 'primevue/column';
@@ -26,7 +27,9 @@ const searchQuery = ref('');
 const selectedSpecialty = ref(null);
 const selectedDoctor = ref(null);
 const specialties = ref([]);
+const filteredSpecialties = ref([]); // For AutoComplete
 const allDoctors = ref([]);
+const filteredDoctorSuggestions = ref([]); // For AutoComplete
 const loadingFilters = ref(false);
 const scheduleModalVisible = ref(false);
 
@@ -230,6 +233,31 @@ const loadDoctors = async () => {
     }
 };
 
+// AutoComplete Search Methods
+const searchSpecialties = (event) => {
+    if (!event.query.trim()) {
+        filteredSpecialties.value = [...specialties.value];
+    } else {
+        filteredSpecialties.value = specialties.value.filter((specialty) => {
+            return specialty.name.toLowerCase().startsWith(event.query.toLowerCase());
+        });
+    }
+};
+
+const searchDoctors = (event) => {
+    // Filter from filteredDoctors (which might be already filtered by specialty) or allDoctors
+    // We want to suggest based on current specialty context
+    const source = selectedSpecialty.value ? filteredDoctors.value : allDoctors.value;
+
+    if (!event.query.trim()) {
+        filteredDoctorSuggestions.value = [...source];
+    } else {
+        filteredDoctorSuggestions.value = source.filter((doctor) => {
+            return doctor.name.toLowerCase().includes(event.query.toLowerCase());
+        });
+    }
+};
+
 // Limpiar filtros
 const clearFilters = () => {
     selectedSpecialty.value = null;
@@ -346,18 +374,7 @@ const exportToExcel = () => {
                             <i class="pi pi-heart mr-2"></i>
                             Especialidad
                         </label>
-                        <Dropdown
-                            v-model="selectedSpecialty"
-                            :options="specialties"
-                            optionLabel="name"
-                            placeholder="Todas las especialidades"
-                            :loading="loadingFilters"
-                            :showClear="true"
-                            :filter="true"
-                            :editable="true"
-                            filterPlaceholder="Buscar especialidad..."
-                            class="w-full"
-                        />
+                        <Dropdown v-model="selectedSpecialty" :options="specialties" optionLabel="name" placeholder="Todas las especialidades" :loading="loadingFilters" :showClear="true" :filter="true" :editable="true" />
                     </div>
 
                     <!-- Filtro por Doctor -->
@@ -367,18 +384,18 @@ const exportToExcel = () => {
                             Doctor
                         </label>
                         <div class="doctor-filter-wrapper">
-                            <Dropdown
+                            <AutoComplete
                                 v-model="selectedDoctor"
-                                :options="filteredDoctors"
+                                :suggestions="filteredDoctorSuggestions"
+                                @complete="searchDoctors"
                                 optionLabel="name"
+                                dropdown
+                                class="flex-1"
+                                inputClass="w-full"
                                 placeholder="Todos los doctores"
                                 :loading="loadingFilters"
                                 :showClear="true"
-                                :disabled="!selectedSpecialty && filteredDoctors.length === 0"
-                                :filter="true"
-                                :editable="true"
-                                filterPlaceholder="Buscar doctor..."
-                                class="flex-1"
+                                :disabled="!selectedSpecialty && !searchQuery && allDoctors.length === 0"
                             >
                                 <template #value="slotProps">
                                     <div v-if="slotProps.value" class="flex align-items-center gap-2">
@@ -393,7 +410,7 @@ const exportToExcel = () => {
                                         <span class="text-xs text-gray-400">({{ slotProps.option.code }})</span>
                                     </div>
                                 </template>
-                            </Dropdown>
+                            </AutoComplete>
                             <Button v-if="selectedDoctor" icon="pi pi-calendar" severity="secondary" outlined @click="showDoctorSchedules" v-tooltip.top="'Ver horarios del mes actual'" class="schedule-btn" />
                             <Button v-if="selectedDoctor" icon="pi pi-list" severity="info" outlined @click="showShiftList" v-tooltip.top="'Ver lista de turnos'" class="schedule-btn" />
                         </div>
