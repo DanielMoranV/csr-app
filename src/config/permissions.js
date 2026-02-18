@@ -282,6 +282,16 @@ export const MODULE_PERMISSIONS = {
         menuSection: 'Personal Médico'
     },
 
+    // Gestión de Reservas (Admisión)
+    reservationManagement: {
+        name: 'reservation-management',
+        path: '/reservations/manage',
+        positions: [POSITIONS.SISTEMAS, POSITIONS.ADMISION, POSITIONS.ADMINISTRACION, POSITIONS.DIRECTOR_MEDICO],
+        label: 'Gestión de Reservas',
+        icon: 'pi pi-fw pi-calendar-check',
+        menuSection: 'Personal Médico'
+    },
+
     // Mis Honorarios Médicos (Vista Personal)
     myMedicalFees: {
         name: 'myMedicalFees',
