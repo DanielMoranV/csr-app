@@ -431,12 +431,35 @@ const saveNewPatient = async () => {
     await saveReservation();
 };
 
-const removePatient = async (index) => {
-    reservationPatients.value.splice(index, 1);
-    reservationPatients.value.forEach((p, i) => {
-        p.turn_number = i + 1;
+const removePatient = (patient) => {
+    confirm.require({
+        message: `¿Eliminar a ${patient.patient_name || 'este paciente'} de la lista?`,
+        header: 'Confirmar eliminación',
+        icon: 'pi pi-trash',
+        acceptClass: 'p-button-danger',
+        acceptLabel: 'Eliminar',
+        rejectLabel: 'Cancelar',
+        accept: async () => {
+            if (patient.id) {
+                // Persisted patient → delete via dedicated endpoint
+                try {
+                    await reservationDetailService.delete(patient.id);
+                    const idx = reservationPatients.value.findIndex((p) => p.id === patient.id);
+                    if (idx !== -1) reservationPatients.value.splice(idx, 1);
+                    toast.add({ severity: 'success', summary: 'Eliminado', detail: `${patient.patient_name || 'Paciente'} eliminado de la lista`, life: 2000 });
+                } catch (error) {
+                    console.error('Error deleting patient detail:', error);
+                    const status = error.response?.status;
+                    const msg = status === 404 ? 'El paciente ya no existe en la lista.' : 'No se pudo eliminar el paciente.';
+                    toast.add({ severity: 'error', summary: 'Error', detail: msg, life: 3000 });
+                }
+            } else {
+                // Unsaved patient (still in local state only) → just remove from array
+                const idx = reservationPatients.value.findIndex((p) => p === patient);
+                if (idx !== -1) reservationPatients.value.splice(idx, 1);
+            }
+        }
     });
-    await saveReservation();
 };
 
 const saveReservation = async () => {
@@ -454,6 +477,7 @@ const saveReservation = async () => {
                 document_number: p.document_number,
                 turn_number: p.turn_number,
                 modality: p.modality,
+                observations: p.observations || '',
                 phone_number: p.phone_number || '',
                 is_additional: p.is_additional || false
             }))
@@ -823,8 +847,8 @@ onMounted(() => {
 
                                         <!-- Delete column (hidden when locked) -->
                                         <Column v-if="!isLocked" style="width: 2.5rem; text-align: center">
-                                            <template #body="{ index }">
-                                                <Button icon="pi pi-trash" text rounded severity="danger" size="small" @click="removePatient(index)" />
+                                            <template #body="{ data }">
+                                                <Button icon="pi pi-trash" text rounded severity="danger" size="small" @click="removePatient(data)" />
                                             </template>
                                         </Column>
                                     </DataTable>

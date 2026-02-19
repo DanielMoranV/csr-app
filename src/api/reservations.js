@@ -63,5 +63,12 @@ export const reservationDetailService = {
      * @param {string} status - Nuevo estado ('pending' | 'registered' | 'cancelled').
      * @returns {Promise}
      */
-    changeStatus: (id, status) => axios.patch(`/reservation-details/${id}/status`, { status })
+    changeStatus: (id, status) => axios.patch(`/reservation-details/${id}/status`, { status }),
+
+    /**
+     * Elimina un detalle de reserva (paciente) de forma permanente.
+     * @param {number|string} id - ID del detalle de reserva.
+     * @returns {Promise}
+     */
+    delete: (id) => axios.delete(`/reservation-details/${id}`)
 };
