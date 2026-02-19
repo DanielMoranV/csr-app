@@ -23,10 +23,20 @@ import Dropdown from 'primevue/dropdown';
 import InputNumber from 'primevue/inputnumber';
 import InputText from 'primevue/inputtext';
 import Tag from 'primevue/tag';
+import Textarea from 'primevue/textarea';
 import { useConfirm } from 'primevue/useconfirm';
 
 const toast = useToast();
 const confirm = useConfirm();
+
+// Auto-focus directive for cell edit mode.
+// InputText renders as a plain <input>, InputNumber renders a wrapper <div>.
+const vAutofocus = {
+    mounted(el) {
+        const input = el.tagName === 'INPUT' ? el : el.querySelector('input');
+        if (input) input.focus();
+    }
+};
 
 // Color palette for multi-doctor calendar
 const DOCTOR_COLORS = ['#3b82f6', '#10b981', '#f59e0b', '#8b5cf6', '#ef4444', '#06b6d4', '#f97316', '#ec4899'];
@@ -50,7 +60,7 @@ const loadingSchedules = ref(false);
 // ============================================================================
 // STATE: DETAIL PANEL
 // ============================================================================
-const selectedSchedule = ref(null);       // Schedule from the clicked calendar event
+const selectedSchedule = ref(null); // Schedule from the clicked calendar event
 const selectedScheduleDoctor = ref(null); // Doctor who owns that schedule
 const currentReservationList = ref(null);
 const reservationPatients = ref([]);
@@ -58,9 +68,13 @@ const loadingReservations = ref(false);
 const processingRegistration = ref(false);
 const editingRows = ref([]);
 
+// Reservation list notes (separate ref so it works before and after the list is created)
+const listNotes = ref('');
+const savingNotes = ref(false);
+
 // New patient add form
 const showAddForm = ref(false);
-const newPatient = ref({ patient_name: '', document_number: '', modality: 'presencial', phone_number: '' });
+const newPatient = ref({ patient_name: '', document_number: '', modality: '', observations: '', phone_number: '' });
 
 // ============================================================================
 // STATE: SISCLIN
@@ -74,9 +88,7 @@ const loadingSisclin = ref(false);
 
 const doctorsInSpecialty = computed(() => {
     if (!selectedSpecialty.value) return [];
-    return allDoctors.value.filter(
-        (d) => Array.isArray(d.specialties) && d.specialties.some((s) => s.id === selectedSpecialty.value.id)
-    );
+    return allDoctors.value.filter((d) => Array.isArray(d.specialties) && d.specialties.some((s) => s.id === selectedSpecialty.value.id));
 });
 
 const doctorColorMap = computed(() => {
@@ -93,7 +105,7 @@ const calendarEvents = computed(() =>
         title: getEventTitle(schedule),
         start: `${schedule.date}T${schedule.start_time}`,
         end: `${schedule.date}T${schedule.end_time}`,
-        color: schedule.status === 'cancelled' ? '#9ca3af' : (doctorColorMap.value[schedule.doctor_id] || '#3b82f6'),
+        color: schedule.status === 'cancelled' ? '#9ca3af' : doctorColorMap.value[schedule.doctor_id] || '#3b82f6',
         extendedProps: { ...schedule }
     }))
 );
@@ -112,11 +124,7 @@ const calendarOptions = computed(() => ({
 
 const isLocked = computed(() => currentReservationList.value?.status === 'registered');
 
-const canRegister = computed(() =>
-    currentReservationList.value &&
-    !isLocked.value &&
-    reservationPatients.value.length > 0
-);
+const canRegister = computed(() => currentReservationList.value && !isLocked.value && reservationPatients.value.length > 0);
 
 // ============================================================================
 // FILTER LOGIC
@@ -150,9 +158,7 @@ const loadDoctors = async () => {
 
 const searchDoctors = (event) => {
     const query = event.query.toLowerCase();
-    const source = selectedSpecialty.value
-        ? allDoctors.value.filter((d) => Array.isArray(d.specialties) && d.specialties.some((s) => s.id === selectedSpecialty.value.id))
-        : allDoctors.value;
+    const source = selectedSpecialty.value ? allDoctors.value.filter((d) => Array.isArray(d.specialties) && d.specialties.some((s) => s.id === selectedSpecialty.value.id)) : allDoctors.value;
     filteredDoctors.value = source.filter((d) => d.name.toLowerCase().includes(query));
 };
 
@@ -199,7 +205,7 @@ const fetchSchedulesForView = async () => {
                 start_date: startDate,
                 end_date: endDate
             });
-            const data = Array.isArray(response.data) ? response.data : (response.data?.data || []);
+            const data = Array.isArray(response.data) ? response.data : response.data?.data || [];
             console.log('[DEBUG] Single doctor schedule sample:', data[0]); // Verify doctor_id field
             schedules.value = data.map((s) => ({ ...s, doctor_id: s.doctor_id ?? selectedDoctor.value.id }));
         } else {
@@ -207,15 +213,13 @@ const fetchSchedulesForView = async () => {
             const doctorIds = doctorsInSpecialty.value.map((d) => d.id);
             if (!doctorIds.length) return;
 
-            const results = await Promise.allSettled(
-                doctorIds.map((id) => doctorSchedules.getAll({ doctor_id: id, start_date: startDate, end_date: endDate }))
-            );
+            const results = await Promise.allSettled(doctorIds.map((id) => doctorSchedules.getAll({ doctor_id: id, start_date: startDate, end_date: endDate })));
 
             const merged = [];
             results.forEach((result, i) => {
                 if (result.status === 'fulfilled') {
                     const res = result.value;
-                    const data = Array.isArray(res.data) ? res.data : (res.data?.data || []);
+                    const data = Array.isArray(res.data) ? res.data : res.data?.data || [];
                     data.forEach((s) => merged.push({ ...s, doctor_id: s.doctor_id ?? doctorIds[i] }));
                 }
             });
@@ -300,8 +304,9 @@ const clearDetailPanel = () => {
     reservationPatients.value = [];
     sisclinShifts.value = [];
     editingRows.value = [];
+    listNotes.value = '';
     showAddForm.value = false;
-    newPatient.value = { patient_name: '', document_number: '', modality: 'presencial', phone_number: '' };
+    newPatient.value = { patient_name: '', document_number: '', modality: '', observations: '', phone_number: '' };
 };
 
 const fetchReservations = async (scheduleId) => {
@@ -310,12 +315,13 @@ const fetchReservations = async (scheduleId) => {
 
     try {
         const response = await reservationService.listDocs({ schedule_id: scheduleId });
-        const docs = Array.isArray(response.data) ? response.data : (response.data?.data || []);
+        const docs = Array.isArray(response.data) ? response.data : response.data?.data || [];
 
         if (docs.length > 0) {
             const fullRes = await reservationService.getDoc(docs[0].id);
             currentReservationList.value = fullRes.data.data || fullRes.data;
             reservationPatients.value = currentReservationList.value.details || [];
+            listNotes.value = currentReservationList.value.notes || '';
             console.log('[DEBUG] currentReservationList:', currentReservationList.value); // Verify details structure
         }
     } catch (error) {
@@ -326,15 +332,21 @@ const fetchReservations = async (scheduleId) => {
     }
 };
 
-const onRowEditSave = async (event) => {
-    const { newData, index } = event;
+const onCellEditComplete = async (event) => {
+    const { data, field, newValue } = event;
 
-    if (newData.id) {
-        // Existing patient → use the individual detail endpoint (no full-list update needed)
-        await updatePatientDetail(newData, index);
+    // Build the updated patient merging the new value explicitly.
+    // We cannot rely on event.data[field] because PrimeVue cell edit
+    // works with an internal copy and the original object is not mutated.
+    const updatedPatient = { ...data, [field]: newValue };
+
+    // Sync the reactive array so the table reflects the change immediately
+    const idx = reservationPatients.value.findIndex((p) => p === data || (p.id && p.id === data.id));
+    if (idx !== -1) reservationPatients.value[idx] = updatedPatient;
+
+    if (updatedPatient.id) {
+        await updatePatientDetail(updatedPatient, idx);
     } else {
-        // New patient (no id yet) → fall back to full list save
-        reservationPatients.value[index] = { ...newData };
         await saveReservation();
     }
 };
@@ -414,14 +426,16 @@ const saveNewPatient = async () => {
         turn_number: maxTurn + 1,
         is_additional: false
     });
-    newPatient.value = { patient_name: '', document_number: '', modality: 'presencial', phone_number: '' };
+    newPatient.value = { patient_name: '', document_number: '', modality: '', observations: '', phone_number: '' };
     showAddForm.value = false;
     await saveReservation();
 };
 
 const removePatient = async (index) => {
     reservationPatients.value.splice(index, 1);
-    reservationPatients.value.forEach((p, i) => { p.turn_number = i + 1; });
+    reservationPatients.value.forEach((p, i) => {
+        p.turn_number = i + 1;
+    });
     await saveReservation();
 };
 
@@ -433,7 +447,7 @@ const saveReservation = async () => {
         const payload = {
             doctor_id: selectedScheduleDoctor.value.id,
             doctor_schedule_id: selectedSchedule.value.id,
-            notes: currentReservationList.value?.notes || '',
+            notes: listNotes.value,
             patients: reservationPatients.value.map((p) => ({
                 ...(p.id ? { id: p.id } : {}),
                 patient_name: p.patient_name,
@@ -463,6 +477,22 @@ const saveReservation = async () => {
         }
     } finally {
         processingRegistration.value = false;
+    }
+};
+
+const saveNotes = async () => {
+    if (!currentReservationList.value?.id) return; // Will be included on next createDoc
+    if (listNotes.value === (currentReservationList.value.notes || '')) return; // No change
+
+    savingNotes.value = true;
+    try {
+        await reservationService.updateDoc(currentReservationList.value.id, { notes: listNotes.value });
+        currentReservationList.value.notes = listNotes.value;
+    } catch (error) {
+        console.error('Error saving notes:', error);
+        toast.add({ severity: 'error', summary: 'Error', detail: 'No se pudieron guardar las notas', life: 3000 });
+    } finally {
+        savingNotes.value = false;
     }
 };
 
@@ -615,30 +645,45 @@ onMounted(() => {
                 <Card v-if="selectedSchedule" class="detail-card">
                     <!-- DETAIL HEADER -->
                     <template #header>
-                        <div class="flex flex-wrap justify-content-between align-items-center p-3 border-bottom-1 surface-border gap-2">
-                            <!-- Left: schedule metadata -->
-                            <div class="flex align-items-center flex-wrap gap-2">
-                                <span v-if="selectedScheduleDoctor" class="font-bold text-base">
-                                    {{ selectedScheduleDoctor.name }}
-                                </span>
-                                <span v-if="selectedScheduleDoctor" class="text-300 hidden sm:inline">|</span>
-                                <span class="text-600 text-sm">{{ selectedSchedule.date }}</span>
-                                <Tag :value="getShiftLabel(selectedSchedule)" severity="info" class="text-xs" />
-                                <Tag v-if="selectedSchedule.id" :value="`Turno #${selectedSchedule.id}`" severity="secondary" class="text-xs" />
-                                <Tag v-if="currentReservationList" :value="currentReservationList.status" :severity="getStatusSeverity(currentReservationList.status)" class="text-xs" />
-                                <Tag v-if="isLocked" severity="success" value="Validado" icon="pi pi-lock" class="text-xs" />
+                        <div class="flex align-items-stretch gap-0 border-bottom-1 surface-border">
+                            <!-- LEFT: schedule metadata (compact, fixed) -->
+                            <div class="flex flex-column justify-content-center gap-1 px-3 py-2 flex-shrink-0">
+                                <div class="flex align-items-center gap-2 flex-wrap">
+                                    <span v-if="selectedScheduleDoctor" class="font-bold text-sm white-space-nowrap">
+                                        {{ selectedScheduleDoctor.name }}
+                                    </span>
+                                    <span class="text-300">|</span>
+                                    <span class="text-600 text-xs white-space-nowrap">{{ selectedSchedule.date }}</span>
+                                    <Tag :value="getShiftLabel(selectedSchedule)" severity="info" class="text-xs" />
+                                    <!-- <Tag v-if="currentReservationList" :value="currentReservationList.status" :severity="getStatusSeverity(currentReservationList.status)" class="text-xs" /> -->
+                                    <Tag v-if="isLocked" severity="success" value="Validado" icon="pi pi-lock" class="text-xs" />
+                                </div>
+                                <!-- <Button v-if="canRegister" label="Cerrar y Registrar" icon="pi pi-check-circle" severity="success" size="small" :loading="processingRegistration" @click="handleRegisterAttendance" /> -->
                             </div>
 
-                            <!-- Right: primary action -->
-                            <Button
-                                v-if="canRegister"
-                                label="Cerrar y Registrar"
-                                icon="pi pi-check-circle"
-                                severity="success"
-                                size="small"
-                                :loading="processingRegistration"
-                                @click="handleRegisterAttendance"
-                            />
+                            <!-- DIVIDER -->
+                            <div v-if="selectedSchedule.id" class="border-left-1 surface-border mx-0"></div>
+
+                            <!-- RIGHT: notes — takes all remaining horizontal space -->
+                            <div v-if="selectedSchedule.id" class="notes-block flex-1 flex align-items-center gap-2">
+                                <span class="notes-label flex-shrink-0">
+                                    <i class="pi pi-bookmark-fill mr-1"></i>Notas
+                                </span>
+                                <Textarea
+                                    v-model="listNotes"
+                                    placeholder="Agregar notas del turno..."
+                                    class="notes-textarea flex-1"
+                                    :disabled="isLocked"
+                                    :autoResize="true"
+                                    rows="1"
+                                    @blur="saveNotes"
+                                />
+                                <transition name="fade">
+                                    <span v-if="savingNotes" class="notes-saving flex-shrink-0">
+                                        <i class="pi pi-spin pi-spinner"></i>
+                                    </span>
+                                </transition>
+                            </div>
                         </div>
                     </template>
 
@@ -654,16 +699,7 @@ onMounted(() => {
                                         Reservas Locales
                                         <span v-if="reservationPatients.length" class="normal-case font-normal ml-1">({{ reservationPatients.length }})</span>
                                     </h3>
-                                    <Button
-                                        v-if="selectedSchedule.id && !isLocked"
-                                        icon="pi pi-plus"
-                                        label="Agregar"
-                                        text
-                                        size="small"
-                                        severity="primary"
-                                        :disabled="processingRegistration"
-                                        @click="showAddForm = !showAddForm"
-                                    />
+                                    <Button v-if="selectedSchedule.id && !isLocked" icon="pi pi-plus" label="Agregar" text size="small" severity="primary" :disabled="processingRegistration" @click="showAddForm = !showAddForm" />
                                 </div>
 
                                 <!-- No local schedule for this date -->
@@ -680,13 +716,12 @@ onMounted(() => {
                                 <!-- Patient table + add form -->
                                 <template v-else>
                                     <DataTable
-                                        v-model:editingRows="editingRows"
                                         :value="reservationPatients"
-                                        editMode="row"
+                                        editMode="cell"
                                         dataKey="id"
-                                        @row-edit-save="onRowEditSave"
+                                        @cell-edit-complete="onCellEditComplete"
                                         stripedRows
-                                        class="p-datatable-sm text-sm"
+                                        class="p-datatable-sm text-sm editable-cells"
                                         sortField="turn_number"
                                         :sortOrder="1"
                                         scrollable
@@ -704,32 +739,43 @@ onMounted(() => {
                                                 <span class="font-bold text-center block">{{ data.turn_number }}</span>
                                             </template>
                                             <template #editor="{ data, field }">
-                                                <InputNumber v-model="data[field]" :min="1" inputStyle="width:3rem" />
+                                                <InputNumber v-autofocus v-model="data[field]" :min="1" inputStyle="width:3rem" />
                                             </template>
                                         </Column>
 
                                         <Column field="patient_name" header="Paciente" sortable>
-                                            <template #editor="{ data, field }">
-                                                <InputText v-model="data[field]" class="w-full p-inputtext-sm" />
-                                            </template>
-                                        </Column>
-
-                                        <Column field="document_number" header="DNI" style="width: 6.5rem" sortable>
-                                            <template #editor="{ data, field }">
-                                                <InputText v-model="data[field]" class="w-full p-inputtext-sm" />
-                                            </template>
-                                        </Column>
-
-                                        <Column field="modality" header="Mod." style="width: 4.5rem">
                                             <template #body="{ data }">
-                                                <Tag
-                                                    :value="data.modality === 'presencial' ? 'P' : 'V'"
-                                                    :severity="data.modality === 'presencial' ? 'info' : 'warning'"
-                                                    style="font-size: 0.65rem; padding: 0.15rem 0.4rem"
-                                                />
+                                                <span>{{ data.patient_name }}</span>
                                             </template>
                                             <template #editor="{ data, field }">
-                                                <Dropdown v-model="data[field]" :options="['presencial', 'virtual']" style="width: 8.5rem" />
+                                                <InputText v-autofocus v-model="data[field]" class="w-full p-inputtext-sm" />
+                                            </template>
+                                        </Column>
+
+                                        <Column field="document_number" header="Admisión" style="width: 7.5rem" sortable>
+                                            <template #body="{ data }">
+                                                <span class="text-sm">{{ data.document_number || '—' }}</span>
+                                            </template>
+                                            <template #editor="{ data, field }">
+                                                <InputText v-autofocus v-model="data[field]" class="w-full p-inputtext-sm" placeholder="N° admisión" />
+                                            </template>
+                                        </Column>
+
+                                        <Column field="modality" header="Modalidad" style="width: 7rem">
+                                            <template #body="{ data }">
+                                                <span class="text-sm">{{ data.modality || '—' }}</span>
+                                            </template>
+                                            <template #editor="{ data, field }">
+                                                <InputText v-autofocus v-model="data[field]" class="w-full p-inputtext-sm" />
+                                            </template>
+                                        </Column>
+
+                                        <Column field="observations" header="Observaciones">
+                                            <template #body="{ data }">
+                                                <span class="text-sm text-600">{{ data.observations || '—' }}</span>
+                                            </template>
+                                            <template #editor="{ data, field }">
+                                                <InputText v-autofocus v-model="data[field]" class="w-full p-inputtext-sm" placeholder="Observaciones..." />
                                             </template>
                                         </Column>
 
@@ -738,24 +784,12 @@ onMounted(() => {
                                             <template #body="{ data }">
                                                 <div class="flex align-items-center gap-1">
                                                     <!-- Status tag -->
-                                                    <Tag
-                                                        :value="getDetailStatusLabel(data.status)"
-                                                        :severity="getDetailStatusSeverity(data.status)"
-                                                        style="font-size: 0.62rem; padding: 0.15rem 0.35rem; white-space: nowrap"
-                                                    />
+                                                    <Tag :value="getDetailStatusLabel(data.status)" :severity="getDetailStatusSeverity(data.status)" style="font-size: 0.62rem; padding: 0.15rem 0.35rem; white-space: nowrap" />
 
                                                     <!-- Sisclin validation indicator when registered -->
                                                     <template v-if="data.status === 'registered'">
-                                                        <i
-                                                            v-if="data.is_out_of_schedule"
-                                                            class="pi pi-exclamation-triangle text-orange-500 text-xs"
-                                                            v-tooltip.top="'Registrado, pero la cita no está en el rango exacto del turno'"
-                                                        ></i>
-                                                        <i
-                                                            v-else
-                                                            class="pi pi-verified text-green-500 text-xs"
-                                                            v-tooltip.top="'Validado correctamente con Sisclin'"
-                                                        ></i>
+                                                        <i v-if="data.is_out_of_schedule" class="pi pi-exclamation-triangle text-orange-500 text-xs" v-tooltip.top="'Registrado, pero la cita no está en el rango exacto del turno'"></i>
+                                                        <i v-else class="pi pi-verified text-green-500 text-xs" v-tooltip.top="'Validado correctamente con Sisclin'"></i>
                                                     </template>
 
                                                     <!-- Register button (only for pending patients with ID) -->
@@ -787,8 +821,7 @@ onMounted(() => {
                                             </template>
                                         </Column>
 
-                                        <!-- Row edit controls (hidden when locked) -->
-                                        <Column v-if="!isLocked" :rowEditor="true" style="width: 5rem; text-align: center" />
+                                        <!-- Delete column (hidden when locked) -->
                                         <Column v-if="!isLocked" style="width: 2.5rem; text-align: center">
                                             <template #body="{ index }">
                                                 <Button icon="pi pi-trash" text rounded severity="danger" size="small" @click="removePatient(index)" />
@@ -800,22 +833,10 @@ onMounted(() => {
                                     <transition name="slide-down">
                                         <div v-if="showAddForm && !isLocked" class="add-patient-form mt-2 p-2 surface-50 border-round border-1 surface-border">
                                             <div class="flex gap-2 align-items-center flex-wrap">
-                                                <InputText
-                                                    v-model="newPatient.patient_name"
-                                                    placeholder="Nombre del paciente"
-                                                    class="flex-1 p-inputtext-sm"
-                                                    style="min-width: 9rem"
-                                                    @keyup.enter="saveNewPatient"
-                                                    autofocus
-                                                />
-                                                <InputText
-                                                    v-model="newPatient.document_number"
-                                                    placeholder="DNI"
-                                                    class="p-inputtext-sm"
-                                                    style="width: 6rem"
-                                                    @keyup.enter="saveNewPatient"
-                                                />
-                                                <Dropdown v-model="newPatient.modality" :options="['presencial', 'virtual']" style="width: 8.5rem" class="p-inputtext-sm" />
+                                                <InputText v-model="newPatient.patient_name" placeholder="Nombre del paciente" class="flex-1 p-inputtext-sm" style="min-width: 9rem" @keyup.enter="saveNewPatient" autofocus />
+                                                <InputText v-model="newPatient.document_number" placeholder="N° admisión" class="p-inputtext-sm" style="width: 7rem" @keyup.enter="saveNewPatient" />
+                                                <InputText v-model="newPatient.modality" placeholder="Modalidad" class="p-inputtext-sm" style="width: 7rem" @keyup.enter="saveNewPatient" />
+                                                <InputText v-model="newPatient.observations" placeholder="Observaciones" class="p-inputtext-sm" style="width: 9rem" @keyup.enter="saveNewPatient" />
                                                 <Button icon="pi pi-check" severity="success" size="small" :disabled="!newPatient.patient_name.trim()" :loading="processingRegistration" @click="saveNewPatient" />
                                                 <Button icon="pi pi-times" text severity="secondary" size="small" @click="showAddForm = false" />
                                             </div>
@@ -841,18 +862,7 @@ onMounted(() => {
                                     <i class="pi pi-spin pi-spinner text-2xl text-blue-500"></i>
                                 </div>
 
-                                <DataTable
-                                    v-else
-                                    :value="sisclinShifts"
-                                    stripedRows
-                                    class="p-datatable-sm text-sm"
-                                    sortField="numero_turno"
-                                    :sortOrder="1"
-                                    scrollable
-                                    scrollHeight="320px"
-                                    :paginator="sisclinShifts.length > 50"
-                                    :rows="50"
-                                >
+                                <DataTable v-else :value="sisclinShifts" stripedRows class="p-datatable-sm text-sm" sortField="numero_turno" :sortOrder="1" scrollable scrollHeight="320px" :paginator="sisclinShifts.length > 50" :rows="50">
                                     <template #empty>
                                         <div class="text-center p-5 text-500">
                                             <i class="pi pi-inbox text-3xl mb-2 block text-300"></i>
@@ -873,15 +883,14 @@ onMounted(() => {
                                     </Column>
 
                                     <Column field="nombre_paciente" header="Paciente" sortable></Column>
+                                    <Column field="numero_documento" header="Admisión" style="width: 5rem">
+                                        <template #body="{ data }">{{ data.numero_documento || '-' }}</template>
+                                    </Column>
 
                                     <Column field="estado_turno" header="Estado" sortable style="width: 6.5rem">
                                         <template #body="{ data }">
                                             <Tag :value="data.estado_turno" :severity="getSisclinStatusSeverity(data.estado_turno)" style="font-size: 0.65rem" />
                                         </template>
-                                    </Column>
-
-                                    <Column field="numero_documento" header="Doc." style="width: 5rem">
-                                        <template #body="{ data }">{{ data.numero_documento || '-' }}</template>
                                     </Column>
                                 </DataTable>
                             </div>
@@ -937,6 +946,90 @@ onMounted(() => {
 .slide-down-leave-to {
     opacity: 0;
     transform: translateY(-12px);
+}
+
+/* Notes block — sticky note style, fills horizontal space */
+.notes-block {
+    position: relative;
+    background: #fffbeb;
+    border-left: 4px solid #f59e0b;
+    padding: 0.4rem 0.75rem 0.5rem 0.65rem;
+    box-shadow: inset 3px 0 8px -4px rgba(234, 179, 8, 0.25), inset 0 1px 0 rgba(255,255,255,0.5);
+}
+
+.notes-label {
+    font-size: 0.65rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.07em;
+    color: #b45309;
+    margin-bottom: 0.2rem;
+    user-select: none;
+}
+
+:deep(.notes-textarea) {
+    background: transparent !important;
+    border: none !important;
+    border-bottom: 1px dashed #fcd34d !important;
+    border-radius: 0 !important;
+    padding: 0.15rem 0 !important;
+    font-size: 0.875rem;
+    color: #78350f;
+    line-height: 1.6;
+    resize: none;
+    box-shadow: none !important;
+    transition: border-color 0.15s;
+}
+
+:deep(.notes-textarea::placeholder) {
+    color: #d97706;
+    opacity: 0.55;
+    font-style: italic;
+}
+
+:deep(.notes-textarea:not(:disabled):hover) {
+    border-bottom-color: #f59e0b !important;
+}
+
+:deep(.notes-textarea:focus) {
+    border-bottom: 1px solid #f59e0b !important;
+    border-bottom-style: solid !important;
+    box-shadow: none !important;
+    outline: none !important;
+    color: #451a03;
+}
+
+:deep(.notes-textarea:disabled) {
+    opacity: 0.75;
+    cursor: default;
+}
+
+.notes-saving {
+    font-size: 0.75rem;
+    color: #92400e;
+}
+
+/* Fade transition */
+.fade-enter-active,
+.fade-leave-active {
+    transition: opacity 0.2s;
+}
+.fade-enter-from,
+.fade-leave-to {
+    opacity: 0;
+}
+
+/* Cell edit mode: highlight editable cells on hover */
+:deep(.editable-cells .p-datatable-tbody > tr > td) {
+    cursor: pointer;
+}
+:deep(.editable-cells .p-datatable-tbody > tr > td:hover) {
+    background-color: var(--highlight-bg, var(--surface-100));
+    outline: 1px solid var(--primary-200);
+    outline-offset: -1px;
+}
+:deep(.editable-cells .p-datatable-tbody > tr > td.p-cell-editing) {
+    padding: 0.1rem 0.25rem;
 }
 
 /* Add patient form fade-in */
