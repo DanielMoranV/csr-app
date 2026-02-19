@@ -87,6 +87,8 @@ const loadingSisclin = ref(false);
 // ============================================================================
 
 const doctorsInSpecialty = computed(() => {
+    // Single doctor selected → only that doctor (for color map and legend)
+    if (selectedDoctor.value) return [selectedDoctor.value];
     if (!selectedSpecialty.value) return [];
     return allDoctors.value.filter((d) => Array.isArray(d.specialties) && d.specialties.some((s) => s.id === selectedSpecialty.value.id));
 });
@@ -167,15 +169,15 @@ const searchDoctors = (event) => {
 // ============================================================================
 
 watch(selectedSpecialty, async (newVal) => {
-    selectedDoctor.value = null;
     clearDetailPanel();
     schedules.value = [];
-    if (newVal) await fetchSchedulesForView();
+    if (newVal || selectedDoctor.value) await fetchSchedulesForView();
 });
 
-watch(selectedDoctor, async () => {
+watch(selectedDoctor, async (newVal) => {
     clearDetailPanel();
-    if (selectedSpecialty.value) await fetchSchedulesForView();
+    schedules.value = [];
+    if (newVal || selectedSpecialty.value) await fetchSchedulesForView();
 });
 
 // ============================================================================
@@ -191,7 +193,7 @@ const getDateRange = () => {
 };
 
 const fetchSchedulesForView = async () => {
-    if (!selectedSpecialty.value) return;
+    if (!selectedSpecialty.value && !selectedDoctor.value) return;
     loadingSchedules.value = true;
     schedules.value = [];
 
@@ -607,20 +609,36 @@ onMounted(() => {
         <!-- FILTER BAR                                                        -->
         <!-- ================================================================ -->
         <div class="filter-card card mb-3">
-            <div class="flex flex-wrap gap-3 align-items-center">
-                <h2 class="text-xl font-bold m-0 mr-1">Gestión de Reservas</h2>
-                <Divider layout="vertical" class="mx-1 hidden md:block" style="height: 1.5rem" />
-
+            <div class="flex flex-wrap gap-4 align-items-center">
+                <!-- Title -->
                 <div class="flex align-items-center gap-2">
-                    <label class="font-medium text-sm white-space-nowrap">Especialidad</label>
-                    <Dropdown v-model="selectedSpecialty" :options="specialties" optionLabel="name" placeholder="Seleccionar..." filter showClear class="w-14rem" />
+                    <div class="filter-title-icon">
+                        <i class="pi pi-calendar"></i>
+                    </div>
+                    <h2 class="text-lg font-bold m-0 text-900">Gestión de Reservas</h2>
                 </div>
 
-                <div v-if="selectedSpecialty" class="flex align-items-center gap-2">
-                    <label class="font-medium text-sm white-space-nowrap">Médico</label>
-                    <AutoComplete v-model="selectedDoctor" :suggestions="filteredDoctors" @complete="searchDoctors" optionLabel="name" dropdown placeholder="Todos" showClear class="w-14rem" />
+                <Divider layout="vertical" class="mx-0 hidden md:block" style="height: 2rem" />
+
+                <!-- Specialty filter -->
+                <div class="filter-group">
+                    <label class="filter-label">
+                        <i class="pi pi-sitemap"></i>
+                        Especialidad
+                    </label>
+                    <Dropdown v-model="selectedSpecialty" :options="specialties" optionLabel="name" placeholder="Todas las especialidades" filter showClear class="filter-input" />
                 </div>
 
+                <!-- Doctor filter -->
+                <div class="filter-group">
+                    <label class="filter-label">
+                        <i class="pi pi-user-md"></i>
+                        Médico
+                    </label>
+                    <AutoComplete v-model="selectedDoctor" :suggestions="filteredDoctors" @complete="searchDoctors" optionLabel="name" dropdown placeholder="Buscar médico..." showClear class="filter-input" />
+                </div>
+
+                <!-- Loading indicator -->
                 <div v-if="loadingSchedules" class="flex align-items-center gap-2 text-500 ml-auto">
                     <i class="pi pi-spin pi-spinner text-sm"></i>
                     <span class="text-sm">Cargando horarios...</span>
@@ -631,10 +649,35 @@ onMounted(() => {
         <!-- ================================================================ -->
         <!-- EMPTY STATE                                                       -->
         <!-- ================================================================ -->
-        <div v-if="!selectedSpecialty" class="flex flex-column align-items-center justify-content-center p-8 surface-card border-round shadow-1">
-            <i class="pi pi-calendar text-6xl text-primary-300 mb-4"></i>
-            <h2 class="text-2xl font-medium text-900 mb-2">Seleccione una Especialidad</h2>
-            <p class="text-500 text-center" style="max-width: 26rem">Elija una especialidad para visualizar el calendario de turnos de todos sus médicos y gestionar reservas.</p>
+        <div v-if="!selectedSpecialty && !selectedDoctor" class="empty-state surface-card border-round shadow-1">
+            <div class="empty-state-icon">
+                <i class="pi pi-calendar-clock"></i>
+            </div>
+            <h2 class="text-xl font-semibold text-900 mb-3">Gestión de Reservas</h2>
+            <p class="text-500 mb-5" style="max-width: 22rem; line-height: 1.6">
+                Use los filtros superiores para comenzar. Puede buscar por especialidad o directamente por médico.
+            </p>
+            <div class="empty-state-options">
+                <div class="empty-option">
+                    <div class="empty-option-icon">
+                        <i class="pi pi-sitemap"></i>
+                    </div>
+                    <div>
+                        <p class="font-semibold text-800 m-0 mb-1">Por Especialidad</p>
+                        <p class="text-500 text-sm m-0">Ver el calendario de todos los médicos de una especialidad agrupados y con colores.</p>
+                    </div>
+                </div>
+                <div class="empty-option-divider">ó</div>
+                <div class="empty-option">
+                    <div class="empty-option-icon">
+                        <i class="pi pi-user"></i>
+                    </div>
+                    <div>
+                        <p class="font-semibold text-800 m-0 mb-1">Por Médico</p>
+                        <p class="text-500 text-sm m-0">Buscar un médico directamente para ver su calendario de turnos y gestionar sus reservas.</p>
+                    </div>
+                </div>
+            </div>
         </div>
 
         <!-- ================================================================ -->
@@ -931,6 +974,126 @@ onMounted(() => {
 <style scoped>
 .filter-card {
     border-top: 4px solid var(--primary-color);
+}
+
+.filter-title-icon {
+    width: 2.2rem;
+    height: 2.2rem;
+    border-radius: 8px;
+    background: var(--primary-50, #eff6ff);
+    border: 1px solid var(--primary-100, #dbeafe);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.filter-title-icon i {
+    font-size: 1rem;
+    color: var(--primary-500, #3b82f6);
+}
+
+.filter-group {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.filter-label {
+    font-size: 0.75rem;
+    font-weight: 600;
+    color: var(--text-color-secondary);
+    display: flex;
+    align-items: center;
+    gap: 0.3rem;
+    white-space: nowrap;
+}
+
+.filter-label i {
+    font-size: 0.75rem;
+    color: var(--primary-400, #60a5fa);
+}
+
+:deep(.filter-input) {
+    width: 14rem;
+}
+
+:deep(.filter-input .p-inputtext),
+:deep(.filter-input.p-autocomplete .p-inputtext) {
+    padding-top: 0.4rem;
+    padding-bottom: 0.4rem;
+    font-size: 0.875rem;
+}
+
+/* Empty state */
+.empty-state {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    text-align: center;
+    padding: 3.5rem 2rem;
+}
+
+.empty-state-icon {
+    width: 5rem;
+    height: 5rem;
+    border-radius: 50%;
+    background: var(--primary-50, #eff6ff);
+    border: 2px solid var(--primary-100, #dbeafe);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin-bottom: 1.5rem;
+}
+
+.empty-state-icon i {
+    font-size: 2rem;
+    color: var(--primary-400, #60a5fa);
+}
+
+.empty-state-options {
+    display: flex;
+    align-items: flex-start;
+    gap: 1.5rem;
+    flex-wrap: wrap;
+    justify-content: center;
+    max-width: 36rem;
+}
+
+.empty-option {
+    display: flex;
+    align-items: flex-start;
+    gap: 0.85rem;
+    text-align: left;
+    background: var(--surface-50);
+    border: 1px solid var(--surface-200);
+    border-radius: 10px;
+    padding: 1rem 1.1rem;
+    flex: 1;
+    min-width: 13rem;
+}
+
+.empty-option-icon {
+    width: 2.4rem;
+    height: 2.4rem;
+    border-radius: 8px;
+    background: var(--primary-50, #eff6ff);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+}
+
+.empty-option-icon i {
+    font-size: 1.1rem;
+    color: var(--primary-500, #3b82f6);
+}
+
+.empty-option-divider {
+    font-size: 0.8rem;
+    font-weight: 600;
+    color: var(--text-color-secondary);
+    align-self: center;
+    padding: 0 0.25rem;
 }
 
 .detail-card {
