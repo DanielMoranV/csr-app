@@ -288,7 +288,7 @@ export const MODULE_PERMISSIONS = {
         path: '/reservations/manage',
         positions: [POSITIONS.SISTEMAS, POSITIONS.ADMISION, POSITIONS.ADMINISTRACION, POSITIONS.DIRECTOR_MEDICO],
         label: 'Gestión de Reservas',
-        icon: 'pi pi-fw pi-calendar-check',
+        icon: 'pi pi-fw pi-address-book',
         menuSection: 'Personal Médico'
     },
 
