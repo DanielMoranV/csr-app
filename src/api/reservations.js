@@ -40,3 +40,28 @@ export const reservationService = {
      */
     deleteDoc: (id) => axios.delete(`/reservations/${id}`)
 };
+
+/**
+ * Servicio API para la gestión individual de detalles de reserva (pacientes).
+ */
+export const reservationDetailService = {
+    /**
+     * Actualiza los datos básicos de un paciente (nombre, DNI, turno, modalidad).
+     * No modifica el estado del detalle.
+     * @param {number|string} id - ID del detalle de reserva.
+     * @param {Object} data - Campos a actualizar (patient_name, document_number, turn_number, modality, observations).
+     * @returns {Promise}
+     */
+    update: (id, data) => axios.put(`/reservation-details/${id}`, data),
+
+    /**
+     * Cambia el estado de un detalle de reserva.
+     * Al cambiar a 'registered', el backend ejecuta validación contra Sisclin.
+     * Si el DNI existe en Sisclin pero el nombre no coincide → error 400.
+     * Si no existe en Sisclin → registra con is_out_of_schedule = true.
+     * @param {number|string} id - ID del detalle de reserva.
+     * @param {string} status - Nuevo estado ('pending' | 'registered' | 'cancelled').
+     * @returns {Promise}
+     */
+    changeStatus: (id, status) => axios.patch(`/reservation-details/${id}/status`, { status })
+};

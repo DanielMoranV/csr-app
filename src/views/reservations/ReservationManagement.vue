@@ -3,7 +3,7 @@ import { customMigrations } from '@/api';
 import { doctors as doctorsApi } from '@/api/doctors';
 import { doctorSchedules } from '@/api/doctorSchedules';
 import { medicalSpecialties } from '@/api/medicalSpecialties';
-import { reservationService } from '@/api/reservations';
+import { reservationDetailService, reservationService } from '@/api/reservations';
 import esLocale from '@fullcalendar/core/locales/es';
 import dayGridPlugin from '@fullcalendar/daygrid';
 import interactionPlugin from '@fullcalendar/interaction';
@@ -328,8 +328,81 @@ const fetchReservations = async (scheduleId) => {
 
 const onRowEditSave = async (event) => {
     const { newData, index } = event;
-    reservationPatients.value[index] = { ...newData };
-    await saveReservation();
+
+    if (newData.id) {
+        // Existing patient → use the individual detail endpoint (no full-list update needed)
+        await updatePatientDetail(newData, index);
+    } else {
+        // New patient (no id yet) → fall back to full list save
+        reservationPatients.value[index] = { ...newData };
+        await saveReservation();
+    }
+};
+
+const updatePatientDetail = async (patient, index) => {
+    processingRegistration.value = true;
+    try {
+        const payload = {
+            patient_name: patient.patient_name,
+            document_number: patient.document_number,
+            turn_number: patient.turn_number,
+            modality: patient.modality,
+            observations: patient.observations || ''
+        };
+        const response = await reservationDetailService.update(patient.id, payload);
+        const updated = response?.data?.data || response?.data || patient;
+        reservationPatients.value[index] = updated;
+        toast.add({ severity: 'success', summary: 'Guardado', detail: 'Paciente actualizado', life: 1500 });
+    } catch (error) {
+        console.error('Error updating patient detail:', error);
+        toast.add({ severity: 'error', summary: 'Error', detail: 'No se pudo actualizar el paciente', life: 3000 });
+    } finally {
+        processingRegistration.value = false;
+    }
+};
+
+const registerPatient = async (patient) => {
+    try {
+        const response = await reservationDetailService.changeStatus(patient.id, 'registered');
+        const updated = response?.data?.data || response?.data || patient;
+        const idx = reservationPatients.value.findIndex((p) => p.id === patient.id);
+        if (idx !== -1) reservationPatients.value[idx] = updated;
+
+        if (updated.is_out_of_schedule) {
+            toast.add({ severity: 'warn', summary: 'Registrado (fuera de horario)', detail: `${patient.patient_name} registrado, pero no se encontró una cita en el rango exacto del turno.`, life: 5000 });
+        } else {
+            toast.add({ severity: 'success', summary: 'Registrado', detail: `${patient.patient_name} validado correctamente con Sisclin.`, life: 2500 });
+        }
+    } catch (error) {
+        console.error('Error registering patient detail:', error);
+        if (error.response?.status === 400) {
+            const msg = error.response.data?.message || 'Error de validación con Sisclin';
+            toast.add({ severity: 'error', summary: 'No se puede registrar', detail: msg, life: 7000, closable: true });
+        } else {
+            toast.add({ severity: 'error', summary: 'Error', detail: 'Error al cambiar el estado del paciente', life: 3000 });
+        }
+    }
+};
+
+const cancelPatient = async (patient) => {
+    try {
+        const response = await reservationDetailService.changeStatus(patient.id, 'cancelled');
+        const updated = response?.data?.data || response?.data || patient;
+        const idx = reservationPatients.value.findIndex((p) => p.id === patient.id);
+        if (idx !== -1) reservationPatients.value[idx] = updated;
+        toast.add({ severity: 'info', summary: 'Cancelado', detail: `${patient.patient_name} marcado como cancelado.`, life: 2000 });
+    } catch (error) {
+        console.error('Error cancelling patient detail:', error);
+        toast.add({ severity: 'error', summary: 'Error', detail: 'No se pudo cancelar el paciente', life: 3000 });
+    }
+};
+
+const getDetailStatusSeverity = (status) => {
+    return { registered: 'success', pending: 'warning', cancelled: 'danger' }[status?.toLowerCase()] || 'secondary';
+};
+
+const getDetailStatusLabel = (status) => {
+    return { registered: 'Registrado', pending: 'Pendiente', cancelled: 'Cancelado' }[status?.toLowerCase()] || status || 'Pendiente';
 };
 
 const saveNewPatient = async () => {
@@ -660,11 +733,57 @@ onMounted(() => {
                                             </template>
                                         </Column>
 
-                                        <!-- Validation indicator (only when registered) -->
-                                        <Column v-if="isLocked" header="Val." style="width: 3rem; text-align: center">
+                                        <!-- Status column: state tag + per-patient Sisclin action -->
+                                        <Column header="Estado" style="width: 9rem">
                                             <template #body="{ data }">
-                                                <i v-if="data.is_out_of_schedule" class="pi pi-exclamation-triangle text-orange-500" v-tooltip="'Encontrado pero fuera de horario'"></i>
-                                                <i v-else class="pi pi-check text-green-500" v-tooltip="'Validado OK'"></i>
+                                                <div class="flex align-items-center gap-1">
+                                                    <!-- Status tag -->
+                                                    <Tag
+                                                        :value="getDetailStatusLabel(data.status)"
+                                                        :severity="getDetailStatusSeverity(data.status)"
+                                                        style="font-size: 0.62rem; padding: 0.15rem 0.35rem; white-space: nowrap"
+                                                    />
+
+                                                    <!-- Sisclin validation indicator when registered -->
+                                                    <template v-if="data.status === 'registered'">
+                                                        <i
+                                                            v-if="data.is_out_of_schedule"
+                                                            class="pi pi-exclamation-triangle text-orange-500 text-xs"
+                                                            v-tooltip.top="'Registrado, pero la cita no está en el rango exacto del turno'"
+                                                        ></i>
+                                                        <i
+                                                            v-else
+                                                            class="pi pi-verified text-green-500 text-xs"
+                                                            v-tooltip.top="'Validado correctamente con Sisclin'"
+                                                        ></i>
+                                                    </template>
+
+                                                    <!-- Register button (only for pending patients with ID) -->
+                                                    <Button
+                                                        v-if="data.id && data.status !== 'registered' && data.status !== 'cancelled' && !isLocked"
+                                                        icon="pi pi-check"
+                                                        v-tooltip.top="'Validar con Sisclin y registrar'"
+                                                        text
+                                                        rounded
+                                                        severity="success"
+                                                        size="small"
+                                                        style="width: 1.4rem; height: 1.4rem"
+                                                        @click="registerPatient(data)"
+                                                    />
+
+                                                    <!-- Cancel button (only for pending patients) -->
+                                                    <Button
+                                                        v-if="data.id && data.status !== 'cancelled' && !isLocked"
+                                                        icon="pi pi-ban"
+                                                        v-tooltip.top="'Marcar como cancelado'"
+                                                        text
+                                                        rounded
+                                                        severity="secondary"
+                                                        size="small"
+                                                        style="width: 1.4rem; height: 1.4rem"
+                                                        @click="cancelPatient(data)"
+                                                    />
+                                                </div>
                                             </template>
                                         </Column>
 
