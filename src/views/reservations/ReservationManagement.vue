@@ -251,13 +251,28 @@ const getShiftLabel = (schedule) => {
     return 'Sin turno';
 };
 
+const formatDoctorName = (fullName) => {
+    if (!fullName) return '';
+    const parts = fullName.trim().split(/\s+/);
+    if (parts.length >= 3) {
+        // Assume the last two parts are the surnames (e.g. "Surname1 Surname2")
+        const secondSurname = parts.pop();
+        const firstSurname = parts.pop();
+        return `${firstSurname} ${secondSurname.substring(0, 3)}.`;
+    } else if (parts.length === 2) {
+        // Heuristic: Name Surname -> just Surname
+        return parts[1];
+    }
+    return fullName;
+};
+
 const getEventTitle = (schedule) => {
     const shiftLabel = getShiftLabel(schedule);
     // In multi-doctor mode, prefix with doctor's last name for quick identification
     if (!selectedDoctor.value && doctorsInSpecialty.value.length > 1) {
         const doctor = allDoctors.value.find((d) => d.id === schedule.doctor_id);
-        const lastName = doctor ? doctor.name.split(' ').slice(-1)[0] : '?';
-        return `${lastName} · ${shiftLabel}`;
+        const nameFormatted = doctor ? formatDoctorName(doctor.name) : '?';
+        return `${nameFormatted} · ${shiftLabel}`;
     }
     return shiftLabel;
 };
@@ -654,9 +669,7 @@ onMounted(() => {
                 <i class="pi pi-calendar-clock"></i>
             </div>
             <h2 class="text-xl font-semibold text-900 mb-3">Gestión de Reservas</h2>
-            <p class="text-500 mb-5" style="max-width: 22rem; line-height: 1.6">
-                Use los filtros superiores para comenzar. Puede buscar por especialidad o directamente por médico.
-            </p>
+            <p class="text-500 mb-5" style="max-width: 22rem; line-height: 1.6">Use los filtros superiores para comenzar. Puede buscar por especialidad o directamente por médico.</p>
             <div class="empty-state-options">
                 <div class="empty-option">
                     <div class="empty-option-icon">
@@ -733,18 +746,8 @@ onMounted(() => {
 
                             <!-- RIGHT: notes — takes all remaining horizontal space -->
                             <div v-if="selectedSchedule.id" class="notes-block flex-1 flex align-items-center gap-2">
-                                <span class="notes-label flex-shrink-0">
-                                    <i class="pi pi-bookmark-fill mr-1"></i>Notas
-                                </span>
-                                <Textarea
-                                    v-model="listNotes"
-                                    placeholder="Agregar notas del turno..."
-                                    class="notes-textarea flex-1"
-                                    :disabled="isLocked"
-                                    :autoResize="true"
-                                    rows="1"
-                                    @blur="saveNotes"
-                                />
+                                <span class="notes-label flex-shrink-0"> <i class="pi pi-bookmark-fill mr-1"></i>Notas </span>
+                                <Textarea v-model="listNotes" placeholder="Agregar notas del turno..." class="notes-textarea flex-1" :disabled="isLocked" :autoResize="true" rows="1" @blur="saveNotes" />
                                 <transition name="fade">
                                     <span v-if="savingNotes" class="notes-saving flex-shrink-0">
                                         <i class="pi pi-spin pi-spinner"></i>
@@ -1141,7 +1144,9 @@ onMounted(() => {
     background: #fffbeb;
     border-left: 4px solid #f59e0b;
     padding: 0.4rem 0.75rem 0.5rem 0.65rem;
-    box-shadow: inset 3px 0 8px -4px rgba(234, 179, 8, 0.25), inset 0 1px 0 rgba(255,255,255,0.5);
+    box-shadow:
+        inset 3px 0 8px -4px rgba(234, 179, 8, 0.25),
+        inset 0 1px 0 rgba(255, 255, 255, 0.5);
 }
 
 .notes-label {
