@@ -130,13 +130,10 @@ const router = createRouter({
                     meta: { requiresAuth: true, positions: MODULE_PERMISSIONS.tariffConsultation.positions }
                 },
                 {
-                    path: '/reservations/manage',
-                    name: 'reservationManagement',
+                    path: MODULE_PERMISSIONS.reservationManagement.path,
+                    name: MODULE_PERMISSIONS.reservationManagement.name,
                     component: () => import('@/views/reservations/ReservationManagement.vue'),
-                    meta: {
-                        requiresAuth: true,
-                        positions: ['SISTEMAS', 'ADMISSION', 'ADMINISTRADOR', 'DIRECTOR MEDICO']
-                    }
+                    meta: { requiresAuth: true, positions: MODULE_PERMISSIONS.reservationManagement.positions }
                 },
                 {
                     path: '/my-medical-fees',
