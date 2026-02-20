@@ -16,7 +16,6 @@ import AutoComplete from 'primevue/autocomplete';
 import Button from 'primevue/button';
 import Card from 'primevue/card';
 import Column from 'primevue/column';
-import ConfirmDialog from 'primevue/confirmdialog';
 import DataTable from 'primevue/datatable';
 import Divider from 'primevue/divider';
 import Dropdown from 'primevue/dropdown';
@@ -848,6 +847,8 @@ onMounted(() => {
                                                 <InputText v-autofocus v-model="data[field]" class="w-full p-inputtext-sm" placeholder="Observaciones..." />
                                             </template>
                                         </Column>
+                                        <Column field="creator_nick" header="Asig. Por" sortable></Column>
+                                        <Column field="editor_nick" header="Mod. Por" sortable></Column>
 
                                         <!-- Status column: state tag + per-patient Sisclin action -->
                                         <Column header="Estado" style="width: 9rem">
@@ -956,6 +957,7 @@ onMounted(() => {
                                     <Column field="numero_documento" header="Admisión" style="width: 5rem">
                                         <template #body="{ data }">{{ data.numero_documento || '-' }}</template>
                                     </Column>
+                                    <Column field="usuario_creacion" header="Asig. Por" sortable></Column>
 
                                     <Column field="estado_turno" header="Estado" sortable style="width: 6.5rem">
                                         <template #body="{ data }">
@@ -969,8 +971,6 @@ onMounted(() => {
                 </Card>
             </transition>
         </div>
-
-        <ConfirmDialog />
     </div>
 </template>
 
