@@ -403,8 +403,11 @@ const registerPatient = async (patient) => {
         }
     } catch (error) {
         console.error('Error registering patient detail:', error);
-        if (error.response?.status === 400) {
-            const msg = error.response.data?.message || 'Error de validación con Sisclin';
+        if (error.response?.status === 400 || error.response?.status === 422 || error.response?.status === 500) {
+            let msg = error.response.data?.message || 'Error de validación con Sisclin';
+            if (msg.includes('matching admission not found in Sisclin')) {
+                msg = `No se puede validar la reserva de ${patient.patient_name}. Verifique que el paciente ya haya sido ingresado y haya pagado en el sistema principal (Sisclin) el día de hoy.`;
+            }
             toast.add({ severity: 'error', summary: 'No se puede registrar', detail: msg, life: 7000, closable: true });
         } else {
             toast.add({ severity: 'error', summary: 'Error', detail: 'Error al cambiar el estado del paciente', life: 3000 });
@@ -479,13 +482,13 @@ const removePatient = (patient) => {
 };
 
 const saveReservation = async () => {
-    if (!selectedSchedule.value?.id || !selectedScheduleDoctor.value) return;
+    if (!selectedSchedule.value || !selectedScheduleDoctor.value) return;
 
     processingRegistration.value = true;
     try {
         const payload = {
             doctor_id: selectedScheduleDoctor.value.id,
-            doctor_schedule_id: selectedSchedule.value.id,
+            doctor_schedule_id: selectedSchedule.value.id || null,
             notes: listNotes.value,
             patients: reservationPatients.value.map((p) => ({
                 ...(p.id ? { id: p.id } : {}),
@@ -507,7 +510,15 @@ const saveReservation = async () => {
         }
 
         toast.add({ severity: 'success', summary: 'Guardado', detail: 'Lista actualizada', life: 1500 });
-        await fetchReservations(selectedSchedule.value.id);
+
+        if (selectedSchedule.value.id) {
+            await fetchReservations(selectedSchedule.value.id);
+        } else if (currentReservationList.value?.id) {
+            const fullRes = await reservationService.getDoc(currentReservationList.value.id);
+            currentReservationList.value = fullRes.data.data || fullRes.data;
+            reservationPatients.value = currentReservationList.value.details || [];
+            listNotes.value = currentReservationList.value.notes || '';
+        }
     } catch (error) {
         console.error('Error saving reservation:', error);
         if (error.response?.status === 422) {
@@ -560,10 +571,27 @@ const handleRegisterAttendance = () => {
                     }))
                 });
                 toast.add({ severity: 'success', summary: 'Éxito', detail: 'Asistencia registrada correctamente', life: 3000 });
-                await fetchReservations(selectedSchedule.value.id);
+                if (selectedSchedule.value?.id) {
+                    await fetchReservations(selectedSchedule.value.id);
+                } else {
+                    const fullRes = await reservationService.getDoc(currentReservationList.value.id);
+                    currentReservationList.value = fullRes.data.data || fullRes.data;
+                    reservationPatients.value = currentReservationList.value.details || [];
+                }
             } catch (error) {
                 console.error('Error registering attendance:', error);
-                toast.add({ severity: 'error', summary: 'Error', detail: 'Error al registrar la asistencia', life: 3000 });
+                let msg = 'Error al registrar la asistencia';
+                if (error.response?.status === 422 || error.response?.status === 500) {
+                    const errorMsg = error.response.data?.message || '';
+                    if (errorMsg.includes('matching admission not found in Sisclin')) {
+                        const match = errorMsg.match(/Validation failed for patient (.*?):/);
+                        const patientName = match ? match[1] : 'el paciente';
+                        msg = `No se puede validar la reserva de ${patientName}. Verifique que el paciente ya haya sido ingresado y haya pagado en el sistema principal (Sisclin) el día de hoy.`;
+                    } else {
+                        msg = errorMsg || msg;
+                    }
+                }
+                toast.add({ severity: 'error', summary: 'Error', detail: msg, life: 7000, closable: true });
             } finally {
                 processingRegistration.value = false;
             }
@@ -765,16 +793,16 @@ onMounted(() => {
                                 <div class="flex justify-content-between align-items-center mb-3">
                                     <h3 class="text-xs font-bold m-0 text-500 uppercase" style="letter-spacing: 0.06em">
                                         <i class="pi pi-file-edit mr-2 text-primary"></i>
-                                        Reservas Locales
+                                        {{ !selectedSchedule.id ? 'Retén (Fuera de turno)' : 'Reservas Locales' }}
                                         <span v-if="reservationPatients.length" class="normal-case font-normal ml-1">({{ reservationPatients.length }})</span>
                                     </h3>
-                                    <Button v-if="selectedSchedule.id && !isLocked" icon="pi pi-plus" label="Agregar" text size="small" severity="primary" :disabled="processingRegistration" @click="showAddForm = !showAddForm" />
+                                    <Button v-if="selectedScheduleDoctor && !isLocked" icon="pi pi-plus" label="Agregar" text size="small" severity="primary" :disabled="processingRegistration" @click="showAddForm = !showAddForm" />
                                 </div>
 
                                 <!-- No local schedule for this date -->
-                                <div v-if="!selectedSchedule.id" class="text-center p-4 surface-50 border-round border-1 surface-border">
+                                <div v-if="!selectedSchedule.id && !selectedScheduleDoctor" class="text-center p-4 surface-50 border-round border-1 surface-border">
                                     <i class="pi pi-info-circle text-orange-400 text-2xl mb-2 block"></i>
-                                    <p class="m-0 text-sm text-600">No hay horario local para esta fecha.</p>
+                                    <p class="m-0 text-sm text-600">Seleccione un médico específico para registrar pacientes sin turno asignado ("Retén").</p>
                                 </div>
 
                                 <!-- Loading -->

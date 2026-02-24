@@ -13,6 +13,7 @@ export const POSITIONS = {
     ADMINISTRACION: 'ADMINISTRACION',
     RRHH: 'RRHH',
     CONTABILIDAD: 'CONTABILIDAD',
+    TESORERIA: 'TESORERIA',
 
     // Operativas
     FACTURACION: 'FACTURACION',
@@ -45,7 +46,10 @@ export const PERMISSION_GROUPS = {
     HIGH_MANAGEMENT: [POSITIONS.SISTEMAS, POSITIONS.ADMINISTRACION, POSITIONS.DIRECTOR_MEDICO],
 
     // Personal administrativo
-    ADMINISTRATIVE: [POSITIONS.SISTEMAS, POSITIONS.ADMINISTRACION, POSITIONS.RRHH, POSITIONS.CONTABILIDAD],
+    ADMINISTRATIVE: [POSITIONS.SISTEMAS, POSITIONS.ADMINISTRACION, POSITIONS.RRHH, POSITIONS.CONTABILIDAD, POSITIONS.TESORERIA],
+
+    // Personal de tesorería
+    TREASURY: [POSITIONS.SISTEMAS, POSITIONS.ADMINISTRACION, POSITIONS.CONTABILIDAD, POSITIONS.TESORERIA],
 
     // Personal operativo/atención
     OPERATIONAL: [POSITIONS.ADMISION, POSITIONS.FACTURACION],
@@ -310,6 +314,46 @@ export const MODULE_PERMISSIONS = {
         label: 'Mis Horarios',
         icon: 'pi pi-fw pi-calendar-plus',
         menuSection: 'Personal Médico'
+    },
+
+    // Tesorería - Bancos
+    treasuryBanks: {
+        name: 'treasury-banks',
+        path: '/tesoreria/bancos',
+        positions: PERMISSION_GROUPS.TREASURY,
+        label: 'Bancos',
+        icon: 'pi pi-fw pi-building',
+        menuSection: 'Tesorería'
+    },
+
+    // Tesorería - Cuentas Bancarias
+    treasuryBankAccounts: {
+        name: 'treasury-bank-accounts',
+        path: '/tesoreria/cuentas',
+        positions: PERMISSION_GROUPS.TREASURY,
+        label: 'Cuentas Bancarias',
+        icon: 'pi pi-fw pi-wallet',
+        menuSection: 'Tesorería'
+    },
+
+    // Tesorería - Movimientos Bancarios
+    treasuryBankMovements: {
+        name: 'treasury-bank-movements',
+        path: '/tesoreria/movimientos',
+        positions: PERMISSION_GROUPS.TREASURY,
+        label: 'Movimientos',
+        icon: 'pi pi-fw pi-calculator',
+        menuSection: 'Tesorería'
+    },
+
+    // Tesorería - Contrapartes
+    treasuryCounterparties: {
+        name: 'treasury-counterparties',
+        path: '/tesoreria/contrapartes',
+        positions: PERMISSION_GROUPS.TREASURY,
+        label: 'Terceros / Contrapartes',
+        icon: 'pi pi-fw pi-users',
+        menuSection: 'Tesorería'
     }
 };
 
@@ -363,7 +407,7 @@ export function generateMenuStructure() {
     });
 
     // Convertir a array en el orden deseado
-    const sectionOrder = ['Principal', 'Mi Cuenta', 'Administración', 'Personal Médico', 'Hospitalización', 'SISCLIN', 'Soporte Técnico'];
+    const sectionOrder = ['Principal', 'Mi Cuenta', 'Administración', 'Personal Médico', 'Hospitalización', 'Tesorería', 'SISCLIN', 'Soporte Técnico'];
 
     return sectionOrder
         .filter((section) => sections[section])

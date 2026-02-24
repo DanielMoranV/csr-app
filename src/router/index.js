@@ -152,6 +152,31 @@ const router = createRouter({
                         requiresAuth: true,
                         positions: ['MEDICOS', 'EMERGENCIA', 'DIRECTOR MEDICO', 'AUDITOR MEDICO']
                     }
+                },
+                // Módulo de Tesorería
+                {
+                    path: MODULE_PERMISSIONS.treasuryBanks.path,
+                    name: MODULE_PERMISSIONS.treasuryBanks.name,
+                    component: () => import('@/views/treasury/Banks.vue'),
+                    meta: { requiresAuth: true, positions: MODULE_PERMISSIONS.treasuryBanks.positions }
+                },
+                {
+                    path: MODULE_PERMISSIONS.treasuryBankAccounts.path,
+                    name: MODULE_PERMISSIONS.treasuryBankAccounts.name,
+                    component: () => import('@/views/treasury/BankAccounts.vue'),
+                    meta: { requiresAuth: true, positions: MODULE_PERMISSIONS.treasuryBankAccounts.positions }
+                },
+                {
+                    path: MODULE_PERMISSIONS.treasuryBankMovements.path,
+                    name: MODULE_PERMISSIONS.treasuryBankMovements.name,
+                    component: () => import('@/views/treasury/BankMovements.vue'),
+                    meta: { requiresAuth: true, positions: MODULE_PERMISSIONS.treasuryBankMovements.positions }
+                },
+                {
+                    path: MODULE_PERMISSIONS.treasuryCounterparties.path,
+                    name: MODULE_PERMISSIONS.treasuryCounterparties.name,
+                    component: () => import('@/views/treasury/Counterparties.vue'),
+                    meta: { requiresAuth: true, positions: MODULE_PERMISSIONS.treasuryCounterparties.positions }
                 }
             ]
         },
