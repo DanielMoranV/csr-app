@@ -307,7 +307,7 @@ const handleDateClick = async (info) => {
         selectedSchedule.value = { date: dateStr, id: null };
         selectedScheduleDoctor.value = selectedDoctor.value;
         clearDetailPanel();
-        await fetchSisclinShifts(dateStr);
+        await Promise.all([fetchReservations(null), fetchSisclinShifts(dateStr)]);
     }
 };
 
@@ -326,19 +326,27 @@ const clearDetailPanel = () => {
 };
 
 const fetchReservations = async (scheduleId) => {
-    if (!scheduleId) return;
+    if (!scheduleId && (!selectedScheduleDoctor.value || !selectedSchedule.value?.date)) return;
     loadingReservations.value = true;
 
     try {
-        const response = await reservationService.listDocs({ schedule_id: scheduleId });
+        const params = scheduleId ? { schedule_id: scheduleId } : { doctor_id: selectedScheduleDoctor.value.id, date: selectedSchedule.value.date, status: 'active' };
+
+        const response = await reservationService.listDocs(params);
         const docs = Array.isArray(response.data) ? response.data : response.data?.data || [];
 
-        if (docs.length > 0) {
-            const fullRes = await reservationService.getDoc(docs[0].id);
+        const targetDoc = scheduleId ? docs[0] : docs.find((d) => !d.doctor_schedule_id);
+
+        if (targetDoc) {
+            const fullRes = await reservationService.getDoc(targetDoc.id);
             currentReservationList.value = fullRes.data.data || fullRes.data;
             reservationPatients.value = currentReservationList.value.details || [];
             listNotes.value = currentReservationList.value.notes || '';
             console.log('[DEBUG] currentReservationList:', currentReservationList.value); // Verify details structure
+        } else {
+            currentReservationList.value = null;
+            reservationPatients.value = [];
+            listNotes.value = '';
         }
     } catch (error) {
         console.error('Error fetching reservations:', error);
@@ -489,6 +497,7 @@ const saveReservation = async () => {
         const payload = {
             doctor_id: selectedScheduleDoctor.value.id,
             doctor_schedule_id: selectedSchedule.value.id || null,
+            date: selectedSchedule.value.id ? null : selectedSchedule.value.date,
             notes: listNotes.value,
             patients: reservationPatients.value.map((p) => ({
                 ...(p.id ? { id: p.id } : {}),
@@ -559,7 +568,7 @@ const handleRegisterAttendance = () => {
             try {
                 await reservationService.updateDoc(currentReservationList.value.id, {
                     status: 'registered',
-                    notes: currentReservationList.value.notes,
+                    notes: listNotes.value,
                     patients: reservationPatients.value.map((p) => ({
                         id: p.id,
                         patient_name: p.patient_name,
@@ -769,10 +778,10 @@ onMounted(() => {
                             </div>
 
                             <!-- DIVIDER -->
-                            <div v-if="selectedSchedule.id" class="border-left-1 surface-border mx-0"></div>
+                            <div v-if="selectedScheduleDoctor" class="border-left-1 surface-border mx-0"></div>
 
                             <!-- RIGHT: notes — takes all remaining horizontal space -->
-                            <div v-if="selectedSchedule.id" class="notes-block flex-1 flex align-items-center gap-2">
+                            <div v-if="selectedScheduleDoctor" class="notes-block flex-1 flex align-items-center gap-2">
                                 <span class="notes-label flex-shrink-0"> <i class="pi pi-bookmark-fill mr-1"></i>Notas </span>
                                 <Textarea v-model="listNotes" placeholder="Agregar notas del turno..." class="notes-textarea flex-1" :disabled="isLocked" :autoResize="true" rows="1" @blur="saveNotes" />
                                 <transition name="fade">
