@@ -21,6 +21,7 @@ import Divider from 'primevue/divider';
 import Dropdown from 'primevue/dropdown';
 import InputNumber from 'primevue/inputnumber';
 import InputText from 'primevue/inputtext';
+import Select from 'primevue/select';
 import Tag from 'primevue/tag';
 import Textarea from 'primevue/textarea';
 import { useConfirm } from 'primevue/useconfirm';
@@ -698,7 +699,7 @@ onMounted(() => {
                         <i class="pi pi-tags"></i>
                         Categoría
                     </label>
-                    <Dropdown v-model="categoryFilter" :options="CATEGORY_OPTIONS" optionLabel="label" optionValue="value" class="filter-input" />
+                    <Select v-model="categoryFilter" :options="CATEGORY_OPTIONS" optionLabel="label" optionValue="value" class="filter-input" />
                 </div>
 
                 <!-- Doctor filter -->
