@@ -48,6 +48,13 @@ const selectedSpecialty = ref(null);
 const allDoctors = ref([]);
 const filteredDoctors = ref([]);
 const selectedDoctor = ref(null); // Optional — narrows calendar to one doctor
+const categoryFilter = ref('ambulatory'); // Added category filter
+
+const CATEGORY_OPTIONS = [
+    { label: 'Emergencia', value: 'emergency' },
+    { label: 'Ambulatorio', value: 'ambulatory' },
+    { label: 'Hospitalizado', value: 'hospitable' }
+];
 
 // ============================================================================
 // STATE: CALENDAR
@@ -179,6 +186,10 @@ watch(selectedDoctor, async (newVal) => {
     if (newVal || selectedSpecialty.value) await fetchSchedulesForView();
 });
 
+watch(categoryFilter, async () => {
+    if (selectedSpecialty.value || selectedDoctor.value) await fetchSchedulesForView();
+});
+
 // ============================================================================
 // CALENDAR / SCHEDULE LOGIC
 // ============================================================================
@@ -204,7 +215,8 @@ const fetchSchedulesForView = async () => {
             const response = await doctorSchedules.getAll({
                 doctor_id: selectedDoctor.value.id,
                 start_date: startDate,
-                end_date: endDate
+                end_date: endDate,
+                category: categoryFilter.value
             });
             const data = Array.isArray(response.data) ? response.data : response.data?.data || [];
             console.log('[DEBUG] Single doctor schedule sample:', data[0]); // Verify doctor_id field
@@ -214,7 +226,7 @@ const fetchSchedulesForView = async () => {
             const doctorIds = doctorsInSpecialty.value.map((d) => d.id);
             if (!doctorIds.length) return;
 
-            const results = await Promise.allSettled(doctorIds.map((id) => doctorSchedules.getAll({ doctor_id: id, start_date: startDate, end_date: endDate })));
+            const results = await Promise.allSettled(doctorIds.map((id) => doctorSchedules.getAll({ doctor_id: id, start_date: startDate, end_date: endDate, category: categoryFilter.value })));
 
             const merged = [];
             results.forEach((result, i) => {
@@ -678,6 +690,15 @@ onMounted(() => {
                         Especialidad
                     </label>
                     <Dropdown v-model="selectedSpecialty" :options="specialties" optionLabel="name" placeholder="Todas las especialidades" filter showClear class="filter-input" />
+                </div>
+
+                <!-- Category filter -->
+                <div class="filter-group">
+                    <label class="filter-label">
+                        <i class="pi pi-tags"></i>
+                        Categoría
+                    </label>
+                    <Dropdown v-model="categoryFilter" :options="CATEGORY_OPTIONS" optionLabel="label" optionValue="value" class="filter-input" />
                 </div>
 
                 <!-- Doctor filter -->
