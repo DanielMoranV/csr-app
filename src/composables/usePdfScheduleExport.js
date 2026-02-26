@@ -183,18 +183,17 @@ export function usePdfScheduleExport() {
                 const dateStr = `${year}-${String(month).padStart(2, '0')}-${String(currentDay).padStart(2, '0')}`;
                 const daySchedules = schedules.filter((s) => s.date === dateStr);
 
-                // Group by shift type
+                // Group by shift type (P = personalizado/custom)
                 const shiftGroups = {
                     M: [],
                     T: [],
-                    N: []
+                    N: [],
+                    P: []
                 };
 
                 daySchedules.forEach((schedule) => {
                     const shiftCode = getShiftAbbreviation(schedule.medical_shift);
-                    if (shiftGroups[shiftCode]) {
-                        shiftGroups[shiftCode].push(schedule);
-                    }
+                    shiftGroups[shiftCode].push(schedule);
                 });
 
                 // Draw schedules
@@ -202,7 +201,7 @@ export function usePdfScheduleExport() {
                 let textY = y + 8;
                 const lineHeight = 3.5;
 
-                ['M', 'T', 'N'].forEach((shiftCode) => {
+                ['M', 'T', 'N', 'P'].forEach((shiftCode) => {
                     if (shiftGroups[shiftCode].length > 0) {
                         shiftGroups[shiftCode].forEach((schedule) => {
                             if (textY < y + cellHeight - 2) {
@@ -212,13 +211,18 @@ export function usePdfScheduleExport() {
                                 // Truncate long names
                                 const shortName = doctorName.length > 18 ? doctorName.substring(0, 15) + '...' : doctorName;
 
+                                // For custom schedules show time range instead of shift code
+                                const prefix = shiftCode === 'P'
+                                    ? `${(schedule.start_time || '').substring(0, 5)}-${(schedule.end_time || '').substring(0, 5)}`
+                                    : shiftCode;
+
                                 doc.setFontSize(7);
                                 const textX = x + 2;
-                                doc.text(`${shiftCode}: ${shortName}`, textX, textY);
+                                doc.text(`${prefix}: ${shortName}`, textX, textY);
 
                                 // Draw retén indicator if applicable
                                 if (isReten) {
-                                    const textWidth = doc.getTextWidth(`${shiftCode}: ${shortName}`);
+                                    const textWidth = doc.getTextWidth(`${prefix}: ${shortName}`);
                                     const circleX = textX + textWidth + 2;
                                     const circleY = textY - 1.5;
                                     const circleRadius = 1.5;
