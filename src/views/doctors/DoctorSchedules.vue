@@ -41,6 +41,7 @@ const {
     setSpecialtyFilter,
     setStartDateFilter,
     setEndDateFilter,
+    setCategoryFilter,
     clearFilters
 } = useDoctorSchedules();
 
@@ -64,7 +65,14 @@ const isDeleting = ref(false);
 const specialtyFilter = ref(null);
 const doctorFilter = ref(null);
 const monthFilter = ref(null);
+const categoryFilter = ref('emergency');
 const enableDoctorFilter = ref(false); // Control if doctor filter is applied to backend
+
+const CATEGORY_OPTIONS = [
+    { label: 'Emergencia', value: 'emergency' },
+    { label: 'Ambulatorio', value: 'ambulatory' },
+    { label: 'Hospitalizado', value: 'hospitable' }
+];
 
 // Quick Fill Mode
 const quickFillMode = ref(false);
@@ -128,6 +136,9 @@ onMounted(async () => {
     // Set default specialty filter to Pediatrics (ID 32) to reduce initial load
     specialtyFilter.value = 32;
     setSpecialtyFilter(32);
+
+    // Set default category filter to emergency
+    setCategoryFilter('emergency');
 
     // Now load schedules with the specialty filter applied, along with other data
     await Promise.all([fetchSchedules(), fetchDoctors(), fetchMedicalShifts()]);
@@ -264,6 +275,12 @@ const handleToggleDoctorFilter = (enabled) => {
     }
 };
 
+const handleCategoryFilter = (value) => {
+    categoryFilter.value = value;
+    setCategoryFilter(value);
+    fetchSchedules();
+};
+
 const handleMonthFilter = (value) => {
     monthFilter.value = value;
 };
@@ -274,12 +291,19 @@ const handleClearFilters = () => {
     monthFilter.value = null;
     enableDoctorFilter.value = false;
     clearFilters();
-    // Refresh schedules to show all doctors
+    // Restore default category
+    categoryFilter.value = 'emergency';
+    setCategoryFilter('emergency');
     fetchSchedules();
 };
 
 const hasActiveFilters = computed(() => {
-    return specialtyFilter.value || (enableDoctorFilter.value && doctorFilter.value) || monthFilter.value;
+    return (
+        specialtyFilter.value ||
+        (enableDoctorFilter.value && doctorFilter.value) ||
+        monthFilter.value ||
+        categoryFilter.value !== 'emergency'
+    );
 });
 
 // PDF Export Handler
@@ -309,7 +333,7 @@ const handleExportPDF = async () => {
         const specialty = medicalSpecialties.value.find((s) => s.id === specialtyFilter.value);
 
         // Generate PDF
-        const fileName = generatePDF(schedules.value, specialty, month, year, medicalShifts.value);
+        const fileName = generatePDF(schedules.value, specialty, month, year, medicalShifts.value, categoryFilter.value);
 
         toast.add({
             severity: 'success',
@@ -1106,6 +1130,8 @@ onMounted(() => {
             <!-- Filtros -->
             <div class="filters-section">
                 <div class="filters-grid">
+                    <Select v-model="categoryFilter" :options="CATEGORY_OPTIONS" optionLabel="label" optionValue="value" placeholder="Filtrar por Categoría" class="w-full" @change="handleCategoryFilter($event.value)" />
+
                     <Select v-model="specialtyFilter" :options="medicalSpecialties" optionLabel="name" optionValue="id" placeholder="Filtrar por Especialidad" class="w-full" @change="handleSpecialtyFilter($event.value)" showClear filter />
 
                     <div class="flex flex-col gap-2 w-full">

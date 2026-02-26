@@ -324,12 +324,14 @@ export function useDoctorSchedules() {
     const setSpecialtyFilter = (value) => schedulesStore.setFilter('id_medical_specialty', value); // Specialty filter
     const setStartDateFilter = (value) => schedulesStore.setFilter('start_date', value); // New filter
     const setEndDateFilter = (value) => schedulesStore.setFilter('end_date', value);   // New filter
+    const setCategoryFilter = (value) => schedulesStore.setFilter('category', value);
 
     const clearFilters = () => {
         schedulesStore.setFilter('doctor_id', null);
         schedulesStore.setFilter('id_medical_specialty', null);
         schedulesStore.setFilter('start_date', null);
         schedulesStore.setFilter('end_date', null);
+        schedulesStore.setFilter('category', null);
         // Do not clear other filters (upcoming, past, today) as they are used elsewhere
     };
 
@@ -416,9 +418,10 @@ export function useDoctorSchedules() {
         fetchMedicalShifts,
         // Filters
         setDoctorFilter,
-        setSpecialtyFilter, // Specialty filter
-        setStartDateFilter, // New filter
-        setEndDateFilter,   // New filter
+        setSpecialtyFilter,
+        setStartDateFilter,
+        setEndDateFilter,
+        setCategoryFilter,
         clearFilters
     };
 }

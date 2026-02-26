@@ -27,6 +27,9 @@ export const TreasuryService = {
     createBankMovement(movementData) {
         return axios.post('/bank-movements', movementData);
     },
+    updateBankMovement(id, movementData) {
+        return axios.put(`/bank-movements/${id}`, movementData);
+    },
 
     // 4. Contrapartes
     getCounterparties() {

@@ -96,10 +96,16 @@ export function usePdfScheduleExport() {
         return 'P';
     };
 
+    const CATEGORY_LABELS = {
+        emergency: 'EMERGENCIA',
+        ambulatory: 'AMBULATORIO',
+        hospitable: 'HOSPITALIZADO'
+    };
+
     /**
      * Generate PDF with schedule data
      */
-    const generatePDF = (schedules, specialty, month, year, medicalShifts) => {
+    const generatePDF = (schedules, specialty, month, year, medicalShifts, category = null) => {
         const doc = new jsPDF('l', 'mm', 'a4'); // Landscape orientation
 
         // Set font
@@ -108,10 +114,14 @@ export function usePdfScheduleExport() {
         // Title
         const specialtyName = specialty?.name || 'TODAS LAS ESPECIALIDADES';
         const monthName = format(new Date(year, month - 1), 'MMMM yyyy', { locale: es }).toUpperCase();
+        const categoryLabel = category ? CATEGORY_LABELS[category] || category.toUpperCase() : null;
 
         doc.setFontSize(16);
         doc.setFont('helvetica', 'bold');
-        doc.text(`HORARIO DE ${specialtyName}`, 148, 15, { align: 'center' });
+        const title = categoryLabel
+            ? `HORARIO DE ${specialtyName} - ${categoryLabel}`
+            : `HORARIO DE ${specialtyName}`;
+        doc.text(title, 148, 15, { align: 'center' });
 
         doc.setFontSize(12);
         doc.text(monthName, 148, 22, { align: 'center' });
@@ -306,7 +316,8 @@ export function usePdfScheduleExport() {
         doc.text(`Noche (N): ${freeDays.N} días`, 110, freeDaysY + 6);
 
         // Save PDF
-        const fileName = `horarios_${specialtyName.replace(/\s+/g, '_')}_${monthName.replace(/\s+/g, '_')}.pdf`;
+        const categorySuffix = categoryLabel ? `_${categoryLabel}` : '';
+        const fileName = `horarios_${specialtyName.replace(/\s+/g, '_')}${categorySuffix}_${monthName.replace(/\s+/g, '_')}.pdf`;
         doc.save(fileName);
 
         return fileName;
