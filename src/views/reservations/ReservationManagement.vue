@@ -331,6 +331,14 @@ const handleEventClick = async (info) => {
 
 const handleDateClick = async (info) => {
     const dateStr = info.dateStr;
+
+    // If neither specialty nor doctor is selected, open the daily availability modal
+    if (!selectedSpecialty.value && !selectedDoctor.value) {
+        const category = categoryFilter.value || 'ambulatory';
+        dailyAvailabilityModalRef.value?.show(dateStr, category);
+        return;
+    }
+
     const existingSchedule = schedules.value.find((s) => s.date === dateStr);
 
     if (existingSchedule) {
@@ -754,41 +762,9 @@ const openDailyModal = () => {
         </div>
 
         <!-- ================================================================ -->
-        <!-- EMPTY STATE                                                       -->
-        <!-- ================================================================ -->
-        <div v-if="!selectedSpecialty && !selectedDoctor" class="empty-state surface-card border-round shadow-1">
-            <div class="empty-state-icon">
-                <i class="pi pi-calendar-clock"></i>
-            </div>
-            <h2 class="text-xl font-semibold text-900 mb-3">Gestión de Reservas</h2>
-            <p class="text-500 mb-5" style="max-width: 22rem; line-height: 1.6">Use los filtros superiores para comenzar. Puede buscar por especialidad o directamente por médico.</p>
-            <div class="empty-state-options">
-                <div class="empty-option">
-                    <div class="empty-option-icon">
-                        <i class="pi pi-sitemap"></i>
-                    </div>
-                    <div>
-                        <p class="font-semibold text-800 m-0 mb-1">Por Especialidad</p>
-                        <p class="text-500 text-sm m-0">Ver el calendario de todos los médicos de una especialidad agrupados y con colores.</p>
-                    </div>
-                </div>
-                <div class="empty-option-divider">ó</div>
-                <div class="empty-option">
-                    <div class="empty-option-icon">
-                        <i class="pi pi-user"></i>
-                    </div>
-                    <div>
-                        <p class="font-semibold text-800 m-0 mb-1">Por Médico</p>
-                        <p class="text-500 text-sm m-0">Buscar un médico directamente para ver su calendario de turnos y gestionar sus reservas.</p>
-                    </div>
-                </div>
-            </div>
-        </div>
-
-        <!-- ================================================================ -->
         <!-- MAIN CONTENT                                                      -->
         <!-- ================================================================ -->
-        <div v-else>
+        <div>
             <!-- CALENDAR + DOCTOR LEGEND -->
             <Card class="mb-3">
                 <template #content>
