@@ -13,6 +13,13 @@ export const doctorSchedules = {
     getAll: (params = {}) => axios.get('/doctor-schedules', { params }),
 
     /**
+     * Gets doctor availability with current reservations count.
+     * @param {object} params - Query parameters (date, category, doctor_id)
+     * @returns {Promise}
+     */
+    getWithReservations: (params) => axios.get('/doctor-schedules/with-reservations', { params }),
+
+    /**
      * Creates a new doctor schedule.
      * Opciones:
      * 1. Con turno predefinido: { id_doctors, id_medical_shift, date, category, is_payment_payroll, status }
@@ -72,10 +79,11 @@ export const doctorSchedules = {
      * @param {string} reason - Cancellation reason
      * @returns {Promise}
      */
-    cancel: (id, reason) => axios.put(`/doctor-schedules/${id}`, {
-        status: 'cancelled',
-        notes: reason ? `Cancelado: ${reason}` : undefined
-    }),
+    cancel: (id, reason) =>
+        axios.put(`/doctor-schedules/${id}`, {
+            status: 'cancelled',
+            notes: reason ? `Cancelado: ${reason}` : undefined
+        }),
 
     /**
      * Marks a schedule as completed.

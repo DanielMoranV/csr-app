@@ -26,6 +26,9 @@ import Tag from 'primevue/tag';
 import Textarea from 'primevue/textarea';
 import { useConfirm } from 'primevue/useconfirm';
 
+// Custom Components
+import DailyAvailabilityModal from './components/DailyAvailabilityModal.vue';
+
 const toast = useToast();
 const confirm = useConfirm();
 
@@ -63,6 +66,8 @@ const CATEGORY_OPTIONS = [
 const calendarRef = ref(null);
 const schedules = ref([]);
 const loadingSchedules = ref(false);
+
+const dailyAvailabilityModalRef = ref(null);
 
 // ============================================================================
 // STATE: DETAIL PANEL
@@ -682,6 +687,13 @@ onMounted(() => {
     loadSpecialties();
     loadDoctors();
 });
+
+const openDailyModal = () => {
+    // Determine the date to show: selected schedule's date, or today
+    const dateToShow = selectedSchedule.value?.date || new Date().toISOString().split('T')[0];
+    const category = categoryFilter.value || 'ambulatory';
+    dailyAvailabilityModalRef.value?.show(dateToShow, category);
+};
 </script>
 
 <template>
@@ -794,6 +806,11 @@ onMounted(() => {
                                 <span class="text-sm text-700">{{ doctor.name }}</span>
                             </div>
                         </div>
+                    </div>
+                </template>
+                <template #footer>
+                    <div class="flex justify-content-end mt-2">
+                        <Button label="Ver Disponibilidad Diaria de la Clínica" icon="pi pi-users" severity="secondary" outlined @click="openDailyModal" />
                     </div>
                 </template>
             </Card>
@@ -1060,6 +1077,9 @@ onMounted(() => {
                 </Card>
             </transition>
         </div>
+
+        <!-- Modals -->
+        <DailyAvailabilityModal ref="dailyAvailabilityModalRef" />
     </div>
 </template>
 
