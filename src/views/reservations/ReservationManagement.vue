@@ -186,17 +186,23 @@ const clearFilters = () => {
 watch(selectedSpecialty, async (newVal) => {
     clearDetailPanel();
     schedules.value = [];
-    if (newVal || selectedDoctor.value) await fetchSchedulesForView();
+    const isValidSpecialty = newVal && newVal.id;
+    const isValidDoctor = selectedDoctor.value && selectedDoctor.value.id;
+    if (isValidSpecialty || isValidDoctor) await fetchSchedulesForView();
 });
 
 watch(selectedDoctor, async (newVal) => {
     clearDetailPanel();
     schedules.value = [];
-    if (newVal || selectedSpecialty.value) await fetchSchedulesForView();
+    const isValidSpecialty = selectedSpecialty.value && selectedSpecialty.value.id;
+    const isValidDoctor = newVal && newVal.id;
+    if (isValidSpecialty || isValidDoctor) await fetchSchedulesForView();
 });
 
 watch(categoryFilter, async () => {
-    if (selectedSpecialty.value || selectedDoctor.value) await fetchSchedulesForView();
+    const isValidSpecialty = selectedSpecialty.value && selectedSpecialty.value.id;
+    const isValidDoctor = selectedDoctor.value && selectedDoctor.value.id;
+    if (isValidSpecialty || isValidDoctor) await fetchSchedulesForView();
 });
 
 // ============================================================================
@@ -212,14 +218,17 @@ const getDateRange = () => {
 };
 
 const fetchSchedulesForView = async () => {
-    if (!selectedSpecialty.value && !selectedDoctor.value) return;
+    const isValidSpecialty = selectedSpecialty.value && selectedSpecialty.value.id;
+    const isValidDoctor = selectedDoctor.value && selectedDoctor.value.id;
+
+    if (!isValidSpecialty && !isValidDoctor) return;
     loadingSchedules.value = true;
     schedules.value = [];
 
     const { startDate, endDate } = getDateRange();
 
     try {
-        if (selectedDoctor.value) {
+        if (isValidDoctor) {
             // Single doctor mode
             const response = await doctorSchedules.getAll({
                 doctor_id: selectedDoctor.value.id,
