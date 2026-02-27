@@ -171,6 +171,14 @@ const searchDoctors = (event) => {
     filteredDoctors.value = source.filter((d) => d.name.toLowerCase().includes(query));
 };
 
+const clearFilters = () => {
+    selectedSpecialty.value = null;
+    selectedDoctor.value = null;
+    categoryFilter.value = 'ambulatory';
+    schedules.value = [];
+    clearDetailPanel();
+};
+
 // ============================================================================
 // WATCHERS
 // ============================================================================
@@ -709,6 +717,11 @@ onMounted(() => {
                         Médico
                     </label>
                     <AutoComplete v-model="selectedDoctor" :suggestions="filteredDoctors" @complete="searchDoctors" optionLabel="name" dropdown placeholder="Buscar médico..." showClear class="filter-input" />
+                </div>
+
+                <!-- Clear Filters Button -->
+                <div class="filter-group flex align-items-end">
+                    <Button icon="pi pi-filter-slash" label="Limpiar" severity="secondary" outlined @click="clearFilters" :disabled="!selectedSpecialty && !selectedDoctor" />
                 </div>
 
                 <!-- Loading indicator -->
