@@ -818,6 +818,14 @@ onMounted(() => {
                                     <!-- <Tag v-if="currentReservationList" :value="currentReservationList.status" :severity="getStatusSeverity(currentReservationList.status)" class="text-xs" /> -->
                                     <Tag v-if="isLocked" severity="success" value="Validado" icon="pi pi-lock" class="text-xs" />
                                 </div>
+                                <div v-if="selectedSchedule?.notes" class="mt-2">
+                                    <Tag severity="warn" class="text-xs px-2 py-1" style="max-width: 100%; white-space: normal; text-align: left; background: var(--yellow-100); color: var(--yellow-900); border: 1px solid var(--yellow-400)">
+                                        <div class="flex align-items-center gap-2">
+                                            <i class="pi pi-bell text-xs"></i>
+                                            <span style="line-height: 1.2">{{ selectedSchedule.notes }}</span>
+                                        </div>
+                                    </Tag>
+                                </div>
                                 <!-- <Button v-if="canRegister" label="Cerrar y Registrar" icon="pi pi-check-circle" severity="success" size="small" :loading="processingRegistration" @click="handleRegisterAttendance" /> -->
                             </div>
 
