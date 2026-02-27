@@ -127,8 +127,8 @@ defineExpose({ show, hide });
                                             {{ schedule.start_time.substring(0, 5) }} - {{ schedule.end_time.substring(0, 5) }}
                                         </div>
                                         <div class="flex align-items-center gap-2">
-                                            <span class="text-xs text-500">Reservas:</span>
-                                            <Badge :value="schedule.patients_count" :severity="schedule.patients_count > 0 ? 'success' : 'secondary'" v-tooltip.top="'Pacientes registrados'" />
+                                            <i class="pi pi-users text-xs text-500" v-tooltip.top="'Pacientes registrados'"></i>
+                                            <Badge :value="schedule.patients_count" :severity="schedule.patients_count > 0 ? 'success' : 'secondary'" />
                                         </div>
                                     </div>
                                 </div>
