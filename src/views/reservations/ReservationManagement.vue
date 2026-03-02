@@ -726,6 +726,37 @@ const getStatusSeverity = (status) => {
     return { registered: 'success', provisional: 'warning', cancelled: 'danger' }[status?.toLowerCase()] || 'info';
 };
 
+const getSisclinRowClass = (data) => {
+    if (!data.fecha_hora_turno) return 'out-of-schedule-row';
+
+    const shiftDate = new Date(data.fecha_hora_turno);
+    const h = shiftDate.getHours().toString().padStart(2, '0');
+    const m = shiftDate.getMinutes().toString().padStart(2, '0');
+    const s = shiftDate.getSeconds().toString().padStart(2, '0');
+    const timeStr = `${h}:${m}:${s}`;
+
+    const isWithin = (schedule) => {
+        if (!schedule || !schedule.start_time || !schedule.end_time) return false;
+        return timeStr >= schedule.start_time && timeStr <= schedule.end_time;
+    };
+
+    if (selectedSchedule.value?.id && isWithin(selectedSchedule.value)) {
+        return 'current-schedule-row';
+    }
+
+    const doctorId = selectedScheduleDoctor.value?.id || selectedDoctor.value?.id;
+    const date = selectedSchedule.value?.date || new Date().toISOString().split('T')[0];
+
+    if (doctorId && date) {
+        const docSchedules = schedules.value.filter((s) => s.date === date && s.doctor_id === doctorId);
+        if (docSchedules.some(isWithin)) {
+            return 'other-schedule-row';
+        }
+    }
+
+    return 'out-of-schedule-row';
+};
+
 // ============================================================================
 // LIFECYCLE
 // ============================================================================
@@ -1054,7 +1085,18 @@ const openDailyModal = () => {
                                     <i class="pi pi-spin pi-spinner text-2xl text-blue-500"></i>
                                 </div>
 
-                                <DataTable v-else :value="sisclinShifts" stripedRows class="p-datatable-sm text-sm" sortField="numero_turno" :sortOrder="1" scrollable scrollHeight="320px" :paginator="sisclinShifts.length > 50" :rows="50">
+                                <DataTable
+                                    v-else
+                                    :value="sisclinShifts"
+                                    class="p-datatable-sm text-sm sisclin-table"
+                                    sortField="fecha_hora_turno"
+                                    :sortOrder="1"
+                                    scrollable
+                                    scrollHeight="320px"
+                                    :paginator="sisclinShifts.length > 50"
+                                    :rows="50"
+                                    :rowClass="getSisclinRowClass"
+                                >
                                     <template #empty>
                                         <div class="text-center p-5 text-500">
                                             <i class="pi pi-inbox text-3xl mb-2 block text-300"></i>
@@ -1378,5 +1420,22 @@ const openDailyModal = () => {
         opacity: 1;
         transform: translateY(0);
     }
+}
+
+/* Sisclin row highlighting */
+:deep(.sisclin-table .current-schedule-row) {
+    background-color: #eff6ff !important;
+}
+:deep(.sisclin-table .current-schedule-row td) {
+    font-weight: 500;
+}
+:deep(.sisclin-table .other-schedule-row) {
+    background-color: #f0fdf4 !important;
+}
+:deep(.sisclin-table .out-of-schedule-row) {
+    background-color: var(--surface-100) !important;
+}
+:deep(.sisclin-table .out-of-schedule-row td) {
+    color: var(--text-color-secondary) !important;
 }
 </style>
