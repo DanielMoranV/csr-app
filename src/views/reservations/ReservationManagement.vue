@@ -651,6 +651,45 @@ const handleRegisterAttendance = () => {
     });
 };
 
+const importAndRegisterFromSisclin = async (sisclinData) => {
+    if (!sisclinData || !sisclinData.numero_documento) return;
+
+    if (reservationPatients.value.some((p) => p.document_number === sisclinData.numero_documento)) {
+        toast.add({ severity: 'info', summary: 'Aviso', detail: 'El paciente ya se encuentra en la lista', life: 3000 });
+        return;
+    }
+
+    processingRegistration.value = true;
+    try {
+        const maxTurn = reservationPatients.value.reduce((max, p) => Math.max(max, p.turn_number || 0), 0);
+
+        reservationPatients.value.push({
+            id: null,
+            patient_name: sisclinData.nombre_paciente,
+            document_number: sisclinData.numero_documento,
+            modality: 'Ambulatorio',
+            observations: 'Pago directo',
+            phone_number: '',
+            turn_number: maxTurn + 1,
+            is_additional: true
+        });
+
+        await saveReservation();
+
+        const newPatient = reservationPatients.value.find((p) => p.document_number === sisclinData.numero_documento);
+        if (newPatient && newPatient.id) {
+            await registerPatient(newPatient);
+        } else {
+            throw new Error('No se pudo encontrar el paciente guardado para validarlo.');
+        }
+    } catch (error) {
+        console.error('Error importando desde Sisclin:', error);
+        toast.add({ severity: 'error', summary: 'Error', detail: 'No se pudo importar al paciente', life: 3000 });
+    } finally {
+        processingRegistration.value = false;
+    }
+};
+
 // ============================================================================
 // SISCLIN LOGIC
 // ============================================================================
@@ -1044,6 +1083,23 @@ const openDailyModal = () => {
                                     <Column field="estado_turno" header="Estado" sortable style="width: 6.5rem">
                                         <template #body="{ data }">
                                             <Tag :value="data.estado_turno" :severity="getSisclinStatusSeverity(data.estado_turno)" style="font-size: 0.65rem" />
+                                        </template>
+                                    </Column>
+
+                                    <Column style="width: 3rem; text-align: center">
+                                        <template #body="{ data }">
+                                            <Button
+                                                v-if="!isLocked && !reservationPatients.some((p) => p.document_number === data.numero_documento)"
+                                                icon="pi pi-download"
+                                                v-tooltip.top="'Importar a lista local y validar'"
+                                                text
+                                                rounded
+                                                severity="success"
+                                                size="small"
+                                                :loading="processingRegistration"
+                                                @click="importAndRegisterFromSisclin(data)"
+                                            />
+                                            <i v-else-if="reservationPatients.some((p) => p.document_number === data.numero_documento)" class="pi pi-check-circle text-green-500" v-tooltip.top="'Ya en lista local'"> </i>
                                         </template>
                                     </Column>
                                 </DataTable>
