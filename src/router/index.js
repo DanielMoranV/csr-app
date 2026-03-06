@@ -88,6 +88,12 @@ const router = createRouter({
                     meta: { requiresAuth: true, positions: MODULE_PERMISSIONS.ticketRecurrenceRules.positions }
                 },
                 {
+                    path: MODULE_PERMISSIONS.documentManagement.path,
+                    name: MODULE_PERMISSIONS.documentManagement.name,
+                    component: () => import('@/views/documents/DocumentManagement.vue'),
+                    meta: { requiresAuth: true, positions: MODULE_PERMISSIONS.documentManagement.positions }
+                },
+                {
                     path: MODULE_PERMISSIONS.hospitalTasks.path,
                     name: MODULE_PERMISSIONS.hospitalTasks.name,
                     component: () => import('@/views/hospitalization/TasksView.vue'),

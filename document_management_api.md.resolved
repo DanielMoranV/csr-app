@@ -1,0 +1,146 @@
+# Document Management API Integration Guide (Vue 3)
+
+Esta guía documenta los endpoints y payload necesarios para implementar el flujo de gestión documental en el frontend.
+
+## 1. Subir Documento e Iniciar Flujo
+
+**Endpoint:** `POST /api/documents`
+**Auth:** Requiere Bearer Token (JWT).
+**Content-Type:** `multipart/form-data`
+
+### Payload:
+
+| Campo                             | Tipo       | Requerido | Descripción                              |
+| --------------------------------- | ---------- | --------- | ---------------------------------------- |
+| `titulo`                          | String     | Sí        | Título del documento.                    |
+| `descripcion`                     | String     | No        | Descripción opcional.                    |
+| `file`                            | File (PDF) | Sí        | El archivo PDF original (máx 10MB).      |
+| `steps[0][orden]`                 | Integer    | Sí        | Orden secuencial (1, 2, 3...).           |
+| `steps[0][tipo_accion]`           | Enum       | Sí        | `Firma`, `Edición`, o `Visto Bueno`.     |
+| `steps[0][permitted_positions][]` | Array      | No\*      | Posiciones permitidas (ej. "Logística"). |
+| `steps[0][permitted_users][]`     | Array      | No\*      | IDs de usuarios específicos permitidos.  |
+
+_\* Al menos uno de los dos arrays debe enviarse si se quiere restringir el paso, si ambos son nulos, cualquiera con acceso podría firmar (no recomendado)._
+
+**Ejemplo desde JS/Axios:**
+
+```javascript
+const formData = new FormData();
+formData.append("titulo", "Factura de Equipos");
+formData.append("file", pdfFile);
+
+// Paso 1: Logística
+formData.append("steps[0][orden]", 1);
+formData.append("steps[0][tipo_accion]", "Firma");
+formData.append("steps[0][permitted_positions][]", "Logística");
+
+// Paso 2: Administración
+formData.append("steps[1][orden]", 2);
+formData.append("steps[1][tipo_accion]", "Firma");
+formData.append("steps[1][permitted_positions][]", "Administración");
+
+// Paso 3: Gerencia General
+formData.append("steps[2][orden]", 3);
+formData.append("steps[2][tipo_accion]", "Firma");
+formData.append("steps[2][permitted_positions][]", "Gerencia General");
+
+// Paso 4: Contabilidad (Solo Visto Bueno)
+formData.append("steps[3][orden]", 4);
+formData.append("steps[3][tipo_accion]", "Visto Bueno");
+formData.append("steps[3][permitted_positions][]", "Contabilidad");
+
+axios.post("/api/documents", formData, {
+  headers: { "Content-Type": "multipart/form-data" },
+});
+```
+
+---
+
+## 2. Obtener Lista de Documentos
+
+**Endpoint:** `GET /api/documents`
+Obtiene todos los documentos con su estado actual (Pendiente, En corrección, Finalizado, Rechazado). Útil para un administrador general.
+
+---
+
+## 2.1 Obtener Documentos del Usuario (Mis Permisos)
+
+**Endpoint:** `GET /api/documents/permitted`
+
+Este es el endpoint recomendado para los usuarios regulares. Solo listará los documentos donde:
+- El usuario es el creador (`creador_id`).
+- El usuario ha firmado uno de los pasos (`user_id_signed`).
+- El usuario está asigando para firmar (`permitted_users`).
+- La posición actual del usuario coincide con una posición requerida para firmar (`permitted_positions`).
+
+---
+
+## 3. Obtener Detalle del Documento y sus Pasos
+
+**Endpoint:** `GET /api/documents/{id}`
+Este endpoint es vital. Devuelve el documento con:
+
+- [versions](file:///c:/Users/siste/Herd/csr-api/app/Models/DocumentManagement/Document.php#26-30): El historial de PDFs. La **última versión** es la que debes mostrar en el visor de PDF (`ruta_archivo`).
+- [steps](file:///c:/Users/siste/Herd/csr-api/app/Models/DocumentManagement/Document.php#31-35): El flujo de firmas. Deberás buscar los [steps](file:///c:/Users/siste/Herd/csr-api/app/Models/DocumentManagement/Document.php#31-35) cuyo `estado_paso` sea **Pendiente**, y que el `orden` sea el que "toca" en este momento.
+
+---
+
+## 4. Estampar Firma o Aprobar (Completar Paso)
+
+**Endpoint:** `POST /api/documents/steps/{stepId}/sign`
+
+Si la acción es **Firma**, debes renderizar un Canvas (ej: `vue-signature-pad`) para capturar el Base64, y un visor PDF (ej: `pdf.js`) para capturar las coordenadas (X, Y, Ancho, Alto) de dónde se colocará en la página especificada.
+Si la acción es **Visto Bueno**, solo envías request vacío.
+
+### Payload JSON (Para `tipo_accion = Firma`):
+
+```json
+{
+  "firma_base64": "data:image/png;base64,iVBORw0KGgo...",
+  "posicion": {
+    "page": 1,
+    "x": 150.5,
+    "y": 200.0,
+    "w": 50,
+    "h": 20
+  }
+}
+```
+
+### Response Success (200 OK):
+
+El backend generará internamente la nueva versión. Deberás recargar el frontend llamando al endpoint número 3.
+
+---
+
+## 5. Rechazar / Enviar a Corrección
+
+**Endpoint:** `POST /api/documents/steps/{stepId}/reject`
+
+Si un usuario encuentra un error, rechaza el documento, forzando a que vuelva al creador y el estado del documento cambie a "En corrección".
+
+### Payload JSON:
+
+```json
+{
+  "comentario": "Falta adjuntar el anexo de compras."
+}
+```
+
+---
+
+## 6. Agregar Comentarios Adicionales (Opcional)
+
+**Endpoint:** `POST /api/documents/{documentId}/comments`
+Permite agregar comentarios como en un hilo/chat del documento en base a la versión actual.
+
+### Payload JSON:
+
+```json
+{
+  "comentario": "Revisado por parte de sistemas, todo ok.",
+  "version_id": 2
+}
+```
+
+_(version_id es opcional)_

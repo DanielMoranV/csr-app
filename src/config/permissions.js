@@ -213,6 +213,16 @@ export const MODULE_PERMISSIONS = {
         showInMenu: false // No mostrar en menú, es una subpágina
     },
 
+    // Gestión Documentaria
+    documentManagement: {
+        name: 'document-management',
+        path: '/documentos',
+        positions: PERMISSION_GROUPS.ALL,
+        label: 'Gestión Documentaria',
+        icon: 'pi pi-fw pi-file-pdf',
+        menuSection: 'Soporte Técnico'
+    },
+
     // Gestión de Médicos
     doctors: {
         name: 'doctors',
