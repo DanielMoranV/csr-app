@@ -726,6 +726,17 @@ const getStatusSeverity = (status) => {
     return { registered: 'success', provisional: 'warning', cancelled: 'danger' }[status?.toLowerCase()] || 'info';
 };
 
+const copyToClipboard = async (text) => {
+    if (!text || text === '-' || text === '—') return;
+    try {
+        await navigator.clipboard.writeText(text);
+        toast.add({ severity: 'success', summary: 'Copiado', detail: 'Texto copiado al portapapeles', life: 1500 });
+    } catch (err) {
+        console.error('Copy error:', err);
+        toast.add({ severity: 'error', summary: 'Error', detail: 'No se pudo copiar el texto', life: 2000 });
+    }
+};
+
 const getSisclinRowClass = (data) => {
     if (!data.fecha_hora_turno) return 'out-of-schedule-row';
 
@@ -966,16 +977,28 @@ const openDailyModal = () => {
 
                                         <Column field="patient_name" header="Paciente" sortable>
                                             <template #body="{ data }">
-                                                <span>{{ data.patient_name }}</span>
+                                                <div class="flex align-items-center justify-content-between gap-2">
+                                                    <span>{{ data.patient_name }}</span>
+                                                    <i class="pi pi-copy text-400 cursor-pointer hover:text-primary transition-colors" @click.stop="copyToClipboard(data.patient_name)" v-tooltip.top="'Copiar'" style="font-size: 0.8rem"></i>
+                                                </div>
                                             </template>
                                             <template #editor="{ data, field }">
                                                 <InputText v-autofocus v-model="data[field]" class="w-full p-inputtext-sm" />
                                             </template>
                                         </Column>
 
-                                        <Column field="document_number" header="Admisión" style="width: 7.5rem" sortable>
+                                        <Column field="document_number" header="Admisión" style="width: 8.5rem" sortable>
                                             <template #body="{ data }">
-                                                <span class="text-sm">{{ data.document_number || '—' }}</span>
+                                                <div class="flex align-items-center justify-content-between gap-2">
+                                                    <span class="text-sm">{{ data.document_number || '—' }}</span>
+                                                    <i
+                                                        v-if="data.document_number"
+                                                        class="pi pi-copy text-400 cursor-pointer hover:text-primary transition-colors"
+                                                        @click.stop="copyToClipboard(data.document_number)"
+                                                        v-tooltip.top="'Copiar'"
+                                                        style="font-size: 0.8rem"
+                                                    ></i>
+                                                </div>
                                             </template>
                                             <template #editor="{ data, field }">
                                                 <InputText v-autofocus v-model="data[field]" class="w-full p-inputtext-sm" placeholder="N° admisión" />
@@ -1116,9 +1139,27 @@ const openDailyModal = () => {
                                         </template>
                                     </Column>
 
-                                    <Column field="nombre_paciente" header="Paciente" sortable></Column>
-                                    <Column field="numero_documento" header="Admisión" style="width: 5rem">
-                                        <template #body="{ data }">{{ data.numero_documento || '-' }}</template>
+                                    <Column field="nombre_paciente" header="Paciente" sortable>
+                                        <template #body="{ data }">
+                                            <div class="flex align-items-center justify-content-between gap-2">
+                                                <span class="text-truncate" :title="data.nombre_paciente">{{ data.nombre_paciente }}</span>
+                                                <i class="pi pi-copy text-400 cursor-pointer hover:text-primary transition-colors" @click.stop="copyToClipboard(data.nombre_paciente)" v-tooltip.top="'Copiar'" style="font-size: 0.8rem"></i>
+                                            </div>
+                                        </template>
+                                    </Column>
+                                    <Column field="numero_documento" header="Admisión" style="width: 7rem">
+                                        <template #body="{ data }">
+                                            <div class="flex align-items-center justify-content-between gap-2">
+                                                <span>{{ data.numero_documento || '-' }}</span>
+                                                <i
+                                                    v-if="data.numero_documento"
+                                                    class="pi pi-copy text-400 cursor-pointer hover:text-primary transition-colors"
+                                                    @click.stop="copyToClipboard(data.numero_documento)"
+                                                    v-tooltip.top="'Copiar'"
+                                                    style="font-size: 0.8rem"
+                                                ></i>
+                                            </div>
+                                        </template>
                                     </Column>
                                     <Column field="usuario_creacion" header="Asig. Por" sortable></Column>
 
