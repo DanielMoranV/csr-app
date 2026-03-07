@@ -1,8 +1,9 @@
 <script setup>
 import { profile } from '@/api';
 import { useAuth } from '@/composables/useAuth';
+import { useStamps } from '@/composables/useStamps';
 import { useToast } from 'primevue/usetoast';
-import { computed, onMounted, ref, watch } from 'vue';
+import { computed, nextTick, onMounted, onUnmounted, ref, watch } from 'vue';
 
 const { user } = useAuth();
 const toast = useToast();
@@ -209,7 +210,79 @@ const removeAvatar = () => {
     showAvatarDialog.value = false;
 };
 
-onMounted(loadUserProfile);
+onMounted(async () => {
+    loadUserProfile();
+    await loadStamps();
+    await loadStampPreviews();
+});
+
+onUnmounted(() => {
+    revokeAllBlobUrls();
+    if (stampPreviewUrl.value) {
+        URL.revokeObjectURL(stampPreviewUrl.value);
+    }
+});
+
+// ─── Stamps ────────────────────────────────────────────────────────
+const { stamps, isLoading: stampsLoading, isSaving: stampsSaving, loadStamps, uploadStamp, deleteStamp, getStampBlobUrl, revokeAllBlobUrls } = useStamps();
+
+// Mapa sello_id → blobUrl para las miniaturas en el grid
+const stampBlobUrls = ref({});
+
+const loadStampPreviews = async () => {
+    for (const stamp of stamps.value) {
+        if (!stampBlobUrls.value[stamp.id]) {
+            const url = await getStampBlobUrl(stamp.id);
+            if (url) stampBlobUrls.value = { ...stampBlobUrls.value, [stamp.id]: url };
+        }
+    }
+};
+
+// Estado del diálogo de subir sello
+const showUploadStampDialog = ref(false);
+const stampFileInput = ref(null);
+const pendingStampFile = ref(null);
+const pendingStampName = ref('');
+const stampPreviewUrl = ref(null);
+
+const handleStampFileSelect = (e) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    if (stampPreviewUrl.value) URL.revokeObjectURL(stampPreviewUrl.value);
+    stampPreviewUrl.value = URL.createObjectURL(file);
+    pendingStampFile.value = file;
+};
+
+const openUploadStampDialog = () => {
+    pendingStampFile.value = null;
+    pendingStampName.value = '';
+    if (stampPreviewUrl.value) {
+        URL.revokeObjectURL(stampPreviewUrl.value);
+        stampPreviewUrl.value = null;
+    }
+    showUploadStampDialog.value = true;
+    nextTick(() => stampFileInput.value?.click());
+};
+
+const confirmUploadStamp = async () => {
+    if (!pendingStampFile.value) return;
+    const result = await uploadStamp(pendingStampFile.value, pendingStampName.value);
+    if (result) {
+        showUploadStampDialog.value = false;
+        // Cargar la miniatura del nuevo sello
+        const url = await getStampBlobUrl(result.id);
+        if (url) stampBlobUrls.value = { ...stampBlobUrls.value, [result.id]: url };
+    }
+};
+
+const handleDeleteStamp = async (id) => {
+    const ok = await deleteStamp(id);
+    if (ok) {
+        const urls = { ...stampBlobUrls.value };
+        delete urls[id];
+        stampBlobUrls.value = urls;
+    }
+};
 </script>
 
 <template>
@@ -262,6 +335,10 @@ onMounted(loadUserProfile);
                 <Tab key="password" value="3">
                     <i class="pi pi-lock mr-2" />
                     <span>Cambiar Contraseña</span>
+                </Tab>
+                <Tab key="stamps" value="4">
+                    <i class="pi pi-stamp mr-2" />
+                    <span>Mis Sellos</span>
                 </Tab>
             </TabList>
             <TabPanels>
@@ -432,9 +509,110 @@ onMounted(loadUserProfile);
                         </template>
                     </Card>
                 </TabPanel>
+
+                <!-- Tab 4: Mis Sellos -->
+                <TabPanel key="stamps" value="4">
+                    <Card class="form-card">
+                        <template #title>
+                            <div class="card-title-container">
+                                <div class="flex align-items-center">
+                                    <i class="pi pi-stamp mr-2 text-xl text-primary"></i>
+                                    <span>Mis Sellos PNG</span>
+                                </div>
+                                <Button label="Subir sello" icon="pi pi-upload" size="small" @click="openUploadStampDialog" :loading="stampsSaving" />
+                            </div>
+                        </template>
+                        <template #content>
+                            <!-- Spinner de carga -->
+                            <div v-if="stampsLoading" class="stamps-loading">
+                                <i class="pi pi-spin pi-spinner text-primary" style="font-size: 2rem"></i>
+                                <p>Cargando sellos...</p>
+                            </div>
+
+                            <!-- Sin sellos -->
+                            <div v-else-if="stamps.length === 0" class="stamps-empty">
+                                <div class="stamps-empty-icon">
+                                    <i class="pi pi-image"></i>
+                                </div>
+                                <p class="stamps-empty-title">No tienes sellos registrados</p>
+                                <p class="stamps-empty-sub">Sube tu primer sello PNG (logo, sello médico, membrete, etc.)</p>
+                                <Button label="Subir primer sello" icon="pi pi-upload" @click="openUploadStampDialog" class="mt-3" />
+                            </div>
+
+                            <!-- Grid de sellos -->
+                            <div v-else class="stamps-grid">
+                                <div v-for="stamp in stamps" :key="stamp.id" class="stamp-card">
+                                    <div class="stamp-card-img-wrapper">
+                                        <img v-if="stampBlobUrls[stamp.id]" :src="stampBlobUrls[stamp.id]" :alt="stamp.nombre ?? 'Sello'" class="stamp-card-img" />
+                                        <div v-else class="stamp-card-img-placeholder">
+                                            <i class="pi pi-spin pi-spinner"></i>
+                                        </div>
+                                    </div>
+                                    <div class="stamp-card-info">
+                                        <span class="stamp-card-name">{{ stamp.nombre ?? 'Sin nombre' }}</span>
+                                        <span class="stamp-card-date">{{ formatDate(stamp.created_at) }}</span>
+                                    </div>
+                                    <button class="stamp-card-delete" :title="'Eliminar sello'" @click="handleDeleteStamp(stamp.id)" :disabled="stampsSaving">
+                                        <i class="pi pi-trash"></i>
+                                    </button>
+                                </div>
+                            </div>
+
+                            <p v-if="stamps.length > 0" class="stamps-hint">
+                                <i class="pi pi-info-circle mr-1"></i>
+                                Los sellos se usan al firmar documentos. Solo archivos PNG, máximo 2 MB.
+                            </p>
+                        </template>
+                    </Card>
+                </TabPanel>
             </TabPanels>
         </Tabs>
     </div>
+
+    <!-- Diálogo subir sello -->
+    <Dialog v-model:visible="showUploadStampDialog" header="Subir nuevo sello" :style="{ width: '440px' }" modal>
+        <div class="stamp-upload-body">
+            <!-- Input oculto -->
+            <input type="file" ref="stampFileInput" accept="image/png" style="display: none" @change="handleStampFileSelect" />
+
+            <!-- Zona de preview / selección -->
+            <div class="stamp-upload-dropzone" @click="stampFileInput?.click()">
+                <div v-if="!pendingStampFile" class="stamp-upload-empty">
+                    <div class="stamp-upload-icon"><i class="pi pi-cloud-upload"></i></div>
+                    <p class="stamp-upload-title">Haz clic para seleccionar un PNG</p>
+                    <p class="stamp-upload-sub">Solo PNG · Máximo 2 MB</p>
+                </div>
+                <div v-else class="stamp-upload-preview">
+                    <img :src="stampPreviewUrl" alt="Preview sello" class="stamp-preview-img" />
+                    <div class="stamp-upload-file-info">
+                        <span class="stamp-upload-file-name">{{ pendingStampFile.name }}</span>
+                        <span class="stamp-upload-file-size">{{ (pendingStampFile.size / 1024 / 1024).toFixed(2) }} MB</span>
+                    </div>
+                    <button
+                        class="stamp-upload-remove"
+                        @click.stop="
+                            pendingStampFile = null;
+                            stampPreviewUrl = null;
+                        "
+                    >
+                        ×
+                    </button>
+                </div>
+            </div>
+
+            <!-- Campo nombre opcional -->
+            <div class="stamp-upload-nombre-field">
+                <label>Nombre del sello <span style="color: var(--text-color-secondary); font-weight: 400">(opcional)</span></label>
+                <input v-model="pendingStampName" type="text" maxlength="100" placeholder="Ej: Sello médico, Logo institucional..." class="stamp-nombre-input" />
+            </div>
+        </div>
+        <template #footer>
+            <div class="dialog-footer">
+                <Button label="Cancelar" text severity="secondary" @click="showUploadStampDialog = false" />
+                <Button label="Subir sello" icon="pi pi-upload" :loading="stampsSaving" :disabled="!pendingStampFile" @click="confirmUploadStamp" />
+            </div>
+        </template>
+    </Dialog>
 </template>
 
 <style scoped>
@@ -722,5 +900,270 @@ onMounted(loadUserProfile);
     .form-panel .field {
         margin-bottom: 1rem;
     }
+}
+
+/* ═══ STAMPS SECTION ═══════════════════════════════════════════ */
+.stamps-loading {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0.75rem;
+    padding: 2rem;
+    color: var(--text-color-secondary);
+}
+
+.stamps-empty {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 2.5rem 1rem;
+    text-align: center;
+}
+.stamps-empty-icon {
+    width: 64px;
+    height: 64px;
+    border-radius: 50%;
+    background: var(--surface-100);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin-bottom: 0.5rem;
+}
+.stamps-empty-icon i {
+    font-size: 1.8rem;
+    color: var(--text-color-secondary);
+}
+.stamps-empty-title {
+    font-weight: 600;
+    color: var(--text-color);
+    margin: 0;
+}
+.stamps-empty-sub {
+    font-size: 0.875rem;
+    color: var(--text-color-secondary);
+    margin: 0;
+}
+
+.stamps-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+    gap: 1rem;
+    margin-bottom: 1rem;
+}
+
+.stamp-card {
+    position: relative;
+    background: var(--surface-50);
+    border: 1px solid var(--surface-200);
+    border-radius: 10px;
+    display: flex;
+    flex-direction: column;
+    gap: 0;
+    overflow: hidden;
+    transition:
+        box-shadow 0.2s,
+        border-color 0.2s;
+}
+.stamp-card:hover {
+    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.1);
+    border-color: var(--primary-300);
+}
+
+.stamp-card-img-wrapper {
+    width: 100%;
+    aspect-ratio: 1;
+    background: #fff;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    overflow: hidden;
+    border-bottom: 1px solid var(--surface-200);
+}
+.stamp-card-img {
+    max-width: 90%;
+    max-height: 90%;
+    object-fit: contain;
+}
+.stamp-card-img-placeholder {
+    color: var(--text-color-secondary);
+    font-size: 1.5rem;
+}
+
+.stamp-card-info {
+    padding: 0.6rem 0.75rem 0.4rem;
+    display: flex;
+    flex-direction: column;
+    gap: 0.15rem;
+}
+.stamp-card-name {
+    font-size: 0.82rem;
+    font-weight: 600;
+    color: var(--text-color);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+.stamp-card-date {
+    font-size: 0.72rem;
+    color: var(--text-color-secondary);
+}
+
+.stamp-card-delete {
+    position: absolute;
+    top: 6px;
+    right: 6px;
+    width: 26px;
+    height: 26px;
+    border-radius: 50%;
+    border: none;
+    background: rgba(239, 68, 68, 0.85);
+    color: #fff;
+    font-size: 0.8rem;
+    cursor: pointer;
+    display: none;
+    align-items: center;
+    justify-content: center;
+    transition: background 0.2s;
+}
+.stamp-card:hover .stamp-card-delete {
+    display: flex;
+}
+.stamp-card-delete:hover {
+    background: #dc2626;
+}
+.stamp-card-delete:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+}
+
+.stamps-hint {
+    font-size: 0.8rem;
+    color: var(--text-color-secondary);
+    margin: 0;
+}
+
+/* Upload stamp dialog */
+.stamp-upload-body {
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+    padding: 0.25rem 0;
+}
+.stamp-upload-dropzone {
+    border: 2px dashed var(--surface-300);
+    border-radius: 10px;
+    cursor: pointer;
+    transition:
+        border-color 0.2s,
+        background 0.2s;
+    min-height: 150px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    overflow: hidden;
+    position: relative;
+}
+.stamp-upload-dropzone:hover {
+    border-color: var(--primary-400);
+    background: var(--surface-50);
+}
+.stamp-upload-empty {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 1.5rem;
+    text-align: center;
+}
+.stamp-upload-icon i {
+    font-size: 2rem;
+    color: var(--primary-400);
+}
+.stamp-upload-title {
+    font-weight: 600;
+    color: var(--text-color);
+    margin: 0;
+}
+.stamp-upload-sub {
+    font-size: 0.8rem;
+    color: var(--text-color-secondary);
+    margin: 0;
+}
+.stamp-upload-preview {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 1rem;
+    width: 100%;
+}
+.stamp-preview-img {
+    max-height: 120px;
+    max-width: 100%;
+    object-fit: contain;
+    border-radius: 6px;
+    border: 1px solid var(--surface-200);
+    background: #fff;
+}
+.stamp-upload-file-info {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0.15rem;
+}
+.stamp-upload-file-name {
+    font-size: 0.82rem;
+    font-weight: 600;
+    color: var(--text-color);
+}
+.stamp-upload-file-size {
+    font-size: 0.75rem;
+    color: var(--text-color-secondary);
+}
+.stamp-upload-remove {
+    position: absolute;
+    top: 6px;
+    right: 6px;
+    width: 24px;
+    height: 24px;
+    border-radius: 50%;
+    border: none;
+    background: rgba(239, 68, 68, 0.85);
+    color: #fff;
+    font-size: 1rem;
+    cursor: pointer;
+    line-height: 1;
+}
+.stamp-upload-nombre-field {
+    display: flex;
+    flex-direction: column;
+    gap: 0.4rem;
+}
+.stamp-upload-nombre-field label {
+    font-size: 0.875rem;
+    font-weight: 600;
+    color: var(--text-color-secondary);
+}
+.stamp-nombre-input {
+    width: 100%;
+    padding: 0.5rem 0.75rem;
+    border: 1px solid var(--surface-300);
+    border-radius: 6px;
+    font-size: 0.875rem;
+    color: var(--text-color);
+    background: var(--surface-0);
+    outline: none;
+    transition: border-color 0.2s;
+}
+.stamp-nombre-input:focus {
+    border-color: var(--primary-500);
+    box-shadow: 0 0 0 2px var(--primary-100);
+}
+
+.dialog-footer {
+    display: flex;
+    justify-content: flex-end;
+    gap: 0.5rem;
 }
 </style>

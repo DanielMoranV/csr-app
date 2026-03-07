@@ -102,14 +102,19 @@ export function useDocumentManagement() {
         switch (status) {
             case 'Pendiente':
                 return 'warning';
+            case 'Notificado':
+                return 'info';
+            case 'Completado':
             case 'Finalizado':
                 return 'success';
+            case 'En revisión':
+                return 'secondary';
             case 'En corrección':
-                return 'info';
+                return 'warn';
             case 'Rechazado':
                 return 'danger';
             default:
-                return 'info';
+                return 'secondary';
         }
     };
 

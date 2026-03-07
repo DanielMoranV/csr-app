@@ -8,6 +8,19 @@ Esta guía documenta los endpoints y payload necesarios para implementar el fluj
 **Auth:** Requiere Bearer Token (JWT).
 **Content-Type:** `multipart/form-data`
 
+> [!IMPORTANT]
+> **Formato de Respuestas**
+> Todos los endpoints de este módulo devuelven respuestas bajo la estructura estándar de la API ([ApiResponseClass](file:///c:/Users/siste/Herd/csr-api/app/Classes/ApiResponseClass.php#9-94)):
+> ```json
+> {
+>   "success": true,
+>   "message": "Mensaje de éxito",
+>   "data": { ... },
+>   "status": 200
+> }
+> ```
+> En caso de error de validación (422), los errores vendrán en la llave `"errors"`.
+
 ### Payload:
 
 | Campo                             | Tipo       | Requerido | Descripción                              |
@@ -68,6 +81,7 @@ Obtiene todos los documentos con su estado actual (Pendiente, En corrección, Fi
 **Endpoint:** `GET /api/documents/permitted`
 
 Este es el endpoint recomendado para los usuarios regulares. Solo listará los documentos donde:
+
 - El usuario es el creador (`creador_id`).
 - El usuario ha firmado uno de los pasos (`user_id_signed`).
 - El usuario está asigando para firmar (`permitted_users`).
@@ -109,7 +123,7 @@ Si la acción es **Visto Bueno**, solo envías request vacío.
 
 ### Response Success (200 OK):
 
-El backend generará internamente la nueva versión. Deberás recargar el frontend llamando al endpoint número 3.
+El backend generará internamente la nueva versión. Deberás leer el objeto actualizado desde `response.data.data.step` y luego recargar la vista general llamando al endpoint número 3 para traer el nuevo historial de versiones.
 
 ---
 

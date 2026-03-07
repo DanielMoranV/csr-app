@@ -22,8 +22,9 @@ export const useDocumentManagementStore = defineStore('documentManagement', {
                 const response = await apiClient.get('/documents/permitted');
                 console.log('[DEBUG] Response GET /documents/permitted:', response); // Log agregado temporalmente
 
-                // Si la respuesta es un array directo, lo asignamos, sino tratamos de extraer la data
-                this.documents = Array.isArray(response) ? response : apiUtils.getData(response) || [];
+                // La API retorna paginación: { success, data: { data: [...], current_page, total, ... } }
+                const responseData = apiUtils.getData(response);
+                this.documents = Array.isArray(responseData) ? responseData : (responseData?.data || []);
 
                 this.lastFetch = Date.now();
                 return response;

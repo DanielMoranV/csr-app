@@ -12,7 +12,7 @@ import { useToast } from 'primevue/usetoast';
 import { computed, onMounted, ref } from 'vue';
 
 const toast = useToast();
-const { documents, isLoading: loading, fetchDocumentDetails, initializeDocuments } = useDocumentManagement();
+const { documents, isLoading: loading, fetchDocumentDetails, initializeDocuments, getSeverity } = useDocumentManagement();
 
 const globalFilter = ref('');
 const showNewDocumentDialog = ref(false);
@@ -34,21 +34,6 @@ const handleDocumentCreated = () => {
 const viewDocument = (doc) => {
     selectedDocumentId.value = doc.id;
     showDocumentViewerDialog.value = true;
-};
-
-const getSeverity = (status) => {
-    switch (status) {
-        case 'Pendiente':
-            return 'warning';
-        case 'Finalizado':
-            return 'success';
-        case 'En corrección':
-            return 'info';
-        case 'Rechazado':
-            return 'danger';
-        default:
-            return 'info';
-    }
 };
 
 const formatDate = (value) => {
@@ -74,7 +59,7 @@ const clearFilter = () => {
 const filteredDocuments = computed(() => {
     if (!globalFilter.value) return documents.value;
     const search = globalFilter.value.toLowerCase();
-    return documents.value.filter((doc) => doc.titulo.toLowerCase().includes(search) || (doc.creador && doc.creador.name.toLowerCase().includes(search)) || doc.estado.toLowerCase().includes(search));
+    return documents.value.filter((doc) => doc.titulo.toLowerCase().includes(search) || (doc.creador && doc.creador.name.toLowerCase().includes(search)) || (doc.estado_actual && doc.estado_actual.toLowerCase().includes(search)));
 });
 
 onMounted(() => {
