@@ -75,7 +75,11 @@ export const useDocumentManagementStore = defineStore('documentManagement', {
             this.isSaving = true;
             try {
                 // payload could be { firma_base64: '...', posicion: { page, x, y, w, h } }
-                const response = await apiClient.post(`/documents/steps/${stepId}/sign`, payload);
+                // or FormData (for Edición steps that require a file upload)
+                const config = payload instanceof FormData
+                    ? { headers: { 'Content-Type': 'multipart/form-data' } }
+                    : {};
+                const response = await apiClient.post(`/documents/steps/${stepId}/sign`, payload, config);
                 return response;
             } catch (error) {
                 console.error(`Error signing step ${stepId}:`, error);
@@ -106,6 +110,21 @@ export const useDocumentManagementStore = defineStore('documentManagement', {
                 return response;
             } catch (error) {
                 console.error(`Error adding comment to doc ${documentId}:`, error);
+                throw error;
+            } finally {
+                this.isSaving = false;
+            }
+        },
+
+        async deleteDocument(id) {
+            this.isSaving = true;
+            try {
+                const response = await apiClient.delete(`/documents/${id}`);
+                this.documents = this.documents.filter((doc) => doc.id !== id);
+                this.lastFetch = null;
+                return response;
+            } catch (error) {
+                console.error(`Error deleting document ${id}:`, error);
                 throw error;
             } finally {
                 this.isSaving = false;

@@ -86,6 +86,18 @@ export function useDocumentManagement() {
         }
     };
 
+    const deleteDocument = async (id) => {
+        try {
+            const response = await store.deleteDocument(id);
+            const message = apiUtils.getMessage(response) || 'Documento eliminado correctamente';
+            toast.add({ severity: 'success', summary: 'Eliminado', detail: message, life: 4000 });
+            return response;
+        } catch (error) {
+            handleError(error, 'Error al eliminar el documento');
+            throw error;
+        }
+    };
+
     const addDocumentComment = async (documentId, payload) => {
         try {
             const response = await store.addComment(documentId, payload);
@@ -153,6 +165,7 @@ export function useDocumentManagement() {
         signDocumentStep,
         rejectDocumentStep,
         addDocumentComment,
+        deleteDocument,
         getSeverity
     };
 }

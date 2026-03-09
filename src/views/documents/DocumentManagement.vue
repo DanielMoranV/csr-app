@@ -2,17 +2,23 @@
 import DocumentViewerDialog from '@/components/documents/DocumentViewerDialog.vue';
 import NewDocumentDialog from '@/components/documents/NewDocumentDialog.vue';
 import { useDocumentManagement } from '@/composables/useDocumentManagement.js';
+import { useAuthStore } from '@/store/authStore.js';
 import Button from 'primevue/button';
 import Column from 'primevue/column';
 import DataTable from 'primevue/datatable';
 import IconField from 'primevue/iconfield';
 import InputIcon from 'primevue/inputicon';
 import InputText from 'primevue/inputtext';
+import { useConfirm } from 'primevue/useconfirm';
 import { useToast } from 'primevue/usetoast';
 import { computed, onMounted, ref } from 'vue';
 
 const toast = useToast();
-const { documents, isLoading: loading, fetchDocumentDetails, initializeDocuments, getSeverity } = useDocumentManagement();
+const confirm = useConfirm();
+const authStore = useAuthStore();
+const { documents, isLoading: loading, fetchDocumentDetails, initializeDocuments, deleteDocument, getSeverity } = useDocumentManagement();
+
+const currentUserId = computed(() => authStore.getUser?.id);
 
 const globalFilter = ref('');
 const showNewDocumentDialog = ref(false);
@@ -54,6 +60,24 @@ const handleGlobalFilter = (event) => {
 
 const clearFilter = () => {
     globalFilter.value = '';
+};
+
+const confirmDelete = (doc) => {
+    confirm.require({
+        message: `¿Estás seguro de que deseas eliminar "${doc.titulo}"? Esta acción no se puede deshacer.`,
+        header: 'Confirmar eliminación',
+        icon: 'pi pi-exclamation-triangle',
+        acceptLabel: 'Sí, eliminar',
+        rejectLabel: 'Cancelar',
+        acceptClass: 'p-button-danger',
+        accept: async () => {
+            try {
+                await deleteDocument(doc.id);
+            } catch {
+                // Toast handled by composable
+            }
+        }
+    });
 };
 
 const filteredDocuments = computed(() => {
@@ -165,11 +189,13 @@ onMounted(() => {
                     <template #body="{ data }">
                         <div class="flex gap-2">
                             <Button icon="pi pi-eye" size="small" rounded severity="info" outlined v-tooltip.top="'Ver Documento'" @click="viewDocument(data)" />
+                            <Button v-if="data.creador?.id === currentUserId" icon="pi pi-trash" size="small" rounded severity="danger" outlined v-tooltip.top="'Eliminar Documento'" @click="confirmDelete(data)" />
                         </div>
                     </template>
                 </Column>
             </DataTable>
         </div>
+
         <!-- Diálogo para crear nuevo documento -->
         <NewDocumentDialog v-model:visible="showNewDocumentDialog" @document-created="handleDocumentCreated" />
 
