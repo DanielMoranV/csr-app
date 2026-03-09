@@ -311,7 +311,7 @@ const formatFileSize = (bytes) => {
                             <label for="titulo" class="modern-label">Título del Documento</label>
                             <div class="modern-input-wrapper" :class="{ 'is-invalid': touchedFields.titulo && !formData.titulo.trim() }">
                                 <i class="pi pi-pencil input-prefix"></i>
-                                <input id="titulo" v-model="formData.titulo" autocomplete="off" placeholder="Ej: Contrato de Arrendamiento - Marzo 2024" class="modern-input" :disabled="loading" @blur="touchedFields.titulo = true" />
+                                <input id="titulo" v-model="formData.titulo" autocomplete="off" placeholder="Ej: Cotización 2026" class="modern-input" :disabled="loading" @blur="touchedFields.titulo = true" />
                             </div>
                             <small v-if="touchedFields.titulo && !formData.titulo.trim()" class="modern-error">El título es requerido para continuar.</small>
                         </div>
