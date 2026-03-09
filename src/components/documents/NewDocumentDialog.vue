@@ -5,9 +5,7 @@ import { POSITIONS } from '@/config/permissions';
 import Button from 'primevue/button';
 import Dialog from 'primevue/dialog';
 import Dropdown from 'primevue/dropdown';
-import InputText from 'primevue/inputtext';
 import MultiSelect from 'primevue/multiselect';
-import Textarea from 'primevue/textarea';
 import { useToast } from 'primevue/usetoast';
 import { computed, onMounted, ref, watch } from 'vue';
 const props = defineProps({
@@ -264,196 +262,198 @@ const formatFileSize = (bytes) => {
         :visible="visible"
         @update:visible="(val) => emit('update:visible', val)"
         modal
-        :header="currentStep === 1 ? 'Paso 1: Información del Documento' : 'Paso 2: Flujo de Aprobación'"
-        :style="{ width: '60vw' }"
+        :header="currentStep === 1 ? 'Detalles del Documento' : 'Flujo de Aprobación'"
+        :style="{ width: '600px' }"
         :breakpoints="{ '1024px': '75vw', '768px': '90vw', '641px': '100vw' }"
         @hide="resetForm"
-        class="wizard-dialog"
+        class="wizard-modern-dialog"
         :closeOnEscape="!loading"
         :closable="!loading"
     >
         <template #header>
-            <div class="flex flex-column w-full">
-                <div class="flex items-center gap-3 mb-4">
-                    <div class="flex items-center justify-center w-12 h-12 rounded-xl popup-icon">
-                        <i class="pi pi-file-import text-2xl text-white"></i>
-                    </div>
-                    <div>
-                        <h2 class="m-0 text-xl font-bold bg-clip-text text-transparent popup-gradient-text">Crear Nuevo Documento</h2>
-                        <span class="text-sm text-gray-500">Configura el archivo y su flujo de firmas</span>
+            <div class="modern-header">
+                <div class="header-top">
+                    <div class="header-brand">
+                        <div class="brand-icon">
+                            <i class="pi pi-file-arrow-up"></i>
+                        </div>
+                        <div class="brand-text">
+                            <h3>Crear Documento</h3>
+                            <p>Configura tu archivo y el proceso de firmas</p>
+                        </div>
                     </div>
                 </div>
 
-                <!-- Custom Stepper Progress -->
-                <div class="flex align-items-center w-full px-2">
-                    <div class="flex-1 flex flex-column align-items-center relative">
-                        <div class="step-circle" :class="{ active: currentStep >= 1 }">1</div>
-                        <span class="text-xs mt-2 font-medium" :class="currentStep >= 1 ? 'text-primary' : 'text-gray-400'">Detalles</span>
+                <!-- Sleek Modern Stepper -->
+                <div class="modern-stepper">
+                    <div class="stepper-item" :class="{ active: currentStep === 1, completed: currentStep > 1 }" @click="currentStep = 1">
+                        <div class="step-dot">
+                            <span v-if="currentStep > 1"><i class="pi pi-check text-[10px]"></i></span>
+                            <span v-else>1</span>
+                        </div>
+                        <span class="step-label">Información</span>
                     </div>
-                    <div class="step-line" :class="{ active: currentStep >= 2 }"></div>
-                    <div class="flex-1 flex flex-column align-items-center relative">
-                        <div class="step-circle" :class="{ active: currentStep >= 2 }">2</div>
-                        <span class="text-xs mt-2 font-medium" :class="currentStep >= 2 ? 'text-primary' : 'text-gray-400'">Flujo</span>
+                    <div class="step-connector" :class="{ completed: currentStep > 1 }"></div>
+                    <div class="stepper-item" :class="{ active: currentStep === 2, completed: currentStep > 2 }">
+                        <div class="step-dot">2</div>
+                        <span class="step-label">Flujo de Firmas</span>
                     </div>
                 </div>
             </div>
         </template>
 
-        <div class="py-4 overflow-hidden relative" style="min-height: 400px">
+        <div class="wizard-content">
             <!-- ===== PASO 1: Detalles ===== -->
-            <transition name="slide-fade">
-                <div v-show="currentStep === 1" class="step-container">
-                    <div class="grid formgrid p-fluid">
-                        <div class="field col-12">
-                            <label for="titulo" class="font-semibold block mb-2">Título del Documento <span class="text-red-500">*</span></label>
-                            <InputText
-                                id="titulo"
-                                v-model="formData.titulo"
-                                placeholder="Ej: Política de Seguridad 2026"
-                                :disabled="loading"
-                                :class="{ 'p-invalid': touchedFields.titulo && !formData.titulo.trim() }"
-                                @blur="touchedFields.titulo = true"
-                                fluid
-                            />
-                            <small v-if="touchedFields.titulo && !formData.titulo.trim()" class="p-error">El título es obligatorio.</small>
+            <transition name="modern-slide">
+                <div v-if="currentStep === 1" class="step-modern-container">
+                    <div class="modern-form">
+                        <div class="form-group mb-4">
+                            <label for="titulo" class="modern-label">Título del Documento</label>
+                            <div class="modern-input-wrapper" :class="{ 'is-invalid': touchedFields.titulo && !formData.titulo.trim() }">
+                                <i class="pi pi-pencil input-prefix"></i>
+                                <input id="titulo" v-model="formData.titulo" autocomplete="off" placeholder="Ej: Contrato de Arrendamiento - Marzo 2024" class="modern-input" :disabled="loading" @blur="touchedFields.titulo = true" />
+                            </div>
+                            <small v-if="touchedFields.titulo && !formData.titulo.trim()" class="modern-error">El título es requerido para continuar.</small>
                         </div>
 
-                        <div class="field col-12">
-                            <label for="descripcion" class="font-semibold block mb-2">Descripción <span class="text-gray-400 font-normal">(Opcional)</span></label>
-                            <Textarea id="descripcion" v-model="formData.descripcion" rows="3" placeholder="Proporciona contexto sobre este documento..." :disabled="loading" fluid />
+                        <div class="form-group mb-5">
+                            <label for="descripcion" class="modern-label">Descripción <span class="label-optional">(Opcional)</span></label>
+                            <div class="modern-input-wrapper">
+                                <textarea id="descripcion" v-model="formData.descripcion" rows="2" placeholder="Agregue una nota breve sobre el documento..." class="modern-input modern-textarea" :disabled="loading"></textarea>
+                            </div>
                         </div>
 
-                        <div class="field col-12 mt-2">
-                            <label class="font-semibold block mb-2">Archivo PDF <span class="text-red-500">*</span></label>
+                        <div class="form-group">
+                            <label class="modern-label">Documento PDF</label>
 
-                            <!-- Input oculto -->
                             <input type="file" ref="fileInput" accept="application/pdf" class="hidden" @change="handleFileSelect" :disabled="loading" />
 
-                            <!-- Zona de Drop -->
                             <div
-                                class="drop-zone"
+                                class="modern-drop-zone"
                                 :class="{
-                                    'is-dragging': isDragging,
+                                    dragging: isDragging,
                                     'has-file': formData.file !== null,
-                                    'is-invalid': touchedFields.file && formData.file === null
+                                    invalid: touchedFields.file && formData.file === null
                                 }"
                                 @dragover="handleDragOver"
                                 @dragleave="handleDragLeave"
                                 @drop="handleDrop"
                                 @click="triggerFileInput"
                             >
-                                <div v-if="!formData.file" class="flex flex-column align-items-center justify-content-center py-5">
-                                    <div class="cloud-icon mb-3">
-                                        <i class="pi pi-cloud-upload text-4xl"></i>
+                                <div v-if="!formData.file" class="drop-zone-placeholder">
+                                    <div class="upload-icon-pulse">
+                                        <i class="pi pi-cloud-upload"></i>
                                     </div>
-                                    <p class="m-0 font-semibold text-lg text-gray-700">Arrastra tu PDF aquí o haz clic</p>
-                                    <p class="m-0 text-sm text-gray-400 mt-1">Máximo 10MB</p>
+                                    <div class="upload-texts">
+                                        <p class="main-text">Arrastra tu PDF aquí o haz clic</p>
+                                        <p class="sub-text">Formatos permitidos: PDF (máx. 10MB)</p>
+                                    </div>
                                 </div>
 
-                                <div v-else class="flex align-items-center justify-content-between p-3 w-full border-round surface-ground shadow-1 relative z-1">
-                                    <div class="flex align-items-center gap-3">
-                                        <img src="https://upload.wikimedia.org/wikipedia/commons/8/87/PDF_file_icon.svg" alt="PDF Icon" width="40" />
-                                        <div class="flex flex-column text-left">
-                                            <span class="font-bold text-gray-800 text-overflow-ellipsis overflow-hidden" style="max-width: 300px; white-space: nowrap">{{ formData.file.name }}</span>
-                                            <span class="text-xs text-gray-500">{{ formatFileSize(formData.file.size) }}</span>
-                                        </div>
+                                <div v-else class="file-preview-card" @click.stop>
+                                    <div class="file-icon-bg">
+                                        <i class="pi pi-file-pdf"></i>
                                     </div>
-                                    <Button icon="pi pi-trash" severity="danger" rounded text @click="removeFile" v-tooltip="'Remover PDF'" :disabled="loading" />
+                                    <div class="file-details">
+                                        <span class="file-name">{{ formData.file.name }}</span>
+                                        <span class="file-size">{{ formatFileSize(formData.file.size) }}</span>
+                                    </div>
+                                    <button class="remove-file-btn" @click="removeFile" :disabled="loading" title="Quitar archivo">
+                                        <i class="pi pi-times"></i>
+                                    </button>
                                 </div>
                             </div>
-                            <small v-if="touchedFields.file && formData.file === null" class="p-error block mt-1">Debe adjuntar un documento PDF.</small>
+                            <small v-if="touchedFields.file && formData.file === null" class="modern-error block mt-2">Es necesario adjuntar un documento.</small>
                         </div>
                     </div>
                 </div>
             </transition>
 
             <!-- ===== PASO 2: Flujo ===== -->
-            <transition name="slide-fade">
-                <div v-show="currentStep === 2" class="step-container">
-                    <div class="flex justify-content-between align-items-center mb-4 p-3 bg-blue-50 dark:bg-blue-900/20 border-round">
-                        <div class="flex flex-column">
-                            <span class="font-semibold text-blue-800 dark:text-blue-300">Configura el orden de firmas</span>
-                            <span class="text-sm text-blue-600 dark:text-blue-400">Las personas asignadas recibirán una notificación en el orden establecido.</span>
+            <transition name="modern-slide">
+                <div v-if="currentStep === 2" class="step-modern-container">
+                    <div class="flow-header">
+                        <div class="flow-info">
+                            <h4>Pipeline de Aprobación</h4>
+                            <p>Configura los pasos y responsables del documento.</p>
                         </div>
-                        <Button label="Agregar Paso" icon="pi pi-plus" size="small" @click="addStep" :disabled="loading" class="shadow-2" />
+                        <Button label="Añadir Paso" icon="pi pi-plus" size="small" outlined severity="primary" @click="addStep" :disabled="loading" class="modern-add-btn" />
                     </div>
 
-                    <div v-if="formData.steps.length === 0" class="text-center p-5 border-round bg-gray-50 border-1 border-dashed surface-border">
-                        <div class="empty-icon-pulse mb-3 mx-auto">
-                            <i class="pi pi-sitemap text-3xl text-gray-400"></i>
+                    <div v-if="formData.steps.length === 0" class="flow-empty">
+                        <div class="empty-visual">
+                            <i class="pi pi-share-alt"></i>
                         </div>
-                        <p class="text-gray-600 font-medium m-0">No hay pasos configurados</p>
-                        <p class="text-gray-500 text-sm mt-1">Haz clic en "Agregar Paso" para comenzar a diseñar el flujo.</p>
+                        <p>No has definido un flujo aún</p>
+                        <Button label="Empezar a diseñar" text size="small" @click="addStep" />
                     </div>
 
-                    <div v-else class="flex flex-column gap-3 overflow-y-auto" style="max-height: 40vh; padding-right: 5px">
-                        <div v-for="(step, index) in formData.steps" :key="index" class="step-card">
-                            <!-- Badge Ordinal -->
-                            <div class="step-ordinal">
-                                {{ step.orden }}
-                            </div>
+                    <div v-else class="modern-flow-pipeline">
+                        <div v-for="(step, index) in formData.steps" :key="index" class="pipeline-step">
+                            <div class="step-vertical-connector" v-if="index < formData.steps.length - 1"></div>
 
-                            <!-- Remove Button -->
-                            <Button icon="pi pi-times" class="remove-step-btn p-button-rounded p-button-text p-button-danger" @click="removeStepAction(index)" :disabled="loading" v-tooltip="'Remover'" />
+                            <div class="step-card-modern">
+                                <div class="step-badge-modern">{{ step.orden }}</div>
 
-                            <div class="grid formgrid p-fluid mt-2 ml-4">
-                                <div class="field col-12 md:col-4">
-                                    <label class="text-xs font-semibold text-gray-500 uppercase tracking-wide">Acción <span class="text-red-500">*</span></label>
-                                    <Dropdown
-                                        v-model="step.tipo_accion"
-                                        :options="actionTypes"
-                                        optionLabel="label"
-                                        optionValue="value"
-                                        placeholder="Elegir..."
-                                        :disabled="loading"
-                                        class="w-full"
-                                        :class="{ 'p-invalid': !step.tipo_accion && touchedFields.titulo }"
-                                    >
-                                        <template #value="slotProps">
-                                            <div v-if="slotProps.value" class="flex align-items-center gap-2">
-                                                <i :class="getActionIcon(slotProps.value)"></i>
-                                                <span class="font-medium">{{ slotProps.value }}</span>
-                                            </div>
-                                            <span v-else>{{ slotProps.placeholder }}</span>
-                                        </template>
-                                        <template #option="slotProps">
-                                            <div class="flex align-items-center gap-2">
-                                                <i :class="getActionIcon(slotProps.option.value)"></i>
-                                                <span>{{ slotProps.option.label }}</span>
-                                            </div>
-                                        </template>
-                                    </Dropdown>
-                                </div>
-
-                                <div class="field col-12 md:col-8">
-                                    <label class="text-xs font-semibold text-gray-500 uppercase tracking-wide">Responsables <span class="text-red-500">*</span></label>
-                                    <div class="flex flex-column gap-2">
-                                        <MultiSelect
-                                            v-model="step.permitted_positions"
-                                            :options="positionOptions"
-                                            optionLabel="label"
-                                            optionValue="value"
-                                            placeholder="Por Cargos (Ej: Sistemas, RRHH)"
-                                            display="chip"
-                                            :filter="true"
-                                            :disabled="loading"
-                                            class="w-full"
-                                            :class="{ 'p-invalid': step.permitted_positions.length === 0 && step.permitted_users.length === 0 && touchedFields.titulo }"
-                                        />
-                                        <MultiSelect
-                                            v-model="step.permitted_users"
-                                            :options="userOptions"
-                                            optionLabel="label"
-                                            optionValue="value"
-                                            placeholder="Por Usuarios Específicos"
-                                            display="chip"
-                                            :filter="true"
-                                            :disabled="loading"
-                                            class="w-full"
-                                        />
+                                <div class="step-fields">
+                                    <div class="step-row">
+                                        <div class="field-item">
+                                            <label class="item-label">Tipo de Acción</label>
+                                            <Dropdown v-model="step.tipo_accion" :options="actionTypes" optionLabel="label" optionValue="value" placeholder="Seleccionar..." :disabled="loading" class="modern-dropdown">
+                                                <template #value="slotProps">
+                                                    <div v-if="slotProps.value" class="flex align-items-center gap-2">
+                                                        <i :class="getActionIcon(slotProps.value)"></i>
+                                                        <span class="text-sm font-medium">{{ slotProps.value }}</span>
+                                                    </div>
+                                                    <span v-else class="text-sm text-gray-400">{{ slotProps.placeholder }}</span>
+                                                </template>
+                                                <template #option="slotProps">
+                                                    <div class="flex align-items-center gap-2">
+                                                        <i :class="getActionIcon(slotProps.option.value)"></i>
+                                                        <span class="text-sm">{{ slotProps.option.label }}</span>
+                                                    </div>
+                                                </template>
+                                            </Dropdown>
+                                        </div>
                                     </div>
-                                    <small v-if="step.permitted_positions.length === 0 && step.permitted_users.length === 0 && touchedFields.titulo" class="p-error"> Debes seleccionar al menos un cargo o usuario. </small>
+
+                                    <div class="step-row mt-3">
+                                        <div class="field-item">
+                                            <label class="item-label">Responsables</label>
+                                            <div class="responsibles-grid">
+                                                <MultiSelect
+                                                    v-model="step.permitted_positions"
+                                                    :options="positionOptions"
+                                                    optionLabel="label"
+                                                    optionValue="value"
+                                                    placeholder="Por Cargos..."
+                                                    display="chip"
+                                                    :filter="true"
+                                                    :disabled="loading"
+                                                    class="modern-multiselect"
+                                                    :maxSelectedLabels="3"
+                                                />
+                                                <MultiSelect
+                                                    v-model="step.permitted_users"
+                                                    :options="userOptions"
+                                                    optionLabel="label"
+                                                    optionValue="value"
+                                                    placeholder="Por Usuarios..."
+                                                    display="chip"
+                                                    :filter="true"
+                                                    :disabled="loading"
+                                                    class="modern-multiselect mt-1"
+                                                    :maxSelectedLabels="3"
+                                                />
+                                            </div>
+                                            <small v-if="step.permitted_positions.length === 0 && step.permitted_users.length === 0" class="text-orange-500 text-[10px] mt-1 block"> * Se notificará a los responsables asignados. </small>
+                                        </div>
+                                    </div>
                                 </div>
+
+                                <button class="step-delete-btn" @click="removeStepAction(index)" :disabled="loading" title="Eliminar paso">
+                                    <i class="pi pi-trash"></i>
+                                </button>
                             </div>
                         </div>
                     </div>
@@ -462,15 +462,15 @@ const formatFileSize = (bytes) => {
         </div>
 
         <template #footer>
-            <div class="flex justify-content-between align-items-center w-full border-t border-gray-200 dark:border-gray-700 pt-3">
-                <Button label="Cancelar" icon="pi pi-times" severity="secondary" text @click="closeDialog" :disabled="loading" />
+            <div class="modern-footer">
+                <Button label="Cancelar" text severity="danger" @click="closeDialog" :disabled="loading" class="modern-cancel-btn" />
 
-                <div class="flex gap-2">
-                    <Button v-if="currentStep === 2" label="Atrás" icon="pi pi-arrow-left" severity="secondary" outlined @click="prevStep" :disabled="loading" />
+                <div class="footer-actions">
+                    <Button v-if="currentStep === 2" label="Volver" icon="pi pi-arrow-left" text @click="prevStep" :disabled="loading" class="modern-back-btn" />
 
-                    <Button v-if="currentStep === 1" label="Siguiente" iconPos="right" icon="pi pi-arrow-right" @click="nextStep" class="p-button-primary bg-blue-600 hover:bg-blue-700" />
+                    <Button v-if="currentStep === 1" label="Continuar" icon="pi pi-arrow-right" iconPos="right" @click="nextStep" :disabled="!isStep1Valid || loading" class="modern-primary-btn" />
 
-                    <Button v-if="currentStep === 2" label="Crear e Iniciar Flujo" icon="pi pi-send" @click="submitDocument" :loading="loading" :disabled="!isFormValid" class="p-button-success" />
+                    <Button v-if="currentStep === 2" label="Crear Documento" icon="pi pi-check-circle" @click="submitDocument" :loading="loading" :disabled="!isFormValid" class="modern-submit-btn" />
                 </div>
             </div>
         </template>
@@ -478,204 +478,563 @@ const formatFileSize = (bytes) => {
 </template>
 
 <style scoped>
-/* Transiciones */
-.slide-fade-enter-active {
-    transition: all 0.3s ease-out;
+/* Design Tokens */
+.wizard-modern-dialog {
+    --primary-color: #0ea5e9;
+    --primary-hover: #0284c7;
+    --bg-surface: #ffffff;
+    --text-main: #1e293b;
+    --text-muted: #64748b;
+    --border-soft: #f1f5f9;
+    --input-bg: #f8fafc;
+    --radius-lg: 16px;
+    --radius-md: 12px;
+    --shadow-soft: 0 10px 25px -5px rgba(0, 0, 0, 0.05), 0 8px 10px -6px rgba(0, 0, 0, 0.05);
 }
-.slide-fade-leave-active {
-    transition: all 0.3s cubic-bezier(1, 0.5, 0.8, 1);
-    position: absolute;
+
+:deep(.p-dialog-content) {
+    padding: 0 !important;
+    overflow-x: hidden;
+}
+
+:deep(.p-dialog-header) {
+    padding: 1.5rem 1.5rem 0 1.5rem !important;
+}
+
+/* Header & Stepper */
+.modern-header {
     width: 100%;
-}
-.slide-fade-enter-from {
-    transform: translateX(20px);
-    opacity: 0;
-}
-.slide-fade-leave-to {
-    transform: translateX(-20px);
-    opacity: 0;
+    margin-bottom: 1.5rem;
 }
 
-.step-container {
-    width: 100%;
+.header-brand {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    margin-bottom: 2rem;
 }
 
-/* Header & Icons */
-.wizard-dialog :deep(.p-dialog-header) {
-    background: var(--surface-section);
-    border-bottom: 1px solid var(--surface-border);
-    padding-bottom: 0;
-}
-
-.wizard-dialog :deep(.p-dialog-content) {
-    background: var(--surface-section);
-}
-
-.wizard-dialog :deep(.p-dialog-footer) {
-    background: var(--surface-section);
-    border-top: none;
-}
-
-.popup-icon {
-    background: linear-gradient(135deg, #3b82f6 0%, #1d4ed8 100%);
-    box-shadow: 0 4px 12px rgba(59, 130, 246, 0.4);
-}
-
-.popup-gradient-text {
-    background-image: linear-gradient(135deg, #3b82f6 0%, #1d4ed8 100%);
-}
-:global(.dark) .popup-gradient-text {
-    background-image: linear-gradient(135deg, #60a5fa 0%, #3b82f6 100%);
-}
-
-/* Stepper Custom */
-.step-circle {
-    width: 32px;
-    height: 32px;
-    border-radius: 50%;
-    background: var(--surface-ground);
-    border: 2px solid var(--surface-border);
+.brand-icon {
+    width: 48px;
+    height: 48px;
+    border-radius: 12px;
+    background: linear-gradient(135deg, #0ea5e9 0%, #3b82f6 100%);
     display: flex;
     align-items: center;
     justify-content: center;
-    font-weight: bold;
-    color: var(--text-color-secondary);
-    transition: all 0.4s ease;
-    z-index: 2;
-}
-
-.step-circle.active {
-    background: #3b82f6;
-    border-color: #3b82f6;
     color: white;
-    box-shadow: 0 0 0 4px rgba(59, 130, 246, 0.2);
+    font-size: 1.4rem;
+    box-shadow: 0 8px 16px -4px rgba(59, 130, 246, 0.3);
 }
 
-.step-line {
-    flex: 1;
-    height: 3px;
-    background: var(--surface-border);
-    margin: 0 -15px;
-    transform: translateY(-10px);
-    transition: all 0.4s ease;
-    z-index: 1;
+.brand-text h3 {
+    margin: 0;
+    font-size: 1.25rem;
+    font-weight: 700;
+    color: var(--text-main);
 }
 
-.step-line.active {
-    background: #3b82f6;
+.brand-text p {
+    margin: 0;
+    font-size: 0.875rem;
+    color: var(--text-muted);
 }
 
-/* Drag & Drop Zone */
-.drop-zone {
-    border: 2px dashed var(--surface-border);
-    border-radius: 12px;
-    background: var(--surface-card);
-    transition: all 0.3s ease;
+.modern-stepper {
+    display: flex;
+    align-items: center;
+    padding: 0 0.5rem;
+}
+
+.stepper-item {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
     cursor: pointer;
-    position: relative;
-    overflow: hidden;
-}
-
-.drop-zone:hover {
-    border-color: #3b82f6;
-    background: rgba(59, 130, 246, 0.02);
-}
-
-.drop-zone.is-dragging {
-    border-color: #3b82f6;
-    background: rgba(59, 130, 246, 0.1);
-    transform: scale(1.01);
-}
-
-.drop-zone.has-file {
-    border-style: solid;
-    border-color: #10b981;
-    background: rgba(16, 185, 129, 0.05);
-}
-
-.drop-zone.is-invalid {
-    border-color: #ef4444;
-    background: rgba(239, 68, 68, 0.05);
-}
-
-.cloud-icon i {
-    background: linear-gradient(135deg, #9ca3af 0%, #6b7280 100%);
-    -webkit-background-clip: text;
-    background-clip: text;
-    -webkit-text-fill-color: transparent;
     transition: all 0.3s ease;
 }
 
-.drop-zone:hover .cloud-icon i,
-.drop-zone.is-dragging .cloud-icon i {
-    background: linear-gradient(135deg, #3b82f6 0%, #1d4ed8 100%);
-    -webkit-background-clip: text;
-    background-clip: text;
-    -webkit-text-fill-color: transparent;
-    transform: translateY(-5px);
-}
-
-/* Pasos dinámicos */
-.step-card {
-    background: var(--surface-card);
-    border: 1px solid var(--surface-border);
-    border-radius: 12px;
-    padding: 1.5rem 1rem 1rem 1rem;
-    position: relative;
-    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.02);
-    transition: all 0.2s ease;
-    border-left: 4px solid #3b82f6;
-}
-
-.step-card:hover {
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
-}
-
-.step-ordinal {
-    position: absolute;
-    top: -12px;
-    left: -12px;
-    width: 28px;
-    height: 28px;
-    background: #3b82f6;
-    color: white;
+.step-dot {
+    width: 24px;
+    height: 24px;
     border-radius: 50%;
+    background: var(--border-soft);
+    color: var(--text-muted);
     display: flex;
     align-items: center;
     justify-content: center;
-    font-weight: bold;
-    font-size: 0.8rem;
-    box-shadow: 0 2px 6px rgba(59, 130, 246, 0.4);
+    font-size: 0.75rem;
+    font-weight: 700;
+    transition: all 0.3s ease;
+    border: 2px solid transparent;
 }
 
-.remove-step-btn {
+.step-label {
+    font-size: 0.875rem;
+    font-weight: 600;
+    color: var(--text-muted);
+    transition: all 0.3s ease;
+}
+
+.stepper-item.active .step-dot {
+    background: white;
+    border-color: var(--primary-color);
+    color: var(--primary-color);
+    box-shadow: 0 0 0 4px rgba(14, 165, 233, 0.1);
+}
+
+.stepper-item.active .step-label {
+    color: var(--primary-color);
+}
+
+.stepper-item.completed .step-dot {
+    background: var(--primary-color);
+    color: white;
+}
+
+.step-connector {
+    flex: 1;
+    height: 2px;
+    background: var(--border-soft);
+    margin: 0 1rem;
+    border-radius: 2px;
+}
+
+.step-connector.completed {
+    background: var(--primary-color);
+}
+
+/* Wizard Content */
+.wizard-content {
+    padding: 0 1.5rem 1.5rem 1.5rem;
+    min-height: 380px;
+    position: relative;
+}
+
+/* Modern Form Elements */
+.modern-label {
+    display: block;
+    font-size: 0.8125rem;
+    font-weight: 700;
+    color: var(--text-main);
+    margin-bottom: 0.5rem;
+    text-transform: uppercase;
+    letter-spacing: 0.025em;
+}
+
+.label-optional {
+    color: var(--text-muted);
+    font-weight: 400;
+    text-transform: none;
+}
+
+.modern-input-wrapper {
+    display: flex;
+    align-items: center;
+    background: var(--input-bg);
+    border: 1px solid transparent;
+    border-radius: var(--radius-md);
+    padding: 0 0.875rem;
+    transition: all 0.2s ease;
+}
+
+.modern-input-wrapper:focus-within {
+    background: white;
+    border-color: var(--primary-color);
+    box-shadow: 0 0 0 4px rgba(14, 165, 233, 0.05);
+}
+
+.modern-input-wrapper.is-invalid {
+    border-color: #ef4444;
+}
+
+.input-prefix {
+    color: var(--text-muted);
+    font-size: 0.9rem;
+    margin-right: 0.75rem;
+}
+
+.modern-input {
+    flex: 1;
+    border: none;
+    background: transparent;
+    padding: 0.75rem 0;
+    font-size: 0.9375rem;
+    color: var(--text-main);
+    outline: none;
+}
+
+.modern-input::placeholder {
+    color: #94a3b8;
+}
+
+.modern-textarea {
+    resize: none;
+}
+
+.modern-error {
+    color: #ef4444;
+    font-size: 0.75rem;
+    margin-top: 0.375rem;
+}
+
+/* Modern Drop Zone */
+.modern-drop-zone {
+    border: 2px dashed #e2e8f0;
+    border-radius: var(--radius-lg);
+    background: var(--input-bg);
+    padding: 2.5rem;
+    text-align: center;
+    cursor: pointer;
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.modern-drop-zone:hover {
+    border-color: var(--primary-color);
+    background: rgba(14, 165, 233, 0.02);
+}
+
+.modern-drop-zone.dragging {
+    border-color: var(--primary-color);
+    background: rgba(14, 165, 233, 0.1);
+    transform: scale(1.02);
+}
+
+.modern-drop-zone.has-file {
+    border: 2px solid #10b981;
+    background: rgba(16, 185, 129, 0.03);
+    padding: 1.5rem;
+}
+
+.modern-drop-zone.invalid {
+    border-color: #ef4444;
+}
+
+.upload-icon-pulse i {
+    font-size: 2.5rem;
+    color: var(--primary-color);
+    margin-bottom: 1rem;
+    display: inline-block;
+    animation: bounceSlow 3s infinite;
+}
+
+.main-text {
+    margin: 0;
+    font-weight: 700;
+    color: var(--text-main);
+    font-size: 1rem;
+}
+
+.sub-text {
+    margin: 0.25rem 0 0 0;
+    font-size: 0.8125rem;
+    color: var(--text-muted);
+}
+
+.file-preview-card {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    background: white;
+    padding: 0.75rem;
+    border-radius: var(--radius-md);
+    border: 1px solid #e2e8f0;
+    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);
+}
+
+.file-icon-bg {
+    width: 42px;
+    height: 42px;
+    border-radius: 10px;
+    background: #fef2f2;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: #ef4444;
+    font-size: 1.25rem;
+}
+
+.file-details {
+    flex: 1;
+    text-align: left;
+    display: flex;
+    flex-direction: column;
+}
+
+.file-name {
+    font-weight: 700;
+    font-size: 0.875rem;
+    color: var(--text-main);
+    word-break: break-all;
+}
+
+.file-size {
+    font-size: 0.75rem;
+    color: var(--text-muted);
+}
+
+.remove-file-btn {
+    border: none;
+    background: transparent;
+    color: var(--text-muted);
+    cursor: pointer;
+    font-size: 0.9rem;
+    padding: 0.5rem;
+    border-radius: 50%;
+    transition: all 0.2s;
+}
+
+.remove-file-btn:hover {
+    background: #f1f5f9;
+    color: #ef4444;
+}
+
+/* Step 2: Flow Pipeline */
+.flow-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 1.5rem;
+}
+
+.flow-info h4 {
+    margin: 0;
+    font-size: 1rem;
+    font-weight: 700;
+    color: var(--text-main);
+}
+
+.flow-info p {
+    margin: 0.125rem 0 0 0;
+    font-size: 0.8125rem;
+    color: var(--text-muted);
+}
+
+.flow-empty {
+    padding: 3rem 1rem;
+    text-align: center;
+    background: var(--input-bg);
+    border-radius: var(--radius-lg);
+    border: 2px dashed #e2e8f0;
+}
+
+.empty-visual {
+    width: 56px;
+    height: 56px;
+    border-radius: 50%;
+    background: #eee;
+    color: #94a3b8;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.5rem;
+    margin: 0 auto 1rem auto;
+}
+
+.modern-flow-pipeline {
+    padding: 0.5rem 0.5rem 1rem 0.5rem;
+    max-height: 480px;
+    overflow-y: auto;
+}
+
+.pipeline-step {
+    position: relative;
+    padding-bottom: 0.75rem;
+}
+
+.step-vertical-connector {
     position: absolute;
-    top: 0.5rem;
-    right: 0.5rem;
+    top: 1.5rem;
+    left: 1rem;
+    width: 2px;
+    height: calc(100% - 0.5rem);
+    background: #e2e8f0;
+    z-index: 0;
+}
+
+.step-card-modern {
+    display: flex;
+    gap: 1rem;
+    background: white;
+    border: 1px solid #e2e8f0;
+    border-radius: var(--radius-md);
+    padding: 0.75rem 1rem;
+    position: relative;
+    z-index: 1;
+    transition: all 0.2s ease;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.02);
+}
+
+.step-card-modern:hover {
+    border-color: var(--primary-color);
+    box-shadow: 0 8px 20px -10px rgba(0, 0, 0, 0.1);
+}
+
+.step-badge-modern {
+    flex-shrink: 0;
     width: 2rem;
     height: 2rem;
+    background: #f1f5f9;
+    color: #1e293b;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: 800;
+    font-size: 0.875rem;
+    border: 2px solid white;
+    box-shadow: 0 0 0 1px #e2e8f0;
 }
 
-.empty-icon-pulse i {
-    animation: pulseIcon 2s infinite ease-in-out;
+.step-fields {
+    flex: 1;
 }
 
-@keyframes pulseIcon {
-    0% {
-        transform: scale(1);
-        opacity: 0.5;
+.item-label {
+    display: block;
+    font-size: 0.6875rem;
+    font-weight: 800;
+    color: var(--text-muted);
+    text-transform: uppercase;
+    margin-bottom: 0.375rem;
+}
+
+.modern-dropdown,
+.modern-multiselect {
+    border: 1px solid transparent !important;
+    background: var(--input-bg) !important;
+    border-radius: 8px !important;
+    font-size: 0.8125rem !important;
+}
+
+:deep(.p-multiselect-chip) {
+    padding: 2px 8px !important;
+    max-width: 120px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+:deep(.p-multiselect-chip-label) {
+    font-size: 0.75rem !important;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+:deep(.p-dropdown),
+:deep(.p-multiselect) {
+    background: var(--input-bg) !important;
+    border: none !important;
+}
+
+:deep(.p-dropdown:hover),
+:deep(.p-multiselect:hover) {
+    background: #eff6ff !important;
+}
+
+.step-delete-btn {
+    border: none;
+    background: transparent;
+    color: #94a3b8;
+    cursor: pointer;
+    align-self: flex-start;
+    padding: 0.5rem;
+    border-radius: 8px;
+    transition: all 0.2s;
+}
+
+.step-delete-btn:hover {
+    background: #fef2f2;
+    color: #ef4444;
+}
+
+/* Footer */
+.modern-footer {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    width: 100%;
+    padding: 1rem 1.5rem 1.5rem 1.5rem;
+}
+
+.footer-actions {
+    display: flex;
+    gap: 0.75rem;
+}
+
+.modern-primary-btn,
+.modern-submit-btn {
+    background: #0ea5e9 !important;
+    border-color: #0ea5e9 !important;
+    color: #ffffff !important;
+    border-radius: 10px !important;
+    padding: 0.625rem 1.25rem !important;
+    font-weight: 600 !important;
+    box-shadow: 0 4px 12px rgba(14, 165, 233, 0.2) !important;
+}
+
+.modern-primary-btn:hover,
+.modern-submit-btn:hover,
+.modern-primary-btn:not(:disabled):hover,
+.modern-submit-btn:not(:disabled):hover {
+    background: #0284c7 !important;
+    background-color: #0284c7 !important;
+    border-color: #0284c7 !important;
+    color: #ffffff !important;
+    transform: translateY(-1px);
+}
+
+.modern-back-btn {
+    color: var(--text-muted) !important;
+}
+
+/* Animations */
+@keyframes bounceSlow {
+    0%,
+    100% {
+        transform: translateY(0);
     }
     50% {
-        transform: scale(1.1);
-        opacity: 1;
-    }
-    100% {
-        transform: scale(1);
-        opacity: 0.5;
+        transform: translateY(-3px);
     }
 }
 
-:global(.dark) .step-card {
-    background: rgba(255, 255, 255, 0.02);
+.modern-slide-enter-active,
+.modern-slide-leave-active {
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.modern-slide-enter-from {
+    opacity: 0;
+    transform: translateX(15px);
+}
+
+.modern-slide-leave-to {
+    opacity: 0;
+    transform: translateX(-15px);
+    position: absolute;
+    width: calc(100% - 3rem);
+}
+
+/* Scrollbar refine */
+.modern-flow-pipeline::-webkit-scrollbar {
+    width: 6px;
+}
+.modern-flow-pipeline::-webkit-scrollbar-track {
+    background: transparent;
+}
+.modern-flow-pipeline::-webkit-scrollbar-thumb {
+    background: #e2e8f0;
+    border-radius: 10px;
+}
+.modern-flow-pipeline::-webkit-scrollbar-thumb:hover {
+    background: #cbd5e1;
+}
+
+/* Animations and polish */
+:deep(.p-dialog) {
+    border-radius: 20px !important;
+    border: none !important;
+    box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25) !important;
 }
 </style>
