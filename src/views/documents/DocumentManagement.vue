@@ -1,6 +1,7 @@
 <script setup>
 import DocumentViewerDialog from '@/components/documents/DocumentViewerDialog.vue';
 import NewDocumentDialog from '@/components/documents/NewDocumentDialog.vue';
+import StepTemplatesDialog from '@/components/documents/StepTemplatesDialog.vue';
 import { useDocumentManagement } from '@/composables/useDocumentManagement.js';
 import { useAuthStore } from '@/store/authStore.js';
 import Button from 'primevue/button';
@@ -23,6 +24,7 @@ const currentUserId = computed(() => authStore.getUser?.id);
 const globalFilter = ref('');
 const showNewDocumentDialog = ref(false);
 const showDocumentViewerDialog = ref(false);
+const showTemplatesDialog = ref(false);
 const selectedDocumentId = ref(null);
 
 const loadDocuments = async () => {
@@ -106,7 +108,10 @@ onMounted(() => {
                         Administración y flujo de documentos y aprobaciones
                     </p>
                 </div>
-                <Button label="Nuevo Documento" icon="pi pi-plus" class="add-button" @click="openNewDocumentDialog" />
+                <div class="header-buttons">
+                    <Button label="Plantillas" icon="pi pi-bookmark" class="templates-button" severity="secondary" outlined @click="showTemplatesDialog = true" />
+                    <Button label="Nuevo Documento" icon="pi pi-plus" class="add-button" @click="openNewDocumentDialog" />
+                </div>
             </div>
 
             <!-- Table Header con búsqueda -->
@@ -160,6 +165,13 @@ onMounted(() => {
                         </div>
                     </template>
                 </Column>
+                <Column field="descripcion" header="Descripción" :sortable="true" style="min-width: 250px">
+                    <template #body="{ data }">
+                        <div class="flex items-center gap-3">
+                            <span class="font-semibold text-primary">{{ data.descripcion }}</span>
+                        </div>
+                    </template>
+                </Column>
 
                 <Column field="creador.nombre" header="Creador" :sortable="true" style="min-width: 150px">
                     <template #body="{ data }">
@@ -195,6 +207,9 @@ onMounted(() => {
                 </Column>
             </DataTable>
         </div>
+
+        <!-- Gestor de plantillas de flujo -->
+        <StepTemplatesDialog v-model:visible="showTemplatesDialog" />
 
         <!-- Diálogo para crear nuevo documento -->
         <NewDocumentDialog v-model:visible="showNewDocumentDialog" @document-created="handleDocumentCreated" />
@@ -377,6 +392,19 @@ onMounted(() => {
     display: flex;
     align-items: center;
     margin: 0;
+}
+
+.header-buttons {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    flex-shrink: 0;
+}
+
+.templates-button {
+    font-weight: 600;
+    border-radius: 10px !important;
+    padding: 0.75rem 1.25rem !important;
 }
 
 .add-button {

@@ -1,5 +1,6 @@
 <script setup>
 import { useDocumentManagement } from '@/composables/useDocumentManagement';
+import { useStepTemplates } from '@/composables/useStepTemplates';
 import { useUsers } from '@/composables/useUsers';
 import { POSITIONS } from '@/config/permissions';
 import Button from 'primevue/button';
@@ -22,12 +23,21 @@ const loading = ref(false);
 
 const { allUsers, initializeUsers } = useUsers();
 const { createDocument } = useDocumentManagement();
+const { templates, isLoading: templatesLoading, loadTemplates } = useStepTemplates();
+
+/** 'manual' | 'template' */
+const stepsMode = ref('manual');
+const selectedTemplateId = ref(null);
+
+const templateOptions = computed(() =>
+    templates.value.map((t) => ({ label: t.nombre, value: t.id, descripcion: t.descripcion }))
+);
+
 onMounted(async () => {
-    // Inicializar usuarios para el selector
     try {
-        await initializeUsers(false);
+        await Promise.all([initializeUsers(false), loadTemplates()]);
     } catch (e) {
-        console.warn('Error fetching users for document dialog', e);
+        console.warn('Error fetching data for document dialog', e);
     }
 });
 
@@ -62,7 +72,8 @@ const touchedFields = ref({
 const actionTypes = [
     { label: 'Firma', value: 'Firma' },
     { label: 'Edición', value: 'Edición' },
-    { label: 'Visto Bueno', value: 'Visto Bueno' }
+    { label: 'Visto Bueno', value: 'Visto Bueno' },
+    { label: 'VB con Sustento', value: 'VB con Sustento' }
 ];
 
 const positionOptions = computed(() => {
@@ -76,7 +87,9 @@ const isStep1Valid = computed(() => {
 
 // Validación del Formulario Completo
 const isFormValid = computed(() => {
-    return isStep1Valid.value && formData.value.steps.length > 0 && formData.value.steps.every((s) => s.tipo_accion && (s.permitted_positions.length > 0 || s.permitted_users.length > 0));
+    if (!isStep1Valid.value) return false;
+    if (stepsMode.value === 'template') return !!selectedTemplateId.value;
+    return formData.value.steps.length > 0 && formData.value.steps.every((s) => s.tipo_accion && (s.permitted_positions.length > 0 || s.permitted_users.length > 0));
 });
 
 watch(
@@ -103,6 +116,8 @@ const resetForm = () => {
     };
     touchedFields.value = { titulo: false, file: false };
     isDragging.value = false;
+    stepsMode.value = 'manual';
+    selectedTemplateId.value = null;
 };
 
 // Drag & Drop Handlers
@@ -188,8 +203,8 @@ const nextStep = () => {
 
     if (isStep1Valid.value) {
         currentStep.value = 2;
-        if (formData.value.steps.length === 0) {
-            addStep(); // Agregar un paso vacío por defecto al avanzar
+        if (stepsMode.value === 'manual' && formData.value.steps.length === 0) {
+            addStep(); // Agregar un paso vacío por defecto al avanzar en modo manual
         }
     }
 };
@@ -210,18 +225,24 @@ const submitDocument = async () => {
         }
         data.append('file', formData.value.file);
 
-        formData.value.steps.forEach((step, index) => {
-            data.append(`steps[${index}][orden]`, step.orden);
-            data.append(`steps[${index}][tipo_accion]`, step.tipo_accion);
+        if (stepsMode.value === 'template') {
+            // Opción B: desde plantilla
+            data.append('template_id', selectedTemplateId.value);
+        } else {
+            // Opción A: pasos manuales
+            formData.value.steps.forEach((step, index) => {
+                data.append(`steps[${index}][orden]`, step.orden);
+                data.append(`steps[${index}][tipo_accion]`, step.tipo_accion);
 
-            step.permitted_positions.forEach((pos) => {
-                data.append(`steps[${index}][permitted_positions][]`, pos);
-            });
+                step.permitted_positions.forEach((pos) => {
+                    data.append(`steps[${index}][permitted_positions][]`, pos);
+                });
 
-            step.permitted_users.forEach((userId) => {
-                data.append(`steps[${index}][permitted_users][]`, userId);
+                step.permitted_users.forEach((userId) => {
+                    data.append(`steps[${index}][permitted_users][]`, userId);
+                });
             });
-        });
+        }
 
         await createDocument(data);
 
@@ -243,6 +264,8 @@ const getActionIcon = (action) => {
             return 'pi pi-file-edit text-orange-500';
         case 'Visto Bueno':
             return 'pi pi-check-circle text-green-500';
+        case 'VB con Sustento':
+            return 'pi pi-paperclip text-teal-500';
         default:
             return 'pi pi-cog text-gray-400';
     }
@@ -372,6 +395,47 @@ const formatFileSize = (bytes) => {
             <!-- ===== PASO 2: Flujo ===== -->
             <transition name="modern-slide">
                 <div v-if="currentStep === 2" class="step-modern-container">
+                    <!-- Selector de modo: manual / plantilla -->
+                    <div class="flow-mode-selector">
+                        <button :class="['flow-mode-btn', stepsMode === 'manual' ? 'active' : '']" @click="stepsMode = 'manual'">
+                            <i class="pi pi-list"></i> Pasos manuales
+                        </button>
+                        <button :class="['flow-mode-btn', stepsMode === 'template' ? 'active' : '']" @click="stepsMode = 'template'">
+                            <i class="pi pi-bookmark"></i> Desde plantilla
+                        </button>
+                    </div>
+
+                    <!-- Modo plantilla -->
+                    <div v-if="stepsMode === 'template'" class="template-selector-container">
+                        <label class="item-label">Selecciona una plantilla de pasos</label>
+                        <Dropdown
+                            v-model="selectedTemplateId"
+                            :options="templateOptions"
+                            optionLabel="label"
+                            optionValue="value"
+                            placeholder="Elegir plantilla..."
+                            :loading="templatesLoading"
+                            :disabled="loading || templatesLoading"
+                            class="modern-dropdown w-full mt-1"
+                            :filter="true"
+                        >
+                            <template #option="{ option }">
+                                <div class="flex flex-column gap-1">
+                                    <span class="font-semibold text-sm">{{ option.label }}</span>
+                                    <span v-if="option.descripcion" class="text-xs text-gray-500">{{ option.descripcion }}</span>
+                                </div>
+                            </template>
+                        </Dropdown>
+                        <small v-if="templateOptions.length === 0 && !templatesLoading" class="text-gray-400 text-xs mt-2 block">
+                            No hay plantillas disponibles. Usa pasos manuales o crea una plantilla primero.
+                        </small>
+                        <div v-if="selectedTemplateId" class="template-preview">
+                            <p class="text-xs text-gray-500 mt-2">Los pasos de la plantilla se copiarán al documento. Cambios futuros en la plantilla no afectarán este documento.</p>
+                        </div>
+                    </div>
+
+                    <!-- Modo manual -->
+                    <template v-else>
                     <div class="flow-header">
                         <div class="flow-info">
                             <h4>Pipeline de Aprobación</h4>
@@ -457,6 +521,7 @@ const formatFileSize = (bytes) => {
                             </div>
                         </div>
                     </div>
+                    </template><!-- end v-else manual -->
                 </div>
             </transition>
         </div>
@@ -478,6 +543,47 @@ const formatFileSize = (bytes) => {
 </template>
 
 <style scoped>
+/* ─── Selector de modo (manual / plantilla) ────────────────────── */
+.flow-mode-selector {
+    display: flex;
+    gap: 0.5rem;
+    margin-bottom: 1.25rem;
+    background: #f1f5f9;
+    border-radius: 10px;
+    padding: 0.25rem;
+}
+.flow-mode-btn {
+    flex: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.4rem;
+    padding: 0.5rem 0.75rem;
+    font-size: 0.8rem;
+    font-weight: 600;
+    border: none;
+    border-radius: 8px;
+    cursor: pointer;
+    background: transparent;
+    color: #64748b;
+    transition: all 0.2s;
+}
+.flow-mode-btn.active {
+    background: #ffffff;
+    color: #0284c7;
+    box-shadow: 0 1px 4px rgba(0, 0, 0, 0.1);
+}
+.template-selector-container {
+    padding: 0.5rem 0 1rem;
+}
+.template-preview {
+    background: #f0f9ff;
+    border: 1px solid #bae6fd;
+    border-radius: 8px;
+    padding: 0.5rem 0.75rem;
+    margin-top: 0.75rem;
+}
+
 /* Design Tokens */
 .wizard-modern-dialog {
     --primary-color: #0ea5e9;

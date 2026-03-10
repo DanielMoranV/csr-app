@@ -119,6 +119,8 @@ export function useDocumentManagement() {
             case 'Completado':
             case 'Finalizado':
                 return 'success';
+            case 'Aprobado':
+                return 'success';
             case 'En revisión':
                 return 'secondary';
             case 'En corrección':

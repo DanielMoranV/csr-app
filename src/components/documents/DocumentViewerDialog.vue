@@ -57,11 +57,21 @@ const stampBlobUrls = ref({});
 /** Si el modo placing se inició sin firma (solo sellos) */
 const stampOnlyMode = ref(false);
 
-// ─── Edición state ────────────────────────────────────────────────
-const showEdicionDialog = ref(false);
-const edicionFile = ref(null);
-const edicionFileInput = ref(null);
+// ─── Edición / VB con Sustento state ─────────────────────────────
+/**
+ * 'edicion'  → subir PDF que reemplaza el documento principal
+ * 'sustento' → subir PDF adjunto (VB con Sustento, no reemplaza)
+ */
+const fileUploadContext = ref('edicion');
+const showFileUploadDialog = ref(false);
+const uploadFile = ref(null);
+const uploadFileInput = ref(null);
 const isSubmitting = ref(false);
+
+// Aliases de compatibilidad (el template antiguo los usaba)
+const showEdicionDialog = showFileUploadDialog;
+const edicionFile = uploadFile;
+const edicionFileInput = uploadFileInput;
 
 // ─── Reject state ─────────────────────────────────────────────────
 const showRejectDialog = ref(false);
@@ -128,8 +138,10 @@ const loadDocument = async () => {
     try {
         await fetchDocumentDetails(props.documentId);
         if (currentDocument.value?.versions?.length) {
-            const latest = currentDocument.value.versions[currentDocument.value.versions.length - 1];
-            await loadPdfFromVersionId(latest.id);
+            // Ignorar versiones de sustento (es_sustento: true) para mostrar el doc principal
+            const mainVersions = currentDocument.value.versions.filter((v) => !v.es_sustento);
+            const latest = mainVersions.at(-1);
+            if (latest) await loadPdfFromVersionId(latest.id);
         }
     } catch (e) {
         console.error('Error cargando documento:', e);
@@ -479,16 +491,31 @@ const placeStampBelowFirma = () => {
 const currentUser = computed(() => authStore.state.user);
 
 const activeStep = computed(() => {
-    if (!currentDocument.value?.steps) return null;
-    return [...currentDocument.value.steps].sort((a, b) => a.orden - b.orden).find((s) => s.estado_paso === 'Pendiente' || s.estado_paso === 'Notificado');
+    if (!currentDocument.value?.steps || !currentUser.value) return null;
+
+    // Pasos pendientes/notificados ordenados por orden ascendente
+    const pending = [...currentDocument.value.steps]
+        .filter((s) => s.estado_paso === 'Pendiente' || s.estado_paso === 'Notificado')
+        .sort((a, b) => a.orden - b.orden);
+
+    if (!pending.length) return null;
+
+    // Grupo paralelo: todos los pasos con el menor orden pendiente
+    const minOrden = pending[0].orden;
+    const group = pending.filter((s) => s.orden === minOrden);
+
+    // Buscar el paso del grupo en que el usuario actual tiene permiso
+    const userCanAct = (s) => {
+        const byId = s.permitted_users?.some((u) => String(u) === String(currentUser.value.id) || (u?.id && String(u.id) === String(currentUser.value.id)));
+        const byPosition = s.permitted_positions?.includes(currentUser.value.position);
+        return byId || byPosition;
+    };
+
+    return group.find(userCanAct) ?? null;
 });
 
-const canActOnCurrentStep = computed(() => {
-    if (!activeStep.value || !currentUser.value) return false;
-    const isUser = activeStep.value.permitted_users?.some((u) => String(u) === String(currentUser.value.id) || (u?.id && String(u.id) === String(currentUser.value.id)));
-    const isPosition = activeStep.value.permitted_positions?.includes(currentUser.value.position);
-    return isUser || isPosition;
-});
+// Si activeStep ya filtra por permiso, canActOnCurrentStep es simplemente su existencia
+const canActOnCurrentStep = computed(() => !!activeStep.value);
 
 const sortedSteps = computed(() => {
     if (!currentDocument.value?.steps) return [];
@@ -554,8 +581,13 @@ const handleApprove = async () => {
         await nextTick();
         initCanvas();
     } else if (activeStep.value.tipo_accion === 'Edición') {
-        edicionFile.value = null;
-        showEdicionDialog.value = true;
+        fileUploadContext.value = 'edicion';
+        uploadFile.value = null;
+        showFileUploadDialog.value = true;
+    } else if (activeStep.value.tipo_accion === 'VB con Sustento') {
+        fileUploadContext.value = 'sustento';
+        uploadFile.value = null;
+        showFileUploadDialog.value = true;
     } else {
         // Visto Bueno
         await submitApproveWithPayload({});
@@ -670,19 +702,36 @@ const submitApproveWithPayload = async (payload) => {
     }
 };
 
-// ─── Edición ──────────────────────────────────────────────────────
-const handleEdicionFileSelect = (e) => {
-    const file = e.target.files?.[0];
-    if (!file || file.type !== 'application/pdf' || file.size > 10 * 1024 * 1024) return;
-    edicionFile.value = file;
+// ─── Descarga de sustento ─────────────────────────────────────────
+const downloadSustento = async (versionId) => {
+    try {
+        const response = await apiClient.get(`/documents/versions/${versionId}/download`, { responseType: 'blob' });
+        const url = URL.createObjectURL(response.data);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = '';
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        URL.revokeObjectURL(url);
+    } catch (e) {
+        console.error('Error descargando sustento:', e);
+    }
 };
 
-const submitEdicion = async () => {
-    if (!edicionFile.value) return;
+// ─── Edición / VB con Sustento ───────────────────────────────────
+const handleUploadFileSelect = (e) => {
+    const file = e.target.files?.[0];
+    if (!file || file.type !== 'application/pdf' || file.size > 10 * 1024 * 1024) return;
+    uploadFile.value = file;
+};
+
+const submitFileUpload = async () => {
+    if (!uploadFile.value) return;
     const fd = new FormData();
-    fd.append('file', edicionFile.value);
+    fd.append('file', uploadFile.value);
     await submitApproveWithPayload(fd);
-    edicionFile.value = null;
+    uploadFile.value = null;
 };
 
 // ─── Reject ───────────────────────────────────────────────────────
@@ -703,7 +752,9 @@ const submitComment = async () => {
     if (!newComment.value.trim()) return;
     isAddingComment.value = true;
     try {
-        await addDocumentComment(props.documentId, { comentario: newComment.value });
+        const payload = { comentario: newComment.value };
+        if (currentVersionId.value) payload.version_id = currentVersionId.value;
+        await addDocumentComment(props.documentId, payload);
         newComment.value = '';
         await fetchDocumentDetails(props.documentId);
     } finally {
@@ -730,15 +781,21 @@ const getStepBadgeClass = (estado) => {
     return map[estado] || 'badge-default';
 };
 const getDocStatusClass = (estado) => {
-    const map = { Pendiente: 'doc-status-pending', 'En revisión': 'doc-status-review', Finalizado: 'doc-status-done', 'En corrección': 'doc-status-correction' };
+    const map = {
+        Pendiente: 'doc-status-pending',
+        'En revisión': 'doc-status-review',
+        Aprobado: 'doc-status-approved',
+        Finalizado: 'doc-status-done',
+        'En corrección': 'doc-status-correction'
+    };
     return map[estado] || 'doc-status-pending';
 };
 const getActionTypeLabel = (tipo) => {
-    const map = { Firma: 'Firmar documento', Edición: 'Subir versión editada', 'Visto Bueno': 'Dar visto bueno' };
+    const map = { Firma: 'Firmar documento', Edición: 'Subir versión editada', 'Visto Bueno': 'Dar visto bueno', 'VB con Sustento': 'Dar VB y adjuntar sustento' };
     return map[tipo] || tipo;
 };
 const getActionTypeIcon = (tipo) => {
-    const map = { Firma: 'pi pi-pencil', Edición: 'pi pi-upload', 'Visto Bueno': 'pi pi-check-circle' };
+    const map = { Firma: 'pi pi-pencil', Edición: 'pi pi-upload', 'Visto Bueno': 'pi pi-check-circle', 'VB con Sustento': 'pi pi-paperclip' };
     return map[tipo] || 'pi pi-check';
 };
 const getSeverityClass = (status) => getSeverity(status);
@@ -977,6 +1034,11 @@ const formatPermittedUsers = (step) => {
                                     </template>
                                     <p v-if="step.fecha_accion" class="timeline-date"><i class="pi pi-calendar"></i> {{ formatDate(step.fecha_accion) }}</p>
                                     <p v-if="step.comentario" class="timeline-rejection"><i class="pi pi-exclamation-triangle"></i> {{ step.comentario }}</p>
+                                    <!-- Sustento adjunto en pasos VB con Sustento completados -->
+                                    <button v-if="step.sustento_version_id" class="sustento-download-btn" @click="downloadSustento(step.sustento_version_id)" title="Ver/descargar el documento de sustento adjunto">
+                                        <i class="pi pi-paperclip"></i>
+                                        Descargar sustento
+                                    </button>
                                 </div>
                             </div>
                         </div>
@@ -1161,17 +1223,32 @@ const formatPermittedUsers = (step) => {
         </div>
     </Dialog>
 
-    <!-- ═══════════════════ DIÁLOGO EDICIÓN ═══════════════════ -->
-    <Dialog v-model:visible="showEdicionDialog" header="Subir versión editada" :style="{ width: '440px' }" modal class="edicion-dialog">
+    <!-- ═══════════════════ DIÁLOGO SUBIDA DE ARCHIVO (Edición / VB con Sustento) ═══════════════════ -->
+    <Dialog
+        v-model:visible="showFileUploadDialog"
+        :header="fileUploadContext === 'sustento' ? 'Adjuntar documento de sustento' : 'Subir versión editada'"
+        :style="{ width: '440px' }"
+        modal
+        class="edicion-dialog"
+    >
         <div class="edicion-body">
-            <p class="edicion-hint">Sube el PDF con tus correcciones. Reemplazará la versión actual en el flujo de aprobación.</p>
-            <input type="file" ref="edicionFileInput" accept="application/pdf" style="display: none" @change="handleEdicionFileSelect" />
-            <div class="edicion-dropzone" @click="edicionFileInput?.click()">
-                <div v-if="!edicionFile" class="edicion-empty">
+            <p class="edicion-hint">
+                <template v-if="fileUploadContext === 'sustento'">
+                    Adjunta el documento de respaldo (comprobante, constancia, resolución, etc.). El documento principal <strong>no se modificará</strong>.
+                </template>
+                <template v-else>
+                    Sube el PDF con tus correcciones. Reemplazará la versión actual en el flujo de aprobación.
+                </template>
+            </p>
+            <input type="file" ref="uploadFileInput" accept="application/pdf" style="display: none" @change="handleUploadFileSelect" />
+            <div class="edicion-dropzone" @click="uploadFileInput?.click()">
+                <div v-if="!uploadFile" class="edicion-empty">
                     <div class="edicion-upload-icon">
-                        <i class="pi pi-cloud-upload"></i>
+                        <i :class="fileUploadContext === 'sustento' ? 'pi pi-paperclip' : 'pi pi-cloud-upload'"></i>
                     </div>
-                    <p class="edicion-upload-title">Haz clic para seleccionar el PDF editado</p>
+                    <p class="edicion-upload-title">
+                        {{ fileUploadContext === 'sustento' ? 'Haz clic para seleccionar el PDF de sustento' : 'Haz clic para seleccionar el PDF editado' }}
+                    </p>
                     <p class="edicion-upload-sub">Solo archivos PDF · Máximo 10 MB</p>
                 </div>
                 <div v-else class="edicion-file-selected">
@@ -1179,17 +1256,24 @@ const formatPermittedUsers = (step) => {
                         <i class="pi pi-file-pdf"></i>
                     </div>
                     <div class="edicion-file-info">
-                        <span class="edicion-file-name">{{ edicionFile.name }}</span>
-                        <span class="edicion-file-size">{{ (edicionFile.size / 1024 / 1024).toFixed(2) }} MB</span>
+                        <span class="edicion-file-name">{{ uploadFile.name }}</span>
+                        <span class="edicion-file-size">{{ (uploadFile.size / 1024 / 1024).toFixed(2) }} MB</span>
                     </div>
-                    <button class="edicion-file-remove" @click.stop="edicionFile = null" title="Remover">×</button>
+                    <button class="edicion-file-remove" @click.stop="uploadFile = null" title="Remover">×</button>
                 </div>
             </div>
         </div>
         <template #footer>
             <div class="dialog-footer">
-                <Button label="Cancelar" text severity="secondary" @click="showEdicionDialog = false" />
-                <Button label="Subir y completar paso" icon="pi pi-upload" class="btn-edicion-confirm" @click="submitEdicion" :loading="isSubmitting" :disabled="!edicionFile" />
+                <Button label="Cancelar" text severity="secondary" @click="showFileUploadDialog = false" />
+                <Button
+                    :label="fileUploadContext === 'sustento' ? 'Adjuntar y completar paso' : 'Subir y completar paso'"
+                    :icon="fileUploadContext === 'sustento' ? 'pi pi-paperclip' : 'pi pi-upload'"
+                    class="btn-edicion-confirm"
+                    @click="submitFileUpload"
+                    :loading="isSubmitting"
+                    :disabled="!uploadFile"
+                />
             </div>
         </template>
     </Dialog>
@@ -1303,6 +1387,30 @@ const formatPermittedUsers = (step) => {
 .doc-status-done {
     background: #dcfce7;
     color: #166534;
+}
+.doc-status-approved {
+    background: #d1fae5;
+    color: #065f46;
+}
+
+/* ─── Sustento ─────────────────────────────────────────────────── */
+.sustento-download-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.35rem;
+    margin-top: 0.35rem;
+    padding: 0.25rem 0.6rem;
+    font-size: 0.72rem;
+    font-weight: 600;
+    color: #0369a1;
+    background: #e0f2fe;
+    border: 1px solid #bae6fd;
+    border-radius: 6px;
+    cursor: pointer;
+    transition: background 0.15s;
+}
+.sustento-download-btn:hover {
+    background: #bae6fd;
 }
 .doc-status-correction {
     background: #fee2e2;
