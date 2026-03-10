@@ -496,6 +496,7 @@ onMounted(() => {
     font-size: 3rem;
     background: linear-gradient(135deg, #3b82f6, #1d4ed8);
     -webkit-background-clip: text;
+    background-clip: text;
     -webkit-text-fill-color: transparent;
     filter: drop-shadow(0 6px 12px rgba(59, 130, 246, 0.15));
     z-index: 1;
