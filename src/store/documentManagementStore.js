@@ -12,7 +12,17 @@ export const useDocumentManagementStore = defineStore('documentManagement', {
 
     getters: {
         allDocuments: (state) => state.documents,
-        getDocumentById: (state) => (id) => state.documents.find((doc) => doc.id === id)
+        getDocumentById: (state) => (id) => state.documents.find((doc) => doc.id === id),
+        pendingMyTurnCount: (state) => (currentUserId) => {
+            if (!currentUserId || !state.documents.length) return 0;
+            return state.documents.filter((doc) => {
+                const steps = doc.steps || [];
+                const pendingSteps = steps.filter((s) => s.estado_paso === 'Pendiente').sort((a, b) => a.orden - b.orden);
+                if (pendingSteps.length === 0) return false;
+                const currentStep = pendingSteps[0];
+                return currentStep.permitted_users?.some((id) => Number(id) === Number(currentUserId));
+            }).length;
+        }
     },
 
     actions: {
@@ -24,7 +34,7 @@ export const useDocumentManagementStore = defineStore('documentManagement', {
 
                 // La API retorna paginación: { success, data: { data: [...], current_page, total, ... } }
                 const responseData = apiUtils.getData(response);
-                this.documents = Array.isArray(responseData) ? responseData : (responseData?.data || []);
+                this.documents = Array.isArray(responseData) ? responseData : responseData?.data || [];
 
                 this.lastFetch = Date.now();
                 return response;
@@ -76,9 +86,7 @@ export const useDocumentManagementStore = defineStore('documentManagement', {
             try {
                 // payload could be { firma_base64: '...', posicion: { page, x, y, w, h } }
                 // or FormData (for Edición steps that require a file upload)
-                const config = payload instanceof FormData
-                    ? { headers: { 'Content-Type': 'multipart/form-data' } }
-                    : {};
+                const config = payload instanceof FormData ? { headers: { 'Content-Type': 'multipart/form-data' } } : {};
                 const response = await apiClient.post(`/documents/steps/${stepId}/sign`, payload, config);
                 return response;
             } catch (error) {

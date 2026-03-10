@@ -19,7 +19,67 @@ const confirm = useConfirm();
 const authStore = useAuthStore();
 const { documents, isLoading: loading, fetchDocumentDetails, initializeDocuments, deleteDocument, getSeverity } = useDocumentManagement();
 
+const getProgress = (steps) => {
+    if (!steps || steps.length === 0) return { completed: 0, total: 0, percentage: 0 };
+    const completed = steps.filter((s) => s.estado_paso === 'Completado').length;
+    const total = steps.length;
+    return {
+        completed,
+        total,
+        percentage: Math.round((completed / total) * 100)
+    };
+};
+
+const isMyTurn = (steps) => {
+    if (!steps || !currentUserId.value) return false;
+    // Buscamos el primer paso pendiente basado en el orden
+    const pendingSteps = steps.filter((s) => s.estado_paso === 'Pendiente').sort((a, b) => a.orden - b.orden);
+    if (pendingSteps.length === 0) return false;
+
+    const currentStep = pendingSteps[0];
+    return currentStep.permitted_users?.some((id) => Number(id) === Number(currentUserId.value));
+};
+
 const currentUserId = computed(() => authStore.getUser?.id);
+
+const getStatusConfig = (status) => {
+    switch (status) {
+        case 'Finalizado':
+            return {
+                label: 'Finalizado',
+                icon: 'pi pi-verified',
+                color: '#10b981',
+                bg: 'rgba(16, 185, 129, 0.1)',
+                border: '#10b981'
+            };
+        case 'Aprobado':
+            return {
+                label: 'Aprobado',
+                icon: 'pi pi-thumbs-up',
+                color: '#3b82f6',
+                bg: 'rgba(59, 130, 246, 0.1)',
+                border: '#3b82f6'
+            };
+        case 'En revisión':
+            return {
+                label: 'En revisión',
+                icon: 'pi pi-eye',
+                color: '#6366f1',
+                bg: 'rgba(99, 102, 241, 0.1)',
+                border: '#6366f1'
+            };
+        case 'Rechazado':
+            return {
+                label: 'Rechazado',
+                icon: 'pi pi-times-circle',
+                color: '#ef4444',
+                bg: 'rgba(239, 68, 68, 0.1)',
+                border: '#ef4444'
+            };
+        default:
+            return null;
+    }
+};
 
 const globalFilter = ref('');
 const showNewDocumentDialog = ref(false);
@@ -85,7 +145,9 @@ const confirmDelete = (doc) => {
 const filteredDocuments = computed(() => {
     if (!globalFilter.value) return documents.value;
     const search = globalFilter.value.toLowerCase();
-    return documents.value.filter((doc) => doc.titulo.toLowerCase().includes(search) || (doc.creador && doc.creador.name.toLowerCase().includes(search)) || (doc.estado_actual && doc.estado_actual.toLowerCase().includes(search)));
+    return documents.value.filter(
+        (doc) => String(doc.id).includes(search) || doc.titulo.toLowerCase().includes(search) || (doc.creador && doc.creador.name.toLowerCase().includes(search)) || (doc.estado_actual && doc.estado_actual.toLowerCase().includes(search))
+    );
 });
 
 onMounted(() => {
@@ -157,7 +219,13 @@ onMounted(() => {
                         <Button label="Crear mi primer documento" icon="pi pi-plus" @click="openNewDocumentDialog" class="p-button-outlined" />
                     </div>
                 </template>
-
+                <Column field="id" header="N°" :sortable="true" style="min-width: 100px">
+                    <template #body="{ data }">
+                        <div class="flex items-center gap-3">
+                            <span class="font-semibold">{{ data.id }}</span>
+                        </div>
+                    </template>
+                </Column>
                 <Column field="titulo" header="Título" :sortable="true" style="min-width: 250px">
                     <template #body="{ data }">
                         <div class="flex items-center gap-3">
@@ -168,23 +236,54 @@ onMounted(() => {
                 <Column field="descripcion" header="Descripción" :sortable="true" style="min-width: 250px">
                     <template #body="{ data }">
                         <div class="flex items-center gap-3">
-                            <span class="font-semibold text-primary">{{ data.descripcion }}</span>
+                            <span class="font-semibold">{{ data.descripcion }}</span>
                         </div>
                     </template>
                 </Column>
 
                 <Column field="creador.nombre" header="Creador" :sortable="true" style="min-width: 150px">
                     <template #body="{ data }">
-                        <div class="flex items-center gap-2">
+                        <div class="flex items-center gap-2 truncate-cell" v-tooltip.top="data.creador?.name">
                             <i class="pi pi-user text-gray-500"></i>
-                            <span>{{ data.creador ? data.creador.name : 'Desconocido' }}</span>
+                            <span class="truncate-text">{{ data.creador ? data.creador.name : 'Desconocido' }}</span>
                         </div>
                     </template>
                 </Column>
 
-                <Column field="estado_actual" header="Estado" :sortable="true" style="min-width: 130px">
+                <Column field="estado_actual" header="Estado" :sortable="true" style="min-width: 150px">
                     <template #body="{ data }">
-                        <Badge :value="data.estado_actual" :severity="getSeverity(data.estado_actual)" class="px-2 py-1 uppercase text-xs font-bold" />
+                        <div class="flex flex-column gap-1">
+                            <template v-if="getStatusConfig(data.estado_actual)">
+                                <div
+                                    class="premium-status-badge"
+                                    :style="{
+                                        color: getStatusConfig(data.estado_actual).color,
+                                        backgroundColor: getStatusConfig(data.estado_actual).bg,
+                                        border: `1px solid ${getStatusConfig(data.estado_actual).border}`
+                                    }"
+                                >
+                                    <i :class="getStatusConfig(data.estado_actual).icon" class="text-xs"></i>
+                                    <span class="text-xs font-bold uppercase">{{ data.estado_actual }}</span>
+                                </div>
+                            </template>
+                            <Badge v-else :value="data.estado_actual" :severity="getSeverity(data.estado_actual)" class="px-2 py-1 uppercase text-xs font-bold" />
+
+                            <Badge v-if="isMyTurn(data.steps)" value="Tu turno" severity="danger" class="px-2 py-1 uppercase text-xs font-bold pulse-badge" />
+                        </div>
+                    </template>
+                </Column>
+
+                <Column header="Progreso" style="min-width: 150px">
+                    <template #body="{ data }">
+                        <div v-if="data.steps?.length" class="flex flex-column gap-1 w-full">
+                            <div class="flex justify-end text-xs font-semibold text-gray-500">
+                                <span>{{ getProgress(data.steps).completed }}/{{ getProgress(data.steps).total }}</span>
+                            </div>
+                            <div class="progress-bar-container">
+                                <div class="progress-bar-fill" :style="{ width: getProgress(data.steps).percentage + '%' }"></div>
+                            </div>
+                        </div>
+                        <span v-else class="text-xs text-gray-400 italic">Sin pasos</span>
                     </template>
                 </Column>
 
@@ -220,6 +319,18 @@ onMounted(() => {
 </template>
 
 <style scoped>
+.truncate-cell {
+    max-width: 140px;
+}
+
+.truncate-text {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    display: block;
+    width: 100%;
+}
+
 /* ============================================================================
    ANIMATIONS
    ============================================================================ */
@@ -278,6 +389,62 @@ onMounted(() => {
             0 6px 16px rgba(59, 130, 246, 0.4),
             0 3px 10px rgba(37, 99, 235, 0.3);
     }
+}
+
+.premium-status-badge {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem;
+    padding: 0.25rem 0.75rem;
+    border-radius: 9999px;
+    width: fit-content;
+    white-space: nowrap;
+    transition: all 0.3s ease;
+}
+
+.premium-status-badge:hover {
+    filter: brightness(1.1);
+    transform: translateY(-1px);
+}
+
+@keyframes pulse-red {
+    0% {
+        box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.4);
+    }
+    70% {
+        box-shadow: 0 0 0 10px rgba(239, 68, 68, 0);
+    }
+    100% {
+        box-shadow: 0 0 0 0 rgba(239, 68, 68, 0);
+    }
+}
+
+.pulse-badge {
+    animation: pulse-red 2s infinite;
+}
+
+.progress-bar-container {
+    width: 100%;
+    height: 8px;
+    background-color: var(--surface-300);
+    border-radius: 4px;
+    overflow: hidden;
+}
+
+.progress-bar-fill {
+    height: 100%;
+    background: linear-gradient(90deg, #3b82f6, #2563eb);
+    transition: width 0.5s ease-in-out;
+}
+
+:global(.dark) .progress-bar-container {
+    background-color: #334155;
+}
+
+.justify-between {
+    display: flex;
+    justify-content: space-between;
 }
 
 /* ============================================================================

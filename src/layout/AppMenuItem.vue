@@ -75,11 +75,13 @@ function checkActiveRoute(item) {
             <i :class="item.icon" class="layout-menuitem-icon"></i>
             <span class="layout-menuitem-text">{{ item.label }}</span>
             <i class="pi pi-fw pi-angle-down layout-submenu-toggler" v-if="item.items"></i>
+            <span v-if="item.badge" class="layout-menuitem-badge" :class="item.badgeClass">{{ item.badge }}</span>
         </a>
         <router-link v-if="item.to && !item.items && item.visible !== false" @click="itemClick($event, item, index)" :class="[item.class, { 'active-route': checkActiveRoute(item) }]" tabindex="0" :to="item.to">
             <i :class="item.icon" class="layout-menuitem-icon"></i>
             <span class="layout-menuitem-text">{{ item.label }}</span>
             <i class="pi pi-fw pi-angle-down layout-submenu-toggler" v-if="item.items"></i>
+            <span v-if="item.badge" class="layout-menuitem-badge" :class="item.badgeClass">{{ item.badge }}</span>
         </router-link>
         <Transition v-if="item.items && item.visible !== false" name="layout-submenu">
             <ul v-show="root ? true : isActiveMenu" class="layout-submenu">
@@ -89,4 +91,20 @@ function checkActiveRoute(item) {
     </li>
 </template>
 
-<style lang="scss" scoped></style>
+<style lang="scss" scoped>
+.layout-menuitem-badge {
+    margin-left: auto;
+    background: #ef4444;
+    color: #ffffff;
+    font-size: 0.75rem;
+    font-weight: 700;
+    padding: 0.25rem 0.5rem;
+    border-radius: 20px;
+    height: 1.25rem;
+    min-width: 1.25rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    line-height: 1;
+}
+</style>

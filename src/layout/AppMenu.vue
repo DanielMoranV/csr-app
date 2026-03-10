@@ -1,18 +1,43 @@
 <script setup>
-import { generateMenuStructure } from '@/config/permissions';
 import { usePermissions } from '@/composables/usePermissions';
-import { computed } from 'vue';
+import { generateMenuStructure } from '@/config/permissions';
+import { computed, onMounted } from 'vue';
 
 import AppMenuItem from './AppMenuItem.vue';
 
+import { useAuthStore } from '@/store/authStore.js';
+import { useDocumentManagementStore } from '@/store/documentManagementStore.js';
+
 const { filterMenuItems } = usePermissions();
+const docStore = useDocumentManagementStore();
+const authStore = useAuthStore();
 
 // Generar menú desde la configuración centralizada
 const menuModel = generateMenuStructure();
 
 // Menú filtrado basado en permisos del usuario
 const filteredMenu = computed(() => {
-    return filterMenuItems(menuModel);
+    const filtered = filterMenuItems(menuModel);
+
+    // Inyectar badge de documentos pendientes
+    const pendingCount = docStore.pendingMyTurnCount(authStore.getUser?.id);
+
+    if (pendingCount > 0) {
+        filtered.forEach((section) => {
+            if (section.items) {
+                const docItem = section.items.find((item) => item.to === '/documentos');
+                if (docItem) {
+                    docItem.badge = pendingCount;
+                }
+            }
+        });
+    }
+
+    return filtered;
+});
+
+onMounted(() => {
+    docStore.fetchPermittedDocuments();
 });
 </script>
 
