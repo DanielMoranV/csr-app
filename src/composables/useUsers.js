@@ -69,6 +69,22 @@ export function useUsers() {
         }
     };
 
+    const initializePublicUsers = async (showLoading = false) => {
+        try {
+            await usersStore.fetchPublicUserList();
+        } catch (error) {
+            handleError(error, 'Error al cargar lista de usuarios');
+        }
+    };
+
+    const initializePositions = async () => {
+        try {
+            await usersStore.fetchPositions();
+        } catch (error) {
+            console.warn('Error al cargar cargos:', error);
+        }
+    };
+
     const refreshUsers = async () => {
         try {
             usersStore.state.lastFetch = null; // Force refresh
@@ -374,6 +390,8 @@ export function useUsers() {
 
         // Métodos de inicialización
         initializeUsers,
+        initializePublicUsers,
+        initializePositions,
         loadUsers,
         refreshUsers,
 

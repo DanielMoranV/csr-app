@@ -1,6 +1,6 @@
 import { apiUtils } from '@/api/axios.js';
-import { users as usersApi } from '@/api/index.js';
-import { USER_POSITIONS } from '@/composables/usePermissions.js';
+import { positions as positionsApi, users as usersApi } from '@/api/index.js';
+import { POSITIONS } from '@/config/permissions';
 import { defineStore } from 'pinia';
 import { computed, reactive } from 'vue';
 
@@ -8,6 +8,7 @@ export const useUsersStore = defineStore('users', () => {
     // Estado reactivo
     const state = reactive({
         users: [],
+        positions: [], // <-- Added for public positions
         userStats: null,
         currentUser: null,
         isLoading: false,
@@ -87,7 +88,15 @@ export const useUsersStore = defineStore('users', () => {
 
     // Opciones para dropdowns
     const positionOptions = computed(() => {
-        return Object.entries(USER_POSITIONS).map(([_key, value]) => ({
+        // Si tenemos cargos desde la API, usarlos, si no, usar el fallback hardcoded
+        if (state.positions && state.positions.length > 0) {
+            return state.positions.map((p) => ({
+                label: formatPositionLabel(p),
+                value: p
+            }));
+        }
+
+        return Object.entries(POSITIONS).map(([_key, value]) => ({
             label: formatPositionLabel(value),
             value: value
         }));
@@ -220,6 +229,42 @@ export const useUsersStore = defineStore('users', () => {
             throw error;
         } finally {
             state.isLoading = false;
+        }
+    };
+
+    // Obtener lista simplificada de usuarios (PÚBLICO)
+    const fetchPublicUserList = async (params = {}) => {
+        state.isLoading = true;
+        try {
+            const response = await usersApi.list(params);
+            if (apiUtils.isSuccess(response)) {
+                const data = apiUtils.getData(response);
+                // Aquí actualizamos state.users con la lista pública
+                state.users = Array.isArray(data) ? data : data.data || [];
+                state.lastFetch = Date.now();
+                return response;
+            } else {
+                throw response;
+            }
+        } catch (error) {
+            throw error;
+        } finally {
+            state.isLoading = false;
+        }
+    };
+
+    // Obtener lista de cargos (PÚBLICO)
+    const fetchPositions = async () => {
+        try {
+            const response = await positionsApi.getAll();
+            if (apiUtils.isSuccess(response)) {
+                state.positions = apiUtils.getData(response) || [];
+                return response;
+            } else {
+                throw response;
+            }
+        } catch (error) {
+            throw error;
         }
     };
 
@@ -465,6 +510,8 @@ export const useUsersStore = defineStore('users', () => {
 
         // Métodos de API
         fetchUsers,
+        fetchPublicUserList,
+        fetchPositions,
         searchUsers,
         fetchUserStats,
         createUser,

@@ -6,6 +6,7 @@ export const users = {
     create: (data) => axios.post('/users', data),
     update: (id, data) => axios.put(`/users/${id}`, data),
     delete: (id) => axios.delete(`/users/${id}`),
-    search: (params) => axios.get('/users/search', { params }),
+    list: (params) => axios.get('/users/list', { params }),
+    getPositions: () => axios.get('/positions'),
     getStats: () => axios.get('/users/stats')
 };

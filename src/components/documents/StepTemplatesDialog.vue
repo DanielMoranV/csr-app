@@ -1,7 +1,6 @@
 <script setup>
 import { useStepTemplates } from '@/composables/useStepTemplates';
 import { useUsers } from '@/composables/useUsers';
-import { POSITIONS } from '@/config/permissions';
 import { useAuthStore } from '@/store/authStore';
 import Button from 'primevue/button';
 import Dialog from 'primevue/dialog';
@@ -20,7 +19,7 @@ const emit = defineEmits(['update:visible']);
 const authStore = useAuthStore();
 const confirm = useConfirm();
 const { templates, isLoading, isSaving, loadTemplates, createTemplate, updateTemplate, deleteTemplate } = useStepTemplates();
-const { allUsers, initializeUsers } = useUsers();
+const { allUsers, initializePublicUsers, initializePositions, positionOptions: apiPositionOptions } = useUsers();
 
 // ─── Panel: 'list' | 'form' ──────────────────────────────────────
 const panel = ref('list');
@@ -39,18 +38,14 @@ const actionTypes = [
     { label: 'VB con Sustento', value: 'VB con Sustento' }
 ];
 
-const positionOptions = computed(() =>
-    Object.values(POSITIONS).map((p) => ({ label: p, value: p }))
-);
+const positionOptions = computed(() => apiPositionOptions.value);
 
-const userOptions = computed(() =>
-    allUsers.value.map((u) => ({ label: `${u.name} (${u.position || 'Sin cargo'})`, value: u.id }))
-);
+const userOptions = computed(() => allUsers.value.map((u) => ({ label: `${u.name} (${u.position || 'Sin cargo'})`, value: u.id })));
 
 const isOwner = (template) => String(template.creador?.id) === String(currentUserId.value);
 
 onMounted(async () => {
-    await Promise.all([loadTemplates(), initializeUsers(false)]);
+    await Promise.all([loadTemplates(), initializePublicUsers(), initializePositions()]);
 });
 
 watch(
@@ -113,9 +108,7 @@ const validate = () => {
     const errors = {};
     if (!form.value.nombre.trim()) errors.nombre = 'El nombre es obligatorio.';
     if (form.value.items.length === 0) errors.items = 'Agrega al menos un paso.';
-    const badItem = form.value.items.find(
-        (it) => !it.tipo_accion || (it.permitted_users.length === 0 && it.permitted_positions.length === 0)
-    );
+    const badItem = form.value.items.find((it) => !it.tipo_accion || (it.permitted_users.length === 0 && it.permitted_positions.length === 0));
     if (badItem) errors.items = 'Cada paso necesita tipo de acción y al menos un responsable.';
     formErrors.value = errors;
     return Object.keys(errors).length === 0;
@@ -174,7 +167,7 @@ const getActionColor = (tipo) => {
         modal
         :style="{ width: '860px' }"
         :breakpoints="{ '1024px': '94vw', '768px': '100vw' }"
-        :header="panel === 'list' ? 'Plantillas de Flujo' : (editingTemplate ? 'Editar Plantilla' : 'Nueva Plantilla')"
+        :header="panel === 'list' ? 'Plantillas de Flujo' : editingTemplate ? 'Editar Plantilla' : 'Nueva Plantilla'"
         class="templates-dialog"
     >
         <!-- ══ LISTA ══════════════════════════════════════════════ -->
@@ -185,9 +178,7 @@ const getActionColor = (tipo) => {
             </div>
 
             <!-- Loading -->
-            <div v-if="isLoading" class="tpl-loading">
-                <i class="pi pi-spin pi-spinner"></i> Cargando plantillas...
-            </div>
+            <div v-if="isLoading" class="tpl-loading"><i class="pi pi-spin pi-spinner"></i> Cargando plantillas...</div>
 
             <!-- Empty -->
             <div v-else-if="templates.length === 0" class="tpl-empty">
@@ -216,7 +207,7 @@ const getActionColor = (tipo) => {
 
                     <!-- Steps preview -->
                     <div class="tpl-steps">
-                        <div v-for="(item, idx) in (tpl.items ?? [])" :key="item.id ?? idx" class="tpl-step">
+                        <div v-for="(item, idx) in tpl.items ?? []" :key="item.id ?? idx" class="tpl-step">
                             <div class="tpl-step-connector" v-if="idx > 0"></div>
                             <div class="tpl-step-chip" :style="{ borderColor: getActionColor(item.tipo_accion) }">
                                 <i :class="getActionIcon(item.tipo_accion)" :style="{ color: getActionColor(item.tipo_accion) }"></i>
@@ -267,14 +258,7 @@ const getActionColor = (tipo) => {
                         <div class="item-order">{{ item.orden }}</div>
                         <div class="item-fields">
                             <!-- Tipo acción -->
-                            <Dropdown
-                                v-model="item.tipo_accion"
-                                :options="actionTypes"
-                                optionLabel="label"
-                                optionValue="value"
-                                placeholder="Tipo de acción..."
-                                class="w-full"
-                            >
+                            <Dropdown v-model="item.tipo_accion" :options="actionTypes" optionLabel="label" optionValue="value" placeholder="Tipo de acción..." class="w-full">
                                 <template #value="{ value }">
                                     <div v-if="value" class="flex align-items-center gap-2">
                                         <i :class="getActionIcon(value)" :style="{ color: getActionColor(value) }"></i>
@@ -292,28 +276,8 @@ const getActionColor = (tipo) => {
 
                             <!-- Responsables -->
                             <div class="responsibles-row">
-                                <MultiSelect
-                                    v-model="item.permitted_positions"
-                                    :options="positionOptions"
-                                    optionLabel="label"
-                                    optionValue="value"
-                                    placeholder="Por cargos..."
-                                    display="chip"
-                                    :filter="true"
-                                    class="w-full"
-                                    :maxSelectedLabels="2"
-                                />
-                                <MultiSelect
-                                    v-model="item.permitted_users"
-                                    :options="userOptions"
-                                    optionLabel="label"
-                                    optionValue="value"
-                                    placeholder="Por usuarios..."
-                                    display="chip"
-                                    :filter="true"
-                                    class="w-full"
-                                    :maxSelectedLabels="2"
-                                />
+                                <MultiSelect v-model="item.permitted_positions" :options="positionOptions" optionLabel="label" optionValue="value" placeholder="Por cargos..." display="chip" :filter="true" class="w-full" :maxSelectedLabels="2" />
+                                <MultiSelect v-model="item.permitted_users" :options="userOptions" optionLabel="label" optionValue="value" placeholder="Por usuarios..." display="chip" :filter="true" class="w-full" :maxSelectedLabels="2" />
                             </div>
                         </div>
                         <button class="item-remove" title="Eliminar paso" @click="removeItem(idx)">
@@ -330,13 +294,7 @@ const getActionColor = (tipo) => {
                 <Button v-if="panel === 'list'" label="Cerrar" text severity="secondary" @click="$emit('update:visible', false)" />
                 <template v-else>
                     <Button label="Volver" icon="pi pi-arrow-left" text severity="secondary" @click="backToList" :disabled="isSaving" />
-                    <Button
-                        :label="editingTemplate ? 'Guardar cambios' : 'Crear plantilla'"
-                        :icon="editingTemplate ? 'pi pi-check' : 'pi pi-bookmark'"
-                        class="btn-submit-tpl"
-                        @click="submit"
-                        :loading="isSaving"
-                    />
+                    <Button :label="editingTemplate ? 'Guardar cambios' : 'Crear plantilla'" :icon="editingTemplate ? 'pi pi-check' : 'pi pi-bookmark'" class="btn-submit-tpl" @click="submit" :loading="isSaving" />
                 </template>
             </div>
         </template>
@@ -407,7 +365,9 @@ const getActionColor = (tipo) => {
     display: flex;
     flex-direction: column;
     gap: 0.75rem;
-    transition: box-shadow 0.2s, border-color 0.2s;
+    transition:
+        box-shadow 0.2s,
+        border-color 0.2s;
 }
 .tpl-card:hover {
     box-shadow: 0 4px 16px rgba(0, 0, 0, 0.07);
@@ -437,6 +397,7 @@ const getActionColor = (tipo) => {
     line-height: 1.4;
     display: -webkit-box;
     -webkit-line-clamp: 2;
+    line-clamp: 2;
     -webkit-box-orient: vertical;
     overflow: hidden;
 }
@@ -455,7 +416,9 @@ const getActionColor = (tipo) => {
     align-items: center;
     justify-content: center;
     font-size: 0.8rem;
-    transition: background 0.15s, color 0.15s;
+    transition:
+        background 0.15s,
+        color 0.15s;
 }
 .tpl-icon-btn--edit {
     background: #eff6ff;

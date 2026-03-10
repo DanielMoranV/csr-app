@@ -2,7 +2,6 @@
 import { useDocumentManagement } from '@/composables/useDocumentManagement';
 import { useStepTemplates } from '@/composables/useStepTemplates';
 import { useUsers } from '@/composables/useUsers';
-import { POSITIONS } from '@/config/permissions';
 import Button from 'primevue/button';
 import Dialog from 'primevue/dialog';
 import Dropdown from 'primevue/dropdown';
@@ -21,7 +20,7 @@ const emit = defineEmits(['update:visible', 'document-created']);
 const toast = useToast();
 const loading = ref(false);
 
-const { allUsers, initializeUsers } = useUsers();
+const { allUsers, initializePublicUsers, initializePositions, positionOptions: apiPositionOptions } = useUsers();
 const { createDocument } = useDocumentManagement();
 const { templates, isLoading: templatesLoading, loadTemplates } = useStepTemplates();
 
@@ -29,13 +28,11 @@ const { templates, isLoading: templatesLoading, loadTemplates } = useStepTemplat
 const stepsMode = ref('manual');
 const selectedTemplateId = ref(null);
 
-const templateOptions = computed(() =>
-    templates.value.map((t) => ({ label: t.nombre, value: t.id, descripcion: t.descripcion }))
-);
+const templateOptions = computed(() => templates.value.map((t) => ({ label: t.nombre, value: t.id, descripcion: t.descripcion })));
 
 onMounted(async () => {
     try {
-        await Promise.all([initializeUsers(false), loadTemplates()]);
+        await Promise.all([initializePublicUsers(), initializePositions(), loadTemplates()]);
     } catch (e) {
         console.warn('Error fetching data for document dialog', e);
     }
@@ -77,7 +74,7 @@ const actionTypes = [
 ];
 
 const positionOptions = computed(() => {
-    return Object.values(POSITIONS).map((pos) => ({ label: pos, value: pos }));
+    return apiPositionOptions.value;
 });
 
 // Validación del Paso 1
@@ -397,12 +394,8 @@ const formatFileSize = (bytes) => {
                 <div v-if="currentStep === 2" class="step-modern-container">
                     <!-- Selector de modo: manual / plantilla -->
                     <div class="flow-mode-selector">
-                        <button :class="['flow-mode-btn', stepsMode === 'manual' ? 'active' : '']" @click="stepsMode = 'manual'">
-                            <i class="pi pi-list"></i> Pasos manuales
-                        </button>
-                        <button :class="['flow-mode-btn', stepsMode === 'template' ? 'active' : '']" @click="stepsMode = 'template'">
-                            <i class="pi pi-bookmark"></i> Desde plantilla
-                        </button>
+                        <button :class="['flow-mode-btn', stepsMode === 'manual' ? 'active' : '']" @click="stepsMode = 'manual'"><i class="pi pi-list"></i> Pasos manuales</button>
+                        <button :class="['flow-mode-btn', stepsMode === 'template' ? 'active' : '']" @click="stepsMode = 'template'"><i class="pi pi-bookmark"></i> Desde plantilla</button>
                     </div>
 
                     <!-- Modo plantilla -->
@@ -426,9 +419,7 @@ const formatFileSize = (bytes) => {
                                 </div>
                             </template>
                         </Dropdown>
-                        <small v-if="templateOptions.length === 0 && !templatesLoading" class="text-gray-400 text-xs mt-2 block">
-                            No hay plantillas disponibles. Usa pasos manuales o crea una plantilla primero.
-                        </small>
+                        <small v-if="templateOptions.length === 0 && !templatesLoading" class="text-gray-400 text-xs mt-2 block"> No hay plantillas disponibles. Usa pasos manuales o crea una plantilla primero. </small>
                         <div v-if="selectedTemplateId" class="template-preview">
                             <p class="text-xs text-gray-500 mt-2">Los pasos de la plantilla se copiarán al documento. Cambios futuros en la plantilla no afectarán este documento.</p>
                         </div>
@@ -436,92 +427,92 @@ const formatFileSize = (bytes) => {
 
                     <!-- Modo manual -->
                     <template v-else>
-                    <div class="flow-header">
-                        <div class="flow-info">
-                            <h4>Pipeline de Aprobación</h4>
-                            <p>Configura los pasos y responsables del documento.</p>
-                        </div>
-                        <Button label="Añadir Paso" icon="pi pi-plus" size="small" outlined severity="primary" @click="addStep" :disabled="loading" class="modern-add-btn" />
-                    </div>
-
-                    <div v-if="formData.steps.length === 0" class="flow-empty">
-                        <div class="empty-visual">
-                            <i class="pi pi-share-alt"></i>
-                        </div>
-                        <p>No has definido un flujo aún</p>
-                        <Button label="Empezar a diseñar" text size="small" @click="addStep" />
-                    </div>
-
-                    <div v-else class="modern-flow-pipeline">
-                        <div v-for="(step, index) in formData.steps" :key="index" class="pipeline-step">
-                            <div class="step-vertical-connector" v-if="index < formData.steps.length - 1"></div>
-
-                            <div class="step-card-modern">
-                                <div class="step-badge-modern">{{ step.orden }}</div>
-
-                                <div class="step-fields">
-                                    <div class="step-row">
-                                        <div class="field-item">
-                                            <label class="item-label">Tipo de Acción</label>
-                                            <Dropdown v-model="step.tipo_accion" :options="actionTypes" optionLabel="label" optionValue="value" placeholder="Seleccionar..." :disabled="loading" class="modern-dropdown">
-                                                <template #value="slotProps">
-                                                    <div v-if="slotProps.value" class="flex align-items-center gap-2">
-                                                        <i :class="getActionIcon(slotProps.value)"></i>
-                                                        <span class="text-sm font-medium">{{ slotProps.value }}</span>
-                                                    </div>
-                                                    <span v-else class="text-sm text-gray-400">{{ slotProps.placeholder }}</span>
-                                                </template>
-                                                <template #option="slotProps">
-                                                    <div class="flex align-items-center gap-2">
-                                                        <i :class="getActionIcon(slotProps.option.value)"></i>
-                                                        <span class="text-sm">{{ slotProps.option.label }}</span>
-                                                    </div>
-                                                </template>
-                                            </Dropdown>
-                                        </div>
-                                    </div>
-
-                                    <div class="step-row mt-3">
-                                        <div class="field-item">
-                                            <label class="item-label">Responsables</label>
-                                            <div class="responsibles-grid">
-                                                <MultiSelect
-                                                    v-model="step.permitted_positions"
-                                                    :options="positionOptions"
-                                                    optionLabel="label"
-                                                    optionValue="value"
-                                                    placeholder="Por Cargos..."
-                                                    display="chip"
-                                                    :filter="true"
-                                                    :disabled="loading"
-                                                    class="modern-multiselect"
-                                                    :maxSelectedLabels="3"
-                                                />
-                                                <MultiSelect
-                                                    v-model="step.permitted_users"
-                                                    :options="userOptions"
-                                                    optionLabel="label"
-                                                    optionValue="value"
-                                                    placeholder="Por Usuarios..."
-                                                    display="chip"
-                                                    :filter="true"
-                                                    :disabled="loading"
-                                                    class="modern-multiselect mt-1"
-                                                    :maxSelectedLabels="3"
-                                                />
-                                            </div>
-                                            <small v-if="step.permitted_positions.length === 0 && step.permitted_users.length === 0" class="text-orange-500 text-[10px] mt-1 block"> * Se notificará a los responsables asignados. </small>
-                                        </div>
-                                    </div>
-                                </div>
-
-                                <button class="step-delete-btn" @click="removeStepAction(index)" :disabled="loading" title="Eliminar paso">
-                                    <i class="pi pi-trash"></i>
-                                </button>
+                        <div class="flow-header">
+                            <div class="flow-info">
+                                <h4>Pipeline de Aprobación</h4>
+                                <p>Configura los pasos y responsables del documento.</p>
                             </div>
+                            <Button label="Añadir Paso" icon="pi pi-plus" size="small" outlined severity="primary" @click="addStep" :disabled="loading" class="modern-add-btn" />
                         </div>
-                    </div>
-                    </template><!-- end v-else manual -->
+
+                        <div v-if="formData.steps.length === 0" class="flow-empty">
+                            <div class="empty-visual">
+                                <i class="pi pi-share-alt"></i>
+                            </div>
+                            <p>No has definido un flujo aún</p>
+                            <Button label="Empezar a diseñar" text size="small" @click="addStep" />
+                        </div>
+
+                        <div v-else class="modern-flow-pipeline">
+                            <div v-for="(step, index) in formData.steps" :key="index" class="pipeline-step">
+                                <div class="step-vertical-connector" v-if="index < formData.steps.length - 1"></div>
+
+                                <div class="step-card-modern">
+                                    <div class="step-badge-modern">{{ step.orden }}</div>
+
+                                    <div class="step-fields">
+                                        <div class="step-row">
+                                            <div class="field-item">
+                                                <label class="item-label">Tipo de Acción</label>
+                                                <Dropdown v-model="step.tipo_accion" :options="actionTypes" optionLabel="label" optionValue="value" placeholder="Seleccionar..." :disabled="loading" class="modern-dropdown">
+                                                    <template #value="slotProps">
+                                                        <div v-if="slotProps.value" class="flex align-items-center gap-2">
+                                                            <i :class="getActionIcon(slotProps.value)"></i>
+                                                            <span class="text-sm font-medium">{{ slotProps.value }}</span>
+                                                        </div>
+                                                        <span v-else class="text-sm text-gray-400">{{ slotProps.placeholder }}</span>
+                                                    </template>
+                                                    <template #option="slotProps">
+                                                        <div class="flex align-items-center gap-2">
+                                                            <i :class="getActionIcon(slotProps.option.value)"></i>
+                                                            <span class="text-sm">{{ slotProps.option.label }}</span>
+                                                        </div>
+                                                    </template>
+                                                </Dropdown>
+                                            </div>
+                                        </div>
+
+                                        <div class="step-row mt-3">
+                                            <div class="field-item">
+                                                <label class="item-label">Responsables</label>
+                                                <div class="responsibles-grid">
+                                                    <MultiSelect
+                                                        v-model="step.permitted_positions"
+                                                        :options="positionOptions"
+                                                        optionLabel="label"
+                                                        optionValue="value"
+                                                        placeholder="Por Cargos..."
+                                                        display="chip"
+                                                        :filter="true"
+                                                        :disabled="loading"
+                                                        class="modern-multiselect"
+                                                        :maxSelectedLabels="3"
+                                                    />
+                                                    <MultiSelect
+                                                        v-model="step.permitted_users"
+                                                        :options="userOptions"
+                                                        optionLabel="label"
+                                                        optionValue="value"
+                                                        placeholder="Por Usuarios..."
+                                                        display="chip"
+                                                        :filter="true"
+                                                        :disabled="loading"
+                                                        class="modern-multiselect mt-1"
+                                                        :maxSelectedLabels="3"
+                                                    />
+                                                </div>
+                                                <small v-if="step.permitted_positions.length === 0 && step.permitted_users.length === 0" class="text-orange-500 text-[10px] mt-1 block"> * Se notificará a los responsables asignados. </small>
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    <button class="step-delete-btn" @click="removeStepAction(index)" :disabled="loading" title="Eliminar paso">
+                                        <i class="pi pi-trash"></i>
+                                    </button>
+                                </div>
+                            </div>
+                        </div> </template
+                    ><!-- end v-else manual -->
                 </div>
             </transition>
         </div>

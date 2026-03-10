@@ -3,7 +3,8 @@ import AttentionDetails from '@/components/attentions/AttentionDetails.vue';
 import AttentionTasks from '@/components/attentions/AttentionTasks.vue';
 import DetailsTimeline from '@/components/attentions/DetailsTimeline.vue';
 import BedReservationDialog from '@/components/hospitalization/BedReservationDialog.vue';
-import { usePermissions, USER_POSITIONS } from '@/composables/usePermissions';
+import { POSITIONS } from '@/config/permissions';
+import { usePermissions } from '@/composables/usePermissions';
 import { useBedReservationsStore } from '@/store/bedReservationsStore';
 import { useHospitalAttentionsStore } from '@/store/hospitalAttentionsStore';
 import Badge from 'primevue/badge';
@@ -38,7 +39,7 @@ const toast = useToast();
 
 // PERMISOS DE EDICIÓN: HOSPITALIZACION, DIRECTOR_MEDICO, MEDICOS y EMERGENCIA pueden editar detalles y tareas de atención
 const canEdit = computed(() => {
-    if (!hasPosition(USER_POSITIONS.HOSPITALIZACION) && !hasPosition(USER_POSITIONS.DIRECTOR_MEDICO) && !hasPosition(USER_POSITIONS.MEDICOS) && !hasPosition(USER_POSITIONS.EMERGENCIA)) {
+    if (!hasPosition(POSITIONS.HOSPITALIZACION) && !hasPosition(POSITIONS.DIRECTOR_MEDICO) && !hasPosition(POSITIONS.MEDICOS) && !hasPosition(POSITIONS.EMERGENCIA)) {
         return false;
     }
     if (!attention.value) return false;

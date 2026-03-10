@@ -1,5 +1,6 @@
 <script setup>
 import TasksTable from '@/components/hospitalization/TasksTable.vue';
+import { POSITIONS } from '@/config/permissions';
 import { useAuthStore } from '@/store/authStore';
 import { useTasksStore } from '@/store/tasksStore';
 import { format } from 'date-fns';
@@ -41,7 +42,15 @@ const filteredTasksByArea = computed(() => {
     const userPosition = currentUser.position;
 
     // Posiciones con acceso total (sin filtro por área)
-    const fullAccessPositions = ['SISTEMAS', 'ADMINISTRACION', 'DIRECTOR MEDICO', 'HOSPITALIZACION', 'ADMISION', 'MEDICOS', 'EMERGENCIA'];
+    const fullAccessPositions = [
+        POSITIONS.SISTEMAS,
+        POSITIONS.ADMINISTRACION,
+        POSITIONS.DIRECTOR_MEDICO,
+        POSITIONS.HOSPITALIZACION,
+        POSITIONS.ADMISION,
+        POSITIONS.MEDICOS,
+        POSITIONS.EMERGENCIA
+    ];
 
     // Si tiene acceso total, mostrar todas las tareas
     if (fullAccessPositions.includes(userPosition)) {
@@ -50,9 +59,9 @@ const filteredTasksByArea = computed(() => {
 
     // Mapeo de posición a área (para filtrado)
     const positionToArea = {
-        LABORATORIO: 'LABORATORIO',
-        'RAYOS X': 'RAYOS X',
-        FARMACIA: 'FARMACIA'
+        [POSITIONS.LABORATORIO]: POSITIONS.LABORATORIO,
+        [POSITIONS.RAYOS_X]: POSITIONS.RAYOS_X,
+        [POSITIONS.FARMACIA]: POSITIONS.FARMACIA
     };
 
     const requiredArea = positionToArea[userPosition];

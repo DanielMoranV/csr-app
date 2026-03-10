@@ -4,7 +4,8 @@ import AttentionTasks from '@/components/attentions/AttentionTasks.vue';
 import DailyMedicalAudits from '@/components/attentions/DailyMedicalAudits.vue';
 import DetailsTimeline from '@/components/attentions/DetailsTimeline.vue';
 import { useExcelExport } from '@/composables/useExcelExport';
-import { usePermissions, USER_POSITIONS } from '@/composables/usePermissions';
+import { POSITIONS } from '@/config/permissions';
+import { usePermissions } from '@/composables/usePermissions';
 import { useRealtimeEvents } from '@/composables/useRealtimeEvents';
 import { useHospitalAttentionsStore } from '@/store/hospitalAttentionsStore';
 import { FilterMatchMode } from '@primevue/core/api';
@@ -26,15 +27,15 @@ const isLoading = computed(() => hospitalAttentionsStore.isLoading);
 // CONFIGURACIÓN DE PERMISOS POR FUNCIONALIDAD
 // ============================================================================
 // PERMISOS DE EDICIÓN: HOSPITALIZACION, DIRECTOR_MEDICO y MEDICOS pueden editar detalles y tareas de atención
-const canEdit = computed(() => hasPosition(USER_POSITIONS.HOSPITALIZACION) || hasPosition(USER_POSITIONS.DIRECTOR_MEDICO) || hasPosition(USER_POSITIONS.MEDICOS));
+const canEdit = computed(() => hasPosition(POSITIONS.HOSPITALIZACION) || hasPosition(POSITIONS.DIRECTOR_MEDICO) || hasPosition(POSITIONS.MEDICOS));
 
 // PERMISOS DE AUDITORÍA: Solo DIRECTOR_MEDICO puede registrar/editar auditorías médicas diarias
-const canEditAudits = computed(() => hasPosition(USER_POSITIONS.DIRECTOR_MEDICO));
+const canEditAudits = computed(() => hasPosition(POSITIONS.DIRECTOR_MEDICO));
 
 // PERMISOS DE APROBACIÓN: Solo DIRECTOR_MEDICO puede aprobar alta de atención
-const isDirectorMedico = computed(() => hasPosition(USER_POSITIONS.DIRECTOR_MEDICO));
+const isDirectorMedico = computed(() => hasPosition(POSITIONS.DIRECTOR_MEDICO));
 
-const canDelete = computed(() => hasPosition(USER_POSITIONS.SISTEMAS));
+const canDelete = computed(() => hasPosition(POSITIONS.SISTEMAS));
 
 // Verificar si se puede editar la atención de detalles (debe estar activa)
 const canEditDetails = computed(() => {

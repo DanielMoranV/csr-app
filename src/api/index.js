@@ -23,8 +23,8 @@ export const users = {
     // Búsqueda avanzada de usuarios
     search: (params = {}) => axios.get('/users/search', { params }),
 
-    // Obtener lista de usuarios activos con información limitada
-    list: () => axios.get('/users/list'),
+    // Obtener lista de usuarios activos con información limitada (PÚBLICO)
+    list: (params = {}) => axios.get('/users/list', { params }),
 
     // Obtener estadísticas de usuarios
     getStats: () => axios.get('/users/stats'),
@@ -48,6 +48,7 @@ export const users = {
 // Positions Management
 export const positions = {
     search: (query) => axios.get('/positions/search', { params: { query } }),
+    // Obtener todos los cargos (PÚBLICO)
     getAll: () => axios.get('/positions')
 };
 

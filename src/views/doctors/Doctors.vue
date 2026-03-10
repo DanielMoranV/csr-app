@@ -8,6 +8,7 @@ import ScheduleDialog from '@/components/doctors/ScheduleDialog.vue';
 import SpecialtyAssignmentDialog from '@/components/doctors/SpecialtyAssignmentDialog.vue';
 import { useDoctors } from '@/composables/useDoctors';
 import { useDoctorSchedules } from '@/composables/useDoctorSchedules';
+import { PERMISSION_GROUPS } from '@/config/permissions';
 import { usePermissions } from '@/composables/usePermissions';
 import { useAuthStore } from '@/store/authStore';
 import Button from 'primevue/button';
@@ -44,7 +45,7 @@ const authStore = useAuthStore();
 // Permisos para vincular usuarios
 const canLinkUsers = computed(() => {
     const position = authStore.getUser?.position;
-    return ['DIRECTOR MEDICO', 'ADMINISTRACION', 'SISTEMAS'].includes(position);
+    return PERMISSION_GROUPS.HIGH_MANAGEMENT.includes(position);
 });
 
 // Filtros

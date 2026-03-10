@@ -132,6 +132,17 @@ export const MODULE_PERMISSIONS = {
         menuSection: 'Hospitalización'
     },
 
+    // Vista TV de hospitalización
+    hospitalizacionStatusTv: {
+        name: 'hospitalizacion-status-tv',
+        path: '/hospitalizacion-status-tv',
+        positions: PERMISSION_GROUPS.HOSPITALIZATION_STAFF,
+        label: 'Estado TV',
+        icon: 'pi pi-fw pi-desktop',
+        menuSection: 'Hospitalización',
+        showInMenu: false
+    },
+
     // Vista pública de hospitalización
     hospitalizacionDisplay: {
         name: 'hospitalizacion-display',

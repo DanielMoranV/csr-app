@@ -66,12 +66,12 @@ const router = createRouter({
                     meta: { requiresAuth: true, positions: MODULE_PERMISSIONS.hospitalizacionDisplay.positions }
                 },
                 {
-                    path: '/hospitalizacion-status-tv',
-                    name: 'hospitalizacion-status-tv',
+                    path: MODULE_PERMISSIONS.hospitalizacionStatusTv.path,
+                    name: MODULE_PERMISSIONS.hospitalizacionStatusTv.name,
                     component: () => import('@/views/hospitalization/HospitalizationStatusTV.vue'),
                     meta: {
                         requiresAuth: true,
-                        positions: ['SISTEMAS', 'HOSPITALIZACION', 'ENFERMERA', 'MEDICOS', 'EMERGENCIA', 'DIRECTOR MEDICO', 'ADMINISTRADOR'],
+                        positions: MODULE_PERMISSIONS.hospitalizacionStatusTv.positions,
                         fullscreen: true
                     }
                 },
@@ -142,22 +142,16 @@ const router = createRouter({
                     meta: { requiresAuth: true, positions: MODULE_PERMISSIONS.reservationManagement.positions }
                 },
                 {
-                    path: '/my-medical-fees',
-                    name: 'myMedicalFees',
+                    path: MODULE_PERMISSIONS.myMedicalFees.path,
+                    name: MODULE_PERMISSIONS.myMedicalFees.name,
                     component: () => import('@/views/doctors/MyMedicalFees.vue'),
-                    meta: {
-                        requiresAuth: true,
-                        positions: ['MEDICOS', 'EMERGENCIA', 'DIRECTOR MEDICO', 'AUDITOR MEDICO']
-                    }
+                    meta: { requiresAuth: true, positions: MODULE_PERMISSIONS.myMedicalFees.positions }
                 },
                 {
-                    path: '/my-schedules',
-                    name: 'mySchedules',
+                    path: MODULE_PERMISSIONS.mySchedules.path,
+                    name: MODULE_PERMISSIONS.mySchedules.name,
                     component: () => import('@/views/doctors/MySchedules.vue'),
-                    meta: {
-                        requiresAuth: true,
-                        positions: ['MEDICOS', 'EMERGENCIA', 'DIRECTOR MEDICO', 'AUDITOR MEDICO']
-                    }
+                    meta: { requiresAuth: true, positions: MODULE_PERMISSIONS.mySchedules.positions }
                 },
                 // Módulo de Tesorería
                 {

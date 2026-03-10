@@ -1,6 +1,7 @@
 <script setup>
 import { useExcelExport } from '@/composables/useExcelExport';
 import useTasks from '@/composables/useTasks'; // Import composable
+import { POSITIONS } from '@/config/permissions';
 import { useAuthStore } from '@/store/authStore';
 import { useTasksStore } from '@/store/tasksStore';
 import { format, formatDistanceToNow } from 'date-fns';
@@ -133,7 +134,14 @@ const canChangeStatus = (task) => {
     }
 
     // Grupo 2: Acceso total
-    const fullAccessPositions = ['SISTEMAS', 'ADMINISTRACION', 'DIRECTOR MEDICO', 'HOSPITALIZACION', 'EMERGENCIA', 'MEDICOS'];
+    const fullAccessPositions = [
+        POSITIONS.SISTEMAS,
+        POSITIONS.ADMINISTRACION,
+        POSITIONS.DIRECTOR_MEDICO,
+        POSITIONS.HOSPITALIZACION,
+        POSITIONS.EMERGENCIA,
+        POSITIONS.MEDICOS
+    ];
 
     if (fullAccessPositions.includes(userPosition)) {
         return true;
