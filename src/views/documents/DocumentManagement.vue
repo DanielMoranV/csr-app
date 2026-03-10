@@ -212,11 +212,23 @@ onMounted(() => {
                 class="p-datatable-sm mt-4"
             >
                 <template #empty>
-                    <div class="flex flex-column align-items-center justify-content-center p-5 text-center w-full">
-                        <i class="pi pi-folder-open text-6xl text-gray-300 mb-4"></i>
-                        <h3 class="text-xl font-semibold text-gray-700 m-0">No hay documentos que mostrar</h3>
-                        <p class="text-gray-500 mt-2 mb-4 max-w-20rem">Aún no tienes documentos asignados o creados. Cuando inicies o seas parte de un flujo, aparecerán aquí.</p>
-                        <Button label="Crear mi primer documento" icon="pi pi-plus" @click="openNewDocumentDialog" class="p-button-outlined" />
+                    <div class="premium-empty-state">
+                        <div class="empty-state-card">
+                            <div class="floating-icon-wrapper">
+                                <div class="icon-blob"></div>
+                                <i class="pi pi-folder-open main-icon"></i>
+                                <div class="sparkle s1"><i class="pi pi-sparkles"></i></div>
+                                <div class="sparkle s2"><i class="pi pi-sparkles"></i></div>
+                            </div>
+
+                            <h3 class="empty-title">Sin documentos a la vista</h3>
+                            <p class="empty-subtitle">Tu bandeja está despejada. Aquí aparecerán los documentos que crees o que requieran tu atención en el flujo de aprobación.</p>
+
+                            <div class="empty-actions">
+                                <Button label="Crear mi primer documento" icon="pi pi-plus" @click="openNewDocumentDialog" class="premium-cta-button" />
+                                <p class="empty-hint">O revisa tus plantillas para empezar más rápido</p>
+                            </div>
+                        </div>
                     </div>
                 </template>
                 <Column field="id" header="N°" :sortable="true" style="min-width: 100px">
@@ -422,6 +434,170 @@ onMounted(() => {
 
 .pulse-badge {
     animation: pulse-red 2s infinite;
+}
+
+/* ============================================================================
+   PREMIUM EMPTY STATE
+   ============================================================================ */
+.premium-empty-state {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 2rem 1rem;
+    width: 100%;
+    min-height: 300px;
+}
+
+.empty-state-card {
+    background: rgba(255, 255, 255, 0.7);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    border: 1px solid rgba(255, 255, 255, 0.4);
+    border-radius: 20px;
+    padding: 2rem;
+    max-width: 440px;
+    width: 100%;
+    text-align: center;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    box-shadow:
+        0 15px 30px rgba(0, 0, 0, 0.04),
+        0 1px 2px rgba(0, 0, 0, 0.01);
+    animation: fadeIn 0.8s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+:global(.dark) .empty-state-card {
+    background: rgba(30, 41, 59, 0.7);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.floating-icon-wrapper {
+    position: relative;
+    width: 80px;
+    height: 80px;
+    margin-bottom: 1.25rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.icon-blob {
+    position: absolute;
+    width: 100%;
+    height: 100%;
+    background: linear-gradient(135deg, rgba(59, 130, 246, 0.2), rgba(37, 99, 235, 0.1));
+    border-radius: 38% 62% 63% 37% / 41% 44% 56% 59%;
+    filter: blur(2px);
+    animation: blob-float 8s ease-in-out infinite alternate;
+}
+
+.main-icon {
+    font-size: 3rem;
+    background: linear-gradient(135deg, #3b82f6, #1d4ed8);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    filter: drop-shadow(0 6px 12px rgba(59, 130, 246, 0.15));
+    z-index: 1;
+    animation: icon-float 3s ease-in-out infinite;
+}
+
+.sparkle {
+    position: absolute;
+    color: #f59e0b;
+    font-size: 1rem;
+    z-index: 2;
+    opacity: 0.6;
+}
+
+.s1 {
+    top: 10%;
+    right: 10%;
+    animation: sparkle-float 4s ease-in-out infinite;
+}
+.s2 {
+    bottom: 15%;
+    left: 5%;
+    animation: sparkle-float 5s ease-in-out infinite 1s;
+}
+
+.empty-title {
+    font-size: 1.5rem;
+    font-weight: 800;
+    margin: 0 0 0.75rem 0;
+    letter-spacing: -0.01em;
+    background: linear-gradient(135deg, var(--text-color), #64748b);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+}
+
+.empty-subtitle {
+    font-size: 0.9rem;
+    color: var(--text-color-secondary);
+    line-height: 1.5;
+    margin: 0 0 1.75rem 0;
+    max-width: 300px;
+}
+
+.empty-actions {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0.75rem;
+}
+
+.premium-cta-button {
+    background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%) !important;
+    border: none !important;
+    padding: 0.75rem 1.75rem !important;
+    border-radius: 12px !important;
+    font-weight: 700 !important;
+    font-size: 0.95rem !important;
+    box-shadow: 0 8px 16px rgba(37, 99, 235, 0.25) !important;
+    transition: all 0.3s ease !important;
+}
+
+.premium-cta-button:hover {
+    transform: translateY(-3px) !important;
+    box-shadow: 0 15px 30px rgba(37, 99, 235, 0.4) !important;
+    background: linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%) !important;
+}
+
+.empty-hint {
+    font-size: 0.813rem;
+    color: #94a3b8;
+    margin: 0;
+}
+
+@keyframes blob-float {
+    0% {
+        border-radius: 38% 62% 63% 37% / 41% 44% 56% 59%;
+        transform: scale(1) rotate(0deg);
+    }
+    100% {
+        border-radius: 50% 50% 30% 70% / 50% 60% 40% 50%;
+        transform: scale(1.1) rotate(10deg);
+    }
+}
+
+@keyframes icon-float {
+    0%,
+    100% {
+        transform: translateY(0);
+    }
+    50% {
+        transform: translateY(-10px);
+    }
+}
+
+@keyframes sparkle-float {
+    0%,
+    100% {
+        transform: scale(1) opacity(0.6);
+    }
+    50% {
+        transform: scale(1.3) opacity(1);
+    }
 }
 
 .progress-bar-container {
