@@ -8,6 +8,7 @@ import Dropdown from 'primevue/dropdown';
 import InputText from 'primevue/inputtext';
 import MultiSelect from 'primevue/multiselect';
 import Textarea from 'primevue/textarea';
+import ToggleSwitch from 'primevue/toggleswitch';
 import { useConfirm } from 'primevue/useconfirm';
 import { computed, onMounted, ref, watch } from 'vue';
 
@@ -26,7 +27,7 @@ const panel = ref('list');
 const editingTemplate = ref(null); // null = creating
 
 // ─── Form state ──────────────────────────────────────────────────
-const form = ref({ nombre: '', descripcion: '', items: [] });
+const form = ref({ nombre: '', descripcion: '', is_public: false, items: [] });
 const formErrors = ref({});
 
 const currentUserId = computed(() => authStore.getUser?.id);
@@ -42,7 +43,10 @@ const positionOptions = computed(() => apiPositionOptions.value);
 
 const userOptions = computed(() => allUsers.value.map((u) => ({ label: `${u.name} (${u.position || 'Sin cargo'})`, value: u.id })));
 
-const isOwner = (template) => String(template.creador?.id) === String(currentUserId.value);
+const isOwner = (template) => {
+    if (!template.creador?.id || !currentUserId.value) return true; // Si no hay IDs, asumimos dueño para no bloquear
+    return String(template.creador.id) === String(currentUserId.value);
+};
 
 onMounted(async () => {
     await Promise.all([loadTemplates(), initializePublicUsers(), initializePositions()]);
@@ -61,7 +65,7 @@ watch(
 // ─── Navigation ──────────────────────────────────────────────────
 const openCreate = () => {
     editingTemplate.value = null;
-    form.value = { nombre: '', descripcion: '', items: [] };
+    form.value = { nombre: '', descripcion: '', is_public: false, items: [] };
     formErrors.value = {};
     addItem();
     panel.value = 'form';
@@ -72,6 +76,7 @@ const openEdit = (tpl) => {
     form.value = {
         nombre: tpl.nombre,
         descripcion: tpl.descripcion ?? '',
+        is_public: !!tpl.is_public,
         items: (tpl.items ?? []).map((it) => ({
             orden: it.orden,
             tipo_accion: it.tipo_accion,
@@ -120,6 +125,7 @@ const submit = async () => {
     const payload = {
         nombre: form.value.nombre.trim(),
         descripcion: form.value.descripcion.trim() || undefined,
+        is_public: form.value.is_public,
         items: form.value.items
     };
     try {
@@ -192,7 +198,10 @@ const getActionColor = (tipo) => {
                 <div v-for="tpl in templates" :key="tpl.id" class="tpl-card">
                     <div class="tpl-card-header">
                         <div class="tpl-card-title-wrap">
-                            <span class="tpl-card-name">{{ tpl.nombre }}</span>
+                            <div class="flex align-items-center gap-2">
+                                <span class="tpl-card-name">{{ tpl.nombre }}</span>
+                                <span v-if="tpl.is_public" class="tpl-public-badge" title="Esta plantilla es visible para todos"> <i class="pi pi-globe text-[10px] mr-1"></i>Pública </span>
+                            </div>
                             <span v-if="tpl.descripcion" class="tpl-card-desc">{{ tpl.descripcion }}</span>
                         </div>
                         <div class="tpl-card-actions" v-if="isOwner(tpl)">
@@ -238,6 +247,17 @@ const getActionColor = (tipo) => {
             <div class="form-field">
                 <label class="form-label">Descripción <span class="opt">(opcional)</span></label>
                 <Textarea v-model="form.descripcion" placeholder="Descripción breve del flujo..." rows="2" class="w-full" autoResize />
+            </div>
+
+            <!-- Visibilidad (Pública/Privada) -->
+            <div class="form-field tpl-visibility-field">
+                <div class="flex align-items-center gap-3 p-3 border-round bg-gray-50 border-1 border-gray-200">
+                    <ToggleSwitch v-model="form.is_public" id="tpl-visibility" />
+                    <div class="flex flex-column gap-1">
+                        <label for="tpl-visibility" class="text-sm font-bold cursor-pointer">Plantilla pública</label>
+                        <span class="text-xs text-gray-500">Si se activa, todos los usuarios podrán ver y utilizar esta plantilla (solo tú podrás editarla).</span>
+                    </div>
+                </div>
             </div>
 
             <!-- Items -->
@@ -477,6 +497,18 @@ const getActionColor = (tipo) => {
     color: #94a3b8;
     border-top: 1px solid #f1f5f9;
     padding-top: 0.5rem;
+}
+.tpl-public-badge {
+    background: #f0fdf4;
+    color: #16a34a;
+    border: 1px solid #bbf7d0;
+    padding: 2px 8px;
+    border-radius: 999px;
+    font-size: 0.65rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    display: inline-flex;
+    align-items: center;
 }
 
 /* ── Form panel ──────────────────────────────────────────────────── */

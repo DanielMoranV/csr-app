@@ -28,7 +28,14 @@ const { templates, isLoading: templatesLoading, loadTemplates } = useStepTemplat
 const stepsMode = ref('manual');
 const selectedTemplateId = ref(null);
 
-const templateOptions = computed(() => templates.value.map((t) => ({ label: t.nombre, value: t.id, descripcion: t.descripcion })));
+const templateOptions = computed(() =>
+    templates.value.map((t) => ({
+        label: t.is_public ? `${t.nombre} (Pública)` : t.nombre,
+        value: t.id,
+        descripcion: t.descripcion,
+        is_public: t.is_public
+    }))
+);
 
 onMounted(async () => {
     try {
