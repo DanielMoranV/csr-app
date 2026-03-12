@@ -375,6 +375,16 @@ export const MODULE_PERMISSIONS = {
         label: 'Terceros / Contrapartes',
         icon: 'pi pi-fw pi-users',
         menuSection: 'Tesorería'
+    },
+
+    // Tesorería - Importación Honorarios Médicos
+    treasuryMedicalImport: {
+        name: 'treasury-medical-import',
+        path: '/tesoreria/importar-honorarios',
+        positions: [POSITIONS.SISTEMAS, POSITIONS.ADMINISTRACION, POSITIONS.CONTABILIDAD],
+        label: 'Import. Honorarios',
+        icon: 'pi pi-fw pi-upload',
+        menuSection: 'Tesorería'
     }
 };
 

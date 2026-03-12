@@ -177,6 +177,12 @@ const router = createRouter({
                     name: MODULE_PERMISSIONS.treasuryCounterparties.name,
                     component: () => import('@/views/treasury/Counterparties.vue'),
                     meta: { requiresAuth: true, positions: MODULE_PERMISSIONS.treasuryCounterparties.positions }
+                },
+                {
+                    path: MODULE_PERMISSIONS.treasuryMedicalImport.path,
+                    name: MODULE_PERMISSIONS.treasuryMedicalImport.name,
+                    component: () => import('@/views/treasury/MedicalHonoraryImport.vue'),
+                    meta: { requiresAuth: true, positions: MODULE_PERMISSIONS.treasuryMedicalImport.positions }
                 }
             ]
         },

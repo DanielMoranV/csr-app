@@ -56,5 +56,12 @@ export const TreasuryService = {
     // 6. Transferencias
     createTransfer(transferData) {
         return axios.post('/treasury/transfers', transferData);
+    },
+
+    // 7. Importación de Honorarios Médicos
+    importMedicalHonorary(formData) {
+        return axios.post('/treasury/import/medical-honorary', formData, {
+            headers: { 'Content-Type': 'multipart/form-data' }
+        });
     }
 };
