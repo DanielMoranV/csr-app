@@ -44,6 +44,12 @@ const openNew = () => {
     bankDialog.value = true;
 };
 
+const editBank = (b) => {
+    bank.value = { ...b };
+    submitted.value = false;
+    bankDialog.value = true;
+};
+
 const hideDialog = () => {
     bankDialog.value = false;
     submitted.value = false;
@@ -54,12 +60,17 @@ const saveBank = async () => {
 
     if (bank.value.name.trim()) {
         try {
-            await TreasuryService.createBank(bank.value);
-            toast.add({ severity: 'success', summary: 'Éxito', detail: 'Banco creado correctamente', life: 3000 });
+            if (bank.value.id) {
+                await TreasuryService.updateBank(bank.value.id, bank.value);
+                toast.add({ severity: 'success', summary: 'Éxito', detail: 'Banco actualizado correctamente', life: 3000 });
+            } else {
+                await TreasuryService.createBank(bank.value);
+                toast.add({ severity: 'success', summary: 'Éxito', detail: 'Banco creado correctamente', life: 3000 });
+            }
             hideDialog();
             loadBanks();
         } catch (error) {
-            toast.add({ severity: 'error', summary: 'Error', detail: 'No se pudo crear el banco', life: 3000 });
+            toast.add({ severity: 'error', summary: 'Error', detail: 'No se pudo guardar el banco', life: 3000 });
         }
     }
 };
@@ -152,9 +163,12 @@ const deleteBank = async () => {
                     </template>
                 </Column>
 
-                <Column header="Acciones" :exportable="false" style="min-width: 8rem">
+                <Column header="Acciones" :exportable="false" style="min-width: 10rem">
                     <template #body="slotProps">
-                        <Button icon="pi pi-trash" class="p-button-rounded p-button-danger p-button-sm" @click="confirmDeleteBank(slotProps.data)" v-tooltip.top="'Eliminar banco'" />
+                        <div class="action-buttons">
+                            <Button icon="pi pi-pencil" rounded severity="warning" size="small" @click="editBank(slotProps.data)" v-tooltip.top="'Editar banco'" />
+                            <Button icon="pi pi-trash" rounded severity="danger" size="small" @click="confirmDeleteBank(slotProps.data)" v-tooltip.top="'Eliminar banco'" />
+                        </div>
                     </template>
                 </Column>
             </DataTable>
@@ -167,8 +181,8 @@ const deleteBank = async () => {
                             <i class="pi pi-building"></i>
                         </div>
                         <div>
-                            <h3 class="dialog-title">Nuevo Banco</h3>
-                            <p class="dialog-subtitle">Complete los datos de la entidad bancaria</p>
+                            <h3 class="dialog-title">{{ bank.id ? 'Editar Banco' : 'Nuevo Banco' }}</h3>
+                            <p class="dialog-subtitle">{{ bank.id ? 'Modifique los datos de la entidad bancaria' : 'Complete los datos de la entidad bancaria' }}</p>
                         </div>
                     </div>
                 </template>
@@ -245,7 +259,7 @@ const deleteBank = async () => {
                 <template #footer>
                     <div class="dialog-footer">
                         <Button label="Cancelar" icon="pi pi-times" class="dialog-cancel-btn" text @click="hideDialog" />
-                        <Button label="Guardar Banco" icon="pi pi-check" class="dialog-save-btn" @click="saveBank" />
+                        <Button :label="bank.id ? 'Actualizar Banco' : 'Guardar Banco'" icon="pi pi-check" class="dialog-save-btn" @click="saveBank" />
                     </div>
                 </template>
             </Dialog>
@@ -630,5 +644,11 @@ const deleteBank = async () => {
     transform: translateY(-1px) !important;
     box-shadow: 0 5px 14px rgba(16,185,129,0.4) !important;
     background: linear-gradient(135deg, #059669 0%, #047857 100%) !important;
+}
+
+.action-buttons {
+    display: flex;
+    gap: 0.5rem;
+    align-items: center;
 }
 </style>

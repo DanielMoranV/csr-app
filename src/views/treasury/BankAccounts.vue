@@ -10,6 +10,7 @@ const bankAccounts = ref([]);
 const banks = ref([]);
 const loading = ref(true);
 const accountDialog = ref(false);
+const deleteAccountDialog = ref(false);
 const account = ref({});
 const filters = ref({
     global: { value: null, matchMode: FilterMatchMode.CONTAINS }
@@ -58,6 +59,28 @@ const openNew = () => {
     accountDialog.value = true;
 };
 
+const editAccount = (a) => {
+    account.value = { ...a, bank_id: a.bank_id ?? a.bank?.id };
+    submitted.value = false;
+    accountDialog.value = true;
+};
+
+const confirmDeleteAccount = (a) => {
+    account.value = a;
+    deleteAccountDialog.value = true;
+};
+
+const deleteAccount = async () => {
+    try {
+        await TreasuryService.deleteBankAccount(account.value.id);
+        toast.add({ severity: 'success', summary: 'Éxito', detail: 'Cuenta eliminada', life: 3000 });
+        deleteAccountDialog.value = false;
+        loadData();
+    } catch (error) {
+        toast.add({ severity: 'error', summary: 'Error', detail: 'No se pudo eliminar la cuenta', life: 3000 });
+    }
+};
+
 const hideDialog = () => {
     accountDialog.value = false;
     submitted.value = false;
@@ -67,12 +90,17 @@ const saveAccount = async () => {
     submitted.value = true;
     if (account.value.account_number && account.value.bank_id && account.value.cci && account.value.description) {
         try {
-            await TreasuryService.createBankAccount(account.value);
-            toast.add({ severity: 'success', summary: 'Éxito', detail: 'Cuenta bancaria creada', life: 3000 });
+            if (account.value.id) {
+                await TreasuryService.updateBankAccount(account.value.id, account.value);
+                toast.add({ severity: 'success', summary: 'Éxito', detail: 'Cuenta actualizada correctamente', life: 3000 });
+            } else {
+                await TreasuryService.createBankAccount(account.value);
+                toast.add({ severity: 'success', summary: 'Éxito', detail: 'Cuenta bancaria creada', life: 3000 });
+            }
             hideDialog();
             loadData();
         } catch (error) {
-            toast.add({ severity: 'error', summary: 'Error', detail: 'No se pudo crear la cuenta', life: 3000 });
+            toast.add({ severity: 'error', summary: 'Error', detail: 'No se pudo guardar la cuenta', life: 3000 });
         }
     }
 };
@@ -174,6 +202,15 @@ const formatCurrency = (value, currency) => {
                         <Tag :severity="slotProps.data.is_active ? 'success' : 'danger'" :value="slotProps.data.is_active ? 'Activa' : 'Inactiva'" />
                     </template>
                 </Column>
+
+                <Column header="Acciones" :exportable="false" style="min-width: 10rem">
+                    <template #body="slotProps">
+                        <div class="action-buttons">
+                            <Button icon="pi pi-pencil" rounded severity="warning" size="small" @click="editAccount(slotProps.data)" v-tooltip.top="'Editar cuenta'" />
+                            <Button icon="pi pi-trash" rounded severity="danger" size="small" @click="confirmDeleteAccount(slotProps.data)" v-tooltip.top="'Eliminar cuenta'" />
+                        </div>
+                    </template>
+                </Column>
             </DataTable>
 
             <!-- Dialog Nueva Cuenta Bancaria -->
@@ -184,8 +221,8 @@ const formatCurrency = (value, currency) => {
                             <i class="pi pi-credit-card"></i>
                         </div>
                         <div>
-                            <h3 class="dialog-title">Nueva Cuenta Bancaria</h3>
-                            <p class="dialog-subtitle">Configure los datos de la cuenta</p>
+                            <h3 class="dialog-title">{{ account.id ? 'Editar Cuenta Bancaria' : 'Nueva Cuenta Bancaria' }}</h3>
+                            <p class="dialog-subtitle">{{ account.id ? 'Modifique los datos de la cuenta' : 'Configure los datos de la cuenta' }}</p>
                         </div>
                     </div>
                 </template>
@@ -322,9 +359,13 @@ const formatCurrency = (value, currency) => {
                                 :currency="account.currency === 'USD' ? 'USD' : 'PEN'"
                                 locale="es-PE"
                                 class="w-full"
+                                :disabled="!!account.id"
                             />
-                            <small class="hint-text">
+                            <small class="hint-text" v-if="!account.id">
                                 <i class="pi pi-info-circle mr-1"></i>Solo se puede establecer al crear.
+                            </small>
+                            <small class="hint-text" v-else>
+                                <i class="pi pi-lock mr-1"></i>El saldo inicial no es editable.
                             </small>
                         </div>
                         <div class="form-field">
@@ -345,8 +386,20 @@ const formatCurrency = (value, currency) => {
                 <template #footer>
                     <div class="dialog-footer">
                         <Button label="Cancelar" icon="pi pi-times" class="dialog-cancel-btn" text @click="hideDialog" />
-                        <Button label="Guardar Cuenta" icon="pi pi-check" class="dialog-save-btn" @click="saveAccount" />
+                        <Button :label="account.id ? 'Actualizar Cuenta' : 'Guardar Cuenta'" icon="pi pi-check" class="dialog-save-btn" @click="saveAccount" />
                     </div>
+                </template>
+            </Dialog>
+
+            <!-- Dialog Eliminar Cuenta -->
+            <Dialog v-model:visible="deleteAccountDialog" :style="{ width: '450px' }" header="Confirmar eliminación" :modal="true">
+                <div class="flex align-items-center gap-3">
+                    <i class="pi pi-exclamation-triangle text-orange-500" style="font-size: 2rem" />
+                    <span v-if="account">¿Estás seguro que deseas eliminar la cuenta <b>{{ account.description }}</b>?</span>
+                </div>
+                <template #footer>
+                    <Button label="No" icon="pi pi-times" class="p-button-text" @click="deleteAccountDialog = false" />
+                    <Button label="Sí, eliminar" icon="pi pi-check" severity="danger" @click="deleteAccount" />
                 </template>
             </Dialog>
         </div>
@@ -572,5 +625,11 @@ const formatCurrency = (value, currency) => {
     transform: translateY(-1px) !important;
     box-shadow: 0 5px 14px rgba(16,185,129,0.4) !important;
     background: linear-gradient(135deg, #059669 0%, #047857 100%) !important;
+}
+
+.action-buttons {
+    display: flex;
+    gap: 0.5rem;
+    align-items: center;
 }
 </style>

@@ -88,6 +88,7 @@ export const useDocumentManagementStore = defineStore('documentManagement', {
                 // or FormData (for Edición steps that require a file upload)
                 const config = payload instanceof FormData ? { headers: { 'Content-Type': 'multipart/form-data' } } : {};
                 const response = await apiClient.post(`/documents/steps/${stepId}/sign`, payload, config);
+                this.lastFetch = null;
                 return response;
             } catch (error) {
                 console.error(`Error signing step ${stepId}:`, error);
@@ -102,6 +103,7 @@ export const useDocumentManagementStore = defineStore('documentManagement', {
             try {
                 // payload could be { comentario: '...' }
                 const response = await apiClient.post(`/documents/steps/${stepId}/reject`, payload);
+                this.lastFetch = null;
                 return response;
             } catch (error) {
                 console.error(`Error rejecting step ${stepId}:`, error);

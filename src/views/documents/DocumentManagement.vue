@@ -88,7 +88,7 @@ const showTemplatesDialog = ref(false);
 const selectedDocumentId = ref(null);
 
 const loadDocuments = async () => {
-    await initializeDocuments();
+    await initializeDocuments(true);
 };
 
 const openNewDocumentDialog = () => {

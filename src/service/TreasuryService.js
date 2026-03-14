@@ -11,6 +11,9 @@ export const TreasuryService = {
     deleteBank(id) {
         return axios.delete(`/banks/${id}`);
     },
+    updateBank(id, bankData) {
+        return axios.put(`/banks/${id}`, bankData);
+    },
 
     // 2. Cuentas Bancarias
     getBankAccounts() {
@@ -18,6 +21,12 @@ export const TreasuryService = {
     },
     createBankAccount(accountData) {
         return axios.post('/bank-accounts', accountData);
+    },
+    updateBankAccount(id, accountData) {
+        return axios.put(`/bank-accounts/${id}`, accountData);
+    },
+    deleteBankAccount(id) {
+        return axios.delete(`/bank-accounts/${id}`);
     },
 
     // 3. Movimientos Bancarios
@@ -29,6 +38,9 @@ export const TreasuryService = {
     },
     updateBankMovement(id, movementData) {
         return axios.put(`/bank-movements/${id}`, movementData);
+    },
+    deleteBankMovement(id) {
+        return axios.delete(`/bank-movements/${id}`);
     },
 
     // 4. Contrapartes
@@ -63,5 +75,21 @@ export const TreasuryService = {
         return axios.post('/treasury/import/medical-honorary', formData, {
             headers: { 'Content-Type': 'multipart/form-data' }
         });
+    },
+
+    // 8. Reporte Anual
+    getYearSummary(year, accountIds = []) {
+        const params = new URLSearchParams();
+        params.append('year', year);
+        accountIds.forEach((id) => params.append('account_ids[]', id));
+        return axios.get(`/treasury/reports/year-summary?${params.toString()}`);
+    },
+
+    // 9. Auditoría de Movimientos
+    getMovementAudit(id) {
+        return axios.get(`/bank-movements/${id}/audit`);
+    },
+    getDeletedMovements(page = 1) {
+        return axios.get('/bank-movements/audit/deleted', { params: { page } });
     }
 };

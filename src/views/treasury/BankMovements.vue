@@ -1,8 +1,11 @@
 <script setup>
+import BankMovementsAuditDialog from '@/components/treasury/BankMovementsAuditDialog.vue';
 import { TreasuryService } from '@/service/TreasuryService';
 import { FilterMatchMode } from '@primevue/core/api';
 import { useToast } from 'primevue/usetoast';
 import { onMounted, ref, watch } from 'vue';
+
+const auditDialogRef = ref(null);
 
 const toast = useToast();
 
@@ -64,7 +67,7 @@ const loadMovements = async () => {
         if (filterStartDate.value) params.start_date = filterStartDate.value.toISOString().split('T')[0];
         if (filterEndDate.value) params.end_date = filterEndDate.value.toISOString().split('T')[0];
         const response = await TreasuryService.getBankMovements(params);
-        movements.value = (response.data.data || response.data).map((m) => ({ ...m }));
+        movements.value = (response.data.data || response.data).map((m) => ({ ...m, _id: m.id }));
     } catch {
         toast.add({ severity: 'error', summary: 'Error', detail: 'No se pudieron cargar los movimientos', life: 3000 });
     } finally {
@@ -153,6 +156,19 @@ const saveRow = async (row) => {
         editingRows.value = [];
     } catch {
         toast.add({ severity: 'error', summary: 'Error', detail: 'No se pudo guardar', life: 3000 });
+    } finally {
+        processingMovement.value = false;
+    }
+};
+
+const deleteRow = async (row) => {
+    processingMovement.value = true;
+    try {
+        await TreasuryService.deleteBankMovement(row.id);
+        movements.value = movements.value.filter((m) => m.id !== row.id);
+        toast.add({ severity: 'success', summary: 'Eliminado', detail: 'Movimiento eliminado correctamente', life: 2000 });
+    } catch {
+        toast.add({ severity: 'error', summary: 'Error', detail: 'No se pudo eliminar el movimiento', life: 3000 });
     } finally {
         processingMovement.value = false;
     }
@@ -252,6 +268,7 @@ const directionLocked = (categoryId) => {
     if (!categoryId) return false;
     return getCategoryType(categoryId) !== 'MIX';
 };
+
 </script>
 
 <template>
@@ -328,6 +345,7 @@ const directionLocked = (categoryId) => {
                     </IconField>
                     <Button label="+ Agregar fila" icon="pi pi-plus" class="action-button" @click="addNewRow" />
                     <Button label="Transferencia" icon="pi pi-arrow-right-arrow-left" class="transfer-button" @click="openNewTransfer" />
+                    <Button label="Auditoría" icon="pi pi-history" class="audit-button" @click="auditDialogRef.openDeletedAudit()" />
                 </div>
             </div>
 
@@ -357,6 +375,14 @@ const directionLocked = (categoryId) => {
                         <p class="empty-subtitle">No hay movimientos para la cuenta y período seleccionados. Usa <strong>+ Agregar fila</strong> para registrar uno.</p>
                     </div>
                 </template>
+
+                <!-- ID -->
+                <Column field="id" header="ID" :sortable="true" style="min-width: 4rem; max-width: 5rem">
+                    <template #body="{ data }">
+                        <span class="row-id-badge" v-if="!data._isNew">{{ data.id }}</span>
+                        <span class="row-id-new" v-else>nuevo</span>
+                    </template>
+                </Column>
 
                 <!-- Fecha -->
                 <Column field="movement_date" header="Fecha" :sortable="true" style="min-width: 8rem">
@@ -457,10 +483,12 @@ const directionLocked = (categoryId) => {
                 </Column>
 
                 <!-- Acciones fila -->
-                <Column header="" style="min-width: 6rem; text-align: center" :exportable="false">
+                <Column header="" style="min-width: 9.5rem; text-align: center" :exportable="false">
                     <template #body="{ data }">
                         <div class="row-actions" v-if="!isEditing(data)">
                             <Button icon="pi pi-pencil" class="row-edit-btn" v-tooltip.top="'Editar fila'" text rounded @click="editingRows = [data]" />
+                            <Button v-if="!data._isNew" icon="pi pi-history" class="row-audit-btn" v-tooltip.top="'Ver historial'" text rounded @click="auditDialogRef.openMovementAudit(data)" />
+                            <Button v-if="!data._isNew" icon="pi pi-trash" class="row-delete-btn" v-tooltip.top="'Eliminar'" text rounded @click="deleteRow(data)" />
                         </div>
                     </template>
                     <template #editor="{ data }">
@@ -471,6 +499,9 @@ const directionLocked = (categoryId) => {
                     </template>
                 </Column>
             </DataTable>
+
+            <!-- Modal Auditoría -->
+            <BankMovementsAuditDialog ref="auditDialogRef" />
 
             <!-- Modal Transferencia -->
             <Dialog v-model:visible="transferDialog" :style="{ width: '580px' }" :modal="true" :closable="true" class="transfer-dialog" @hide="hideTransferDialog">
@@ -1526,5 +1557,72 @@ const directionLocked = (categoryId) => {
     flex-shrink: 0;
     width: 14px;
     text-align: center;
+}
+
+/* ============================================================================
+   AUDIT BUTTON (header)
+   ============================================================================ */
+.audit-button {
+    background: linear-gradient(135deg, #8b5cf6 0%, #7c3aed 100%) !important;
+    border: none !important;
+    border-radius: 10px !important;
+    box-shadow: 0 3px 10px rgba(139, 92, 246, 0.3) !important;
+    transition: all 0.3s ease !important;
+    white-space: nowrap;
+}
+.audit-button:hover {
+    transform: translateY(-2px) !important;
+    box-shadow: 0 5px 15px rgba(139, 92, 246, 0.4) !important;
+    background: linear-gradient(135deg, #7c3aed 0%, #6d28d9 100%) !important;
+}
+
+/* ============================================================================
+   AUDIT ROW BUTTON
+   ============================================================================ */
+.row-audit-btn {
+    width: 28px !important;
+    height: 28px !important;
+    color: #8b5cf6 !important;
+    opacity: 0.3;
+    transition: opacity 0.2s, color 0.2s !important;
+}
+:deep(.excel-grid tr:hover) .row-audit-btn {
+    opacity: 1 !important;
+}
+.row-audit-btn:hover {
+    opacity: 1 !important;
+    background: rgba(139, 92, 246, 0.08) !important;
+}
+
+.row-delete-btn {
+    width: 28px !important;
+    height: 28px !important;
+    color: #ef4444 !important;
+    opacity: 0.3;
+    transition: opacity 0.2s, color 0.2s !important;
+}
+:deep(.excel-grid tr:hover) .row-delete-btn {
+    opacity: 1 !important;
+}
+.row-delete-btn:hover {
+    opacity: 1 !important;
+    background: rgba(239, 68, 68, 0.08) !important;
+}
+
+.row-id-badge {
+    font-size: 0.75rem;
+    font-weight: 600;
+    color: var(--text-color-secondary);
+    background: var(--surface-ground);
+    border: 1px solid var(--surface-border);
+    border-radius: 4px;
+    padding: 0.1rem 0.4rem;
+    font-family: monospace;
+}
+.row-id-new {
+    font-size: 0.72rem;
+    font-style: italic;
+    color: #10b981;
+    font-weight: 500;
 }
 </style>

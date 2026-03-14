@@ -385,6 +385,16 @@ export const MODULE_PERMISSIONS = {
         label: 'Import. Honorarios',
         icon: 'pi pi-fw pi-upload',
         menuSection: 'Tesorería'
+    },
+
+    // Tesorería - Resumen Anual
+    treasuryYearSummary: {
+        name: 'treasury-year-summary',
+        path: '/tesoreria/resumen-anual',
+        positions: PERMISSION_GROUPS.TREASURY,
+        label: 'Resumen del Año',
+        icon: 'pi pi-fw pi-chart-bar',
+        menuSection: 'Tesorería'
     }
 };
 
