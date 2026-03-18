@@ -160,7 +160,13 @@ const loadPdfFromVersionId = async (versionId) => {
         currentBlobUrl = URL.createObjectURL(blob);
         currentVersionId.value = versionId; // trackear la versión activa
 
-        const loadingTask = getDocument(currentBlobUrl);
+        const loadingTask = getDocument({
+            url: currentBlobUrl,
+            cMapUrl: '/pdfjs/cmaps/',
+            cMapPacked: true,
+            standardFontDataUrl: '/pdfjs/standard_fonts/',
+            isEvalSupported: false
+        });
         pdfDoc = await loadingTask.promise;
         totalPages.value = pdfDoc.numPages;
         currentPage.value = 1;
