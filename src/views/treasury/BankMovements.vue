@@ -40,11 +40,7 @@ const directionOptions = [
 const loadData = async () => {
     loading.value = true;
     try {
-        const [accountsRes, counterpartiesRes, categoriesRes] = await Promise.all([
-            TreasuryService.getBankAccounts(),
-            TreasuryService.getCounterparties(),
-            TreasuryService.getMovementCategories()
-        ]);
+        const [accountsRes, counterpartiesRes, categoriesRes] = await Promise.all([TreasuryService.getBankAccounts(), TreasuryService.getCounterparties(), TreasuryService.getMovementCategories()]);
         accounts.value = (accountsRes.data.data || accountsRes.data).map((acc) => ({
             ...acc,
             displayName: `${acc.bank.name} - ${acc.description} (${acc.currency})`
@@ -95,6 +91,7 @@ const addNewRow = () => {
         _isNew: true,
         _id: `new_${Date.now()}`,
         movement_date: today,
+        operation_number: '',
         voucher: '',
         movement_category_id: null,
         counterparty_id: null,
@@ -135,6 +132,7 @@ const saveRow = async (row) => {
             const payload = {
                 bank_account_id: filterAccount.value,
                 movement_date: row.movement_date,
+                operation_number: row.operation_number || '',
                 voucher: row.voucher || '',
                 movement_category_id: row.movement_category_id,
                 counterparty_id: row.counterparty_id || null,
@@ -268,7 +266,6 @@ const directionLocked = (categoryId) => {
     if (!categoryId) return false;
     return getCategoryType(categoryId) !== 'MIX';
 };
-
 </script>
 
 <template>
@@ -409,6 +406,14 @@ const directionLocked = (categoryId) => {
                                 <i class="pi pi-lock"></i>
                             </span>
                         </div>
+                    </template>
+                </Column>
+
+                <!-- N° Operación -->
+                <Column field="operation_number" header="N° Operación" style="min-width: 8rem">
+                    <template #body="{ data }">{{ data.operation_number || '—' }}</template>
+                    <template #editor="{ data, field }">
+                        <InputText v-model="data[field]" class="cell-input" placeholder="Nro. operación" />
                     </template>
                 </Column>
 
@@ -1584,7 +1589,9 @@ const directionLocked = (categoryId) => {
     height: 28px !important;
     color: #8b5cf6 !important;
     opacity: 0.3;
-    transition: opacity 0.2s, color 0.2s !important;
+    transition:
+        opacity 0.2s,
+        color 0.2s !important;
 }
 :deep(.excel-grid tr:hover) .row-audit-btn {
     opacity: 1 !important;
@@ -1599,7 +1606,9 @@ const directionLocked = (categoryId) => {
     height: 28px !important;
     color: #ef4444 !important;
     opacity: 0.3;
-    transition: opacity 0.2s, color 0.2s !important;
+    transition:
+        opacity 0.2s,
+        color 0.2s !important;
 }
 :deep(.excel-grid tr:hover) .row-delete-btn {
     opacity: 1 !important;
