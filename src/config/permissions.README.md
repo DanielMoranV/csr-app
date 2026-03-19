@@ -89,6 +89,7 @@ miModulo: {
 ### Administrativas
 - `SISTEMAS` - Acceso global total
 - `DIRECTOR_MEDICO`
+- `GERENCIA`
 - `ADMINISTRACION`
 - `RRHH`
 - `CONTABILIDAD`
@@ -116,7 +117,7 @@ miModulo: {
 ## Grupos de permisos predefinidos
 
 - `ADMIN_FULL` - Solo SISTEMAS
-- `HIGH_MANAGEMENT` - SISTEMAS, ADMINISTRACION, DIRECTOR_MEDICO
+- `HIGH_MANAGEMENT` - SISTEMAS, GERENCIA, ADMINISTRACION, DIRECTOR_MEDICO
 - `ADMINISTRATIVE` - Personal administrativo
 - `OPERATIONAL` - Personal operativo (ADMISION, FACTURACION)
 - `MEDICAL` - Personal médico

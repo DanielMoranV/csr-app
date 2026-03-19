@@ -173,6 +173,7 @@ const formatPositionLabel = (position) => {
         EMERGENCIA: 'Emergencia',
         FACTURACION: 'Facturación',
         FARMACIA: 'Farmacia',
+        GERENCIA: 'Gerencia',
         HOSPITALIZACION: 'Hospitalización',
         LABORATORIO: 'Laboratorio',
         LOGISTICA: 'Logística',

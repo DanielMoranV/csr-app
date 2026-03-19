@@ -128,6 +128,7 @@ export const useUsersStore = defineStore('users', () => {
             EMERGENCIA: 'Emergencia',
             FACTURACION: 'Facturación',
             FARMACIA: 'Farmacia',
+            GERENCIA: 'Gerencia',
             HOSPITALIZACION: 'Hospitalización',
             LABORATORIO: 'Laboratorio',
             LOGISTICA: 'Logística',

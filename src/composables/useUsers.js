@@ -323,6 +323,7 @@ export function useUsers() {
             SISTEMAS: 'info',
             'DIRECTOR MEDICO': 'success',
             ADMINISTRACION: 'warning',
+            GERENCIA: 'warning',
             RRHH: 'warning',
             MEDICOS: 'success',
             EMERGENCIA: 'danger',

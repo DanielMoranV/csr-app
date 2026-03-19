@@ -14,6 +14,7 @@ export const POSITIONS = {
     RRHH: 'RRHH',
     CONTABILIDAD: 'CONTABILIDAD',
     TESORERIA: 'TESORERIA',
+    GERENCIA: 'GERENCIA',
 
     // Operativas
     FACTURACION: 'FACTURACION',
@@ -43,13 +44,13 @@ export const PERMISSION_GROUPS = {
     ADMIN_FULL: [POSITIONS.SISTEMAS],
 
     // Alta dirección
-    HIGH_MANAGEMENT: [POSITIONS.SISTEMAS, POSITIONS.ADMINISTRACION, POSITIONS.DIRECTOR_MEDICO],
+    HIGH_MANAGEMENT: [POSITIONS.SISTEMAS, POSITIONS.ADMINISTRACION, POSITIONS.GERENCIA, POSITIONS.DIRECTOR_MEDICO],
 
     // Personal administrativo
-    ADMINISTRATIVE: [POSITIONS.SISTEMAS, POSITIONS.ADMINISTRACION, POSITIONS.RRHH, POSITIONS.CONTABILIDAD, POSITIONS.TESORERIA],
+    ADMINISTRATIVE: [POSITIONS.SISTEMAS, POSITIONS.ADMINISTRACION, POSITIONS.GERENCIA, POSITIONS.RRHH, POSITIONS.CONTABILIDAD, POSITIONS.TESORERIA],
 
     // Personal de tesorería
-    TREASURY: [POSITIONS.SISTEMAS, POSITIONS.ADMINISTRACION, POSITIONS.CONTABILIDAD, POSITIONS.TESORERIA],
+    TREASURY: [POSITIONS.SISTEMAS, POSITIONS.GERENCIA, POSITIONS.CONTABILIDAD],
 
     // Personal operativo/atención
     OPERATIONAL: [POSITIONS.ADMISION, POSITIONS.FACTURACION],
@@ -116,7 +117,7 @@ export const MODULE_PERMISSIONS = {
     usuarios: {
         name: 'usuarios',
         path: '/usuarios',
-        positions: [POSITIONS.SISTEMAS, POSITIONS.ADMINISTRACION, POSITIONS.RRHH],
+        positions: [POSITIONS.SISTEMAS, POSITIONS.ADMINISTRACION, POSITIONS.GERENCIA, POSITIONS.RRHH],
         label: 'Usuarios',
         icon: 'pi pi-fw pi-users',
         menuSection: 'Administración'
@@ -167,7 +168,7 @@ export const MODULE_PERMISSIONS = {
     habitaciones: {
         name: 'habitaciones',
         path: '/habitaciones',
-        positions: [POSITIONS.SISTEMAS, POSITIONS.ADMINISTRACION, POSITIONS.HOSPITALIZACION, POSITIONS.ADMISION],
+        positions: [POSITIONS.SISTEMAS, POSITIONS.ADMINISTRACION, POSITIONS.GERENCIA, POSITIONS.HOSPITALIZACION, POSITIONS.ADMISION],
         label: 'Habitaciones',
         icon: 'pi pi-fw pi-building',
         menuSection: 'Hospitalización'
@@ -197,7 +198,7 @@ export const MODULE_PERMISSIONS = {
     sisclinImport: {
         name: 'sisclin-import',
         path: '/sisclin/import',
-        positions: [POSITIONS.SISTEMAS, POSITIONS.ADMINISTRACION],
+        positions: [POSITIONS.SISTEMAS, POSITIONS.ADMINISTRACION, POSITIONS.GERENCIA],
         label: 'Import. Hosp.',
         icon: 'pi pi-fw pi-database',
         menuSection: 'SISCLIN'
@@ -217,7 +218,7 @@ export const MODULE_PERMISSIONS = {
     ticketRecurrenceRules: {
         name: 'ticket-recurrence-rules',
         path: '/tickets/recurrence-rules',
-        positions: [POSITIONS.SISTEMAS, POSITIONS.ADMINISTRACION],
+        positions: [POSITIONS.SISTEMAS, POSITIONS.ADMINISTRACION, POSITIONS.GERENCIA],
         label: 'Reglas de Recurrencia',
         icon: 'pi pi-fw pi-sync',
         menuSection: 'Soporte Técnico',
@@ -238,7 +239,7 @@ export const MODULE_PERMISSIONS = {
     doctors: {
         name: 'doctors',
         path: '/medicos',
-        positions: [POSITIONS.SISTEMAS, POSITIONS.DIRECTOR_MEDICO, POSITIONS.ADMINISTRACION, POSITIONS.RRHH],
+        positions: [POSITIONS.SISTEMAS, POSITIONS.DIRECTOR_MEDICO, POSITIONS.ADMINISTRACION, POSITIONS.GERENCIA, POSITIONS.RRHH],
         label: 'Médicos',
         icon: 'pi pi-fw pi-heart-fill',
         menuSection: 'Personal Médico'
@@ -248,7 +249,7 @@ export const MODULE_PERMISSIONS = {
     medicalSpecialties: {
         name: 'medical-specialties',
         path: '/especialidades-medicas',
-        positions: [POSITIONS.SISTEMAS, POSITIONS.DIRECTOR_MEDICO, POSITIONS.ADMINISTRACION, POSITIONS.RRHH],
+        positions: [POSITIONS.SISTEMAS, POSITIONS.DIRECTOR_MEDICO, POSITIONS.ADMINISTRACION, POSITIONS.GERENCIA, POSITIONS.RRHH],
         label: 'Especialidades',
         icon: 'pi pi-fw pi-heart',
         menuSection: 'Personal Médico'
@@ -258,7 +259,7 @@ export const MODULE_PERMISSIONS = {
     doctorSchedules: {
         name: 'doctor-schedules',
         path: '/horarios-medicos',
-        positions: [POSITIONS.SISTEMAS, POSITIONS.DIRECTOR_MEDICO, POSITIONS.ADMINISTRACION, POSITIONS.RRHH, POSITIONS.HOSPITALIZACION, POSITIONS.QUIROFANO],
+        positions: [POSITIONS.SISTEMAS, POSITIONS.DIRECTOR_MEDICO, POSITIONS.ADMINISTRACION, POSITIONS.GERENCIA, POSITIONS.RRHH, POSITIONS.HOSPITALIZACION, POSITIONS.QUIROFANO],
         label: 'Horarios',
         icon: 'pi pi-fw pi-calendar',
         menuSection: 'Personal Médico'
@@ -268,7 +269,7 @@ export const MODULE_PERMISSIONS = {
     medicalFees: {
         name: 'medical-fees',
         path: '/honorarios-medicos',
-        positions: [POSITIONS.SISTEMAS, POSITIONS.DIRECTOR_MEDICO, POSITIONS.ADMINISTRACION, POSITIONS.CONTABILIDAD, POSITIONS.RRHH],
+        positions: [POSITIONS.SISTEMAS, POSITIONS.DIRECTOR_MEDICO, POSITIONS.ADMINISTRACION, POSITIONS.GERENCIA, POSITIONS.CONTABILIDAD, POSITIONS.RRHH],
         label: 'Honorarios',
         icon: 'pi pi-fw pi-dollar',
         menuSection: 'Personal Médico'
@@ -278,7 +279,7 @@ export const MODULE_PERMISSIONS = {
     tariffs: {
         name: 'tariffs',
         path: '/tarifarios',
-        positions: [POSITIONS.SISTEMAS, POSITIONS.DIRECTOR_MEDICO, POSITIONS.ADMINISTRACION, POSITIONS.CONTABILIDAD],
+        positions: [POSITIONS.SISTEMAS, POSITIONS.DIRECTOR_MEDICO, POSITIONS.ADMINISTRACION, POSITIONS.GERENCIA, POSITIONS.CONTABILIDAD],
         label: 'Tarifarios',
         icon: 'pi pi-fw pi-money-bill',
         menuSection: 'Personal Médico'
@@ -293,6 +294,7 @@ export const MODULE_PERMISSIONS = {
             POSITIONS.FARMACIA,
             POSITIONS.DIRECTOR_MEDICO,
             POSITIONS.ADMINISTRACION,
+            POSITIONS.GERENCIA,
             POSITIONS.MEDICOS,
             POSITIONS.EMERGENCIA,
             POSITIONS.HOSPITALIZACION,
@@ -311,7 +313,7 @@ export const MODULE_PERMISSIONS = {
     reservationManagement: {
         name: 'reservation-management',
         path: '/reservations/manage',
-        positions: [POSITIONS.SISTEMAS, POSITIONS.ADMISION, POSITIONS.ADMINISTRACION, POSITIONS.DIRECTOR_MEDICO],
+        positions: [POSITIONS.SISTEMAS, POSITIONS.ADMISION, POSITIONS.ADMINISTRACION, POSITIONS.GERENCIA, POSITIONS.DIRECTOR_MEDICO],
         label: 'Gestión de Reservas',
         icon: 'pi pi-fw pi-address-book',
         menuSection: 'Personal Médico'
@@ -381,7 +383,7 @@ export const MODULE_PERMISSIONS = {
     treasuryMedicalImport: {
         name: 'treasury-medical-import',
         path: '/tesoreria/importar-honorarios',
-        positions: [POSITIONS.SISTEMAS, POSITIONS.ADMINISTRACION, POSITIONS.CONTABILIDAD],
+        positions: [POSITIONS.SISTEMAS, POSITIONS.GERENCIA, POSITIONS.CONTABILIDAD],
         label: 'Import. Honorarios',
         icon: 'pi pi-fw pi-upload',
         menuSection: 'Tesorería'
