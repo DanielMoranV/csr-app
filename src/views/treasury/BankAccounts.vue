@@ -47,6 +47,7 @@ onMounted(() => {
 const openNew = () => {
     account.value = {
         bank_id: null,
+        code: '',
         account_number: '',
         cci: '',
         currency: 'PEN',
@@ -179,6 +180,11 @@ const formatCurrency = (value, currency) => {
                         </div>
                     </template>
                 </Column>
+                <Column field="code" header="Código" :sortable="true" style="min-width: 9rem">
+                    <template #body="{ data }">
+                        <span class="font-mono text-sm">{{ data.code || '—' }}</span>
+                    </template>
+                </Column>
                 <Column field="description" header="Descripción" :sortable="true" style="min-width: 14rem"></Column>
                 <Column field="account_number" header="Número Cuenta" :sortable="true" style="min-width: 12rem">
                     <template #body="{ data }">
@@ -272,6 +278,20 @@ const formatCurrency = (value, currency) => {
                         <span class="section-divider-label">
                             <i class="pi pi-hashtag mr-1"></i>Identificadores de Cuenta
                         </span>
+                    </div>
+
+                    <!-- Código -->
+                    <div class="form-field">
+                        <label class="form-label" for="code">
+                            <i class="pi pi-hashtag form-label-icon"></i>
+                            Código
+                        </label>
+                        <InputText
+                            id="code"
+                            v-model.trim="account.code"
+                            placeholder="Ej: BCP-001"
+                            class="form-input font-mono"
+                        />
                     </div>
 
                     <!-- Nro Cuenta + CCI -->

@@ -189,6 +189,12 @@ const router = createRouter({
                     name: MODULE_PERMISSIONS.treasuryYearSummary.name,
                     component: () => import('@/views/treasury/YearSummary.vue'),
                     meta: { requiresAuth: true, positions: MODULE_PERMISSIONS.treasuryYearSummary.positions }
+                },
+                {
+                    path: MODULE_PERMISSIONS.treasuryMovementCategories.path,
+                    name: MODULE_PERMISSIONS.treasuryMovementCategories.name,
+                    component: () => import('@/views/treasury/MovementCategories.vue'),
+                    meta: { requiresAuth: true, positions: MODULE_PERMISSIONS.treasuryMovementCategories.positions }
                 }
             ]
         },

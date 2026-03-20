@@ -64,6 +64,12 @@ export const TreasuryService = {
     getMovementCategories() {
         return axios.get('/treasury/data/movement-categories');
     },
+    getMovementCategoriesTable() {
+        return axios.get('/treasury/data/movement-categories-table');
+    },
+    getMovementCategoriesPdf() {
+        return axios.get('/treasury/data/movement-categories-pdf', { responseType: 'blob' });
+    },
 
     // 6. Transferencias
     createTransfer(transferData) {

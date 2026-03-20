@@ -397,6 +397,16 @@ export const MODULE_PERMISSIONS = {
         label: 'Resumen del Año',
         icon: 'pi pi-fw pi-chart-bar',
         menuSection: 'Tesorería'
+    },
+
+    // Tesorería - Categorías de Movimiento
+    treasuryMovementCategories: {
+        name: 'treasury-movement-categories',
+        path: '/tesoreria/categorias',
+        positions: PERMISSION_GROUPS.TREASURY,
+        label: 'Categorías',
+        icon: 'pi pi-fw pi-tags',
+        menuSection: 'Tesorería'
     }
 };
 
