@@ -444,10 +444,18 @@ const exportData = () => {
         { field: 'entry_at', header: 'Fecha Ingreso', type: 'date' },
         { field: 'exit_at', header: 'Fecha Salida', type: 'date' },
         { field: 'is_active', header: 'Activa', type: 'boolean' },
-        { field: 'is_approved_by_director', header: 'Aprobado Director', type: 'boolean' }
+        { field: 'is_approved_by_director', header: 'Aprobado Director', type: 'boolean' },
+        { field: '_cie10_codes', header: 'Códigos CIE-10' },
+        { field: '_cie10_names', header: 'Diagnósticos CIE-10' }
     ];
 
-    exportToExcel(filteredAttentionsByDate.value, columns, 'AtencionesHospitalarias');
+    const dataWithCie10 = filteredAttentionsByDate.value.map((attention) => ({
+        ...attention,
+        _cie10_codes: Array.isArray(attention.cie10) ? attention.cie10.join(', ') : '',
+        _cie10_names: parseCie10Names(attention.cie10_names).join(', ')
+    }));
+
+    exportToExcel(dataWithCie10, columns, 'AtencionesHospitalarias');
 };
 </script>
 <template>
