@@ -136,7 +136,9 @@ export const useUsersStore = defineStore('users', () => {
             QUIROFANO: 'Quirófano',
             'RAYOS X': 'Rayos X',
             RRHH: 'RRHH',
-            SISTEMAS: 'Sistemas'
+            SISTEMAS: 'Sistemas',
+            SECRETARIA: 'Secretaria',
+            'COORDINADOR HOSPITALIZACION': 'Coordinador Hospitalización'
         };
         return labels[position] || position;
     };

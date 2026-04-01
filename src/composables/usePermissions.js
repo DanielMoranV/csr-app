@@ -8,7 +8,7 @@ export { POSITIONS };
 // Grupos de permisos para facilitar la gestión
 export const PERMISSION_GROUPS = {
     // Personal médico
-    MEDICAL_STAFF: [POSITIONS.MEDICOS, POSITIONS.DIRECTOR_MEDICO, POSITIONS.EMERGENCIA, POSITIONS.AUDITOR_MEDICO],
+    MEDICAL_STAFF: [POSITIONS.MEDICOS, POSITIONS.DIRECTOR_MEDICO, POSITIONS.EMERGENCIA, POSITIONS.AUDITOR_MEDICO, POSITIONS.COORDINADOR_HOSPITALIZACION],
 
     // Personal administrativo
     ADMINISTRATIVE_STAFF: [POSITIONS.ADMINISTRACION, POSITIONS.GERENCIA, POSITIONS.ADMISION, POSITIONS.RRHH, POSITIONS.CONTABILIDAD, POSITIONS.FACTURACION],
@@ -97,6 +97,16 @@ export function usePermissions() {
     const canPerformDangerousActions = computed(() => {
         return belongsToGroup('DANGER_ZONE');
     });
+    
+    // Verificar si es Secretaria
+    const isSecretaria = computed(() => {
+        return hasPosition(POSITIONS.SECRETARIA);
+    });
+
+    // Verificar si es Coordinador de Hospitalización
+    const isCoordinadorHospitalizacion = computed(() => {
+        return hasPosition(POSITIONS.COORDINADOR_HOSPITALIZACION);
+    });
 
     // Filtrar items de menú basado en permisos
     const filterMenuItems = (items) => {
@@ -144,6 +154,8 @@ export function usePermissions() {
         isTechnicalStaff,
         isSupportStaff,
         canPerformDangerousActions,
+        isSecretaria,
+        isCoordinadorHospitalizacion,
 
         // Utilidades
         filterMenuItems,

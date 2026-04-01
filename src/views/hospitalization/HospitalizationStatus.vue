@@ -13,8 +13,11 @@ import Select from 'primevue/select';
 import Tag from 'primevue/tag';
 import { useConfirm } from 'primevue/useconfirm';
 import { useToast } from 'primevue/usetoast';
+import { usePermissions } from '@/composables/usePermissions';
 import { computed, onMounted, onUnmounted, ref } from 'vue';
 import { useRouter } from 'vue-router';
+
+const { isSecretaria } = usePermissions();
 
 const router = useRouter();
 const store = useHospitalizationStore();
@@ -379,7 +382,7 @@ onUnmounted(() => {
                         :class="{ 'smart-sort-active': smartSortEnabled }"
                     />
                     <Button icon="pi pi-refresh" :loading="state.isLoading" @click="refreshData" severity="secondary" outlined v-tooltip.bottom="'Actualizar datos manualmente'" />
-                    <Button icon="pi pi-sync" label="Sincronizar" :loading="isSyncing" @click="orchestrateMigration" severity="primary" v-tooltip.bottom="'Sincronizar hospitalizaciones desde Sisclin'" />
+                    <Button v-if="!isSecretaria" icon="pi pi-sync" label="Sincronizar" :loading="isSyncing" @click="orchestrateMigration" severity="primary" v-tooltip.bottom="'Sincronizar hospitalizaciones desde Sisclin'" />
                     <Button :icon="showFilters ? 'pi pi-filter-slash' : 'pi pi-filter'" @click="showFilters = !showFilters" severity="secondary" outlined v-tooltip.bottom="showFilters ? 'Ocultar filtros' : 'Mostrar filtros'" />
                     <Button :icon="showStats ? 'pi pi-eye-slash' : 'pi pi-eye'" @click="showStats = !showStats" severity="secondary" outlined v-tooltip.bottom="showStats ? 'Ocultar estadísticas' : 'Mostrar estadísticas'" />
                 </div>

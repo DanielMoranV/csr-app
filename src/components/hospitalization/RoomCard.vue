@@ -2,9 +2,12 @@
 import CudyrBadge from '@/components/cudyr/CudyrBadge.vue';
 import Badge from 'primevue/badge';
 import Tag from 'primevue/tag';
+import { usePermissions } from '@/composables/usePermissions';
 import { useToast } from 'primevue/usetoast';
 import { computed, defineEmits, ref } from 'vue';
 import BedDrawer from './BedDrawer.vue';
+
+const { isSecretaria } = usePermissions();
 
 const props = defineProps({
     room: {
@@ -35,6 +38,7 @@ const selectedBed = ref(null);
 
 // Función para abrir el drawer con la cama seleccionada
 const openBedDrawer = (bed) => {
+    if (isSecretaria.value) return; // Restricted for secretaria
     selectedBed.value = bed;
     drawerVisible.value = true;
 };
@@ -362,7 +366,8 @@ const hasPendingTasks = (bed) => {
                         'bed-indicator--alert': bed.attention && bed.status === 'occupied' && !bed.attention.discharge_date && !bed.attention.exit_date,
                         'bed-indicator--overdue': hasOverdueTasks(bed),
                         'bed-indicator--nearing-due': !hasOverdueTasks(bed) && hasNearingDueTasks(bed),
-                        'bed-indicator--pending': !hasOverdueTasks(bed) && !hasNearingDueTasks(bed) && hasPendingTasks(bed)
+                        'bed-indicator--pending': !hasOverdueTasks(bed) && !hasNearingDueTasks(bed) && hasPendingTasks(bed),
+                        'bed-indicator--read-only': isSecretaria
                     }"
                     @click="openBedDrawer(bed)"
                 >
@@ -743,7 +748,11 @@ const hasPendingTasks = (bed) => {
     box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
 }
 
-.bed-indicator:hover {
+.bed-indicator--read-only {
+    cursor: default !important;
+}
+
+.bed-indicator:not(.bed-indicator--read-only):hover {
     transform: translateY(-2px);
     box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
 }
