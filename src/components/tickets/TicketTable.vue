@@ -122,6 +122,23 @@ const getTimeAgo = (dateString) => {
     return `Hace ${Math.floor(days / 365)} años`;
 };
 
+const getDueIn = (dateString) => {
+    if (!dateString) return '';
+    const date = new Date(dateString);
+    const now = new Date();
+    const diff = date - now;
+
+    const days = Math.ceil(diff / (1000 * 60 * 60 * 24));
+
+    if (days < 0) return `Venció hace ${Math.abs(days)} día${Math.abs(days) === 1 ? '' : 's'}`;
+    if (days === 0) return 'Vence hoy';
+    if (days === 1) return 'Queda 1 día';
+    if (days < 7) return `Quedan ${days} días`;
+    if (days < 30) return `Quedan ${Math.floor(days / 7)} semanas`;
+    if (days < 365) return `Quedan ${Math.floor(days / 30)} meses`;
+    return `Queda ${Math.floor(days / 365)} año${Math.floor(days / 365) === 1 ? '' : 's'}`;
+};
+
 const onImageError = (event) => {
     event.target.style.display = 'none';
     event.target.nextElementSibling.style.display = 'flex';
@@ -391,7 +408,7 @@ const handleStatusChanged = (data) => {
                             <i class="pi pi-calendar-times date-icon"></i>
                             <span>{{ formatDateTime(data.due_date) }}</span>
                         </div>
-                        <div class="date-relative">{{ getTimeAgo(data.due_date) }}</div>
+                        <div class="date-relative">{{ getDueIn(data.due_date) }}</div>
                     </div>
                     <div v-else class="ticket-date-cell no-due-date">
                         <i class="pi pi-ban"></i>
