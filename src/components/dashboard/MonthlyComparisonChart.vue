@@ -37,6 +37,7 @@ const occupancyClass = (rate) => {
     if (rate >= 60) return 'occ-mid';
     return 'occ-low';
 };
+// ≥85% → verde (occ-high), 60–84% → ámbar (occ-mid), <60% → rojo (occ-low)
 
 const chartData = computed(() => {
     if (!apiData.value) return null;
@@ -47,20 +48,20 @@ const chartData = computed(() => {
         datasets: [
             {
                 label: 'Tasa de Ocupación (%)',
-                data: months_data.map((m) => m.average_occupancy_rate),
+                data: months_data.map((m) => m.occupancy_rate),
                 backgroundColor: months_data.map((m) =>
-                    m.average_occupancy_rate >= 85
-                        ? 'rgba(239, 68, 68, 0.75)'
-                        : m.average_occupancy_rate >= 60
+                    m.occupancy_rate >= 85
+                        ? 'rgba(16, 185, 129, 0.75)'
+                        : m.occupancy_rate >= 60
                           ? 'rgba(245, 158, 11, 0.75)'
-                          : 'rgba(16, 185, 129, 0.75)'
+                          : 'rgba(239, 68, 68, 0.75)'
                 ),
                 borderColor: months_data.map((m) =>
-                    m.average_occupancy_rate >= 85
-                        ? 'rgb(239, 68, 68)'
-                        : m.average_occupancy_rate >= 60
+                    m.occupancy_rate >= 85
+                        ? 'rgb(16, 185, 129)'
+                        : m.occupancy_rate >= 60
                           ? 'rgb(245, 158, 11)'
-                          : 'rgb(16, 185, 129)'
+                          : 'rgb(239, 68, 68)'
                 ),
                 borderWidth: 1,
                 borderRadius: 6,
@@ -169,7 +170,7 @@ onMounted(load);
             <div v-for="mes in apiData.months_data" :key="mes.month" class="mc-kpi-card">
                 <span class="mc-kpi-label">{{ mes.label }}</span>
                 <div class="mc-kpi-main">
-                    <span :class="['mc-kpi-value', occupancyClass(mes.average_occupancy_rate)]">{{ mes.average_occupancy_rate }}%</span>
+                    <span :class="['mc-kpi-value', occupancyClass(mes.occupancy_rate)]">{{ mes.occupancy_rate }}%</span>
                     <span class="mc-kpi-unit">ocupación</span>
                 </div>
                 <div class="mc-kpi-sub-row">
@@ -358,9 +359,9 @@ onMounted(load);
     margin-top: 0.25rem;
 }
 
-.occ-high { color: #ef4444; }
+.occ-high { color: #10b981; }
 .occ-mid  { color: #f59e0b; }
-.occ-low  { color: #10b981; }
+.occ-low  { color: #ef4444; }
 
 /* Gráfico */
 .mc-chart-wrapper {
