@@ -42,13 +42,15 @@ const occupancyClass = (rate) => {
 const chartData = computed(() => {
     if (!apiData.value) return null;
     const { months_data } = apiData.value;
+    const occupancyValues = months_data.map((m) => m.occupancy_rate);
 
     return {
         labels: months_data.map((m) => m.label),
         datasets: [
             {
+                type: 'bar',
                 label: 'Tasa de Ocupación (%)',
-                data: months_data.map((m) => m.occupancy_rate),
+                data: occupancyValues,
                 backgroundColor: months_data.map((m) =>
                     m.occupancy_rate >= 85
                         ? 'rgba(16, 185, 129, 0.75)'
@@ -65,6 +67,23 @@ const chartData = computed(() => {
                 ),
                 borderWidth: 1,
                 borderRadius: 6,
+                order: 2,
+            },
+            {
+                type: 'line',
+                label: 'Tendencia Ocupación',
+                data: occupancyValues,
+                borderColor: 'rgb(99, 102, 241)',
+                backgroundColor: 'rgba(99, 102, 241, 0.12)',
+                borderWidth: 2.5,
+                pointRadius: 5,
+                pointHoverRadius: 7,
+                pointBackgroundColor: 'rgb(99, 102, 241)',
+                pointBorderColor: '#ffffff',
+                pointBorderWidth: 2,
+                tension: 0.4,
+                fill: false,
+                order: 1,
             },
         ],
     };
@@ -78,11 +97,26 @@ const chartOptions = computed(() => {
         responsive: true,
         maintainAspectRatio: false,
         plugins: {
-            legend: { display: false },
+            legend: {
+                display: true,
+                position: 'top',
+                labels: {
+                    usePointStyle: true,
+                    pointStyle: 'circle',
+                    boxWidth: 8,
+                    font: { size: 12 },
+                    filter: (item) => item.text === 'Tendencia Ocupación',
+                },
+            },
             tooltip: {
+                mode: 'index',
+                intersect: false,
                 padding: 12,
                 callbacks: {
-                    label: (ctx) => `  Ocupación: ${ctx.parsed.y}%`,
+                    label: (ctx) => {
+                        if (ctx.dataset.type === 'line') return null;
+                        return `  Ocupación: ${ctx.parsed.y}%`;
+                    },
                     footer: ([first]) => {
                         const mes = months_data[first.dataIndex];
                         return [`Admisiones: ${mes.new_admissions}`, `Altas: ${mes.discharges}`, `Activos: ${mes.total_attentions}`];
