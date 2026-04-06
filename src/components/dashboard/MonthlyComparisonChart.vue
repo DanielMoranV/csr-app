@@ -279,15 +279,15 @@ onMounted(load);
 }
 
 .mc-pill--active {
-    background: var(--primary-500);
-    color: #fff;
-    border-color: var(--primary-500);
+    background: #3b82f6;
+    color: #ffffff;
+    border-color: #3b82f6;
 }
 
 .mc-pill--active:hover {
-    background: var(--primary-600);
-    border-color: var(--primary-600);
-    color: #fff;
+    background: #2563eb;
+    border-color: #2563eb;
+    color: #ffffff;
 }
 
 .mc-pill-tag {
@@ -297,7 +297,8 @@ onMounted(load);
     width: 1.1rem;
     height: 1.1rem;
     border-radius: 3px;
-    background: rgba(255, 255, 255, 0.3);
+    background: rgba(255, 255, 255, 0.25);
+    color: #ffffff;
     font-size: 0.65rem;
     font-weight: 700;
     line-height: 1;
