@@ -14,6 +14,7 @@ import TabView from 'primevue/tabview';
 import Textarea from 'primevue/textarea';
 import { computed, nextTick, reactive, ref, watch } from 'vue';
 import TicketAttachments from './TicketAttachments.vue';
+import TicketStatusChanger from './TicketStatusChanger.vue';
 import TicketStatusHistory from './TicketStatusHistory.vue';
 
 const props = defineProps({
@@ -85,6 +86,11 @@ const canEdit = computed(() => {
 const canAddCommentsOrAttachments = computed(() => {
     // Creador y asignados pueden agregar comentarios/adjuntos
     return isCreator.value || isAssignee.value;
+});
+
+const canChangeStatus = computed(() => {
+    // Solo en modo vista/edición con ticket existente, y solo creador o asignado
+    return !isCreateMode.value && currentTicket.value?.id && (isCreator.value || isAssignee.value);
 });
 
 // Computed para obtener el ticket actualizado del store
@@ -767,11 +773,11 @@ const formatCommentDate = (dateString) => {
             <div class="flex justify-content-between align-items-center w-full">
                 <!-- Botón Editar visible solo en modo vista para creadores -->
                 <div v-if="isViewMode && canEdit">
-                    <Button 
-                        label="Editar Ticket" 
-                        icon="pi pi-pencil" 
-                        @click="$emit('switch-to-edit')" 
-                        severity="primary" 
+                    <Button
+                        label="Editar Ticket"
+                        icon="pi pi-pencil"
+                        @click="$emit('switch-to-edit')"
+                        severity="primary"
                     />
                 </div>
                 <div v-else-if="!isViewMode" class="text-500 text-sm">
@@ -780,24 +786,28 @@ const formatCommentDate = (dateString) => {
                 <div v-else>
                     <!-- Espacio vacío para mantener alineación -->
                 </div>
-                
+
                 <!-- Botones de acción -->
-                <div class="flex gap-2">
-                    <Button 
-                        :label="isViewMode ? 'Cerrar' : 'Cancelar'" 
-                        icon="pi pi-times" 
-                        class="p-button-outlined" 
-                        @click="closeDialog" 
-                        :disabled="saving" 
+                <div class="flex align-items-center gap-2">
+                    <TicketStatusChanger
+                        v-if="canChangeStatus"
+                        :ticket="currentTicket"
                     />
-                    <Button 
+                    <Button
+                        :label="isViewMode ? 'Cerrar' : 'Cancelar'"
+                        icon="pi pi-times"
+                        class="p-button-outlined"
+                        @click="closeDialog"
+                        :disabled="saving"
+                    />
+                    <Button
                         v-if="!isViewMode"
-                        :label="isCreateMode ? 'Crear Ticket' : 'Actualizar Ticket'" 
-                        :icon="isCreateMode ? 'pi pi-plus' : 'pi pi-check'" 
-                        @click="saveTicket" 
-                        :loading="saving" 
-                        :disabled="!isFormValid || !canEdit" 
-                        class="p-button-success" 
+                        :label="isCreateMode ? 'Crear Ticket' : 'Actualizar Ticket'"
+                        :icon="isCreateMode ? 'pi pi-plus' : 'pi pi-check'"
+                        @click="saveTicket"
+                        :loading="saving"
+                        :disabled="!isFormValid || !canEdit"
+                        class="p-button-success"
                     />
                 </div>
             </div>
