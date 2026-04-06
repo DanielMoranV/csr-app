@@ -340,7 +340,7 @@ const handleStatusChanged = (data) => {
             </Column>
 
             <!-- Descripción (truncada) - Oculta en móvil -->
-            <Column field="description" header="Descripción" style="min-width: 250px" class="column-description">
+            <Column field="description" header="Descripción" style="min-width: 250px; max-width: 300px" class="column-description">
                 <template #body="{ data }">
                     <span class="ticket-description">{{ data.description }}</span>
                 </template>
@@ -579,6 +579,8 @@ const handleStatusChanged = (data) => {
     -webkit-line-clamp: 2;
     -webkit-box-orient: vertical;
     overflow: hidden;
+    word-break: break-word;
+    white-space: normal;
 }
 
 .ticket-status-tag,
