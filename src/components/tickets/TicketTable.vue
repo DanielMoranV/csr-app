@@ -342,7 +342,7 @@ const handleStatusChanged = (data) => {
             <!-- Descripción (truncada) - Oculta en móvil -->
             <Column field="description" header="Descripción" style="min-width: 250px" class="column-description">
                 <template #body="{ data }">
-                    <span class="ticket-description">{{ data.description.substring(0, 100) + (data.description.length > 100 ? '...' : '') }}</span>
+                    <span class="ticket-description">{{ data.description }}</span>
                 </template>
             </Column>
 
@@ -575,6 +575,10 @@ const handleStatusChanged = (data) => {
 .ticket-description {
     color: var(--text-color-secondary);
     font-size: 0.9rem;
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
 }
 
 .ticket-status-tag,
