@@ -40,79 +40,65 @@ const occupancyClass = (rate) => {
 
 const chartData = computed(() => {
     if (!apiData.value) return null;
-    const { chart_data } = apiData.value;
+    const { months_data } = apiData.value;
 
     return {
-        labels: chart_data.labels,
-        datasets: chart_data.datasets.map((ds) => {
-            if (ds.type === 'line') {
-                return {
-                    ...ds,
-                    backgroundColor: COLORS.occupancy.bg,
-                    borderColor: COLORS.occupancy.border,
-                    borderWidth: 2.5,
-                    tension: 0.4,
-                    pointRadius: 5,
-                    pointHoverRadius: 7,
-                    pointBackgroundColor: COLORS.occupancy.border,
-                    fill: true,
-                };
-            }
-            const color = ds.label.includes('Admis') ? COLORS.admissions : COLORS.discharges;
-            return {
-                ...ds,
-                backgroundColor: color.bg,
-                borderColor: color.border,
+        labels: months_data.map((m) => m.label),
+        datasets: [
+            {
+                label: 'Tasa de Ocupación (%)',
+                data: months_data.map((m) => m.average_occupancy_rate),
+                backgroundColor: months_data.map((m) =>
+                    m.average_occupancy_rate >= 85
+                        ? 'rgba(239, 68, 68, 0.75)'
+                        : m.average_occupancy_rate >= 60
+                          ? 'rgba(245, 158, 11, 0.75)'
+                          : 'rgba(16, 185, 129, 0.75)'
+                ),
+                borderColor: months_data.map((m) =>
+                    m.average_occupancy_rate >= 85
+                        ? 'rgb(239, 68, 68)'
+                        : m.average_occupancy_rate >= 60
+                          ? 'rgb(245, 158, 11)'
+                          : 'rgb(16, 185, 129)'
+                ),
                 borderWidth: 1,
-                borderRadius: 4,
-                hoverBackgroundColor: color.border,
-            };
-        }),
+                borderRadius: 6,
+            },
+        ],
     };
 });
 
 const chartOptions = computed(() => {
     if (!apiData.value) return {};
-    const { chart_data, months_data } = apiData.value;
+    const { months_data } = apiData.value;
 
     return {
         responsive: true,
         maintainAspectRatio: false,
-        interaction: { mode: 'index', intersect: false },
         plugins: {
-            legend: {
-                position: 'top',
-                labels: { usePointStyle: true, padding: 20, font: { size: 13 } },
-            },
+            legend: { display: false },
             tooltip: {
                 padding: 12,
                 callbacks: {
-                    label: (ctx) => {
-                        const suffix = ctx.dataset.yAxisID === 'y1' ? '%' : '';
-                        return `  ${ctx.dataset.label}: ${ctx.parsed.y}${suffix}`;
-                    },
+                    label: (ctx) => `  Ocupación: ${ctx.parsed.y}%`,
                     footer: ([first]) => {
                         const mes = months_data[first.dataIndex];
-                        return [`Total activos: ${mes.total_attentions}`, `Prom. activos/día: ${mes.average_active_attentions}`];
+                        return [`Admisiones: ${mes.new_admissions}`, `Altas: ${mes.discharges}`, `Activos: ${mes.total_attentions}`];
                     },
                 },
             },
         },
         scales: {
-            x: {
-                grid: { display: false },
-                ticks: { font: { size: 12 } },
-            },
+            x: { grid: { display: false } },
             y: {
-                ...chart_data.suggested_scales.y,
-                ticks: { stepSize: 5 },
-            },
-            y1: {
-                ...chart_data.suggested_scales.y1,
+                min: 0,
+                max: 100,
                 ticks: {
                     stepSize: 20,
                     callback: (val) => `${val}%`,
                 },
+                grid: { color: 'rgba(0,0,0,0.05)' },
             },
         },
     };
