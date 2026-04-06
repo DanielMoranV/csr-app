@@ -66,5 +66,16 @@ export const hospitalStatistics = {
      * @param {Object} data - { start_date: string, end_date: string } (REQUERIDO)
      * @returns {Promise} Confirmación de limpieza con número de registros eliminados
      */
-    clearCache: (data) => axios.post('/hospital-statistics/clear', data)
+    clearCache: (data) => axios.post('/hospital-statistics/clear', data),
+
+    /**
+     * Obtiene comparativa mensual de hospitalizaciones
+     * @param {Object} params - { year: number, months: number[] } (REQUERIDO)
+     * @returns {Promise} months_data para KPI cards y chart_data para gráfico combinado
+     */
+    getMonthlyComparison: ({ year, months }) => {
+        const qs = new URLSearchParams({ year });
+        months.forEach((m) => qs.append('months[]', m));
+        return axios.get(`/hospital-statistics/monthly-comparison?${qs}`);
+    }
 };

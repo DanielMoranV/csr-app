@@ -3,6 +3,7 @@ import BedOccupancyAnalysis from '@/components/dashboard/BedOccupancyAnalysis.vu
 import DiagnosesChart from '@/components/dashboard/DiagnosesChart.vue';
 import DoctorsTable from '@/components/dashboard/DoctorsTable.vue';
 import KPICard from '@/components/dashboard/KPICard.vue';
+import MonthlyComparisonChart from '@/components/dashboard/MonthlyComparisonChart.vue';
 import { useHospitalStatistics } from '@/composables/useHospitalStatistics';
 import { useRealtimeEvents } from '@/composables/useRealtimeEvents';
 import { useDashboardStore } from '@/store/dashboardStore';
@@ -570,6 +571,22 @@ watch(showAdvancedStats, (newValue) => {
             <div v-else-if="!showAdvancedStats" class="show-stats-section">
                 <Button icon="pi pi-eye" label="Mostrar Estadísticas Avanzadas" @click="showAdvancedStats = true" severity="info" size="large" />
             </div>
+
+            <!-- Comparativa Mensual -->
+            <Card class="chart-card">
+                <template #title>
+                    <div class="flex align-items-center gap-2">
+                        <i class="pi pi-calendar text-primary"></i>
+                        <span>Comparativa Mensual</span>
+                    </div>
+                </template>
+                <template #subtitle>
+                    Admisiones, altas y tasa de ocupación por mes. Selecciona el año y los meses a comparar.
+                </template>
+                <template #content>
+                    <MonthlyComparisonChart />
+                </template>
+            </Card>
         </div>
     </div>
 </template>
