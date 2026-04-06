@@ -114,7 +114,9 @@ const load = async () => {
             year: year.value,
             months: [...selectedMonths.value].sort((a, b) => a - b),
         });
+        console.log('[MonthlyComparisonChart] response:', response);
         if (response.success) {
+            console.log('[MonthlyComparisonChart] data:', response.data);
             apiData.value = response.data;
         } else {
             throw new Error(response.message || 'Error al obtener datos');
