@@ -5,7 +5,6 @@ import Badge from 'primevue/badge';
 import Button from 'primevue/button';
 import Column from 'primevue/column';
 import DataTable from 'primevue/datatable';
-import SplitButton from 'primevue/splitbutton';
 import Tag from 'primevue/tag';
 import { useToast } from 'primevue/usetoast';
 import { ref } from 'vue';
@@ -166,6 +165,10 @@ const onRowUnselect = (event) => {
     emit('row-unselect', event.data);
 };
 
+const onRowClick = (event) => {
+    handleViewTicket(event.data);
+};
+
 // Funciones de acción mejoradas con accesibilidad
 const handleViewTicket = (ticketData) => {
     emit('view-ticket', ticketData);
@@ -200,6 +203,11 @@ const handleEditTicket = (ticketData) => {
 
 const handleDeleteTicket = (ticketData) => {
     emit('delete-ticket', ticketData);
+};
+
+const isCreatorOf = (ticketData) => {
+    const currentUser = authStore.getUser;
+    return currentUser && currentUser.id === ticketData.creator_user_id;
 };
 
 // Generar items del menú de acciones
@@ -278,10 +286,11 @@ const handleStatusChanged = (data) => {
             selectionMode="single"
             @rowSelect="onRowSelect"
             @rowUnselect="onRowUnselect"
+            @rowClick="onRowClick"
             class="ticket-datatable"
             :pt="{
                 header: { class: 'ticket-table-head' },
-                bodyrow: { class: 'ticket-table-row' }
+                bodyrow: { class: 'ticket-table-row ticket-table-row-clickable' }
             }"
             stripedRows
             scrollable
@@ -319,7 +328,7 @@ const handleStatusChanged = (data) => {
             </Column>
 
             <!-- Título del Ticket -->
-            <Column field="title" header="Título" :sortable="true" style="min-width: 200px" class="column-title">
+            <Column field="title" header="Título" :sortable="true" style="min-width: 200px; max-width: 280px" class="column-title">
                 <template #body="{ data }">
                     <div class="ticket-title-cell">
                         <i class="pi pi-tag title-icon"></i>
@@ -432,10 +441,38 @@ const handleStatusChanged = (data) => {
             </Column>
 
             <!-- Acciones -->
-            <Column header="Acciones" :exportable="false" style="min-width: 90px" class="column-actions">
+            <Column header="Acciones" :exportable="false" style="min-width: 110px" class="column-actions">
                 <template #body="{ data }">
-                    <div class="ticket-actions-compact" role="group" :aria-label="`Acciones para ticket ${data.title}`">
-                        <SplitButton :label="''" icon="pi pi-ellipsis-v" @click="handleViewTicket(data)" :model="getActionItems(data)" class="ticket-split-button" size="small" severity="secondary" v-tooltip.top="'Ver acciones'" />
+                    <div class="ticket-actions-compact" role="group" :aria-label="`Acciones para ticket ${data.title}`" @click.stop>
+                        <Button
+                            icon="pi pi-eye"
+                            size="small"
+                            severity="info"
+                            text
+                            rounded
+                            v-tooltip.top="'Ver detalles'"
+                            @click="handleViewTicket(data)"
+                        />
+                        <Button
+                            v-if="isCreatorOf(data)"
+                            icon="pi pi-pencil"
+                            size="small"
+                            severity="secondary"
+                            text
+                            rounded
+                            v-tooltip.top="'Editar'"
+                            @click="handleEditTicket(data)"
+                        />
+                        <Button
+                            v-if="isCreatorOf(data)"
+                            icon="pi pi-trash"
+                            size="small"
+                            severity="danger"
+                            text
+                            rounded
+                            v-tooltip.top="'Eliminar'"
+                            @click="handleDeleteTicket(data)"
+                        />
                     </div>
                 </template>
             </Column>
@@ -676,54 +713,12 @@ const handleStatusChanged = (data) => {
 .ticket-actions-compact {
     display: flex;
     align-items: center;
-    gap: 0.5rem;
+    gap: 0.25rem;
     justify-content: flex-start;
 }
 
-.ticket-split-button :deep(.p-splitbutton-defaultbutton) {
-    border-radius: 8px 0 0 8px;
-    padding: 0.5rem 0.75rem;
-    min-width: 2.5rem;
-}
-
-.ticket-split-button :deep(.p-splitbutton-menubutton) {
-    border-radius: 0 8px 8px 0;
-    padding: 0.5rem;
-    min-width: 2rem;
-}
-
-.ticket-split-button :deep(.p-menu) {
-    min-width: 180px;
-    border-radius: 8px;
-    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
-    border: 1px solid var(--surface-border);
-}
-
-.ticket-split-button :deep(.p-menu .p-menuitem-link) {
-    padding: 0.75rem 1rem;
-    border-radius: 6px;
-    margin: 0.125rem;
-    transition: all 0.2s ease;
-}
-
-.ticket-split-button :deep(.p-menu .p-menuitem-link:hover) {
-    background: var(--primary-50);
-    color: var(--primary-600);
-}
-
-.ticket-split-button :deep(.p-menu .p-menuitem-icon) {
-    margin-right: 0.75rem;
-    font-size: 0.875rem;
-}
-
-.ticket-split-button :deep(.p-menu .p-menuitem-text) {
-    font-weight: 500;
-    font-size: 0.875rem;
-}
-
-.ticket-split-button :deep(.p-menu .p-menuitem-separator) {
-    margin: 0.25rem 0;
-    border-color: var(--surface-border);
+:deep(.ticket-table-row-clickable) {
+    cursor: pointer;
 }
 
 /* Estados vacíos y carga */
@@ -983,22 +978,14 @@ const handleStatusChanged = (data) => {
     color: var(--primary-400);
 }
 
-/* Botones de acción en modo oscuro */
-.app-dark .ticket-split-button :deep(.p-menu),
-:root[data-theme='dark'] .ticket-split-button :deep(.p-menu) {
-    background: var(--surface-700);
-    border-color: var(--surface-600);
-}
 
-.app-dark .ticket-split-button :deep(.p-menu .p-menuitem-link),
-:root[data-theme='dark'] .ticket-split-button :deep(.p-menu .p-menuitem-link) {
-    color: var(--surface-100);
-}
-
-.app-dark .ticket-split-button :deep(.p-menu .p-menuitem-link:hover),
-:root[data-theme='dark'] .ticket-split-button :deep(.p-menu .p-menuitem-link:hover) {
-    background: var(--surface-600);
-    color: var(--surface-0);
+.ticket-title {
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+    word-break: break-word;
+    white-space: normal;
 }
 
 /* Estilos para columna de título con info móvil */
@@ -1120,12 +1107,6 @@ const handleStatusChanged = (data) => {
         justify-content: center;
     }
 
-    .ticket-split-button :deep(.p-splitbutton-defaultbutton),
-    .ticket-split-button :deep(.p-splitbutton-menubutton) {
-        min-width: 44px;
-        min-height: 44px;
-        padding: 0.75rem;
-    }
 }
 
 @media (max-width: 480px) {
@@ -1185,12 +1166,6 @@ const handleStatusChanged = (data) => {
         font-size: 0.75rem;
     }
 
-    /* Botones de acción aún más táctiles */
-    .ticket-split-button :deep(.p-splitbutton-defaultbutton),
-    .ticket-split-button :deep(.p-splitbutton-menubutton) {
-        min-width: 48px;
-        min-height: 48px;
-    }
 }
 
 /* Animaciones y transiciones */
@@ -1213,13 +1188,6 @@ const handleStatusChanged = (data) => {
     animation: fadeInUp 0.3s ease-out;
 }
 
-/* Mejoras de accesibilidad */
-.ticket-split-button :deep(.p-splitbutton-defaultbutton):focus,
-.ticket-split-button :deep(.p-splitbutton-menubutton):focus {
-    outline: 2px solid var(--primary-500);
-    outline-offset: 2px;
-    box-shadow: 0 0 0 4px rgba(59, 130, 246, 0.3);
-}
 
 .ticket-datatable :deep(.p-datatable-tbody > tr[tabindex='0']) {
     cursor: pointer;
