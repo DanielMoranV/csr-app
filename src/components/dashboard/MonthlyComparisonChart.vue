@@ -161,6 +161,7 @@ onMounted(load);
                         @click="toggleMonth(idx + 1)"
                         type="button"
                     >
+                        <span v-if="selectedMonths.includes(idx + 1)" class="mc-pill-tag">{{ selectedMonths.indexOf(idx + 1) + 1 }}</span>
                         {{ name }}
                     </button>
                 </div>
@@ -287,6 +288,20 @@ onMounted(load);
     background: var(--primary-600);
     border-color: var(--primary-600);
     color: #fff;
+}
+
+.mc-pill-tag {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 1.1rem;
+    height: 1.1rem;
+    border-radius: 3px;
+    background: rgba(255, 255, 255, 0.3);
+    font-size: 0.65rem;
+    font-weight: 700;
+    line-height: 1;
+    margin-right: 0.25rem;
 }
 
 .mc-load-button {
