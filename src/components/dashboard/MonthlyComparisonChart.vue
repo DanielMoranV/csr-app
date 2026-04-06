@@ -183,15 +183,15 @@ onMounted(load);
             <div v-for="mes in apiData.months_data" :key="mes.month" class="mc-kpi-card">
                 <span class="mc-kpi-label">{{ mes.label }}</span>
                 <div class="mc-kpi-main">
-                    <span class="mc-kpi-value">{{ mes.total_attentions }}</span>
-                    <span class="mc-kpi-unit">activos</span>
+                    <span :class="['mc-kpi-value', occupancyClass(mes.average_occupancy_rate)]">{{ mes.average_occupancy_rate }}%</span>
+                    <span class="mc-kpi-unit">ocupación</span>
                 </div>
                 <div class="mc-kpi-sub-row">
                     <span class="mc-kpi-sub">Admisiones: <strong>{{ mes.new_admissions }}</strong></span>
                     <span class="mc-kpi-sub">Altas: <strong>{{ mes.discharges }}</strong></span>
                 </div>
-                <span :class="['mc-kpi-occ', occupancyClass(mes.average_occupancy_rate)]">
-                    {{ mes.average_occupancy_rate }}% ocupación
+                <span class="mc-kpi-occ" style="color: var(--text-color-secondary)">
+                    {{ mes.total_attentions }} activos
                 </span>
             </div>
         </div>
