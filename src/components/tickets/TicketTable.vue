@@ -122,7 +122,7 @@ const getTimeAgo = (dateString) => {
     return `Hace ${Math.floor(days / 365)} años`;
 };
 
-const getDueIn = (dateString) => {
+const getDueIn = (dateString, status) => {
     if (!dateString) return '';
     const date = new Date(dateString);
     const now = new Date();
@@ -130,6 +130,7 @@ const getDueIn = (dateString) => {
 
     const days = Math.ceil(diff / (1000 * 60 * 60 * 24));
 
+    if (days < 0 && ['concluido', 'rechazado'].includes(status)) return 'Finalizado a tiempo';
     if (days < 0) return `Venció hace ${Math.abs(days)} día${Math.abs(days) === 1 ? '' : 's'}`;
     if (days === 0) return 'Vence hoy';
     if (days === 1) return 'Queda 1 día';
@@ -408,7 +409,7 @@ const handleStatusChanged = (data) => {
                             <i class="pi pi-calendar-times date-icon"></i>
                             <span>{{ formatDateTime(data.due_date) }}</span>
                         </div>
-                        <div class="date-relative">{{ getDueIn(data.due_date) }}</div>
+                        <div class="date-relative">{{ getDueIn(data.due_date, data.status) }}</div>
                     </div>
                     <div v-else class="ticket-date-cell no-due-date">
                         <i class="pi pi-ban"></i>
