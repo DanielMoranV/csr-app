@@ -7,9 +7,11 @@ import AppMenuItem from './AppMenuItem.vue';
 
 import { useAuthStore } from '@/store/authStore.js';
 import { useDocumentManagementStore } from '@/store/documentManagementStore.js';
+import { useTicketsStore } from '@/store/ticketsStore.js';
 
 const { filterMenuItems } = usePermissions();
 const docStore = useDocumentManagementStore();
+const ticketsStore = useTicketsStore();
 const authStore = useAuthStore();
 
 // Generar menú desde la configuración centralizada
@@ -21,14 +23,22 @@ const filteredMenu = computed(() => {
 
     // Inyectar badge de documentos pendientes
     const pendingCount = docStore.pendingMyTurnCount(authStore.getUser?.id);
-
     if (pendingCount > 0) {
         filtered.forEach((section) => {
             if (section.items) {
                 const docItem = section.items.find((item) => item.to === '/documentos');
-                if (docItem) {
-                    docItem.badge = pendingCount;
-                }
+                if (docItem) docItem.badge = pendingCount;
+            }
+        });
+    }
+
+    // Inyectar badge de comentarios de tickets sin leer
+    const ticketUnread = ticketsStore.globalUnreadCount;
+    if (ticketUnread > 0) {
+        filtered.forEach((section) => {
+            if (section.items) {
+                const ticketItem = section.items.find((item) => item.to === '/tickets');
+                if (ticketItem) ticketItem.badge = ticketUnread > 99 ? '99+' : ticketUnread;
             }
         });
     }
@@ -38,6 +48,7 @@ const filteredMenu = computed(() => {
 
 onMounted(() => {
     docStore.fetchPermittedDocuments();
+    ticketsStore.fetchGlobalUnreadCount();
 });
 </script>
 

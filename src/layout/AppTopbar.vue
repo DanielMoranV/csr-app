@@ -2,18 +2,25 @@
 import { useAuth } from '@/composables/useAuth';
 import { useLayout } from '@/layout/composables/layout';
 import { useApiConfigStore } from '@/store/apiConfigStore';
-import { computed } from 'vue';
+import { useNotificationsStore } from '@/store/notificationsStore';
+import { computed, onMounted } from 'vue';
 import { useConfirm } from 'primevue/useconfirm';
 import { useToast } from 'primevue/usetoast';
 import { useRouter } from 'vue-router';
 import AppConfigurator from './AppConfigurator.vue';
+import NotificationBell from '@/components/notifications/NotificationBell.vue';
 
 const { toggleMenu, toggleDarkMode, isDarkTheme } = useLayout();
 const { logout, user } = useAuth();
 const apiConfigStore = useApiConfigStore();
+const notificationsStore = useNotificationsStore();
 const router = useRouter();
 const toast = useToast();
 const confirm = useConfirm();
+
+onMounted(() => {
+    notificationsStore.fetchUnreadCount();
+});
 
 // Computadas para el indicador de API
 const apiMode = computed(() => apiConfigStore.getCurrentMode);
@@ -80,6 +87,8 @@ const handleLogout = () => {
                     </span>
                 </div>
                 
+                <NotificationBell />
+
                 <button type="button" class="layout-topbar-action" @click="toggleDarkMode">
                     <i :class="['pi', { 'pi-moon': isDarkTheme, 'pi-sun': !isDarkTheme }]"></i>
                 </button>

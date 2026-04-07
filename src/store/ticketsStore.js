@@ -437,6 +437,18 @@ export const useTicketsStore = defineStore('tickets', () => {
         }
     };
 
+    // --- GLOBAL UNREAD COMMENTS COUNT ---
+    const fetchGlobalUnreadCount = async () => {
+        try {
+            const response = await TicketService.getGlobalUnreadCommentsCount();
+            if (response && response.success) {
+                state.globalUnreadCount = response.data?.unread_count || 0;
+            }
+        } catch {
+            // silent — badge is non-critical
+        }
+    };
+
     // --- UI ACTIONS ---
     const setFilter = (key, value) => {
         state.filters[key] = value;
@@ -452,13 +464,14 @@ export const useTicketsStore = defineStore('tickets', () => {
     };
 
     return {
-        // State (direct access)
+        // State
         tickets: computed(() => state.tickets),
         isLoading: computed(() => state.isLoading),
         isSaving: computed(() => state.isSaving),
         isDeleting: computed(() => state.isDeleting),
-        filters: state.filters, // Direct access for v-model
+        filters: state.filters,
         pagination: computed(() => state.pagination),
+        globalUnreadCount: computed(() => state.globalUnreadCount),
 
         // Getters
         allTickets,
@@ -471,6 +484,7 @@ export const useTicketsStore = defineStore('tickets', () => {
         updateTicket,
         deleteTicket,
         updateTicketStatus,
+        fetchGlobalUnreadCount,
 
         // Real-time handlers
         handleTicketCreated,
@@ -480,6 +494,7 @@ export const useTicketsStore = defineStore('tickets', () => {
         handleTicketCommentCreated,
         handleTicketCommentUpdated,
         handleTicketCommentDeleted,
+        handleTicketCommentRead,
         handleTicketDeleted,
         initEchoListeners,
         leaveEchoChannels,

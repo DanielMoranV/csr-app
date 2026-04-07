@@ -126,6 +126,35 @@ const newCommentContent = ref('');
 const editingCommentId = ref(null);
 const editingCommentContent = ref('');
 
+// Active tab tracking (0 = Detalles, 1 = Comentarios, 2 = Adjuntos)
+const activeTabIndex = ref(0);
+
+/**
+ * Mark all visible comments (not authored by current user) as read.
+ * Fire-and-forget, idempotent — safe to call multiple times.
+ * After marking, refresh the global unread badge in the sidebar.
+ */
+const markVisibleCommentsAsRead = async () => {
+    const ticketId = props.ticket?.id;
+    if (!ticketId || !isEditing.value) return;
+
+    const nonOwnComments = ticketCommentsStore.allComments.filter((c) => !isOwnComment(c));
+    if (nonOwnComments.length === 0) return;
+
+    // Call mark-as-read for each unread comment (idempotent)
+    await Promise.allSettled(nonOwnComments.map((c) => ticketCommentsStore.markCommentAsRead(ticketId, c.id)));
+
+    // Refresh the sidebar badge after marking
+    ticketsStore.fetchGlobalUnreadCount();
+};
+
+// Auto-mark comments as read when user switches to the Comments tab
+watch(activeTabIndex, (newIndex) => {
+    if (newIndex === 1) {
+        markVisibleCommentsAsRead();
+    }
+});
+
 // Computed para ancho responsivo del diálogo
 const dialogWidth = computed(() => {
     if (typeof window !== 'undefined') {
@@ -565,7 +594,7 @@ const confirmDeleteComment = (comment) => {
             </div>
         </template>
 
-        <TabView>
+        <TabView v-model:activeIndex="activeTabIndex">
             <TabPanel header="📝 Detalles del Ticket">
                 <form @submit.prevent="saveTicket" class="mt-3">
                     <!-- Fila 1: Título y Descripción -->
@@ -859,6 +888,22 @@ const confirmDeleteComment = (comment) => {
                                                 editado {{ formatCommentDate(comment.updated_at) }}
                                             </span>
                                         </div>
+                                        <!-- Visto por X (WhatsApp-style, solo en comentarios propios) -->
+                                        <div
+                                            v-if="isOwnComment(comment) && ticketCommentsStore.getReadReceiptsForComment(comment.id).length > 0"
+                                            class="comment-seen-by"
+                                        >
+                                            <i class="pi pi-check-circle"></i>
+                                            <span>
+                                                Visto por {{ ticketCommentsStore.getReadReceiptsForComment(comment.id)[0].read_by.name }}
+                                                <template v-if="ticketCommentsStore.getReadReceiptsForComment(comment.id).length > 1">
+                                                    y {{ ticketCommentsStore.getReadReceiptsForComment(comment.id).length - 1 }} más
+                                                </template>
+                                            </span>
+                                            <span class="comment-seen-time">
+                                                · {{ formatCommentDate(ticketCommentsStore.getReadReceiptsForComment(comment.id)[0].read_at) }}
+                                            </span>
+                                        </div>
                                     </template>
                                 </div>
                             </div>
@@ -1150,6 +1195,26 @@ const confirmDeleteComment = (comment) => {
 
 .comment-edited-tag i {
     font-size: 0.65rem;
+}
+
+/* --- "Visto por X" — WhatsApp-style read receipt --- */
+.comment-seen-by {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.3rem;
+    font-size: 0.72rem;
+    color: var(--primary-color-text);
+    opacity: 0.75;
+    margin-top: 0.2rem;
+}
+
+.comment-seen-by i {
+    font-size: 0.75rem;
+    color: #60a5fa; /* blue-400 — double-check blue */
+}
+
+.comment-seen-time {
+    opacity: 0.7;
 }
 
 /* --- Status readonly badge --- */
