@@ -12,6 +12,7 @@ import Select from 'primevue/select';
 import TabPanel from 'primevue/tabpanel';
 import TabView from 'primevue/tabview';
 import Textarea from 'primevue/textarea';
+import { useConfirm } from 'primevue/useconfirm';
 import { computed, nextTick, reactive, ref, watch } from 'vue';
 import TicketAttachments from './TicketAttachments.vue';
 import TicketStatusChanger from './TicketStatusChanger.vue';
@@ -42,6 +43,7 @@ const emit = defineEmits(['update:visible', 'save-ticket', 'close', 'switch-to-e
 const authStore = useAuthStore();
 const ticketCommentsStore = useTicketCommentsStore();
 const ticketsStore = useTicketsStore();
+const confirm = useConfirm();
 
 // Reactive variables for search results
 const clientSearchResults = ref([]);
@@ -120,6 +122,10 @@ const ticketForm = reactive({
 
 const newCommentContent = ref('');
 
+// Comment editing state
+const editingCommentId = ref(null);
+const editingCommentContent = ref('');
+
 // Computed para ancho responsivo del diálogo
 const dialogWidth = computed(() => {
     if (typeof window !== 'undefined') {
@@ -152,27 +158,15 @@ const statusOptions = ref([
     { label: '🚫 Anulado', value: 'anulado', color: '#6B7280', description: 'Ticket cancelado o anulado' }
 ]);
 
-// Computed para opciones de estado filtradas por autorización
+// Status is always read-only in the form — changes must go through TicketStatusChanger (PATCH /tickets/{id}/status)
+// filteredStatusOptions is kept only for display purposes in create mode
 const filteredStatusOptions = computed(() => {
+    // Creation: status is fixed to 'pendiente', this computed is not used in template for create
+    // Edit/View: show only the current status as the sole option (read-only dropdown)
     if (!isEditing.value) {
         return statusOptions.value.filter((opt) => opt.value === 'pendiente');
     }
-
-    const currentUser = authStore.getUser;
-    const isCreator = currentUser && currentUser.id === currentTicket.value?.creator_user_id;
-    const isAssignee = currentUser && currentUser.id === currentTicket.value?.assignee_user_id;
     const currentStatus = currentTicket.value?.status;
-
-    if (isCreator) {
-        if (currentStatus === 'pendiente') {
-            return statusOptions.value.filter((opt) => opt.value === 'pendiente' || opt.value === 'anulado');
-        } else {
-            return statusOptions.value.filter((opt) => opt.value === currentStatus);
-        }
-    } else if (isAssignee) {
-        return statusOptions.value.filter((opt) => opt.value === currentStatus || opt.value === 'en proceso' || opt.value === 'concluido' || opt.value === 'rechazado');
-    }
-
     return statusOptions.value.filter((opt) => opt.value === currentStatus);
 });
 
@@ -422,7 +416,8 @@ const validateField = (fieldName) => {
 };
 
 const validateAllFields = () => {
-    const fieldsToValidate = ['title', 'description', 'priority', 'status'];
+    // Only validate title, description and priority — status is managed by TicketStatusChanger
+    const fieldsToValidate = ['title', 'description', 'priority'];
     fieldsToValidate.forEach((field) => {
         validateField(field);
     });
@@ -443,7 +438,8 @@ const getFieldError = (fieldName) => {
 // Computadas
 const isFormValid = computed(() => {
     const hasErrors = Object.keys(validationErrors.value).length > 0;
-    const hasRequiredFields = ticketForm.title && ticketForm.description && ticketForm.priority && ticketForm.status;
+    // status is no longer a required user-input field (always 'pendiente' on create, managed via TicketStatusChanger on edit)
+    const hasRequiredFields = ticketForm.title && ticketForm.description && ticketForm.priority;
     return hasRequiredFields && !hasErrors;
 });
 
@@ -494,6 +490,64 @@ const isOwnComment = (comment) => {
 const formatCommentDate = (dateString) => {
     const date = new Date(dateString);
     return date.toLocaleString('es-ES', { hour: 'numeric', minute: 'numeric', day: 'numeric', month: 'short' });
+};
+
+const wasEdited = (comment) => {
+    if (!comment.updated_at || !comment.created_at) return false;
+    // Consider edited if updated more than 5 seconds after creation
+    return new Date(comment.updated_at) - new Date(comment.created_at) > 5000;
+};
+
+// --- Inline comment editing ---
+const startEditComment = (comment) => {
+    editingCommentId.value = comment.id;
+    editingCommentContent.value = comment.content;
+};
+
+const cancelEditComment = () => {
+    editingCommentId.value = null;
+    editingCommentContent.value = '';
+};
+
+const submitEditComment = async (comment) => {
+    const trimmed = editingCommentContent.value.trim();
+    if (!trimmed || trimmed === comment.content) {
+        cancelEditComment();
+        return;
+    }
+    try {
+        await ticketCommentsStore.updateComment(props.ticket.id, comment.id, { content: trimmed });
+        cancelEditComment();
+    } catch (error) {
+        const status = error?.response?.status || error?.status;
+        if (status === 403) {
+            // This shouldn't happen since we only show the button for own comments,
+            // but handle defensively.
+            cancelEditComment();
+        }
+    }
+};
+
+const confirmDeleteComment = (comment) => {
+    confirm.require({
+        message: '¿Estás seguro de que deseas eliminar este comentario? Esta acción no se puede deshacer.',
+        header: 'Eliminar Comentario',
+        icon: 'pi pi-exclamation-triangle',
+        rejectLabel: 'Cancelar',
+        acceptLabel: 'Eliminar',
+        rejectClass: 'p-button-secondary p-button-outlined',
+        acceptClass: 'p-button-danger',
+        accept: async () => {
+            try {
+                await ticketCommentsStore.deleteComment(props.ticket.id, comment.id);
+            } catch (error) {
+                const status = error?.response?.status || error?.status;
+                if (status === 403) {
+                    // Should not happen for own comments — handled defensively
+                }
+            }
+        }
+    });
 };
 </script>
 
@@ -596,32 +650,27 @@ const formatCommentDate = (dateString) => {
 
                         <div class="col-12 md:col-6">
                             <div class="field">
-                                <label for="status" class="compact-label">
+                                <label class="compact-label">
                                     <i class="pi pi-flag text-blue-500 mr-2"></i>
-                                    Estado del Ticket *
+                                    Estado del Ticket
                                 </label>
-                                <Select
-                                    id="status"
-                                    v-model="ticketForm.status"
-                                    :options="filteredStatusOptions"
-                                    optionLabel="label"
-                                    optionValue="value"
-                                    :disabled="isViewMode || !canEdit"
-                                    placeholder="Seleccionar estado"
-                                    :class="{ 'p-invalid': getFieldError('status') }"
-                                    @change="validateField('status')"
-                                    class="compact-input-select status-select"
-                                    fluid
-                                >
-                                    <template #option="slotProps">
-                                        <div class="status-option" :style="{ borderLeft: `4px solid ${slotProps.option.color}` }">
-                                            <div class="font-semibold">{{ slotProps.option.label }}</div>
-                                            <div class="text-sm text-500">{{ slotProps.option.description }}</div>
-                                        </div>
-                                    </template>
-                                </Select>
-                                <small class="field-help text-500">Estado actual del proceso de resolución</small>
-                                <small class="p-error" v-if="getFieldError('status')">{{ getFieldError('status') }}</small>
+                                <!-- Status is read-only here. Use the TicketStatusChanger in the footer to change it. -->
+                                <div class="status-readonly-field">
+                                    <span
+                                        v-if="ticketForm.status"
+                                        class="status-badge-display"
+                                        :class="`status-badge-${ticketForm.status?.replace(' ', '-')}`"
+                                    >
+                                        <i :class="['pi', statusOptions.find(s => s.value === ticketForm.status)?.icon || 'pi-circle']" class="mr-1"></i>
+                                        {{ statusOptions.find(s => s.value === ticketForm.status)?.label || ticketForm.status }}
+                                    </span>
+                                    <span v-else class="status-badge-display status-badge-pending">
+                                        <i class="pi pi-clock mr-1"></i> Pendiente
+                                    </span>
+                                    <small v-if="!isCreateMode" class="field-help text-500 block mt-1">
+                                        <i class="pi pi-info-circle"></i> Usa el botón de estado del footer para cambiar
+                                    </small>
+                                </div>
                             </div>
                         </div>
                     </div>
@@ -728,18 +777,89 @@ const formatCommentDate = (dateString) => {
             <TabPanel header="💬 Comentarios" :disabled="!isEditing">
                 <div class="chat-wrapper">
                     <div ref="chatContainer" class="chat-container">
-                        <div v-if="ticketCommentsStore.state.isLoading" class="text-center p-4"><i class="pi pi-spin pi-spinner text-xl"></i> Cargando comentarios...</div>
+                        <div v-if="ticketCommentsStore.state.isLoading" class="text-center p-4">
+                            <i class="pi pi-spin pi-spinner text-xl"></i> Cargando comentarios...
+                        </div>
                         <div v-else-if="ticketCommentsStore.allComments.length === 0" class="text-center p-4 text-500">
                             <i class="pi pi-comment text-4xl text-300 mb-3"></i>
                             <div>No hay comentarios para este ticket.</div>
                             <div class="text-sm mt-2">Los comentarios y actualizaciones del equipo aparecerán aquí.</div>
                         </div>
                         <div v-else class="comments-list">
-                            <div v-for="comment in ticketCommentsStore.allComments" :key="comment.id" class="comment-row" :class="{ 'is-own': isOwnComment(comment) }">
+                            <div
+                                v-for="comment in ticketCommentsStore.allComments"
+                                :key="comment.id"
+                                class="comment-row"
+                                :class="{ 'is-own': isOwnComment(comment) }"
+                            >
                                 <div class="comment-bubble">
-                                    <div class="comment-header font-bold">{{ isOwnComment(comment) ? 'Tú' : comment.user?.name || 'Usuario Desconocido' }}</div>
-                                    <div class="comment-content text-700">{{ comment.content }}</div>
-                                    <div class="comment-footer text-xs text-500 mt-1">{{ formatCommentDate(comment.created_at) }}</div>
+                                    <!-- Header: author + actions -->
+                                    <div class="comment-header-row">
+                                        <span class="comment-author font-bold">
+                                            {{ isOwnComment(comment) ? 'Tú' : comment.user?.name || 'Usuario Desconocido' }}
+                                        </span>
+                                        <div v-if="isOwnComment(comment) && editingCommentId !== comment.id" class="comment-actions">
+                                            <button
+                                                class="comment-action-btn"
+                                                title="Editar comentario"
+                                                @click="startEditComment(comment)"
+                                                :disabled="ticketCommentsStore.state.isDeleting"
+                                            >
+                                                <i class="pi pi-pencil"></i>
+                                            </button>
+                                            <button
+                                                class="comment-action-btn comment-action-delete"
+                                                title="Eliminar comentario"
+                                                @click="confirmDeleteComment(comment)"
+                                                :disabled="ticketCommentsStore.state.isDeleting"
+                                            >
+                                                <i class="pi pi-trash"></i>
+                                            </button>
+                                        </div>
+                                    </div>
+
+                                    <!-- Inline edit mode -->
+                                    <div v-if="editingCommentId === comment.id" class="comment-edit-form">
+                                        <Textarea
+                                            v-model="editingCommentContent"
+                                            rows="3"
+                                            class="comment-edit-textarea"
+                                            fluid
+                                            auto-resize
+                                            @keydown.escape="cancelEditComment"
+                                        />
+                                        <div class="comment-edit-actions">
+                                            <Button
+                                                label="Guardar"
+                                                icon="pi pi-check"
+                                                size="small"
+                                                @click="submitEditComment(comment)"
+                                                :loading="ticketCommentsStore.state.isUpdating"
+                                                :disabled="!editingCommentContent.trim() || editingCommentContent.trim() === comment.content"
+                                            />
+                                            <Button
+                                                label="Cancelar"
+                                                icon="pi pi-times"
+                                                size="small"
+                                                severity="secondary"
+                                                outlined
+                                                @click="cancelEditComment"
+                                                :disabled="ticketCommentsStore.state.isUpdating"
+                                            />
+                                        </div>
+                                    </div>
+
+                                    <!-- Normal display mode -->
+                                    <template v-else>
+                                        <div class="comment-content text-700">{{ comment.content }}</div>
+                                        <div class="comment-footer text-xs text-500 mt-1">
+                                            <span>{{ formatCommentDate(comment.created_at) }}</span>
+                                            <span v-if="wasEdited(comment)" class="comment-edited-tag">
+                                                <i class="pi pi-pencil"></i>
+                                                editado {{ formatCommentDate(comment.updated_at) }}
+                                            </span>
+                                        </div>
+                                    </template>
                                 </div>
                             </div>
                         </div>
@@ -920,9 +1040,198 @@ const formatCommentDate = (dateString) => {
     opacity: 0.8;
 }
 
-.comment-footer {
-    text-align: right;
+/* --- Comment header row (author + action buttons) --- */
+.comment-header-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.5rem;
+    margin-bottom: 0.25rem;
+}
+
+.comment-author {
+    font-size: 0.8rem;
+    color: var(--text-color-secondary);
+}
+
+.comment-row.is-own .comment-author {
+    color: var(--primary-color-text);
+    opacity: 0.8;
+}
+
+.comment-actions {
+    display: flex;
+    gap: 0.25rem;
+    opacity: 0;
+    transition: opacity 0.2s ease;
+}
+
+.comment-bubble:hover .comment-actions {
+    opacity: 1;
+}
+
+.comment-action-btn {
+    background: transparent;
+    border: none;
+    cursor: pointer;
+    padding: 0.2rem 0.35rem;
+    border-radius: 6px;
+    color: var(--primary-color-text);
     opacity: 0.7;
+    transition: opacity 0.2s, background 0.2s;
+    font-size: 0.75rem;
+    line-height: 1;
+}
+
+.comment-action-btn:hover:not(:disabled) {
+    opacity: 1;
+    background: rgba(255, 255, 255, 0.2);
+}
+
+.comment-action-btn:disabled {
+    cursor: not-allowed;
+    opacity: 0.3;
+}
+
+.comment-action-delete:hover:not(:disabled) {
+    color: #fca5a5;
+}
+
+.comment-row:not(.is-own) .comment-action-btn {
+    color: var(--text-color-secondary);
+}
+
+.comment-row:not(.is-own) .comment-action-btn:hover:not(:disabled) {
+    background: var(--surface-hover);
+    color: var(--text-color);
+}
+
+.comment-row:not(.is-own) .comment-action-delete:hover:not(:disabled) {
+    color: var(--red-500);
+}
+
+/* --- Inline edit form --- */
+.comment-edit-form {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+    margin-top: 0.25rem;
+}
+
+.comment-edit-textarea {
+    border-radius: 8px;
+    font-size: 0.9rem;
+}
+
+.comment-edit-actions {
+    display: flex;
+    gap: 0.5rem;
+    justify-content: flex-end;
+}
+
+/* --- Edited indicator --- */
+.comment-footer {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    flex-wrap: wrap;
+    opacity: 0.7;
+}
+
+.comment-edited-tag {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.25rem;
+    font-style: italic;
+    color: inherit;
+    opacity: 0.75;
+    font-size: 0.75rem;
+}
+
+.comment-edited-tag i {
+    font-size: 0.65rem;
+}
+
+/* --- Status readonly badge --- */
+.status-readonly-field {
+    padding: 0.5rem 0;
+}
+
+.status-badge-display {
+    display: inline-flex;
+    align-items: center;
+    padding: 0.4rem 0.85rem;
+    border-radius: 20px;
+    font-size: 0.875rem;
+    font-weight: 600;
+    letter-spacing: 0.02em;
+}
+
+.status-badge-pendiente {
+    background: #fef3c7;
+    color: #92400e;
+    border: 1px solid #fcd34d;
+}
+
+.status-badge-en-proceso {
+    background: #dbeafe;
+    color: #1e40af;
+    border: 1px solid #93c5fd;
+}
+
+.status-badge-concluido {
+    background: #d1fae5;
+    color: #065f46;
+    border: 1px solid #6ee7b7;
+}
+
+.status-badge-rechazado {
+    background: #fee2e2;
+    color: #991b1b;
+    border: 1px solid #fca5a5;
+}
+
+.status-badge-anulado {
+    background: #f3f4f6;
+    color: #374151;
+    border: 1px solid #d1d5db;
+}
+
+.status-badge-pending {
+    background: #fef3c7;
+    color: #92400e;
+    border: 1px solid #fcd34d;
+}
+
+/* Dark mode adjustments */
+:root.app-dark .status-badge-pendiente {
+    background: rgba(251, 191, 36, 0.15);
+    color: #fcd34d;
+    border-color: rgba(251, 191, 36, 0.3);
+}
+
+:root.app-dark .status-badge-en-proceso {
+    background: rgba(59, 130, 246, 0.15);
+    color: #93c5fd;
+    border-color: rgba(59, 130, 246, 0.3);
+}
+
+:root.app-dark .status-badge-concluido {
+    background: rgba(16, 185, 129, 0.15);
+    color: #6ee7b7;
+    border-color: rgba(16, 185, 129, 0.3);
+}
+
+:root.app-dark .status-badge-rechazado {
+    background: rgba(239, 68, 68, 0.15);
+    color: #fca5a5;
+    border-color: rgba(239, 68, 68, 0.3);
+}
+
+:root.app-dark .status-badge-anulado {
+    background: rgba(107, 114, 128, 0.15);
+    color: #9ca3af;
+    border-color: rgba(107, 114, 128, 0.3);
 }
 
 .new-comment-form {

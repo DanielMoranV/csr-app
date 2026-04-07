@@ -169,7 +169,7 @@ export const useTicketsStore = defineStore('tickets', () => {
 
     const handleTicketCommentUpdated = (e) => {
         const comment = e.comment;
-        const ticketId = e.comment.ticket_id; // Corrected: get ticket_id from the comment object
+        const ticketId = e.comment.ticket_id;
 
         const ticket = state.tickets.find((t) => t.id === ticketId);
         if (ticket) {
@@ -183,6 +183,17 @@ export const useTicketsStore = defineStore('tickets', () => {
                 detail: `Comentario actualizado en: ${ticket.title}`,
                 life: 4000
             });
+        }
+    };
+
+    const handleTicketCommentDeleted = (e) => {
+        const commentId = e.comment_id;
+        const ticketId = e.ticket_id;
+
+        const ticket = state.tickets.find((t) => t.id === ticketId);
+        if (ticket) {
+            const commentsStore = useTicketCommentsStore();
+            commentsStore.handleCommentDeleted(commentId, ticketId);
         }
     };
 
@@ -239,6 +250,7 @@ export const useTicketsStore = defineStore('tickets', () => {
                 .listen('.ticket.status.changed', handleTicketStatusChanged)
                 .listen('.ticket.comment.created', handleTicketCommentCreated)
                 .listen('.ticket.comment.updated', handleTicketCommentUpdated)
+                .listen('.ticket.comment.deleted', handleTicketCommentDeleted)
                 .listen('.ticket.deleted', handleTicketDeleted);
         }
 
@@ -269,6 +281,7 @@ export const useTicketsStore = defineStore('tickets', () => {
                 .listen('.ticket.status.changed', handleTicketStatusChanged)
                 .listen('.ticket.comment.created', handleTicketCommentCreated)
                 .listen('.ticket.comment.updated', handleTicketCommentUpdated)
+                .listen('.ticket.comment.deleted', handleTicketCommentDeleted)
                 .listen('.ticket.deleted', handleTicketDeleted);
         }
     };
@@ -453,6 +466,7 @@ export const useTicketsStore = defineStore('tickets', () => {
         handleTicketStatusChanged,
         handleTicketCommentCreated,
         handleTicketCommentUpdated,
+        handleTicketCommentDeleted,
         handleTicketDeleted,
         initEchoListeners,
         leaveEchoChannels,

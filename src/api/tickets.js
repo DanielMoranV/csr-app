@@ -2,10 +2,13 @@ import api from './axios';
 
 export const TicketService = {
     async getTickets(params = {}) {
-        // Clean up filters: remove null, undefined, or empty string values
+        // Whitelist of parameters accepted by the backend (strict validation since backend returns 422 for unknown/invalid params)
+        const ALLOWED_FILTERS = new Set(['status', 'priority', 'search', 'ticket_id', 'per_page', 'page']);
+
+        // Clean up: keep only whitelisted, non-null, non-empty values
         const activeFilters = {};
         for (const key in params) {
-            if (params[key] !== null && params[key] !== undefined && params[key] !== '') {
+            if (ALLOWED_FILTERS.has(key) && params[key] !== null && params[key] !== undefined && params[key] !== '') {
                 activeFilters[key] = params[key];
             }
         }
@@ -24,7 +27,11 @@ export const TicketService = {
     },
 
     async updateTicket(id, ticketData) {
-        const response = await api.put(`/tickets/${id}`, ticketData);
+        // Strip 'status' from the payload — PUT /tickets/{id} no longer accepts it.
+        // Status changes must go through PATCH /tickets/{id}/status exclusively.
+        // eslint-disable-next-line no-unused-vars
+        const { status, ...dataWithoutStatus } = ticketData;
+        const response = await api.put(`/tickets/${id}`, dataWithoutStatus);
         return response;
     },
 
