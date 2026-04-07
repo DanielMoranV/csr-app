@@ -229,7 +229,7 @@ const handleRefresh = async () => {
         toast.add({
             severity: 'success',
             summary: 'Dashboard Refrescado',
-            detail: `Se eliminaron ${recordsDeleted} registros de caché y se regeneraron las estadísticas`,
+            detail: `Datos actualizados correctamente`,
             life: 4000
         });
     } catch (err) {
@@ -580,9 +580,7 @@ watch(showAdvancedStats, (newValue) => {
                         <span>Comparativa Mensual</span>
                     </div>
                 </template>
-                <template #subtitle>
-                    Admisiones, altas y tasa de ocupación por mes. Selecciona el año y los meses a comparar.
-                </template>
+                <template #subtitle> Admisiones, altas y tasa de ocupación por mes. Selecciona el año y los meses a comparar. </template>
                 <template #content>
                     <MonthlyComparisonChart />
                 </template>
