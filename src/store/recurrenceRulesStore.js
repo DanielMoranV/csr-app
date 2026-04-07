@@ -105,15 +105,12 @@ export const useRecurrenceRulesStore = defineStore('recurrenceRules', () => {
     const deleteRule = async (id) => {
         state.isDeleting = true;
         try {
-            const response = await TicketRecurrenceRuleService.deleteRule(id);
-            if (apiUtils.isSuccess(response)) {
-                const index = state.rules.findIndex((r) => r.id === id);
-                if (index !== -1) {
-                    state.rules.splice(index, 1);
-                }
-                return response;
+            // DELETE returns 204 No Content — no body to check, success = no exception thrown
+            await TicketRecurrenceRuleService.deleteRule(id);
+            const index = state.rules.findIndex((r) => r.id === id);
+            if (index !== -1) {
+                state.rules.splice(index, 1);
             }
-            throw response;
         } catch (error) {
             throw error;
         } finally {

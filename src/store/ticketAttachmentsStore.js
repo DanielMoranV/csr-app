@@ -42,7 +42,7 @@ export const useTicketAttachmentsStore = defineStore('ticketAttachments', () => 
         state.error = null;
         try {
             const formData = new FormData();
-            formData.append('file', file);
+            formData.append('attachment', file);
 
             const response = await TicketAttachmentService.uploadAttachment(ticketId, formData);
             if (apiUtils.isSuccess(response)) {
@@ -86,12 +86,9 @@ export const useTicketAttachmentsStore = defineStore('ticketAttachments', () => 
         state.isDeleting = true;
         state.error = null;
         try {
-            const response = await TicketAttachmentService.deleteAttachment(ticketId, attachmentId);
-            if (apiUtils.isSuccess(response)) {
-                state.attachments = state.attachments.filter((att) => att.id !== attachmentId);
-                return response;
-            }
-            throw response;
+            // DELETE returns 204 No Content — no body to check, success = no exception thrown
+            await TicketAttachmentService.deleteAttachment(ticketId, attachmentId);
+            state.attachments = state.attachments.filter((att) => att.id !== attachmentId);
         } catch (error) {
             state.error = error;
             throw error;

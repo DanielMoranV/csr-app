@@ -231,28 +231,6 @@ export const useTicketsStore = defineStore('tickets', () => {
         }
     };
 
-    const handleTicketDeleted = (e) => {
-        const ticketId = e.ticket_id;
-        const index = state.tickets.findIndex((t) => t.id === ticketId);
-        if (index !== -1) {
-            const deletedTicket = state.tickets[index];
-            state.tickets.splice(index, 1);
-            state.pagination.total--;
-
-            toast.add({
-                severity: 'warn',
-                summary: 'Ticket Eliminado',
-                detail: `El ticket "${deletedTicket.title}" ha sido eliminado`,
-                life: 5000
-            });
-        }
-
-        // Si el ticket eliminado era el actual, limpiarlo
-        if (state.currentTicket && state.currentTicket.id === ticketId) {
-            state.currentTicket = null;
-        }
-    };
-
     const initEchoListeners = () => {
         const user = authStore.getUser;
         const userId = user?.id;
@@ -281,8 +259,7 @@ export const useTicketsStore = defineStore('tickets', () => {
                 .listen('.ticket.comment.created', handleTicketCommentCreated)
                 .listen('.ticket.comment.updated', handleTicketCommentUpdated)
                 .listen('.ticket.comment.deleted', handleTicketCommentDeleted)
-                .listen('.ticket.comment.read', handleTicketCommentRead)   // only on private channel
-                .listen('.ticket.deleted', handleTicketDeleted);
+                .listen('.ticket.comment.read', handleTicketCommentRead);   // only on private channel
         }
 
         if (userPosition) {
@@ -312,8 +289,7 @@ export const useTicketsStore = defineStore('tickets', () => {
                 .listen('.ticket.status.changed', handleTicketStatusChanged)
                 .listen('.ticket.comment.created', handleTicketCommentCreated)
                 .listen('.ticket.comment.updated', handleTicketCommentUpdated)
-                .listen('.ticket.comment.deleted', handleTicketCommentDeleted)
-                .listen('.ticket.deleted', handleTicketDeleted);
+                .listen('.ticket.comment.deleted', handleTicketCommentDeleted);
         }
     };
 
@@ -367,10 +343,9 @@ export const useTicketsStore = defineStore('tickets', () => {
         state.isSaving = true;
         try {
             const response = await TicketService.createTicket(ticketData);
-            toast.add({ severity: 'success', summary: 'Ticket Creado', detail: `Ticket #${response.id} creado correctamente.`, life: 3000 });
+            toast.add({ severity: 'success', summary: 'Ticket Creado', detail: `Ticket #${response.data?.id} creado correctamente.`, life: 3000 });
             return response;
         } catch (error) {
-            // Error handled
             throw error;
         } finally {
             state.isSaving = false;
@@ -381,10 +356,9 @@ export const useTicketsStore = defineStore('tickets', () => {
         state.isSaving = true;
         try {
             const response = await TicketService.updateTicket(id, ticketData);
-            toast.add({ severity: 'success', summary: 'Ticket Actualizado', detail: `Ticket #${response.id} actualizado correctamente.`, life: 3000 });
+            toast.add({ severity: 'success', summary: 'Ticket Actualizado', detail: `Ticket #${response.data?.id} actualizado correctamente.`, life: 3000 });
             return response;
         } catch (error) {
-            // Error handled
             throw error;
         } finally {
             state.isSaving = false;
@@ -567,7 +541,6 @@ export const useTicketsStore = defineStore('tickets', () => {
         handleTicketCommentUpdated,
         handleTicketCommentDeleted,
         handleTicketCommentRead,
-        handleTicketDeleted,
         initEchoListeners,
         leaveEchoChannels,
 

@@ -88,14 +88,7 @@ const handleSaveTicket = async (ticketData) => {
             await ticketsStore.createTicket(ticketData);
         }
         closeTicketDialog();
-        toast.add({
-            severity: 'success',
-            summary: 'Ticket Guardado',
-            detail: `Ticket ${isEditing.value ? 'actualizado' : 'creado'} correctamente`,
-            life: 3000
-        });
-        // Refrescar la lista de tickets para mostrar los cambios
-        await ticketsStore.fetchTickets();
+        // El store ya muestra el toast de éxito; la lista se actualiza por broadcast
     } catch (error) {
         toast.add({
             severity: 'error',
@@ -125,16 +118,16 @@ const confirmDeleteTicket = (ticket) => {
 const handleConfirmAction = async () => {
     if (confirmData.action) {
         try {
+            const deletedTitle = confirmData.ticket.title;
             await confirmData.action();
             closeConfirmDialog();
             toast.add({
                 severity: 'success',
                 summary: 'Ticket Eliminado',
-                detail: `El ticket "${confirmData.ticket.title}" ha sido eliminado`,
+                detail: `El ticket "${deletedTitle}" ha sido eliminado`,
                 life: 3000
             });
-            // Refrescar la lista de tickets para mostrar los cambios
-            await ticketsStore.fetchTickets();
+            // deleteTicket ya actualiza el state local (splice); no se necesita refetch
         } catch (error) {
             toast.add({
                 severity: 'error',
