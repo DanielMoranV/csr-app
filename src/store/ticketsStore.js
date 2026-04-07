@@ -162,7 +162,10 @@ export const useTicketsStore = defineStore('tickets', () => {
         const commentsStore = useTicketCommentsStore();
         commentsStore.handleCommentCreated(comment, ticketId);
 
-        if (currentUser && comment.user_id !== currentUser.id) {
+        // Use is_read_by_me from payload (set to true for the author of the comment).
+        // Falls back to user_id comparison if the field is absent (older backend).
+        const isOwnComment = comment.is_read_by_me === true || (currentUser && comment.user_id === currentUser.id);
+        if (!isOwnComment) {
             const isViewingComments = commentsStore.state.currentTicketId === ticketId
                                       && commentsStore.state.isCommentsTabActive;
 

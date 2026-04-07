@@ -130,21 +130,20 @@ const editingCommentContent = ref('');
 const activeTabIndex = ref(0);
 
 /**
- * Mark all visible comments (not authored by current user) as read.
- * Fire-and-forget, idempotent — safe to call multiple times.
- * After marking, refresh the global unread badge in the sidebar.
+ * Marca como leídos solo los comentarios que el backend reporta como no leídos
+ * (is_read_by_me === false). El store actualiza is_read_by_me localmente de
+ * forma optimista, por lo que llamadas repetidas (cambio de tab, etc.) son inocuas.
  */
 const markVisibleCommentsAsRead = async () => {
     const ticketId = props.ticket?.id;
     if (!ticketId || !isEditing.value) return;
 
-    const nonOwnComments = ticketCommentsStore.allComments.filter((c) => !isOwnComment(c));
-    if (nonOwnComments.length === 0) return;
+    const unreadComments = ticketCommentsStore.allComments.filter((c) => !c.is_read_by_me);
+    if (unreadComments.length === 0) return;
 
-    // Call mark-as-read for each unread comment (idempotent)
-    await Promise.allSettled(nonOwnComments.map((c) => ticketCommentsStore.markCommentAsRead(ticketId, c.id)));
+    await Promise.allSettled(unreadComments.map((c) => ticketCommentsStore.markCommentAsRead(ticketId, c.id)));
 
-    // Refresh the sidebar badge after marking
+    // Refrescar el badge del sidebar solo si había comentarios sin leer
     ticketsStore.fetchGlobalUnreadCount();
 };
 
@@ -892,21 +891,27 @@ const confirmDeleteComment = (comment) => {
                                             </span>
                                         </div>
                                         <!-- Visto por X (WhatsApp-style, solo en comentarios propios) -->
-                                        <div
-                                            v-if="isOwnComment(comment) && ticketCommentsStore.getReadReceiptsForComment(comment.id).length > 0"
-                                            class="comment-seen-by"
-                                        >
-                                            <i class="pi pi-check-circle"></i>
-                                            <span>
-                                                Visto por {{ ticketCommentsStore.getReadReceiptsForComment(comment.id)[0].read_by.name }}
-                                                <template v-if="ticketCommentsStore.getReadReceiptsForComment(comment.id).length > 1">
-                                                    y {{ ticketCommentsStore.getReadReceiptsForComment(comment.id).length - 1 }} más
-                                                </template>
-                                            </span>
-                                            <span class="comment-seen-time">
-                                                · {{ formatCommentDate(ticketCommentsStore.getReadReceiptsForComment(comment.id)[0].read_at) }}
-                                            </span>
-                                        </div>
+                                        <template v-if="isOwnComment(comment)">
+                                            <div
+                                                v-if="ticketCommentsStore.readReceipts[comment.id]?.length > 0"
+                                                class="comment-seen-by"
+                                            >
+                                                <i class="pi pi-check-circle"></i>
+                                                <span>
+                                                    Visto por {{ ticketCommentsStore.readReceipts[comment.id][0].read_by.name }}
+                                                    <template v-if="ticketCommentsStore.readReceipts[comment.id].length > 1">
+                                                        y {{ ticketCommentsStore.readReceipts[comment.id].length - 1 }} más
+                                                    </template>
+                                                </span>
+                                                <span class="comment-seen-time">
+                                                    · {{ formatCommentDate(ticketCommentsStore.readReceipts[comment.id][0].read_at) }}
+                                                </span>
+                                            </div>
+                                            <div v-else class="comment-seen-by comment-seen-pending">
+                                                <i class="pi pi-check"></i>
+                                                <span>Enviado</span>
+                                            </div>
+                                        </template>
                                     </template>
                                 </div>
                             </div>
@@ -1200,13 +1205,13 @@ const confirmDeleteComment = (comment) => {
     font-size: 0.65rem;
 }
 
-/* --- "Visto por X" — WhatsApp-style read receipt --- */
+/* --- "Visto por X" / "Enviado" — WhatsApp-style read receipt --- */
 .comment-seen-by {
     display: inline-flex;
     align-items: center;
     gap: 0.3rem;
     font-size: 0.72rem;
-    color: var(--primary-color-text);
+    color: var(--text-color-secondary);
     opacity: 0.75;
     margin-top: 0.2rem;
 }
@@ -1214,6 +1219,15 @@ const confirmDeleteComment = (comment) => {
 .comment-seen-by i {
     font-size: 0.75rem;
     color: #60a5fa; /* blue-400 — double-check blue */
+}
+
+/* Estado "Enviado" — check simple gris, sin leer aún */
+.comment-seen-pending {
+    opacity: 0.45;
+}
+
+.comment-seen-pending i {
+    color: var(--text-color-secondary);
 }
 
 .comment-seen-time {

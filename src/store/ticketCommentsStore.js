@@ -22,6 +22,11 @@ export const useTicketCommentsStore = defineStore('ticketComments', () => {
     // Getters
     const allComments = computed(() => state.comments);
 
+    // readReceipts expuesto como computed para que Vue trackee los cambios
+    // correctamente en el template sin depender del proxy de Pinia
+    const readReceipts = computed(() => state.readReceipts);
+
+    // Alias por compatibilidad con código existente
     const getReadReceiptsForComment = (commentId) => {
         return state.readReceipts[commentId] || [];
     };
@@ -31,11 +36,31 @@ export const useTicketCommentsStore = defineStore('ticketComments', () => {
         state.isLoading = true;
         state.error = null;
         state.currentTicketId = ticketId;
-        state.readReceipts = {};
         try {
             const response = await TicketCommentService.getComments(ticketId);
             if (apiUtils.isSuccess(response)) {
-                state.comments = apiUtils.getData(response) || [];
+                const comments = apiUtils.getData(response) || [];
+                state.comments = comments;
+
+                // Poblar readReceipts desde los datos históricos que devuelve el backend.
+                // El campo read_by en cada comentario contiene todos los lectores con timestamp.
+                // Estructura interna: { [commentId]: [{ read_by: userObj, read_at }] }
+                const receipts = {};
+                comments.forEach((comment) => {
+                    if (comment.read_by?.length > 0) {
+                        receipts[comment.id] = comment.read_by.map((r) => ({
+                            read_by: r.user,
+                            read_at: r.read_at
+                        }));
+                    }
+                });
+                // Preservar receipts en tiempo real que hayan llegado DURANTE el fetch
+                // (eventos Echo que llegaron mientras esperábamos la respuesta HTTP)
+                Object.entries(state.readReceipts).forEach(([id, rts]) => {
+                    if (!receipts[id]) receipts[id] = rts;
+                });
+                state.readReceipts = receipts;
+
                 return response;
             }
             throw response;
@@ -121,10 +146,16 @@ export const useTicketCommentsStore = defineStore('ticketComments', () => {
 
     /**
      * Mark a comment as read. Fire-and-forget, idempotent.
-     * Called when the user opens the Comments tab in TicketDialog.
+     * Actualiza is_read_by_me localmente de forma optimista para que
+     * llamadas sucesivas (p. ej. al cambiar de tab) no lo marquen de nuevo.
      * Side effect on backend: broadcasts ticket.comment.read to the comment author.
      */
     const markCommentAsRead = async (ticketId, commentId) => {
+        // Actualización optimista: marcar localmente antes de esperar respuesta
+        const idx = state.comments.findIndex((c) => c.id === commentId);
+        if (idx !== -1 && !state.comments[idx].is_read_by_me) {
+            state.comments[idx].is_read_by_me = true;
+        }
         try {
             await TicketCommentService.markAsRead(ticketId, commentId);
         } catch {
@@ -185,6 +216,7 @@ export const useTicketCommentsStore = defineStore('ticketComments', () => {
         state,
         // Getters
         allComments,
+        readReceipts,
         getReadReceiptsForComment,
         // Actions
         fetchComments,
