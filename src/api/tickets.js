@@ -50,5 +50,15 @@ export const TicketService = {
             params: { include: 'status_histories,status_histories.user' }
         });
         return response;
+    },
+
+    /**
+     * Get the total count of unread comments for the authenticated user across ALL their tickets.
+     * GET /tickets/unread-comments-count
+     * Used for the sidebar badge on the Tickets menu item.
+     */
+    async getGlobalUnreadCommentsCount() {
+        const response = await api.get('/tickets/unread-comments-count');
+        return response;
     }
 };

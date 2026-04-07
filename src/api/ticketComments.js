@@ -3,45 +3,38 @@ import api from './axios.js';
 const BASE_URL = '/tickets';
 
 export const TicketCommentService = {
-    /**
-     * Get all comments for a specific ticket.
-     * @param {number} ticketId - The ID of the ticket.
-     * @returns {Promise<object>} The API response.
-     */
     getComments: (ticketId) => {
         return api.get(`${BASE_URL}/${ticketId}/comments`);
     },
 
-    /**
-     * Add a new comment to a ticket.
-     * @param {number} ticketId - The ID of the ticket.
-     * @param {object} commentData - The comment data (e.g., { content: "..." }).
-     * @returns {Promise<object>} The API response.
-     */
     addComment: (ticketId, commentData) => {
         return api.post(`${BASE_URL}/${ticketId}/comments`, commentData);
     },
 
-    /**
-     * Update an existing comment (only the author can do this).
-     * PUT /tickets/{ticket}/comments/{comment}
-     * @param {number} ticketId - The ID of the ticket.
-     * @param {number} commentId - The ID of the comment.
-     * @param {object} commentData - The updated comment data (e.g., { content: "..." }).
-     * @returns {Promise<object>} The API response. Returns 403 if user is not the author.
-     */
     updateComment: (ticketId, commentId, commentData) => {
         return api.put(`${BASE_URL}/${ticketId}/comments/${commentId}`, commentData);
     },
 
-    /**
-     * Delete a comment (only the author can do this).
-     * DELETE /tickets/{ticket}/comments/{comment}
-     * @param {number} ticketId - The ID of the ticket.
-     * @param {number} commentId - The ID of the comment.
-     * @returns {Promise<object>} The API response. Returns 403 if user is not the author.
-     */
     deleteComment: (ticketId, commentId) => {
         return api.delete(`${BASE_URL}/${ticketId}/comments/${commentId}`);
+    },
+
+    /**
+     * Mark a comment as read by the authenticated user.
+     * POST /tickets/{ticket}/comments/{comment}/read
+     * Idempotent — safe to call multiple times. The author is always considered as having read.
+     * Side effect: marks the related notification as read and broadcasts ticket.comment.read to the comment author.
+     */
+    markAsRead: (ticketId, commentId) => {
+        return api.post(`${BASE_URL}/${ticketId}/comments/${commentId}/read`);
+    },
+
+    /**
+     * Get the unread comments count for a specific ticket.
+     * GET /tickets/{ticket}/unread-comments-count
+     * @returns {Promise} { data: { unread_count: N } }
+     */
+    getUnreadCountByTicket: (ticketId) => {
+        return api.get(`${BASE_URL}/${ticketId}/unread-comments-count`);
     }
 };

@@ -1,4 +1,4 @@
-import { apiUtils } from '@/api/axios';
+import { apiUtils } from '@/api/axios.js';
 import { TicketCommentService } from '@/api/ticketComments';
 import { defineStore } from 'pinia';
 import { computed, reactive } from 'vue';
@@ -12,17 +12,24 @@ export const useTicketCommentsStore = defineStore('ticketComments', () => {
         isUpdating: false,
         isDeleting: false,
         error: null,
-        currentTicketId: null
+        currentTicketId: null,
+        // Read receipts: { [commentId]: [{ read_by: {id, name}, read_at }] }
+        readReceipts: {}
     });
 
     // Getters
     const allComments = computed(() => state.comments);
+
+    const getReadReceiptsForComment = (commentId) => {
+        return state.readReceipts[commentId] || [];
+    };
 
     // Actions
     const fetchComments = async (ticketId) => {
         state.isLoading = true;
         state.error = null;
         state.currentTicketId = ticketId;
+        state.readReceipts = {};
         try {
             const response = await TicketCommentService.getComments(ticketId);
             if (apiUtils.isSuccess(response)) {
@@ -57,11 +64,6 @@ export const useTicketCommentsStore = defineStore('ticketComments', () => {
         }
     };
 
-    /**
-     * Update a comment. Only the author can do this.
-     * Uses PUT /tickets/{ticket}/comments/{comment}
-     * Backend returns 403 if the current user is not the author.
-     */
     const updateComment = async (ticketId, commentId, commentData) => {
         state.isUpdating = true;
         state.error = null;
@@ -84,17 +86,11 @@ export const useTicketCommentsStore = defineStore('ticketComments', () => {
         }
     };
 
-    /**
-     * Delete a comment. Only the author can do this.
-     * Uses DELETE /tickets/{ticket}/comments/{comment}
-     * Backend returns 403 if the current user is not the author.
-     */
     const deleteComment = async (ticketId, commentId) => {
         state.isDeleting = true;
         state.error = null;
         try {
             const response = await TicketCommentService.deleteComment(ticketId, commentId);
-            // Remove from local state regardless of response body
             const index = state.comments.findIndex((c) => c.id === commentId);
             if (index !== -1) {
                 state.comments.splice(index, 1);
@@ -105,6 +101,19 @@ export const useTicketCommentsStore = defineStore('ticketComments', () => {
             throw error;
         } finally {
             state.isDeleting = false;
+        }
+    };
+
+    /**
+     * Mark a comment as read. Fire-and-forget, idempotent.
+     * Called when the user opens the Comments tab in TicketDialog.
+     * Side effect on backend: broadcasts ticket.comment.read to the comment author.
+     */
+    const markCommentAsRead = async (ticketId, commentId) => {
+        try {
+            await TicketCommentService.markAsRead(ticketId, commentId);
+        } catch {
+            // Silent — idempotent read marks should not block UX
         }
     };
 
@@ -136,19 +145,42 @@ export const useTicketCommentsStore = defineStore('ticketComments', () => {
         }
     };
 
+    /**
+     * Handle the ticket.comment.read Echo event.
+     * Only received by the AUTHOR of the comment (on their private channel).
+     * Payload: { comment_id, ticket_id, read_by: {id, name}, read_at }
+     */
+    const handleCommentRead = (e) => {
+        const { comment_id, read_by, read_at } = e;
+        if (!comment_id || !read_by) return;
+
+        if (!state.readReceipts[comment_id]) {
+            state.readReceipts[comment_id] = [];
+        }
+
+        // Avoid duplicates from the same reader
+        const alreadyAdded = state.readReceipts[comment_id].some((r) => r.read_by?.id === read_by.id);
+        if (!alreadyAdded) {
+            state.readReceipts[comment_id].push({ read_by, read_at });
+        }
+    };
+
     return {
         // State
         state,
         // Getters
         allComments,
+        getReadReceiptsForComment,
         // Actions
         fetchComments,
         addComment,
         updateComment,
         deleteComment,
+        markCommentAsRead,
         // Real-time handlers
         handleCommentCreated,
         handleCommentUpdated,
-        handleCommentDeleted
+        handleCommentDeleted,
+        handleCommentRead
     };
 });

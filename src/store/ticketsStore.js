@@ -18,6 +18,7 @@ export const useTicketsStore = defineStore('tickets', () => {
         isSaving: false,
         isDeleting: false,
         lastFetch: null,
+        globalUnreadCount: 0,   // total unread comments across all tickets (from GET /tickets/unread-comments-count)
         filters: {
             status: null,
             priority: null,
@@ -150,13 +151,18 @@ export const useTicketsStore = defineStore('tickets', () => {
 
     const handleTicketCommentCreated = (e) => {
         const comment = e.comment;
-        const ticketId = e.comment.ticket_id; // Corrected: get ticket_id from the comment object
+        const ticketId = e.comment.ticket_id;
+        const currentUser = authStore.getUser;
 
         const ticket = state.tickets.find((t) => t.id === ticketId);
         if (ticket) {
-            // Notify comments store about the new comment
             const commentsStore = useTicketCommentsStore();
             commentsStore.handleCommentCreated(comment, ticketId);
+
+            // Increment unread count only if the comment is NOT from the current user
+            if (currentUser && comment.user_id !== currentUser.id) {
+                state.globalUnreadCount++;
+            }
 
             toast.add({
                 severity: 'info',
@@ -165,6 +171,16 @@ export const useTicketsStore = defineStore('tickets', () => {
                 life: 4000
             });
         }
+    };
+
+    /**
+     * Handle the ticket.comment.read Echo event.
+     * Only arrives on the PRIVATE channel of the comment author.
+     * Payload: { comment_id, ticket_id, read_by: {id, name}, read_at }
+     */
+    const handleTicketCommentRead = (e) => {
+        const commentsStore = useTicketCommentsStore();
+        commentsStore.handleCommentRead(e);
     };
 
     const handleTicketCommentUpdated = (e) => {
@@ -238,12 +254,8 @@ export const useTicketsStore = defineStore('tickets', () => {
 
             // Agregar manejadores de eventos del canal
             privateChannel
-                .subscribed(() => {
-                    // Successfully subscribed
-                })
-                .error((error) => {
-                    // Error handled
-                })
+                .subscribed(() => {})
+                .error(() => {})
                 .listen('.ticket.created', handleTicketCreated)
                 .listen('.ticket.updated', handleTicketUpdated)
                 .listen('.ticket.assigned', handleTicketAssigned)
@@ -251,6 +263,7 @@ export const useTicketsStore = defineStore('tickets', () => {
                 .listen('.ticket.comment.created', handleTicketCommentCreated)
                 .listen('.ticket.comment.updated', handleTicketCommentUpdated)
                 .listen('.ticket.comment.deleted', handleTicketCommentDeleted)
+                .listen('.ticket.comment.read', handleTicketCommentRead)   // only on private channel
                 .listen('.ticket.deleted', handleTicketDeleted);
         }
 
