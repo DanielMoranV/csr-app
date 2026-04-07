@@ -1,7 +1,8 @@
 <script setup>
 import { useTicketsStore } from '@/store/ticketsStore.js';
 import { useToast } from 'primevue/usetoast';
-import { onMounted, onUnmounted, reactive, ref } from 'vue';
+import { onMounted, onUnmounted, reactive, ref, watch } from 'vue';
+import { useRoute, useRouter } from 'vue-router';
 
 // Componentes modulares
 import ConfirmActionDialog from '@/components/tickets/ConfirmActionDialog.vue';
@@ -11,6 +12,8 @@ import TicketTable from '@/components/tickets/TicketTable.vue';
 
 const ticketsStore = useTicketsStore();
 const toast = useToast();
+const route = useRoute();
+const router = useRouter();
 
 // Estado local de la vista
 const ticketDialogVisible = ref(false);
@@ -18,6 +21,8 @@ const confirmDialogVisible = ref(false);
 const selectedTicket = ref(null);
 const isEditing = ref(false);
 const dialogMode = ref('view'); // 'view' | 'edit' | 'create'
+const dialogInitialTab = ref(0); // tab inicial para el dialog (0=Detalles, 1=Historial, 2=Comentarios, 3=Adjuntos)
+const dialogInitialCommentId = ref(null); // scroll al comentario específico al abrir
 
 // Datos del diálogo de confirmación
 const confirmData = reactive({
@@ -32,15 +37,67 @@ const confirmData = reactive({
     confirmationText: 'CONFIRMAR'
 });
 
-onMounted(() => {
+// Mapa de nombre de tab → índice (0=Detalles, 1=Historial, 2=Comentarios, 3=Adjuntos)
+const TAB_INDEX = { details: 0, history: 1, comments: 2, attachments: 3 };
+
+/**
+ * Abre el dialog de un ticket por su ID (viene del query param ticket_id).
+ * open_tab puede ser: 'comments', 'history', 'attachments' o vacío (Detalles).
+ */
+const openTicketFromQuery = async (ticketId, openTab = '', commentId = null) => {
+    if (!ticketId) return;
+
+    // Buscar el ticket en el store (ya cargado) o hacer fetch individual
+    let ticket = ticketsStore.tickets.find((t) => t.id === Number(ticketId));
+    if (!ticket) {
+        try {
+            const { TicketService } = await import('@/api/tickets');
+            const { apiUtils } = await import('@/api/axios');
+            const response = await TicketService.getTicket(ticketId);
+            if (apiUtils.isSuccess(response)) {
+                ticket = apiUtils.getData(response);
+            }
+        } catch {
+            return;
+        }
+    }
+    if (!ticket) return;
+
+    dialogInitialTab.value = TAB_INDEX[openTab] ?? 0;
+    dialogInitialCommentId.value = commentId ? Number(commentId) : null;
+    selectedTicket.value = { ...ticket };
+    isEditing.value = true;
+    dialogMode.value = 'view';
+    ticketDialogVisible.value = true;
+
+    // Limpiar query params para que no se re-abra al navegar back/forward
+    router.replace({ path: route.path });
+};
+
+onMounted(async () => {
     // Si no hay tickets en el store, los carga
     if (!ticketsStore.tickets || ticketsStore.tickets.length === 0) {
-        ticketsStore.fetchTickets();
+        await ticketsStore.fetchTickets();
     }
 
     // Inicializar listeners de eventos en tiempo real
     ticketsStore.initEchoListeners();
+
+    // Abrir ticket si viene de una notificación via query params
+    if (route.query.ticket_id) {
+        openTicketFromQuery(route.query.ticket_id, route.query.open_tab, route.query.comment_id);
+    }
 });
+
+// Manejar navegación por query params mientras la vista ya está montada
+watch(
+    () => route.query.ticket_id,
+    (ticketId) => {
+        if (ticketId) {
+            openTicketFromQuery(ticketId, route.query.open_tab, route.query.comment_id);
+        }
+    }
+);
 
 onUnmounted(() => {
     // Limpiar listeners de eventos en tiempo real
@@ -78,6 +135,8 @@ const closeTicketDialog = () => {
     selectedTicket.value = null;
     isEditing.value = false;
     dialogMode.value = 'view';
+    dialogInitialTab.value = 0;
+    dialogInitialCommentId.value = null;
 };
 
 const handleSaveTicket = async (ticketData) => {
@@ -319,12 +378,14 @@ const getPrioritySeverity = (priority) => {
         </div>
 
         <!-- Diálogo de ticket -->
-        <TicketDialog 
-            v-model:visible="ticketDialogVisible" 
-            :ticket="selectedTicket" 
-            :saving="ticketsStore.isSaving" 
+        <TicketDialog
+            v-model:visible="ticketDialogVisible"
+            :ticket="selectedTicket"
+            :saving="ticketsStore.isSaving"
             :mode="dialogMode"
-            @save-ticket="handleSaveTicket" 
+            :initial-tab="dialogInitialTab"
+            :initial-comment-id="dialogInitialCommentId"
+            @save-ticket="handleSaveTicket"
             @close="closeTicketDialog"
             @switch-to-edit="switchToEditMode"
         />

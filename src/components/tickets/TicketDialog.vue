@@ -35,6 +35,14 @@ const props = defineProps({
         type: String,
         default: 'view', // 'view' | 'edit' | 'create'
         validator: (value) => ['view', 'edit', 'create'].includes(value)
+    },
+    initialTab: {
+        type: Number,
+        default: 0 // 0 = Detalles, 1 = Historial, 2 = Comentarios, 3 = Adjuntos
+    },
+    initialCommentId: {
+        type: Number,
+        default: null // si viene de notificación, hace scroll al comentario específico
     }
 });
 
@@ -126,7 +134,7 @@ const newCommentContent = ref('');
 const editingCommentId = ref(null);
 const editingCommentContent = ref('');
 
-// Active tab tracking (0 = Detalles, 1 = Comentarios, 2 = Adjuntos)
+// Active tab tracking (0 = Detalles, 1 = Historial, 2 = Comentarios, 3 = Adjuntos)
 const activeTabIndex = ref(0);
 
 /**
@@ -149,9 +157,13 @@ const markVisibleCommentsAsRead = async () => {
 
 // Sincronizar el flag isCommentsTabActive con el tab visible
 watch(activeTabIndex, (newIndex) => {
-    ticketCommentsStore.setCommentsTabActive(newIndex === 1);
-    if (newIndex === 1) {
-        markVisibleCommentsAsRead();
+    ticketCommentsStore.setCommentsTabActive(newIndex === 2);
+    if (newIndex === 2) {
+        // Si fetchComments aún está cargando, el watch de props.visible lo manejará
+        // una vez que termine. Si ya terminó, marcar ahora.
+        if (!ticketCommentsStore.state.isLoading) {
+            markVisibleCommentsAsRead();
+        }
     }
 });
 
@@ -209,15 +221,29 @@ const scrollToBottom = () => {
     }
 };
 
+// Scroll a un comentario específico por ID (viene de notificación)
+const scrollToComment = (commentId) => {
+    if (!chatContainer.value || !commentId) return;
+    const el = chatContainer.value.querySelector(`[data-comment-id="${commentId}"]`);
+    if (el) {
+        el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        // Resaltar brevemente el comentario
+        el.classList.add('comment-highlighted');
+        setTimeout(() => el.classList.remove('comment-highlighted'), 2000);
+    } else {
+        scrollToBottom();
+    }
+};
+
 // Watchers
+// Solo actualiza los campos del formulario cuando el ticket cambia en tiempo real.
+// La carga de comentarios se hace únicamente en watch(props.visible) con await,
+// para evitar el race condition del doble fetchComments.
 watch(
     () => props.ticket,
     (newTicket) => {
         if (newTicket && props.visible) {
             loadTicketData(newTicket);
-            if (newTicket.id) {
-                ticketCommentsStore.fetchComments(newTicket.id);
-            }
         } else if (!newTicket && props.visible) {
             resetForm();
         }
@@ -256,6 +282,11 @@ watch(
     () => props.visible,
     async (visible) => {
         if (visible) {
+            // Establecer el tab inicial (puede ser Comentarios si viene de una notificación).
+            // Siempre forzar el valor para que el watch(activeTabIndex) dispare correctamente
+            // cuando el usuario cambie de tab, aunque el valor anterior fuera el mismo.
+            activeTabIndex.value = props.initialTab ?? 0;
+
             try {
                 const [usersResponse, positionsResponse] = await Promise.all([users.list(), positions.getAll()]);
 
@@ -274,7 +305,21 @@ watch(
 
             if (props.ticket) {
                 loadTicketData(props.ticket);
-                ticketCommentsStore.fetchComments(props.ticket.id);
+                // Await so that when the user is already on the Comments tab
+                // (or switches to it while loading), markVisibleCommentsAsRead sees
+                // the populated comments list instead of an empty array.
+                await ticketCommentsStore.fetchComments(props.ticket.id);
+                if (activeTabIndex.value === 2) {
+                    markVisibleCommentsAsRead();
+                    // Scroll al comentario específico si viene de notificación
+                    nextTick(() => {
+                        if (props.initialCommentId) {
+                            scrollToComment(props.initialCommentId);
+                        } else {
+                            scrollToBottom();
+                        }
+                    });
+                }
             } else {
                 resetForm();
             }
@@ -820,6 +865,7 @@ const confirmDeleteComment = (comment) => {
                             <div
                                 v-for="comment in ticketCommentsStore.allComments"
                                 :key="comment.id"
+                                :data-comment-id="comment.id"
                                 class="comment-row"
                                 :class="{ 'is-own': isOwnComment(comment) }"
                             >
@@ -1228,6 +1274,16 @@ const confirmDeleteComment = (comment) => {
 
 .comment-seen-pending i {
     color: var(--text-color-secondary);
+}
+
+/* Highlight temporal al navegar desde notificación */
+.comment-highlighted {
+    animation: comment-highlight-fade 2s ease-out forwards;
+}
+
+@keyframes comment-highlight-fade {
+    0%   { background-color: color-mix(in srgb, var(--primary-color) 25%, transparent); border-radius: 8px; }
+    100% { background-color: transparent; }
 }
 
 .comment-seen-time {

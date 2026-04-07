@@ -55,7 +55,19 @@ const handleNotificationClick = async (notification) => {
     }
     const config = getModuleConfig(notification.module);
     if (notification.data?.ticket_id) {
-        router.push({ path: '/tickets', query: { ticket_id: notification.data.ticket_id } });
+        const query = { ticket_id: notification.data.ticket_id };
+        // Abrir en el tab correspondiente según el tipo/action de la notificación
+        if (notification.type === 'ticket.comment.created' || notification.action === 'comment') {
+            query.open_tab = 'comments';
+            // Pasar comment_id para scroll futuro al comentario específico
+            if (notification.data?.comment_id) {
+                query.comment_id = notification.data.comment_id;
+            }
+        } else if (notification.type === 'ticket.status.changed' || notification.action === 'status_change') {
+            query.open_tab = 'history';
+        }
+        // ticket.assigned y ticket.created → sin open_tab (abre en Detalles por defecto)
+        router.push({ path: '/tickets', query });
         overlayRef.value.hide();
     } else if (config.route) {
         router.push(config.route);
