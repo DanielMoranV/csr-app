@@ -73,9 +73,9 @@ const getStatusIcon = (status) => {
     }
 };
 
-// Obtener etiqueta del estado
+// Obtener etiqueta del estado (busca en la lista completa, no solo en availableOptions)
 const getStatusLabel = (status) => {
-    const option = statusOptions.value.find(opt => opt.value === status);
+    const option = ticketsStore.statusOptions.find((opt) => opt.value === status);
     return option ? option.label : status;
 };
 
