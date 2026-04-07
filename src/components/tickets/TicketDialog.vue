@@ -148,8 +148,9 @@ const markVisibleCommentsAsRead = async () => {
     ticketsStore.fetchGlobalUnreadCount();
 };
 
-// Auto-mark comments as read when user switches to the Comments tab
+// Sincronizar el flag isCommentsTabActive con el tab visible
 watch(activeTabIndex, (newIndex) => {
+    ticketCommentsStore.setCommentsTabActive(newIndex === 1);
     if (newIndex === 1) {
         markVisibleCommentsAsRead();
     }
@@ -487,10 +488,12 @@ const saveTicket = () => {
 };
 
 const closeDialog = () => {
+    ticketCommentsStore.setCommentsTabActive(false);
     emit('close');
 };
 
 const onDialogHide = () => {
+    ticketCommentsStore.setCommentsTabActive(false);
     emit('close');
 };
 

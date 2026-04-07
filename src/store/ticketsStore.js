@@ -6,6 +6,7 @@ import { defineStore } from 'pinia';
 import { useToast } from 'primevue/usetoast';
 import { computed, reactive } from 'vue';
 import { useAuthStore } from './authStore';
+import { useNotificationsStore } from './notificationsStore';
 import { useTicketCommentsStore } from './ticketCommentsStore';
 
 export const useTicketsStore = defineStore('tickets', () => {
@@ -156,21 +157,37 @@ export const useTicketsStore = defineStore('tickets', () => {
         const currentUser = authStore.getUser;
 
         const ticket = state.tickets.find((t) => t.id === ticketId);
-        if (ticket) {
-            const commentsStore = useTicketCommentsStore();
-            commentsStore.handleCommentCreated(comment, ticketId);
+        if (!ticket) return;
 
-            // Increment unread count only if the comment is NOT from the current user
-            if (currentUser && comment.user_id !== currentUser.id) {
+        const commentsStore = useTicketCommentsStore();
+        commentsStore.handleCommentCreated(comment, ticketId);
+
+        if (currentUser && comment.user_id !== currentUser.id) {
+            const isViewingComments = commentsStore.state.currentTicketId === ticketId
+                                      && commentsStore.state.isCommentsTabActive;
+
+            if (isViewingComments) {
+                // El usuario tiene el chat abierto — marcar como leído de inmediato
+                commentsStore.markCommentAsRead(ticketId, comment.id);
+                // No se toca el badge ni el bell: el usuario ya leyó el comentario
+            } else {
+                // El usuario no está viendo ese ticket — actualizar badges
                 state.globalUnreadCount++;
-            }
 
-            toast.add({
-                severity: 'info',
-                summary: 'Nuevo Comentario',
-                detail: `Nuevo comentario en: ${ticket.title}`,
-                life: 4000
-            });
+                // Incrementar también el bell de notificaciones
+                const notificationsStore = useNotificationsStore();
+                notificationsStore.state.unreadCount++;
+                notificationsStore.state.unreadByModule['tickets'] =
+                    (notificationsStore.state.unreadByModule['tickets'] || 0) + 1;
+
+                // Mostrar toast solo si no está en la vista del ticket
+                toast.add({
+                    severity: 'info',
+                    summary: 'Nuevo Comentario',
+                    detail: `Nuevo comentario en: ${ticket.title}`,
+                    life: 4000
+                });
+            }
         }
     };
 

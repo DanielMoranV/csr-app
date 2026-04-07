@@ -13,6 +13,8 @@ export const useTicketCommentsStore = defineStore('ticketComments', () => {
         isDeleting: false,
         error: null,
         currentTicketId: null,
+        // True cuando el usuario tiene abierto el panel de comentarios de currentTicketId
+        isCommentsTabActive: false,
         // Read receipts: { [commentId]: [{ read_by: {id, name}, read_at }] }
         readReceipts: {}
     });
@@ -105,6 +107,19 @@ export const useTicketCommentsStore = defineStore('ticketComments', () => {
     };
 
     /**
+     * Set whether the user currently has the comments panel open for currentTicketId.
+     * Called by TicketDialog when the user switches to/from the Comments tab.
+     * Also called on dialog close to ensure the flag is reset.
+     */
+    const setCommentsTabActive = (active) => {
+        state.isCommentsTabActive = !!active;
+        if (!active) {
+            // Reset on close so stale state doesn't affect future events
+            state.isCommentsTabActive = false;
+        }
+    };
+
+    /**
      * Mark a comment as read. Fire-and-forget, idempotent.
      * Called when the user opens the Comments tab in TicketDialog.
      * Side effect on backend: broadcasts ticket.comment.read to the comment author.
@@ -177,6 +192,7 @@ export const useTicketCommentsStore = defineStore('ticketComments', () => {
         updateComment,
         deleteComment,
         markCommentAsRead,
+        setCommentsTabActive,
         // Real-time handlers
         handleCommentCreated,
         handleCommentUpdated,
