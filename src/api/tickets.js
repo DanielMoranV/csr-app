@@ -45,11 +45,10 @@ export const TicketService = {
         return response;
     },
 
-    async getTicketWithHistory(id) {
-        const response = await api.get(`/tickets/${id}`, {
-            params: { include: 'status_histories,status_histories.user' }
-        });
-        return response;
+    // Alias de getTicket — el backend incluye status_histories y attachments
+    // automáticamente en GET /tickets/{id} sin necesidad de params adicionales.
+    getTicketWithHistory(id) {
+        return this.getTicket(id);
     },
 
     /**

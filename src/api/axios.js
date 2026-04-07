@@ -7,7 +7,7 @@ export const api_url = import.meta.env.VITE_API_URL;
 
 const instance = axios.create({
     // baseURL se establecerá dinámicamente en el interceptor
-    timeout: 90000000, // 30 segundos (reducido de 90000000)
+    timeout: 90000000, // 30 segundos
     headers: {
         'Content-Type': 'application/json',
         Accept: 'application/json'
@@ -22,7 +22,7 @@ const instance = axios.create({
                 }
                 return acc;
             }, {});
-            
+
             // Use URLSearchParams to serialize the filtered params
             return new URLSearchParams(filteredParams).toString();
         }
@@ -70,9 +70,7 @@ instance.interceptors.request.use(
             let fullUrl = config.url;
             if (config.params && Object.keys(config.params).length > 0) {
                 // The paramsSerializer will have already filtered the params
-                const queryString = config.paramsSerializer?.serialize 
-                    ? config.paramsSerializer.serialize(config.params)
-                    : new URLSearchParams(config.params).toString();
+                const queryString = config.paramsSerializer?.serialize ? config.paramsSerializer.serialize(config.params) : new URLSearchParams(config.params).toString();
                 fullUrl = `${config.url}?${queryString}`;
             }
 
@@ -121,7 +119,7 @@ instance.interceptors.response.use(
                         message: data.message,
                         dataType: typeof data.data,
                         isArray: Array.isArray(data.data),
-                        dataCount: Array.isArray(data.data) ? data.data.length : (data.data ? 1 : 0),
+                        dataCount: Array.isArray(data.data) ? data.data.length : data.data ? 1 : 0,
                         dataKeys: data.data ? Object.keys(data.data) : null,
                         firstItem: Array.isArray(data.data) && data.data.length > 0 ? data.data[0] : null,
                         fullResponse: data

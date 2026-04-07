@@ -1,4 +1,5 @@
 import { TicketService } from '@/api/tickets';
+import { debounce } from '@/utils/debounce';
 import { slugify } from '@/utils/pusher-helpers';
 import useEcho from '@/websocket/echo';
 import { defineStore } from 'pinia';
@@ -449,13 +450,67 @@ export const useTicketsStore = defineStore('tickets', () => {
         }
     };
 
+    // --- STATUS TRANSITION LOGIC ---
+    /**
+     * Returns the list of status values the current user is allowed to transition
+     * the given ticket into, based on the backend's transition matrix.
+     *
+     * Creator:  pendiente → anulado
+     * Assignee: pendiente → en proceso | concluido | rechazado
+     *           en proceso → concluido | rechazado
+     * Final states (concluido, rechazado, anulado): no transitions allowed.
+     *
+     * @param {Object} ticket
+     * @returns {string[]} Allowed target statuses (never includes current status)
+     */
+    const getAllowedTransitions = (ticket) => {
+        const user = authStore.getUser;
+        if (!user || !ticket) return [];
+
+        const isFinal = ['concluido', 'rechazado', 'anulado'].includes(ticket.status);
+        if (isFinal) return [];
+
+        const isCreator  = ticket.creator_user_id === user.id;
+        const isAssignee = ticket.assignee_user_id === user.id;
+        const samePos    = !!(user.position && ticket.assignee_position
+                            && user.position === ticket.assignee_position);
+
+        const allowed = new Set();
+
+        if (isCreator && ticket.status === 'pendiente') {
+            allowed.add('anulado');
+        }
+
+        if (isAssignee || samePos) {
+            if (ticket.status === 'pendiente') {
+                allowed.add('en proceso');
+                allowed.add('concluido');
+                allowed.add('rechazado');
+            } else if (ticket.status === 'en proceso') {
+                allowed.add('concluido');
+                allowed.add('rechazado');
+            }
+        }
+
+        return [...allowed];
+    };
+
     // --- UI ACTIONS ---
+    const debouncedFetch = debounce(fetchTickets, 350);
+
     const setFilter = (key, value) => {
         state.filters[key] = value;
-        fetchTickets();
+        // Debounce only text search to avoid a request per keystroke
+        if (key === 'search') {
+            debouncedFetch();
+        } else {
+            debouncedFetch.cancel();
+            fetchTickets();
+        }
     };
 
     const clearFilters = () => {
+        debouncedFetch.cancel();
         state.filters.status = null;
         state.filters.priority = null;
         state.filters.search = '';
@@ -498,6 +553,9 @@ export const useTicketsStore = defineStore('tickets', () => {
         handleTicketDeleted,
         initEchoListeners,
         leaveEchoChannels,
+
+        // Status transitions
+        getAllowedTransitions,
 
         // UI Actions
         setFilter,

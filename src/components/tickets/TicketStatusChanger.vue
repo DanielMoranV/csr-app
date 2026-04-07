@@ -23,18 +23,19 @@ const confirm = useConfirm();
 // Estado local para el dropdown
 const selectedStatus = ref(props.ticket.status);
 
-// Opciones de estado disponibles
-const statusOptions = computed(() => ticketsStore.statusOptions);
+// Transiciones permitidas para el usuario actual sobre este ticket
+const allowedTransitions = computed(() => ticketsStore.getAllowedTransitions(props.ticket));
 
-// Verificar si el ticket está finalizado (no se puede cambiar)
-const isFinalized = computed(() => {
-    return props.ticket.status === 'concluido' || props.ticket.status === 'rechazado';
-});
+// Opciones del dropdown filtradas a las transiciones permitidas
+const availableOptions = computed(() =>
+    ticketsStore.statusOptions.filter((opt) => allowedTransitions.value.includes(opt.value))
+);
+
+// El usuario no puede cambiar el estado si no tiene transiciones disponibles
+const canChangeStatus = computed(() => allowedTransitions.value.length > 0);
 
 // Verificar si el dropdown debe estar deshabilitado
-const isDisabled = computed(() => {
-    return props.disabled || isFinalized.value;
-});
+const isDisabled = computed(() => props.disabled || !canChangeStatus.value);
 
 // Obtener el severity del estado para el estilo
 const getStatusSeverity = (status) => {
@@ -117,7 +118,7 @@ const handleStatusChange = (event) => {
     <div class="ticket-status-changer">
         <Dropdown
             v-model="selectedStatus"
-            :options="statusOptions"
+            :options="availableOptions"
             optionLabel="label"
             optionValue="value"
             :disabled="isDisabled"
@@ -142,8 +143,9 @@ const handleStatusChange = (event) => {
                 </div>
             </template>
         </Dropdown>
-        <small v-if="isFinalized" class="finalized-message">
-            <i class="pi pi-lock"></i> Estado finalizado
+        <small v-if="!canChangeStatus" class="finalized-message">
+            <i class="pi pi-lock"></i>
+            {{ ['concluido', 'rechazado', 'anulado'].includes(ticket.status) ? 'Estado finalizado' : 'Sin permisos para cambiar estado' }}
         </small>
     </div>
 </template>

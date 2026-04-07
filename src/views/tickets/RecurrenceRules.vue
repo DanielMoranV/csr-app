@@ -5,7 +5,7 @@ import Toolbar from 'primevue/toolbar';
 import { onMounted, ref } from 'vue';
 
 // Import child components (assuming they will be created)
-import ConfirmDeleteDialog from '@/components/rooms/ConfirmDeleteDialog.vue'; // Re-using existing component
+import ConfirmActionDialog from '@/components/tickets/ConfirmActionDialog.vue';
 import RecurrenceRuleDialog from '@/components/tickets/RecurrenceRuleDialog.vue';
 import RecurrenceRulesTable from '@/components/tickets/RecurrenceRulesTable.vue';
 
@@ -79,5 +79,14 @@ const deleteRule = async () => {
     <RecurrenceRuleDialog v-model:visible="dialogVisible" :rule="currentRule" @save-rule="saveRule" />
 
     <!-- Delete Confirmation Dialog -->
-    <ConfirmDeleteDialog v-model:visible="deleteDialogVisible" :item-name="currentRule?.title" @confirm="deleteRule" />
+    <ConfirmActionDialog
+        v-model:visible="deleteDialogVisible"
+        title="Eliminar Regla de Recurrencia"
+        :message="`¿Está seguro que desea eliminar la regla &quot;${currentRule?.title}&quot;?`"
+        details="Esta acción eliminará permanentemente la regla. Los tickets ya generados no serán afectados."
+        action-type="delete"
+        :processing="store.isDeleting"
+        @confirm="deleteRule"
+        @cancel="deleteDialogVisible = false"
+    />
 </template>
