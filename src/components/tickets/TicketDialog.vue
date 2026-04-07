@@ -570,8 +570,49 @@ const formatCommentDate = (dateString) => {
 
 const wasEdited = (comment) => {
     if (!comment.updated_at || !comment.created_at) return false;
-    // Consider edited if updated more than 5 seconds after creation
     return new Date(comment.updated_at) - new Date(comment.created_at) > 5000;
+};
+
+// --- Comment visual helpers ---
+const AVATAR_COLORS = ['#6366f1', '#8b5cf6', '#ec4899', '#0ea5e9', '#10b981', '#f59e0b', '#ef4444', '#14b8a6', '#f97316', '#84cc16'];
+
+const getUserInitials = (user) => {
+    if (!user?.name) return '?';
+    return user.name.split(' ').slice(0, 2).map((w) => w[0]).join('').toUpperCase();
+};
+
+const getUserColor = (userId) => AVATAR_COLORS[(userId || 0) % AVATAR_COLORS.length];
+
+const isSameUserAsPrev = (index) => {
+    if (index === 0) return false;
+    const comments = ticketCommentsStore.allComments;
+    return comments[index].user_id === comments[index - 1].user_id;
+};
+
+const isNewDay = (index) => {
+    if (index === 0) return true;
+    const comments = ticketCommentsStore.allComments;
+    const curr = new Date(comments[index].created_at);
+    const prev = new Date(comments[index - 1].created_at);
+    return curr.toDateString() !== prev.toDateString();
+};
+
+const getDayLabel = (dateString) => {
+    const date = new Date(dateString);
+    const today = new Date();
+    const yesterday = new Date();
+    yesterday.setDate(yesterday.getDate() - 1);
+    if (date.toDateString() === today.toDateString()) return 'Hoy';
+    if (date.toDateString() === yesterday.toDateString()) return 'Ayer';
+    return date.toLocaleDateString('es-ES', {
+        day: 'numeric',
+        month: 'long',
+        ...(date.getFullYear() !== today.getFullYear() ? { year: 'numeric' } : {})
+    });
+};
+
+const formatCommentTime = (dateString) => {
+    return new Date(dateString).toLocaleTimeString('es-ES', { hour: '2-digit', minute: '2-digit' });
 };
 
 // --- Inline comment editing ---
@@ -862,23 +903,113 @@ const confirmDeleteComment = (comment) => {
                             <div class="text-sm mt-2">Los comentarios y actualizaciones del equipo aparecerán aquí.</div>
                         </div>
                         <div v-else class="comments-list">
-                            <div
-                                v-for="comment in ticketCommentsStore.allComments"
-                                :key="comment.id"
-                                :data-comment-id="comment.id"
-                                class="comment-row"
-                                :class="{ 'is-own': isOwnComment(comment) }"
-                            >
-                                <div class="comment-bubble">
-                                    <!-- Header: author + actions -->
-                                    <div class="comment-header-row">
-                                        <span class="comment-author font-bold">
-                                            {{ isOwnComment(comment) ? 'Tú' : comment.user?.name || 'Usuario Desconocido' }}
-                                        </span>
-                                        <div v-if="isOwnComment(comment) && editingCommentId !== comment.id" class="comment-actions">
+                            <template v-for="(comment, index) in ticketCommentsStore.allComments" :key="comment.id">
+
+                                <!-- Separador de día -->
+                                <div v-if="isNewDay(index)" class="day-separator">
+                                    <span class="day-separator-label">{{ getDayLabel(comment.created_at) }}</span>
+                                </div>
+
+                                <!-- Fila de comentario -->
+                                <div
+                                    :data-comment-id="comment.id"
+                                    class="comment-row"
+                                    :class="{
+                                        'is-own': isOwnComment(comment),
+                                        'is-grouped': !isNewDay(index) && isSameUserAsPrev(index)
+                                    }"
+                                >
+                                    <!-- Avatar (solo para comentarios de otros) -->
+                                    <div
+                                        v-if="!isOwnComment(comment)"
+                                        class="comment-avatar"
+                                        :class="{ 'comment-avatar--placeholder': !isNewDay(index) && isSameUserAsPrev(index) }"
+                                        :style="{ background: getUserColor(comment.user_id) }"
+                                        :title="comment.user?.name"
+                                    >
+                                        <span v-if="isNewDay(index) || !isSameUserAsPrev(index)">{{ getUserInitials(comment.user) }}</span>
+                                    </div>
+
+                                    <!-- Burbuja -->
+                                    <div class="comment-bubble">
+                                        <!-- Nombre del autor (solo primera burbuja del grupo) -->
+                                        <div
+                                            v-if="!isOwnComment(comment) && (isNewDay(index) || !isSameUserAsPrev(index))"
+                                            class="comment-author-name"
+                                            :style="{ color: getUserColor(comment.user_id) }"
+                                        >
+                                            {{ comment.user?.name || 'Usuario' }}
+                                        </div>
+
+                                        <!-- Modo edición inline -->
+                                        <div v-if="editingCommentId === comment.id" class="comment-edit-form">
+                                            <Textarea
+                                                v-model="editingCommentContent"
+                                                rows="3"
+                                                class="comment-edit-textarea"
+                                                fluid
+                                                auto-resize
+                                                @keydown.escape="cancelEditComment"
+                                            />
+                                            <div class="comment-edit-actions">
+                                                <Button
+                                                    label="Guardar"
+                                                    icon="pi pi-check"
+                                                    size="small"
+                                                    @click="submitEditComment(comment)"
+                                                    :loading="ticketCommentsStore.state.isUpdating"
+                                                    :disabled="!editingCommentContent.trim() || editingCommentContent.trim() === comment.content"
+                                                />
+                                                <Button
+                                                    label="Cancelar"
+                                                    icon="pi pi-times"
+                                                    size="small"
+                                                    severity="secondary"
+                                                    outlined
+                                                    @click="cancelEditComment"
+                                                    :disabled="ticketCommentsStore.state.isUpdating"
+                                                />
+                                            </div>
+                                        </div>
+
+                                        <!-- Modo normal -->
+                                        <template v-else>
+                                            <div class="comment-content">{{ comment.content }}</div>
+                                            <div class="comment-meta">
+                                                <span class="comment-time">{{ formatCommentTime(comment.created_at) }}</span>
+                                                <span v-if="wasEdited(comment)" class="comment-edited-tag">
+                                                    <i class="pi pi-pencil"></i> editado
+                                                </span>
+                                            </div>
+                                            <!-- Visto / Enviado (solo comentarios propios) -->
+                                            <template v-if="isOwnComment(comment)">
+                                                <div
+                                                    v-if="ticketCommentsStore.readReceipts[comment.id]?.length > 0"
+                                                    class="comment-seen-by"
+                                                >
+                                                    <i class="pi pi-check-circle"></i>
+                                                    <span>
+                                                        Visto por {{ ticketCommentsStore.readReceipts[comment.id][0].read_by.name }}
+                                                        <template v-if="ticketCommentsStore.readReceipts[comment.id].length > 1">
+                                                            y {{ ticketCommentsStore.readReceipts[comment.id].length - 1 }} más
+                                                        </template>
+                                                    </span>
+                                                </div>
+                                                <div v-else class="comment-seen-by comment-seen-pending">
+                                                    <i class="pi pi-check"></i>
+                                                    <span>Enviado</span>
+                                                </div>
+                                            </template>
+                                        </template>
+
+                                        <!-- Acciones (hover, solo comentarios propios) -->
+                                        <div
+                                            v-if="isOwnComment(comment) && editingCommentId !== comment.id"
+                                            class="comment-actions"
+                                        >
                                             <button
                                                 class="comment-action-btn"
-                                                title="Editar comentario"
+                                                title="Editar"
                                                 @click="startEditComment(comment)"
                                                 :disabled="ticketCommentsStore.state.isDeleting"
                                             >
@@ -886,7 +1017,7 @@ const confirmDeleteComment = (comment) => {
                                             </button>
                                             <button
                                                 class="comment-action-btn comment-action-delete"
-                                                title="Eliminar comentario"
+                                                title="Eliminar"
                                                 @click="confirmDeleteComment(comment)"
                                                 :disabled="ticketCommentsStore.state.isDeleting"
                                             >
@@ -894,85 +1025,36 @@ const confirmDeleteComment = (comment) => {
                                             </button>
                                         </div>
                                     </div>
-
-                                    <!-- Inline edit mode -->
-                                    <div v-if="editingCommentId === comment.id" class="comment-edit-form">
-                                        <Textarea
-                                            v-model="editingCommentContent"
-                                            rows="3"
-                                            class="comment-edit-textarea"
-                                            fluid
-                                            auto-resize
-                                            @keydown.escape="cancelEditComment"
-                                        />
-                                        <div class="comment-edit-actions">
-                                            <Button
-                                                label="Guardar"
-                                                icon="pi pi-check"
-                                                size="small"
-                                                @click="submitEditComment(comment)"
-                                                :loading="ticketCommentsStore.state.isUpdating"
-                                                :disabled="!editingCommentContent.trim() || editingCommentContent.trim() === comment.content"
-                                            />
-                                            <Button
-                                                label="Cancelar"
-                                                icon="pi pi-times"
-                                                size="small"
-                                                severity="secondary"
-                                                outlined
-                                                @click="cancelEditComment"
-                                                :disabled="ticketCommentsStore.state.isUpdating"
-                                            />
-                                        </div>
-                                    </div>
-
-                                    <!-- Normal display mode -->
-                                    <template v-else>
-                                        <div class="comment-content text-700">{{ comment.content }}</div>
-                                        <div class="comment-footer text-xs text-500 mt-1">
-                                            <span>{{ formatCommentDate(comment.created_at) }}</span>
-                                            <span v-if="wasEdited(comment)" class="comment-edited-tag">
-                                                <i class="pi pi-pencil"></i>
-                                                editado {{ formatCommentDate(comment.updated_at) }}
-                                            </span>
-                                        </div>
-                                        <!-- Visto por X (WhatsApp-style, solo en comentarios propios) -->
-                                        <template v-if="isOwnComment(comment)">
-                                            <div
-                                                v-if="ticketCommentsStore.readReceipts[comment.id]?.length > 0"
-                                                class="comment-seen-by"
-                                            >
-                                                <i class="pi pi-check-circle"></i>
-                                                <span>
-                                                    Visto por {{ ticketCommentsStore.readReceipts[comment.id][0].read_by.name }}
-                                                    <template v-if="ticketCommentsStore.readReceipts[comment.id].length > 1">
-                                                        y {{ ticketCommentsStore.readReceipts[comment.id].length - 1 }} más
-                                                    </template>
-                                                </span>
-                                                <span class="comment-seen-time">
-                                                    · {{ formatCommentDate(ticketCommentsStore.readReceipts[comment.id][0].read_at) }}
-                                                </span>
-                                            </div>
-                                            <div v-else class="comment-seen-by comment-seen-pending">
-                                                <i class="pi pi-check"></i>
-                                                <span>Enviado</span>
-                                            </div>
-                                        </template>
-                                    </template>
                                 </div>
-                            </div>
+
+                            </template>
                         </div>
                     </div>
 
-                    <div v-if="isEditing && canAddCommentsOrAttachments" class="new-comment-form p-fluid">
-                        <Textarea v-model="newCommentContent" rows="3" placeholder="Añadir comentario, actualización de progreso o nota..." @keydown.enter.prevent="addComment" fluid />
-                        <Button label="Añadir Comentario" icon="pi pi-send" class="mt-2" @click="addComment" :loading="ticketCommentsStore.state.isAdding" fluid />
-                    </div>
-                    <div v-else-if="isEditing && !canAddCommentsOrAttachments" class="p-message p-message-info mt-3">
-                        <div class="p-message-wrapper">
-                            <span class="p-message-icon pi pi-info-circle"></span>
-                            <div class="p-message-text">Solo el creador y los usuarios asignados pueden agregar comentarios.</div>
+                    <div v-if="isEditing && canAddCommentsOrAttachments" class="new-comment-form">
+                        <div class="new-comment-input-row">
+                            <Textarea
+                                v-model="newCommentContent"
+                                rows="2"
+                                placeholder="Escribe un comentario... (Ctrl+Enter para enviar)"
+                                fluid
+                                auto-resize
+                                @keydown.ctrl.enter.prevent="addComment"
+                            />
+                            <Button
+                                icon="pi pi-send"
+                                class="new-comment-send-btn"
+                                :loading="ticketCommentsStore.state.isAdding"
+                                :disabled="!newCommentContent.trim()"
+                                @click="addComment"
+                                rounded
+                                aria-label="Enviar comentario"
+                            />
                         </div>
+                    </div>
+                    <div v-else-if="isEditing && !canAddCommentsOrAttachments" class="comment-readonly-notice">
+                        <i class="pi pi-lock"></i>
+                        <span>Solo el creador y los asignados pueden comentar.</span>
                     </div>
                 </div>
             </TabPanel>
@@ -1039,34 +1121,37 @@ const confirmDeleteComment = (comment) => {
 .chat-wrapper {
     display: flex;
     flex-direction: column;
-    height: 50vh;
-    max-height: 500px;
+    height: 52vh;
+    max-height: 520px;
+    border: 1px solid var(--surface-border);
+    border-radius: 12px;
+    overflow: hidden;
+    background: var(--surface-ground);
 }
 
 .chat-container {
     flex-grow: 1;
     overflow-y: auto;
-    padding: 1rem;
-    background-color: var(--surface-ground);
-    border-radius: 6px;
+    padding: 1rem 1rem 0.5rem;
     scroll-behavior: smooth;
 }
 
 @media (max-width: 768px) {
     .chat-wrapper {
-        height: 40vh;
-        max-height: 400px;
+        height: 42vh;
+        max-height: 420px;
     }
 }
 
 @media (max-width: 480px) {
     .chat-wrapper {
-        height: 35vh;
-        max-height: 300px;
+        height: 38vh;
+        max-height: 340px;
+        border-radius: 8px;
     }
 
     .chat-container {
-        padding: 0.75rem;
+        padding: 0.75rem 0.75rem 0.5rem;
     }
 }
 
@@ -1088,186 +1173,187 @@ const confirmDeleteComment = (comment) => {
     background: var(--primary-400);
 }
 
+/* ========================================
+   COMMENT LIST
+   ======================================== */
 .comments-list {
     display: flex;
     flex-direction: column;
-    gap: 0.75rem;
+    gap: 0.25rem;
+    padding-bottom: 0.5rem;
 }
 
+/* --- Day separator --- */
+.day-separator {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    margin: 0.75rem 0 0.5rem;
+    text-align: center;
+}
+
+.day-separator::before,
+.day-separator::after {
+    content: '';
+    flex: 1;
+    height: 1px;
+    background: var(--surface-border);
+}
+
+.day-separator-label {
+    font-size: 0.7rem;
+    font-weight: 600;
+    color: var(--text-color-secondary);
+    white-space: nowrap;
+    padding: 0.2rem 0.6rem;
+    background: var(--surface-ground);
+    border: 1px solid var(--surface-border);
+    border-radius: 999px;
+    letter-spacing: 0.02em;
+}
+
+/* --- Comment row --- */
 .comment-row {
     display: flex;
-    max-width: 80%;
+    align-items: flex-end;
+    gap: 0.5rem;
+    max-width: 82%;
+    margin-top: 0.5rem;
+}
+
+.comment-row.is-grouped {
+    margin-top: 0.15rem;
 }
 
 .comment-row.is-own {
     align-self: flex-end;
+    flex-direction: row-reverse;
 }
 
 .comment-row:not(.is-own) {
     align-self: flex-start;
 }
 
+/* --- Avatar --- */
+.comment-avatar {
+    width: 2rem;
+    height: 2rem;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 0.7rem;
+    font-weight: 700;
+    color: #fff;
+    flex-shrink: 0;
+    letter-spacing: 0.03em;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.15);
+}
+
+/* Placeholder transparent cuando es mensaje agrupado */
+.comment-avatar--placeholder {
+    background: transparent !important;
+    box-shadow: none;
+}
+
+/* --- Bubble --- */
 .comment-bubble {
-    padding: 0.75rem 1rem;
-    border-radius: 18px;
+    position: relative;
+    padding: 0.55rem 0.85rem 0.45rem;
+    border-radius: 16px;
     word-wrap: break-word;
     white-space: pre-wrap;
-    line-height: 1.4;
+    line-height: 1.5;
+    min-width: 80px;
+    max-width: 100%;
 }
 
+/* Comentarios propios */
 .comment-row.is-own .comment-bubble {
-    background-color: var(--primary-color);
-    color: var(--primary-color-text);
+    background: color-mix(in srgb, var(--primary-color) 14%, var(--surface-card));
+    color: var(--text-color);
+    border: 1px solid color-mix(in srgb, var(--primary-color) 25%, transparent);
     border-bottom-right-radius: 4px;
+    box-shadow: 0 1px 2px rgba(0,0,0,0.06);
 }
 
+/* Comentarios de otros */
 .comment-row:not(.is-own) .comment-bubble {
-    background-color: var(--surface-card);
+    background: var(--surface-card);
     border: 1px solid var(--surface-border);
     color: var(--text-color);
     border-bottom-left-radius: 4px;
+    box-shadow: 0 1px 2px rgba(0,0,0,0.06);
 }
 
-.comment-header {
-    font-size: 0.8rem;
-    margin-bottom: 0.25rem;
-    color: var(--text-color-secondary);
+/* Primero del grupo sin esquina redondeada arriba */
+.comment-row.is-grouped.is-own .comment-bubble {
+    border-top-right-radius: 6px;
+}
+.comment-row.is-grouped:not(.is-own) .comment-bubble {
+    border-top-left-radius: 6px;
 }
 
-.comment-row.is-own .comment-header {
-    color: var(--primary-color-text);
-    opacity: 0.8;
+/* --- Nombre del autor --- */
+.comment-author-name {
+    font-size: 0.72rem;
+    font-weight: 700;
+    margin-bottom: 0.2rem;
+    letter-spacing: 0.01em;
 }
 
-/* --- Comment header row (author + action buttons) --- */
-.comment-header-row {
+/* --- Contenido --- */
+.comment-content {
+    font-size: 0.88rem;
+    line-height: 1.5;
+}
+
+/* --- Meta (hora + editado) --- */
+.comment-meta {
     display: flex;
     align-items: center;
-    justify-content: space-between;
-    gap: 0.5rem;
-    margin-bottom: 0.25rem;
-}
-
-.comment-author {
-    font-size: 0.8rem;
-    color: var(--text-color-secondary);
-}
-
-.comment-row.is-own .comment-author {
-    color: var(--primary-color-text);
-    opacity: 0.8;
-}
-
-.comment-actions {
-    display: flex;
-    gap: 0.25rem;
-    opacity: 0;
-    transition: opacity 0.2s ease;
-}
-
-.comment-bubble:hover .comment-actions {
-    opacity: 1;
-}
-
-.comment-action-btn {
-    background: transparent;
-    border: none;
-    cursor: pointer;
-    padding: 0.2rem 0.35rem;
-    border-radius: 6px;
-    color: var(--primary-color-text);
-    opacity: 0.7;
-    transition: opacity 0.2s, background 0.2s;
-    font-size: 0.75rem;
-    line-height: 1;
-}
-
-.comment-action-btn:hover:not(:disabled) {
-    opacity: 1;
-    background: rgba(255, 255, 255, 0.2);
-}
-
-.comment-action-btn:disabled {
-    cursor: not-allowed;
-    opacity: 0.3;
-}
-
-.comment-action-delete:hover:not(:disabled) {
-    color: #fca5a5;
-}
-
-.comment-row:not(.is-own) .comment-action-btn {
-    color: var(--text-color-secondary);
-}
-
-.comment-row:not(.is-own) .comment-action-btn:hover:not(:disabled) {
-    background: var(--surface-hover);
-    color: var(--text-color);
-}
-
-.comment-row:not(.is-own) .comment-action-delete:hover:not(:disabled) {
-    color: var(--red-500);
-}
-
-/* --- Inline edit form --- */
-.comment-edit-form {
-    display: flex;
-    flex-direction: column;
-    gap: 0.5rem;
+    gap: 0.35rem;
     margin-top: 0.25rem;
 }
 
-.comment-edit-textarea {
-    border-radius: 8px;
-    font-size: 0.9rem;
+.comment-time {
+    font-size: 0.68rem;
+    opacity: 0.6;
 }
 
-.comment-edit-actions {
-    display: flex;
-    gap: 0.5rem;
-    justify-content: flex-end;
-}
-
-/* --- Edited indicator --- */
-.comment-footer {
-    display: flex;
-    align-items: center;
-    gap: 0.5rem;
-    flex-wrap: wrap;
-    opacity: 0.7;
+.comment-row.is-own .comment-time {
+    color: var(--text-color-secondary);
 }
 
 .comment-edited-tag {
     display: inline-flex;
     align-items: center;
-    gap: 0.25rem;
+    gap: 0.2rem;
+    font-size: 0.65rem;
     font-style: italic;
-    color: inherit;
-    opacity: 0.75;
-    font-size: 0.75rem;
+    opacity: 0.55;
 }
 
 .comment-edited-tag i {
-    font-size: 0.65rem;
+    font-size: 0.6rem;
 }
 
-/* --- "Visto por X" / "Enviado" — WhatsApp-style read receipt --- */
+/* --- "Visto por X" / "Enviado" — WhatsApp-style --- */
 .comment-seen-by {
     display: inline-flex;
     align-items: center;
     gap: 0.3rem;
-    font-size: 0.72rem;
+    font-size: 0.68rem;
     color: var(--text-color-secondary);
-    opacity: 0.75;
-    margin-top: 0.2rem;
+    opacity: 0.85;
+    margin-top: 0.1rem;
 }
 
 .comment-seen-by i {
-    font-size: 0.75rem;
-    color: #60a5fa; /* blue-400 — double-check blue */
+    font-size: 0.72rem;
+    color: var(--primary-color);
 }
 
-/* Estado "Enviado" — check simple gris, sin leer aún */
 .comment-seen-pending {
     opacity: 0.45;
 }
@@ -1276,14 +1362,127 @@ const confirmDeleteComment = (comment) => {
     color: var(--text-color-secondary);
 }
 
-/* Highlight temporal al navegar desde notificación */
-.comment-highlighted {
+/* --- Botones de acción (hover) --- */
+.comment-actions {
+    position: absolute;
+    top: -0.6rem;
+    right: 0.4rem;
+    display: flex;
+    gap: 0.15rem;
+    background: var(--surface-overlay);
+    border: 1px solid var(--surface-border);
+    border-radius: 8px;
+    padding: 0.15rem 0.25rem;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.12);
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.15s ease;
+    z-index: 2;
+}
+
+.comment-bubble:hover .comment-actions {
+    opacity: 1;
+    pointer-events: auto;
+}
+
+.comment-action-btn {
+    background: transparent;
+    border: none;
+    cursor: pointer;
+    padding: 0.2rem 0.3rem;
+    border-radius: 5px;
+    color: var(--text-color-secondary);
+    font-size: 0.72rem;
+    line-height: 1;
+    transition: color 0.15s, background 0.15s;
+}
+
+.comment-action-btn:hover:not(:disabled) {
+    color: var(--text-color);
+    background: var(--surface-hover);
+}
+
+.comment-action-btn:disabled {
+    cursor: not-allowed;
+    opacity: 0.3;
+}
+
+.comment-action-delete:hover:not(:disabled) {
+    color: var(--red-500) !important;
+    background: color-mix(in srgb, var(--red-500) 10%, transparent) !important;
+}
+
+/* --- Inline edit --- */
+.comment-edit-form {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+}
+
+.comment-edit-textarea {
+    border-radius: 8px;
+    font-size: 0.88rem;
+    background: rgba(255,255,255,0.15) !important;
+    color: inherit !important;
+    border-color: rgba(255,255,255,0.3) !important;
+}
+
+.comment-edit-actions {
+    display: flex;
+    gap: 0.5rem;
+    justify-content: flex-end;
+}
+
+/* --- Highlight al navegar desde notificación --- */
+.comment-highlighted .comment-bubble {
     animation: comment-highlight-fade 2s ease-out forwards;
 }
 
 @keyframes comment-highlight-fade {
-    0%   { background-color: color-mix(in srgb, var(--primary-color) 25%, transparent); border-radius: 8px; }
-    100% { background-color: transparent; }
+    0%   { outline: 2px solid var(--primary-color); outline-offset: 2px; }
+    100% { outline: 2px solid transparent; outline-offset: 2px; }
+}
+
+/* ========================================
+   NEW COMMENT FORM
+   ======================================== */
+.new-comment-form {
+    padding: 0.75rem 0.75rem 0.5rem;
+    border-top: 1px solid var(--surface-border);
+    background: var(--surface-section);
+}
+
+.new-comment-input-row {
+    display: flex;
+    align-items: flex-end;
+    gap: 0.5rem;
+}
+
+.new-comment-input-row :deep(.p-textarea) {
+    border-radius: 20px;
+    padding: 0.6rem 1rem;
+    font-size: 0.88rem;
+    resize: none;
+    flex: 1;
+    max-height: 120px;
+}
+
+.new-comment-send-btn {
+    width: 2.4rem !important;
+    height: 2.4rem !important;
+    min-width: 2.4rem !important;
+    flex-shrink: 0;
+}
+
+.comment-readonly-notice {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.6rem 1rem;
+    font-size: 0.82rem;
+    color: var(--text-color-secondary);
+    border-top: 1px solid var(--surface-border);
+    background: var(--surface-section);
 }
 
 .comment-seen-time {
