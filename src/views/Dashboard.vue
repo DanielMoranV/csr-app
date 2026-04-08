@@ -476,7 +476,7 @@ watch(showAdvancedStats, (newValue) => {
 
                     <KPICard
                         title="Promedio Permanencia (PP)"
-                        :value="`${formatNumber(hospitalDashboard.hospitalizations?.average_length_of_stay || 0)} días`"
+                        :value="`${formatNumber(averageStayDays)} días`"
                         :subtitle="`${hospitalDashboard.hospitalizations?.total_discharges || hospitalDashboard.hospitalizations?.completed || 0} egresos`"
                         icon="pi-calendar-times"
                         color="purple"

@@ -78,11 +78,11 @@ const formatStayDays = (days) => {
                 </template>
             </Column>
 
-            <Column field="avg_length_of_stay" header="PP" :sortable="true" headerStyle="width: 100px">
+            <Column field="avg_stay_days" header="PP" :sortable="true" headerStyle="width: 100px">
                 <template #body="{ data }">
                     <div class="stay-cell">
                         <i class="pi pi-calendar-times text-purple-400 mr-1"></i>
-                        <span class="font-semibold">{{ formatStayDays(data.avg_length_of_stay) }}</span>
+                        <span class="font-semibold">{{ formatStayDays(data.avg_stay_days) }}</span>
                     </div>
                 </template>
             </Column>
