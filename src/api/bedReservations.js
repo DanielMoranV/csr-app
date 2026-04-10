@@ -41,5 +41,21 @@ export const bedReservations = {
      * @param {number} id - The ID of the reservation to delete.
      * @returns {Promise}
      */
-    delete: (id) => axios.delete(`/bed-reservations/${id}`)
+    delete: (id) => axios.delete(`/bed-reservations/${id}`),
+
+    /**
+     * Gets the audit history for a specific bed reservation.
+     * @param {number} reservationId - The ID of the reservation.
+     * @param {object} [params] - Optional query params (per_page, page, etc.).
+     * @returns {Promise} Resolves to { data: AuditEntry[], pagination: {...} }
+     */
+    getAudits: (reservationId, params = {}) =>
+        axios.get('/bed-reservations/audits', {
+            params: {
+                bed_reservation_id: reservationId,
+                per_page: 50,
+                ...params
+            }
+        })
 };
+
