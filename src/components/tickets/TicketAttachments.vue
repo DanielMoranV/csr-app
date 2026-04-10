@@ -172,7 +172,7 @@ const canDeleteAttachment = (attachment) => {
     const currentUser = authStore.getUser;
     if (!currentUser) return false;
     // User who uploaded the file OR the ticket creator can delete
-    return currentUser.id === attachment.user_id || (currentTicket.value && currentUser.id === currentTicket.value.creator_user_id);
+    return currentUser.id === attachment.user_id || (currentTicket.value && currentUser.id === currentTicket.value.creator?.id);
 };
 
 const formatBytes = (bytes, decimals = 2) => {

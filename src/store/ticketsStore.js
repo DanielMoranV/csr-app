@@ -103,7 +103,7 @@ export const useTicketsStore = defineStore('tickets', () => {
         let notificationMessage = '';
         let severity = 'info';
 
-        if (ticket.assignee_user_id === currentUserId) {
+        if (ticket.assignee?.id === currentUserId) {
             notificationMessage = `Te han asignado el ticket: ${ticket.title}`;
             severity = 'success';
         } else if (previousAssigneeId === currentUserId) {
@@ -464,8 +464,8 @@ export const useTicketsStore = defineStore('tickets', () => {
         const isFinal = ['concluido', 'rechazado', 'anulado'].includes(ticket.status);
         if (isFinal) return [];
 
-        const isCreator  = ticket.creator_user_id === user.id;
-        const isAssignee = ticket.assignee_user_id === user.id;
+        const isCreator  = ticket.creator?.id === user.id;
+        const isAssignee = ticket.assignee?.id === user.id;
         const samePos    = !!(user.position && ticket.assignee_position
                             && user.position === ticket.assignee_position);
 

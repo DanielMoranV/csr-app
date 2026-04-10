@@ -76,12 +76,12 @@ const isCreateMode = computed(() => props.mode === 'create');
 const currentUser = computed(() => authStore.getUser);
 
 const isCreator = computed(() => {
-    return currentUser.value && currentTicket.value?.creator_user_id === currentUser.value.id;
+    return currentUser.value && currentTicket.value?.creator?.id === currentUser.value.id;
 });
 
 const isAssignee = computed(() => {
     if (!currentUser.value || !currentTicket.value) return false;
-    const isUserAssignee = currentTicket.value.assignee_user_id === currentUser.value.id;
+    const isUserAssignee = currentTicket.value.assignee?.id === currentUser.value.id;
     const hasAssignedPosition = currentTicket.value.assignee_position === currentUser.value.position;
     return isUserAssignee || hasAssignedPosition;
 });
@@ -356,7 +356,7 @@ const loadTicketData = (ticket) => {
     Object.assign(ticketForm, {
         title: ticket.title || '',
         description: ticket.description || '',
-        assignee_user_id: ticket.assignee_user_id || null,
+        assignee_user_id: ticket.assignee?.id || null,
         assignee_position: ticket.assignee_position || null,
         due_date: ticket.due_date ? new Date(ticket.due_date) : null,
         priority: ticket.priority || null,

@@ -207,7 +207,7 @@ const handleDeleteTicket = (ticketData) => {
 
 const isCreatorOf = (ticketData) => {
     const currentUser = authStore.getUser;
-    return currentUser && currentUser.id === ticketData.creator_user_id;
+    return currentUser && currentUser.id === ticketData.creator?.id;
 };
 
 // Generar items del menú de acciones
@@ -221,7 +221,7 @@ const getActionItems = (ticketData) => {
     ];
 
     const currentUser = authStore.getUser;
-    const isCreator = currentUser && currentUser.id === ticketData.creator_user_id;
+    const isCreator = currentUser && currentUser.id === ticketData.creator?.id;
 
     // Solo el creador puede editar y eliminar
     if (isCreator) {
