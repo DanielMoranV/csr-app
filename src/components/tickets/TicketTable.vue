@@ -1,6 +1,6 @@
 <script setup>
 import { useAuthStore } from '@/store/authStore';
-import TicketStatusChanger from './TicketStatusChanger.vue';
+
 import Badge from 'primevue/badge';
 import Button from 'primevue/button';
 import Column from 'primevue/column';
@@ -32,7 +32,7 @@ const props = defineProps({
     }
 });
 
-const emit = defineEmits(['view-ticket', 'edit-ticket', 'create-ticket', 'delete-ticket', 'refresh', 'row-select', 'row-unselect', 'status-changed']);
+const emit = defineEmits(['view-ticket', 'edit-ticket', 'create-ticket', 'delete-ticket', 'refresh', 'row-select', 'row-unselect']);
 
 const toast = useToast();
 const authStore = useAuthStore();
@@ -244,10 +244,7 @@ const getActionItems = (ticketData) => {
     return items;
 };
 
-// Manejar cambio de estado
-const handleStatusChanged = (data) => {
-    emit('status-changed', data);
-};
+
 </script>
 
 <template>
@@ -365,9 +362,12 @@ const handleStatusChanged = (data) => {
             </Column>
 
             <!-- Estado - Oculta en móvil (se muestra en título) -->
-            <Column field="status" header="Estado" :sortable="true" style="min-width: 180px; text-align: center" class="column-status">
+            <Column field="status" header="Estado" :sortable="true" style="min-width: 160px; text-align: center" class="column-status">
                 <template #body="{ data }">
-                    <TicketStatusChanger :ticket="data" @status-changed="handleStatusChanged" />
+                    <Tag :severity="getStatusSeverity(data.status)" class="ticket-status-tag-display" rounded>
+                        <i :class="getStatusIcon(data.status)" class="mr-1"></i>
+                        <span>{{ data.status }}</span>
+                    </Tag>
                 </template>
             </Column>
 
