@@ -366,225 +366,154 @@ const PRIORITY_COLORS = {
 
 <template>
     <div class="gantt-page">
-        <!-- Header -->
+
+        <!-- ═══ Header card ═══ -->
         <div class="gantt-header-card">
-            <div class="flex items-center gap-3 mb-4">
-                <Button icon="pi pi-arrow-left" text severity="secondary" @click="router.push({ name: 'tickets' })" v-tooltip.right="'Volver a Tickets'" />
-                <div class="flex items-center gap-2">
-                    <i class="pi pi-chart-gantt text-primary-500 text-xl"></i>
+
+            <!-- Title row -->
+            <div class="gantt-title-row">
+                <div class="flex items-center gap-3">
+                    <Button icon="pi pi-arrow-left" text severity="secondary" @click="router.push({ name: 'tickets' })" v-tooltip.right="'Volver a Tickets'" />
+                    <i class="pi pi-chart-gantt text-primary-500" style="font-size:1.3rem"></i>
                     <h1 class="gantt-title">Diagrama de Gantt — Tickets</h1>
                 </div>
+                <span v-if="!isLoading && ganttRows.length > 0" class="gantt-count-pill">
+                    {{ ganttRows.length }} {{ ganttRows.length === 1 ? 'ticket' : 'tickets' }}
+                </span>
             </div>
 
-            <!-- Controles -->
+            <!-- Controls: stacked bands -->
             <div class="gantt-controls">
 
-                <!-- ── Selector de período ── -->
-                <div class="period-selector">
-                    <!-- Toggle modo -->
-                    <div class="mode-toggle">
-                        <button
-                            class="mode-btn"
-                            :class="{ 'mode-btn--active': viewMode === 'month' }"
-                            @click="switchToMonth"
-                        >
-                            <i class="pi pi-calendar mr-1 text-xs"></i>Por mes
-                        </button>
-                        <button
-                            class="mode-btn"
-                            :class="{ 'mode-btn--active': viewMode === 'range' }"
-                            @click="switchToRange"
-                        >
-                            <i class="pi pi-calendar-plus mr-1 text-xs"></i>Por rango
-                        </button>
+                <!-- Band 1 · Período -->
+                <div class="controls-band">
+                    <span class="controls-band-label">Período</span>
+                    <div class="period-inner">
+                        <div class="mode-toggle">
+                            <button class="mode-btn" :class="{ 'mode-btn--active': viewMode === 'month' }" @click="switchToMonth">
+                                <i class="pi pi-calendar"></i> Por mes
+                            </button>
+                            <button class="mode-btn" :class="{ 'mode-btn--active': viewMode === 'range' }" @click="switchToRange">
+                                <i class="pi pi-calendar-plus"></i> Por rango
+                            </button>
+                        </div>
+
+                        <template v-if="viewMode === 'month'">
+                            <div class="month-nav">
+                                <button class="month-nav-btn" @click="prevMonth" v-tooltip.top="'Mes anterior'">
+                                    <i class="pi pi-chevron-left"></i>
+                                </button>
+                                <div class="month-selects">
+                                    <Select v-model="selectedMonth" :options="MONTHS" optionLabel="label" optionValue="value" class="month-select-month" @change="fetchGantt" />
+                                    <Select v-model="selectedYear" :options="yearOptions" class="month-select-year" @change="fetchGantt" />
+                                </div>
+                                <button class="month-nav-btn" @click="nextMonth" v-tooltip.top="'Mes siguiente'">
+                                    <i class="pi pi-chevron-right"></i>
+                                </button>
+                                <button v-if="!isCurrentMonth" class="month-today-btn" @click="goToCurrentMonth" v-tooltip.top="'Ir al mes actual'">Hoy</button>
+                            </div>
+                        </template>
+
+                        <template v-else>
+                            <div class="range-inputs">
+                                <div class="control-group">
+                                    <label class="control-label">Desde</label>
+                                    <Calendar v-model="rangeFromManual" dateFormat="dd/mm/yy" :showIcon="true" class="control-input" />
+                                </div>
+                                <div class="control-group">
+                                    <label class="control-label">Hasta</label>
+                                    <Calendar v-model="rangeToManual" dateFormat="dd/mm/yy" :showIcon="true" :minDate="rangeFromManual ?? undefined" class="control-input" />
+                                </div>
+                            </div>
+                        </template>
                     </div>
+                </div>
 
-                    <!-- Modo mes: navegación por flechas + selects -->
-                    <template v-if="viewMode === 'month'">
-                        <div class="month-nav">
-                            <button class="month-nav-btn" @click="prevMonth" v-tooltip.top="'Mes anterior'">
-                                <i class="pi pi-chevron-left"></i>
-                            </button>
-
-                            <div class="month-selects">
-                                <Select
-                                    v-model="selectedMonth"
-                                    :options="MONTHS"
-                                    optionLabel="label"
-                                    optionValue="value"
-                                    class="month-select-month"
-                                    @change="fetchGantt"
-                                />
-                                <Select
-                                    v-model="selectedYear"
-                                    :options="yearOptions"
-                                    class="month-select-year"
-                                    @change="fetchGantt"
-                                />
-                            </div>
-
-                            <button class="month-nav-btn" @click="nextMonth" v-tooltip.top="'Mes siguiente'">
-                                <i class="pi pi-chevron-right"></i>
-                            </button>
-
-                            <button
-                                v-if="!isCurrentMonth"
-                                class="month-today-btn"
-                                @click="goToCurrentMonth"
-                                v-tooltip.top="'Ir al mes actual'"
-                            >
-                                Hoy
-                            </button>
+                <!-- Band 2 · Filtros -->
+                <div class="controls-band">
+                    <span class="controls-band-label">Filtros</span>
+                    <div class="filters-inner">
+                        <div class="control-group">
+                            <label class="control-label"><i class="pi pi-user"></i> Usuario asignado</label>
+                            <Select
+                                v-model="filterAssigneeUserId"
+                                :options="filteredUserList"
+                                optionLabel="name"
+                                optionValue="id"
+                                placeholder="Todos"
+                                :filter="true"
+                                filterPlaceholder="Buscar usuario..."
+                                @filter="onFilterUsers"
+                                @change="onUserSelected"
+                                :disabled="!!filterAssigneePosition"
+                                :showClear="true"
+                                class="control-input"
+                            />
+                            <small v-if="filterAssigneePosition" class="control-hint">Limpie el área primero</small>
                         </div>
-                    </template>
 
-                    <!-- Modo rango: calendarios from/to -->
-                    <template v-else>
-                        <div class="range-inputs">
-                            <div class="control-group">
-                                <label class="control-label">Desde</label>
-                                <Calendar
-                                    v-model="rangeFromManual"
-                                    dateFormat="dd/mm/yy"
-                                    :showIcon="true"
-                                    class="control-input"
-                                />
-                            </div>
-                            <div class="control-group">
-                                <label class="control-label">Hasta</label>
-                                <Calendar
-                                    v-model="rangeToManual"
-                                    dateFormat="dd/mm/yy"
-                                    :showIcon="true"
-                                    :minDate="rangeFromManual ?? undefined"
-                                    class="control-input"
-                                />
-                            </div>
+                        <div class="control-group">
+                            <label class="control-label"><i class="pi pi-briefcase"></i> Área / Posición</label>
+                            <Select
+                                v-model="filterAssigneePosition"
+                                :options="positionList"
+                                optionLabel="name"
+                                optionValue="id"
+                                placeholder="Todas"
+                                :filter="true"
+                                filterPlaceholder="Buscar área..."
+                                @change="onPositionSelected"
+                                :disabled="!!filterAssigneeUserId"
+                                :showClear="true"
+                                class="control-input"
+                            />
+                            <small v-if="filterAssigneeUserId" class="control-hint">Limpie el usuario primero</small>
                         </div>
-                    </template>
-                </div>
 
-                <!-- Divisor visual -->
-                <div class="control-divider" aria-hidden="true"></div>
+                        <div class="control-group">
+                            <label class="control-label"><i class="pi pi-tag"></i> Estado planificación</label>
+                            <Select
+                                v-model="filterScheduleStatus"
+                                :options="scheduleStatusOptions"
+                                optionLabel="label"
+                                optionValue="value"
+                                placeholder="Todos"
+                                :showClear="true"
+                                class="control-input"
+                            />
+                        </div>
 
-                <!-- Filtro por usuario asignado -->
-                <div class="control-group">
-                    <label class="control-label">
-                        <i class="pi pi-user text-xs mr-1"></i>Usuario asignado
-                    </label>
-                    <Select
-                        v-model="filterAssigneeUserId"
-                        :options="filteredUserList"
-                        optionLabel="name"
-                        optionValue="id"
-                        placeholder="Todos los usuarios"
-                        :filter="true"
-                        filterPlaceholder="Buscar usuario..."
-                        @filter="onFilterUsers"
-                        @change="onUserSelected"
-                        :disabled="!!filterAssigneePosition"
-                        :showClear="true"
-                        class="control-input"
-                    />
-                    <small v-if="filterAssigneePosition" class="control-hint">
-                        Limpie el filtro de área para filtrar por usuario
-                    </small>
-                </div>
-
-                <!-- Filtro por área/posición -->
-                <div class="control-group">
-                    <label class="control-label">
-                        <i class="pi pi-briefcase text-xs mr-1"></i>Área / Posición
-                    </label>
-                    <Select
-                        v-model="filterAssigneePosition"
-                        :options="positionList"
-                        optionLabel="name"
-                        optionValue="id"
-                        placeholder="Todas las áreas"
-                        :filter="true"
-                        filterPlaceholder="Buscar área..."
-                        @change="onPositionSelected"
-                        :disabled="!!filterAssigneeUserId"
-                        :showClear="true"
-                        class="control-input"
-                    />
-                    <small v-if="filterAssigneeUserId" class="control-hint">
-                        Limpie el filtro de usuario para filtrar por área
-                    </small>
-                </div>
-
-                <!-- Divisor visual -->
-                <div class="control-divider" aria-hidden="true"></div>
-
-                <!-- Estado de planificación -->
-                <div class="control-group">
-                    <label class="control-label">
-                        <i class="pi pi-chart-gantt text-xs mr-1"></i>Estado de planificación
-                    </label>
-                    <Select
-                        v-model="filterScheduleStatus"
-                        :options="scheduleStatusOptions"
-                        optionLabel="label"
-                        optionValue="value"
-                        placeholder="Todos"
-                        :showClear="true"
-                        class="control-input"
-                    />
-                </div>
-
-                <!-- Acciones -->
-                <div class="control-actions">
-                    <Button label="Actualizar" icon="pi pi-refresh" @click="fetchGantt" :loading="isLoading" />
-                    <Button
-                        v-if="filterAssigneeUserId || filterAssigneePosition || filterScheduleStatus"
-                        label="Limpiar filtros"
-                        icon="pi pi-times"
-                        severity="secondary"
-                        text
-                        @click="clearFilters"
-                    />
+                        <div class="control-actions">
+                            <Button label="Actualizar" icon="pi pi-refresh" size="small" @click="fetchGantt" :loading="isLoading" />
+                            <Button
+                                v-if="filterAssigneeUserId || filterAssigneePosition || filterScheduleStatus"
+                                label="Limpiar"
+                                icon="pi pi-times"
+                                severity="secondary"
+                                outlined
+                                size="small"
+                                @click="clearFilters"
+                            />
+                        </div>
+                    </div>
                 </div>
             </div>
 
-            <!-- Filtros activos -->
-            <div
-                v-if="filterAssigneeUserId || filterAssigneePosition || filterScheduleStatus"
-                class="gantt-active-filters"
-            >
-                <span class="active-filters-label">Filtros activos:</span>
-                <Tag
-                    v-if="filterAssigneeUserId"
-                    :value="`Usuario: ${userList.find(u => u.id === filterAssigneeUserId)?.name ?? filterAssigneeUserId}`"
-                    severity="info"
-                    class="text-xs"
-                    :removable="true"
-                    @remove="filterAssigneeUserId = null; fetchGantt()"
-                />
-                <Tag
-                    v-if="filterAssigneePosition"
-                    :value="`Área: ${filterAssigneePosition}`"
-                    severity="info"
-                    class="text-xs"
-                    :removable="true"
-                    @remove="filterAssigneePosition = null; fetchGantt()"
-                />
-                <Tag
-                    v-if="filterScheduleStatus"
-                    :value="`Estado: ${scheduleStatusOptions.find(o => o.value === filterScheduleStatus)?.label}`"
-                    severity="secondary"
-                    class="text-xs"
-                    :removable="true"
-                    @remove="filterScheduleStatus = null; fetchGantt()"
-                />
+            <!-- Active filter chips -->
+            <div v-if="filterAssigneeUserId || filterAssigneePosition || filterScheduleStatus" class="gantt-active-filters">
+                <span class="active-filters-label"><i class="pi pi-filter-fill mr-1"></i>Filtros activos:</span>
+                <Tag v-if="filterAssigneeUserId" :value="`Usuario: ${userList.find(u => u.id === filterAssigneeUserId)?.name ?? filterAssigneeUserId}`" severity="info" class="text-xs" :removable="true" @remove="filterAssigneeUserId = null; fetchGantt()" />
+                <Tag v-if="filterAssigneePosition" :value="`Área: ${filterAssigneePosition}`" severity="info" class="text-xs" :removable="true" @remove="filterAssigneePosition = null; fetchGantt()" />
+                <Tag v-if="filterScheduleStatus" :value="`Estado: ${scheduleStatusOptions.find(o => o.value === filterScheduleStatus)?.label}`" severity="secondary" class="text-xs" :removable="true" @remove="filterScheduleStatus = null; fetchGantt()" />
             </div>
 
-            <!-- Leyenda -->
+            <!-- Legend -->
             <div class="gantt-legend">
                 <span class="legend-item" v-for="(cfg, key) in SCHEDULE_STATUS" :key="key">
                     <span class="legend-dot" :style="{ background: cfg.color }"></span>
                     {{ cfg.label }}
                 </span>
+                <span class="legend-sep">·</span>
                 <span class="legend-item">
                     <span class="legend-line legend-today"></span>
                     Hoy
@@ -596,215 +525,273 @@ const PRIORITY_COLORS = {
             </div>
         </div>
 
-        <!-- Cargando -->
-        <div v-if="isLoading" class="gantt-loading">
-            <i class="pi pi-spin pi-spinner text-3xl text-primary-500"></i>
-            <p>Cargando diagrama...</p>
+        <!-- Loading -->
+        <div v-if="isLoading" class="gantt-state-panel">
+            <i class="pi pi-spin pi-spinner" style="font-size:2.5rem; color:var(--primary-500)"></i>
+            <p class="mt-3 text-color-secondary">Cargando diagrama...</p>
         </div>
 
-        <!-- Sin rango -->
-        <div v-else-if="totalDays <= 0" class="gantt-empty">
-            <i class="pi pi-calendar text-4xl text-color-secondary opacity-50"></i>
-            <p>Seleccione un rango de fechas válido para visualizar el diagrama.</p>
+        <!-- No range -->
+        <div v-else-if="totalDays <= 0" class="gantt-state-panel">
+            <i class="pi pi-calendar" style="font-size:3rem; opacity:0.35"></i>
+            <p class="mt-3">Seleccione un rango de fechas válido.</p>
         </div>
 
-        <!-- Sin datos -->
-        <div v-else-if="ganttRows.length === 0" class="gantt-empty">
-            <i class="pi pi-inbox text-4xl text-color-secondary opacity-50"></i>
-            <p>No hay tickets con fechas de implementación en este período.</p>
+        <!-- No data -->
+        <div v-else-if="ganttRows.length === 0" class="gantt-state-panel">
+            <i class="pi pi-inbox" style="font-size:3rem; opacity:0.35"></i>
+            <p class="mt-3">No hay tickets en este período.</p>
             <small class="text-color-secondary">Los tickets sin planificación también aparecen cuando no se filtra por estado.</small>
         </div>
 
-        <!-- Gantt -->
+        <!-- ═══ Gantt body ═══ -->
         <div v-else class="gantt-container">
-            <!-- Encabezado de fechas -->
-            <div class="gantt-grid">
-                <!-- Columna etiqueta (fija) -->
-                <div class="gantt-label-col">
-                    <div class="gantt-header-cell gantt-header-label">Ticket</div>
+
+            <!-- Fixed label column -->
+            <div class="gantt-col-labels">
+                <div class="gantt-col-header">
+                    <i class="pi pi-list mr-2"></i>Ticket
                 </div>
-
-                <!-- Área de barras -->
-                <div class="gantt-bar-col">
-                    <!-- Header de días/semanas/meses -->
-                    <div class="gantt-date-header">
-                        <div
-                            v-for="col in headerColumns"
-                            :key="col.offset"
-                            class="gantt-date-col"
-                            :class="{ 'is-weekend': col.isWeekend }"
-                            :style="{ width: (col.span / totalDays * 100) + '%' }"
-                        >
-                            <span class="gantt-date-main">{{ col.label }}</span>
-                            <span v-if="col.subLabel" class="gantt-date-sub">{{ col.subLabel }}</span>
-                        </div>
-                    </div>
-
-                    <!-- Cuerpo: área de barras con línea de hoy -->
-                    <div class="gantt-body-area">
-                        <!-- Línea de hoy -->
-                        <div
-                            v-if="todayOffset !== null"
-                            class="gantt-today-line"
-                            :style="{ left: todayOffset + '%' }"
-                        ></div>
-
-                        <!-- Filas de tickets -->
-                        <div
-                            v-for="row in ganttRows"
-                            :key="row.id"
-                            class="gantt-row"
-                        >
-                            <!-- Fondo alternado (grilla) -->
-                            <div
-                                v-for="col in headerColumns"
-                                :key="col.offset"
-                                class="gantt-bg-col"
-                                :class="{ 'is-weekend': col.isWeekend }"
-                                :style="{ width: (col.span / totalDays * 100) + '%' }"
-                            ></div>
-
-                            <!-- Barra de implementación -->
-                            <div
-                                v-if="row.barLeft !== null"
-                                class="gantt-bar"
-                                :class="row.cfg.bgClass"
-                                :style="{ left: row.barLeft + '%', width: row.barWidth + '%' }"
-                                v-tooltip.top="`#${row.id} · ${row.title} · ${formatDate(row.implementation_start)} → ${formatDate(row.implementation_end)}`"
-                            >
-                                <span class="gantt-bar-label">{{ row.title }}</span>
-                            </div>
-
-                            <!-- Barra fantasma para unplanned (sin fechas) -->
-                            <div
-                                v-else-if="row.schedule_status === 'unplanned'"
-                                class="gantt-bar-unplanned-placeholder"
-                                v-tooltip.top="`#${row.id} · ${row.title} · Sin fechas planificadas`"
-                            >
-                                <i class="pi pi-clock text-xs mr-1"></i>
-                                <span>{{ row.title }}</span>
-                            </div>
-
-                            <!-- Marcador de fecha límite (due_date) -->
-                            <div
-                                v-if="row.duePct !== null"
-                                class="gantt-due-marker"
-                                :style="{ left: row.duePct + '%' }"
-                                v-tooltip.top="`Fecha límite: ${formatDate(row.due_date)}`"
-                            ></div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-
-            <!-- Lista de etiquetas de tickets (sincronizada) -->
-            <div class="gantt-labels-list">
-                <div class="gantt-header-cell gantt-header-label"></div>
                 <div
                     v-for="row in ganttRows"
                     :key="row.id"
                     class="gantt-label-row"
                     @click="router.push({ name: 'tickets', query: { ticket_id: row.id } })"
-                    v-tooltip.right="`Ver ticket #${row.id}`"
+                    v-tooltip.right="`Abrir ticket #${row.id}`"
                 >
-                    <div class="gantt-label-id">#{{ row.id }}</div>
+                    <span class="gantt-label-id">#{{ row.id }}</span>
                     <div class="gantt-label-info">
                         <span class="gantt-label-title">{{ row.title }}</span>
                         <div class="gantt-label-meta">
                             <Tag
                                 :value="SCHEDULE_STATUS[row.schedule_status]?.label ?? row.schedule_status"
                                 :severity="STATUS_SEVERITY[row.schedule_status] ?? 'secondary'"
-                                class="text-xs"
+                                class="label-tag-sm"
                             />
-                            <span
-                                v-if="row.priority"
-                                class="gantt-priority-dot"
-                                :style="{ background: PRIORITY_COLORS[row.priority] ?? '#9ca3af' }"
-                                v-tooltip.top="row.priority"
-                            ></span>
-                            <span v-if="row.assignee" class="gantt-label-assignee">
-                                <i class="pi pi-user text-xs"></i> {{ row.assignee.name }}
+                            <span v-if="row.priority" class="gantt-priority-badge" :data-priority="row.priority">
+                                {{ row.priority }}
                             </span>
+                        </div>
+                        <div class="gantt-label-assignee-row">
+                            <template v-if="row.assignee">
+                                <i class="pi pi-user"></i>
+                                <span>{{ row.assignee.name }}</span>
+                            </template>
+                            <template v-else-if="row.assignee_position">
+                                <i class="pi pi-briefcase"></i>
+                                <span>{{ row.assignee_position }}</span>
+                            </template>
+                            <span v-else class="no-assignee">Sin asignar</span>
                         </div>
                     </div>
                 </div>
             </div>
+
+            <!-- Scrollable bar column -->
+            <div class="gantt-col-bars">
+                <!-- Date header -->
+                <div class="gantt-date-header">
+                    <div
+                        v-for="col in headerColumns"
+                        :key="col.offset"
+                        class="gantt-date-col"
+                        :class="{ 'is-weekend': col.isWeekend }"
+                        :style="{ width: (col.span / totalDays * 100) + '%' }"
+                    >
+                        <span class="gantt-date-main">{{ col.label }}</span>
+                        <span v-if="col.subLabel" class="gantt-date-sub">{{ col.subLabel }}</span>
+                    </div>
+                </div>
+
+                <!-- Bar body -->
+                <div class="gantt-body-area">
+                    <div v-if="todayOffset !== null" class="gantt-today-line" :style="{ left: todayOffset + '%' }"></div>
+
+                    <div v-for="row in ganttRows" :key="row.id" class="gantt-bar-row">
+                        <!-- Grid bg cols -->
+                        <div
+                            v-for="col in headerColumns"
+                            :key="col.offset"
+                            class="gantt-bg-col"
+                            :class="{ 'is-weekend': col.isWeekend }"
+                            :style="{ width: (col.span / totalDays * 100) + '%' }"
+                        ></div>
+
+                        <!-- Implementation bar -->
+                        <div
+                            v-if="row.barLeft !== null"
+                            class="gantt-bar"
+                            :class="row.cfg.bgClass"
+                            :style="{ left: row.barLeft + '%', width: row.barWidth + '%' }"
+                            v-tooltip.top="`#${row.id} · ${row.title} · ${formatDate(row.implementation_start)} → ${formatDate(row.implementation_end)}`"
+                        >
+                            <span class="gantt-bar-label">{{ row.title }}</span>
+                        </div>
+
+                        <!-- Unplanned placeholder -->
+                        <div
+                            v-else-if="row.schedule_status === 'unplanned'"
+                            class="gantt-bar-unplanned"
+                            v-tooltip.top="`#${row.id} — Sin fechas de implementación definidas`"
+                        >
+                            <i class="pi pi-clock"></i>
+                            <span>Sin planificar</span>
+                        </div>
+
+                        <!-- Due date marker -->
+                        <div
+                            v-if="row.duePct !== null"
+                            class="gantt-due-marker"
+                            :style="{ left: row.duePct + '%' }"
+                            v-tooltip.top="`Fecha límite: ${formatDate(row.due_date)}`"
+                        ></div>
+                    </div>
+                </div>
+            </div>
         </div>
+
     </div>
 </template>
 
 <style scoped>
-/* ─── Layout general ─── */
+/* ─── Page layout ─── */
 .gantt-page {
     padding: 1.25rem;
     min-height: 100vh;
     background: var(--surface-ground);
     display: flex;
     flex-direction: column;
-    gap: 1.25rem;
+    gap: 1rem;
 }
 
+/* ─── Header card ─── */
 .gantt-header-card {
     background: var(--surface-card);
     border: 1px solid var(--surface-border);
     border-radius: 12px;
     padding: 1.25rem 1.5rem;
-    box-shadow: 0 2px 8px rgba(0,0,0,0.06);
+    box-shadow: 0 1px 6px rgba(0,0,0,0.05);
+}
+
+.gantt-title-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 1.25rem;
 }
 
 .gantt-title {
-    font-size: 1.25rem;
+    font-size: 1.2rem;
     font-weight: 700;
     margin: 0;
     color: var(--text-color);
 }
 
-/* ─── Controles ─── */
+.gantt-count-pill {
+    background: var(--primary-100);
+    color: var(--primary-700);
+    border-radius: 20px;
+    padding: 0.2rem 0.8rem;
+    font-size: 0.78rem;
+    font-weight: 700;
+    border: 1px solid var(--primary-200);
+}
+
+/* ─── Controls: stacked bands ─── */
 .gantt-controls {
     display: flex;
+    flex-direction: column;
+    gap: 0.6rem;
+    margin-bottom: 1rem;
+}
+
+.controls-band {
+    display: flex;
+    align-items: flex-start;
+    gap: 1rem;
+    padding: 0.75rem 1rem;
+    background: var(--surface-50);
+    border: 1px solid var(--surface-100);
+    border-radius: 8px;
+}
+
+.controls-band-label {
+    font-size: 0.7rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.07em;
+    color: var(--text-color-secondary);
+    padding-top: 0.55rem;
+    white-space: nowrap;
+    min-width: 50px;
+}
+
+/* Period band */
+.period-inner {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
     flex-wrap: wrap;
+    flex: 1;
+}
+
+/* Filters band */
+.filters-inner {
+    display: flex;
     align-items: flex-end;
     gap: 0.75rem;
-    margin-bottom: 1rem;
+    flex-wrap: wrap;
+    flex: 1;
 }
 
 .control-group {
     display: flex;
     flex-direction: column;
-    gap: 0.3rem;
-    min-width: 160px;
+    gap: 0.25rem;
+    min-width: 175px;
 }
 
 .control-label {
-    font-size: 0.78rem;
+    font-size: 0.75rem;
     font-weight: 600;
     color: var(--text-color-secondary);
+    display: flex;
+    align-items: center;
+    gap: 0.2rem;
 }
 
-.control-input {
-    min-width: 160px;
+.control-label i { font-size: 0.7rem; }
+
+.control-input { min-width: 175px; }
+
+.control-hint {
+    font-size: 0.7rem;
+    color: var(--orange-500);
+    line-height: 1.3;
 }
 
-/* ── Selector de período ── */
-.period-selector {
+.control-actions {
     display: flex;
     align-items: center;
     gap: 0.5rem;
-    flex-wrap: wrap;
+    padding-bottom: 0.1rem;
 }
 
-/* Toggle mes/rango */
+/* ── Mode toggle ── */
 .mode-toggle {
     display: flex;
-    background: var(--surface-100);
+    background: var(--surface-0);
+    border: 1px solid var(--surface-300);
     border-radius: 8px;
     padding: 3px;
     gap: 2px;
-    border: 1px solid var(--surface-200);
 }
 
 .mode-btn {
-    padding: 0.35rem 0.75rem;
+    display: flex;
+    align-items: center;
+    gap: 0.3rem;
+    padding: 0.3rem 0.7rem;
     border-radius: 6px;
     font-size: 0.78rem;
     font-weight: 600;
@@ -816,22 +803,12 @@ const PRIORITY_COLORS = {
     white-space: nowrap;
 }
 
-.mode-btn:hover {
-    background: var(--surface-200);
-    color: var(--text-color);
-}
+.mode-btn i { font-size: 0.75rem; }
+.mode-btn:hover { background: var(--surface-200); color: var(--text-color); }
+.mode-btn--active { background: var(--primary-500); color: #fff; }
+.mode-btn--active:hover { background: var(--primary-600); color: #fff; }
 
-.mode-btn--active {
-    background: var(--primary-500);
-    color: #fff;
-}
-
-.mode-btn--active:hover {
-    background: var(--primary-600);
-    color: #fff;
-}
-
-/* Navegación de mes */
+/* Month navigation */
 .month-nav {
     display: flex;
     align-items: center;
@@ -853,28 +830,14 @@ const PRIORITY_COLORS = {
     flex-shrink: 0;
 }
 
-.month-nav-btn:hover {
-    background: var(--primary-50);
-    border-color: var(--primary-300);
-    color: var(--primary-600);
-}
+.month-nav-btn:hover { background: var(--primary-50); border-color: var(--primary-300); color: var(--primary-600); }
 
-.month-selects {
-    display: flex;
-    align-items: center;
-    gap: 0.25rem;
-}
-
-.month-select-month {
-    min-width: 120px;
-}
-
-.month-select-year {
-    min-width: 80px;
-}
+.month-selects { display: flex; align-items: center; gap: 0.25rem; }
+.month-select-month { min-width: 120px; }
+.month-select-year  { min-width: 80px; }
 
 .month-today-btn {
-    padding: 0.3rem 0.65rem;
+    padding: 0.28rem 0.65rem;
     border-radius: 6px;
     border: 1px solid var(--primary-300);
     background: var(--primary-50);
@@ -885,12 +848,8 @@ const PRIORITY_COLORS = {
     transition: background 0.15s;
     white-space: nowrap;
 }
+.month-today-btn:hover { background: var(--primary-100); }
 
-.month-today-btn:hover {
-    background: var(--primary-100);
-}
-
-/* Entradas de rango libre */
 .range-inputs {
     display: flex;
     gap: 0.5rem;
@@ -898,53 +857,30 @@ const PRIORITY_COLORS = {
     align-items: flex-end;
 }
 
-.control-divider {
-    width: 1px;
-    height: 40px;
-    background: var(--surface-border);
-    align-self: flex-end;
-    margin-bottom: 0.1rem;
-    flex-shrink: 0;
-}
-
-.control-hint {
-    font-size: 0.72rem;
-    color: var(--text-color-secondary);
-    margin-top: 0.15rem;
-    line-height: 1.3;
-}
-
-.control-actions {
-    display: flex;
-    align-items: center;
-    gap: 0.5rem;
-    align-self: flex-end;
-    padding-bottom: 0.05rem;
-}
-
-/* Filtros activos */
+/* ── Active filter chips ── */
 .gantt-active-filters {
     display: flex;
     align-items: center;
     flex-wrap: wrap;
     gap: 0.4rem;
-    margin-top: 0.75rem;
-    padding-top: 0.75rem;
-    border-top: 1px solid var(--surface-100);
+    padding: 0.55rem 0.875rem;
+    background: var(--blue-50);
+    border: 1px solid var(--blue-100);
+    border-radius: 8px;
+    margin-bottom: 0.75rem;
 }
 
 .active-filters-label {
-    font-size: 0.78rem;
-    font-weight: 600;
-    color: var(--text-color-secondary);
-    margin-right: 0.25rem;
+    font-size: 0.75rem;
+    font-weight: 700;
+    color: var(--blue-700);
+    display: flex;
+    align-items: center;
+    gap: 0.2rem;
+    margin-right: 0.2rem;
 }
 
-.app-dark .gantt-active-filters {
-    border-top-color: var(--surface-700);
-}
-
-/* ─── Leyenda ─── */
+/* ─── Legend ─── */
 .gantt-legend {
     display: flex;
     flex-wrap: wrap;
