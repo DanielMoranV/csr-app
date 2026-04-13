@@ -59,5 +59,27 @@ export const TicketService = {
     async getGlobalUnreadCommentsCount() {
         const response = await api.get('/tickets/unread-comments-count');
         return response;
+    },
+
+    /**
+     * Set or update implementation dates for a ticket.
+     * Only the assignee of the ticket is authorized (403 otherwise).
+     * PATCH /tickets/{id}/implementation
+     * @param {number} id
+     * @param {{ implementation_start: string, implementation_end: string }} data - YYYY-MM-DD format
+     */
+    async updateImplementation(id, data) {
+        const response = await api.patch(`/tickets/${id}/implementation`, data);
+        return response;
+    },
+
+    /**
+     * Fetch Gantt data for tickets whose implementation window overlaps the given range.
+     * GET /tickets/gantt
+     * @param {{ from: string, to: string, assignee_user_id?: number, assignee_position?: string, schedule_status?: string }} params
+     */
+    async getGantt(params = {}) {
+        const response = await api.get('/tickets/gantt', { params });
+        return response;
     }
 };

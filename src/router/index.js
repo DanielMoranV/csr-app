@@ -88,6 +88,12 @@ const router = createRouter({
                     meta: { requiresAuth: true, positions: MODULE_PERMISSIONS.ticketRecurrenceRules.positions }
                 },
                 {
+                    path: MODULE_PERMISSIONS.ticketGantt.path,
+                    name: MODULE_PERMISSIONS.ticketGantt.name,
+                    component: () => import('@/views/tickets/TicketGanttView.vue'),
+                    meta: { requiresAuth: true, positions: MODULE_PERMISSIONS.ticketGantt.positions }
+                },
+                {
                     path: MODULE_PERMISSIONS.documentManagement.path,
                     name: MODULE_PERMISSIONS.documentManagement.name,
                     component: () => import('@/views/documents/DocumentManagement.vue'),

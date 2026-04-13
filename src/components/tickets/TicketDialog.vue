@@ -15,6 +15,7 @@ import Textarea from 'primevue/textarea';
 import { useConfirm } from 'primevue/useconfirm';
 import { computed, nextTick, reactive, ref, watch } from 'vue';
 import TicketAttachments from './TicketAttachments.vue';
+import TicketImplementationForm from './TicketImplementationForm.vue';
 import TicketStatusChanger from './TicketStatusChanger.vue';
 import TicketStatusHistory from './TicketStatusHistory.vue';
 
@@ -879,6 +880,13 @@ const confirmDeleteComment = (comment) => {
                         </div>
                     </div>
                 </form>
+
+                <!-- Planificación de implementación (solo tickets existentes) -->
+                <TicketImplementationForm
+                    v-if="isEditing && currentTicket"
+                    :ticket="currentTicket"
+                    @updated="loadTicketData"
+                />
             </TabPanel>
 
             <TabPanel header="📈 Historial de Estados" :disabled="!isEditing">

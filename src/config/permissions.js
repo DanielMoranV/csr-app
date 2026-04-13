@@ -227,7 +227,18 @@ export const MODULE_PERMISSIONS = {
         label: 'Reglas de Recurrencia',
         icon: 'pi pi-fw pi-sync',
         menuSection: 'Soporte Técnico',
-        showInMenu: false // No mostrar en menú, es una subpágina
+        showInMenu: false
+    },
+
+    // Diagrama de Gantt de tickets
+    ticketGantt: {
+        name: 'ticket-gantt',
+        path: '/tickets/gantt',
+        positions: PERMISSION_GROUPS.ALL,
+        label: 'Diagrama de Gantt',
+        icon: 'pi pi-fw pi-chart-gantt',
+        menuSection: 'Soporte Técnico',
+        showInMenu: false
     },
 
     // Gestión Documentaria
