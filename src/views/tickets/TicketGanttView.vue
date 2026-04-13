@@ -1,4 +1,6 @@
 <script setup>
+import { positions as positionsApi, users as usersApi } from '@/api';
+import { apiUtils } from '@/api/axios';
 import { TicketService } from '@/api/tickets';
 import Button from 'primevue/button';
 import Calendar from 'primevue/calendar';
@@ -17,7 +19,13 @@ const isLoading  = ref(false);
 const tickets    = ref([]);
 const rangeFrom  = ref(null);
 const rangeTo    = ref(null);
-const filterScheduleStatus = ref(null);
+const filterScheduleStatus  = ref(null);
+const filterAssigneeUserId  = ref(null);
+const filterAssigneePosition = ref(null);
+
+// Listas para los selects de usuario y área
+const userList     = ref([]);
+const positionList = ref([]);  // [{ name, id }]
 
 // ─── Config visual ────────────────────────────────────────────────────────────
 
@@ -196,7 +204,9 @@ const fetchGantt = async () => {
             from: toYMD(rangeFrom.value),
             to:   toYMD(rangeTo.value)
         };
-        if (filterScheduleStatus.value) params.schedule_status = filterScheduleStatus.value;
+        if (filterScheduleStatus.value)   params.schedule_status   = filterScheduleStatus.value;
+        if (filterAssigneeUserId.value)   params.assignee_user_id  = filterAssigneeUserId.value;
+        if (filterAssigneePosition.value) params.assignee_position = filterAssigneePosition.value;
 
         const response = await TicketService.getGantt(params);
         tickets.value = response?.data?.data ?? response?.data ?? [];
@@ -207,9 +217,55 @@ const fetchGantt = async () => {
     }
 };
 
-onMounted(() => {
-    initDefaultRange();
+const loadFilterLists = async () => {
+    try {
+        const [usersRes, positionsRes] = await Promise.all([
+            usersApi.list(),
+            positionsApi.getAll()
+        ]);
+
+        if (apiUtils.isSuccess(usersRes)) {
+            userList.value = apiUtils.getData(usersRes);
+        }
+
+        if (apiUtils.isSuccess(positionsRes)) {
+            positionList.value = apiUtils.getData(positionsRes).map((p) => ({ name: p, id: p }));
+        }
+    } catch {
+        // Las listas son auxiliares — si fallan los filtros simplemente quedan vacíos
+    }
+};
+
+const clearFilters = () => {
+    filterScheduleStatus.value   = null;
+    filterAssigneeUserId.value   = null;
+    filterAssigneePosition.value = null;
     fetchGantt();
+};
+
+// Cuando se selecciona un usuario, limpiar el filtro de área (y viceversa),
+// ya que el modelo de asignación es mutuamente excluyente.
+const onUserSelected = () => {
+    if (filterAssigneeUserId.value) filterAssigneePosition.value = null;
+};
+
+const onPositionSelected = () => {
+    if (filterAssigneePosition.value) filterAssigneeUserId.value = null;
+};
+
+// Computed para búsqueda de usuarios en el Select con filtro
+const filteredUserList = ref([]);
+const onFilterUsers = (event) => {
+    const q = event?.value ?? '';
+    filteredUserList.value = q.length >= 1
+        ? userList.value.filter((u) => u.name.toLowerCase().includes(q.toLowerCase()))
+        : userList.value;
+};
+
+onMounted(async () => {
+    initDefaultRange();
+    await Promise.all([loadFilterLists(), fetchGantt()]);
+    filteredUserList.value = userList.value;
 });
 
 // ─── Helpers de display ───────────────────────────────────────────────────────
@@ -241,6 +297,7 @@ const PRIORITY_COLORS = {
 
             <!-- Controles -->
             <div class="gantt-controls">
+                <!-- Rango de fechas -->
                 <div class="control-group">
                     <label class="control-label">Desde</label>
                     <Calendar v-model="rangeFrom" dateFormat="dd/mm/yy" :showIcon="true" class="control-input" />
@@ -249,18 +306,120 @@ const PRIORITY_COLORS = {
                     <label class="control-label">Hasta</label>
                     <Calendar v-model="rangeTo" dateFormat="dd/mm/yy" :showIcon="true" :minDate="rangeFrom ?? undefined" class="control-input" />
                 </div>
+
+                <!-- Divisor visual -->
+                <div class="control-divider" aria-hidden="true"></div>
+
+                <!-- Filtro por usuario asignado -->
                 <div class="control-group">
-                    <label class="control-label">Estado de planificación</label>
+                    <label class="control-label">
+                        <i class="pi pi-user text-xs mr-1"></i>Usuario asignado
+                    </label>
+                    <Select
+                        v-model="filterAssigneeUserId"
+                        :options="filteredUserList"
+                        optionLabel="name"
+                        optionValue="id"
+                        placeholder="Todos los usuarios"
+                        :filter="true"
+                        filterPlaceholder="Buscar usuario..."
+                        @filter="onFilterUsers"
+                        @change="onUserSelected"
+                        :disabled="!!filterAssigneePosition"
+                        :showClear="true"
+                        class="control-input"
+                    />
+                    <small v-if="filterAssigneePosition" class="control-hint">
+                        Limpie el filtro de área para filtrar por usuario
+                    </small>
+                </div>
+
+                <!-- Filtro por área/posición -->
+                <div class="control-group">
+                    <label class="control-label">
+                        <i class="pi pi-briefcase text-xs mr-1"></i>Área / Posición
+                    </label>
+                    <Select
+                        v-model="filterAssigneePosition"
+                        :options="positionList"
+                        optionLabel="name"
+                        optionValue="id"
+                        placeholder="Todas las áreas"
+                        :filter="true"
+                        filterPlaceholder="Buscar área..."
+                        @change="onPositionSelected"
+                        :disabled="!!filterAssigneeUserId"
+                        :showClear="true"
+                        class="control-input"
+                    />
+                    <small v-if="filterAssigneeUserId" class="control-hint">
+                        Limpie el filtro de usuario para filtrar por área
+                    </small>
+                </div>
+
+                <!-- Divisor visual -->
+                <div class="control-divider" aria-hidden="true"></div>
+
+                <!-- Estado de planificación -->
+                <div class="control-group">
+                    <label class="control-label">
+                        <i class="pi pi-chart-gantt text-xs mr-1"></i>Estado de planificación
+                    </label>
                     <Select
                         v-model="filterScheduleStatus"
                         :options="scheduleStatusOptions"
                         optionLabel="label"
                         optionValue="value"
                         placeholder="Todos"
+                        :showClear="true"
                         class="control-input"
                     />
                 </div>
-                <Button label="Actualizar" icon="pi pi-refresh" @click="fetchGantt" :loading="isLoading" class="self-end" />
+
+                <!-- Acciones -->
+                <div class="control-actions">
+                    <Button label="Actualizar" icon="pi pi-refresh" @click="fetchGantt" :loading="isLoading" />
+                    <Button
+                        v-if="filterAssigneeUserId || filterAssigneePosition || filterScheduleStatus"
+                        label="Limpiar filtros"
+                        icon="pi pi-times"
+                        severity="secondary"
+                        text
+                        @click="clearFilters"
+                    />
+                </div>
+            </div>
+
+            <!-- Filtros activos -->
+            <div
+                v-if="filterAssigneeUserId || filterAssigneePosition || filterScheduleStatus"
+                class="gantt-active-filters"
+            >
+                <span class="active-filters-label">Filtros activos:</span>
+                <Tag
+                    v-if="filterAssigneeUserId"
+                    :value="`Usuario: ${userList.find(u => u.id === filterAssigneeUserId)?.name ?? filterAssigneeUserId}`"
+                    severity="info"
+                    class="text-xs"
+                    :removable="true"
+                    @remove="filterAssigneeUserId = null; fetchGantt()"
+                />
+                <Tag
+                    v-if="filterAssigneePosition"
+                    :value="`Área: ${filterAssigneePosition}`"
+                    severity="info"
+                    class="text-xs"
+                    :removable="true"
+                    @remove="filterAssigneePosition = null; fetchGantt()"
+                />
+                <Tag
+                    v-if="filterScheduleStatus"
+                    :value="`Estado: ${scheduleStatusOptions.find(o => o.value === filterScheduleStatus)?.label}`"
+                    severity="secondary"
+                    class="text-xs"
+                    :removable="true"
+                    @remove="filterScheduleStatus = null; fetchGantt()"
+                />
             </div>
 
             <!-- Leyenda -->
@@ -467,6 +626,52 @@ const PRIORITY_COLORS = {
 
 .control-input {
     min-width: 160px;
+}
+
+.control-divider {
+    width: 1px;
+    height: 40px;
+    background: var(--surface-border);
+    align-self: flex-end;
+    margin-bottom: 0.1rem;
+    flex-shrink: 0;
+}
+
+.control-hint {
+    font-size: 0.72rem;
+    color: var(--text-color-secondary);
+    margin-top: 0.15rem;
+    line-height: 1.3;
+}
+
+.control-actions {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    align-self: flex-end;
+    padding-bottom: 0.05rem;
+}
+
+/* Filtros activos */
+.gantt-active-filters {
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 0.4rem;
+    margin-top: 0.75rem;
+    padding-top: 0.75rem;
+    border-top: 1px solid var(--surface-100);
+}
+
+.active-filters-label {
+    font-size: 0.78rem;
+    font-weight: 600;
+    color: var(--text-color-secondary);
+    margin-right: 0.25rem;
+}
+
+.app-dark .gantt-active-filters {
+    border-top-color: var(--surface-700);
 }
 
 /* ─── Leyenda ─── */
@@ -804,5 +1009,8 @@ const PRIORITY_COLORS = {
     .gantt-label-title { max-width: 130px; }
     .gantt-controls { flex-direction: column; align-items: stretch; }
     .control-input { min-width: 100%; }
+    .control-divider { display: none; }
+    .control-actions { justify-content: stretch; }
+    .control-actions :deep(.p-button) { flex: 1; }
 }
 </style>
