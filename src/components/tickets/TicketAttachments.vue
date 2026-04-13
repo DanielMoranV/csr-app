@@ -123,7 +123,7 @@ const uploadFile = async () => {
 const downloadAttachment = async (attachment) => {
     toast.add({ severity: 'info', summary: 'Descargando', detail: `Descargando ${attachment.file_name}...`, life: 3000 });
     try {
-        const response = await axios.get(`${api_url}/tickets/${attachment.attachable_id}/attachments/${attachment.id}`, {
+        const response = await axios.get(`${api_url}/tickets/${props.ticketId}/attachments/${attachment.id}`, {
             responseType: 'blob' // Important to handle binary data
         });
 
