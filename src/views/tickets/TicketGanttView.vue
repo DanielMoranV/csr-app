@@ -17,8 +17,6 @@ const toast  = useToast();
 
 const isLoading  = ref(false);
 const tickets    = ref([]);
-const rangeFrom  = ref(null);
-const rangeTo    = ref(null);
 const filterScheduleStatus  = ref(null);
 const filterAssigneeUserId  = ref(null);
 const filterAssigneePosition = ref(null);
@@ -26,6 +24,97 @@ const filterAssigneePosition = ref(null);
 // Listas para los selects de usuario y área
 const userList     = ref([]);
 const positionList = ref([]);  // [{ name, id }]
+
+// ─── Modo de vista: 'month' | 'range' ────────────────────────────────────────
+
+const viewMode = ref('month');
+
+// Estado del modo "por mes"
+const selectedYear  = ref(new Date().getFullYear());
+const selectedMonth = ref(new Date().getMonth()); // 0-indexed
+
+// Estado del modo "por rango"
+const rangeFromManual = ref(null);
+const rangeToManual   = ref(null);
+
+// Rango efectivo — siempre computed a partir del modo activo
+const rangeFrom = computed(() =>
+    viewMode.value === 'month'
+        ? new Date(selectedYear.value, selectedMonth.value, 1)
+        : toDate(rangeFromManual.value)
+);
+
+const rangeTo = computed(() =>
+    viewMode.value === 'month'
+        ? new Date(selectedYear.value, selectedMonth.value + 1, 0)
+        : toDate(rangeToManual.value)
+);
+
+// Opciones de mes y año para los selects del modo rango/mes
+const MONTHS = [
+    { label: 'Enero',      value: 0  },
+    { label: 'Febrero',    value: 1  },
+    { label: 'Marzo',      value: 2  },
+    { label: 'Abril',      value: 3  },
+    { label: 'Mayo',       value: 4  },
+    { label: 'Junio',      value: 5  },
+    { label: 'Julio',      value: 6  },
+    { label: 'Agosto',     value: 7  },
+    { label: 'Septiembre', value: 8  },
+    { label: 'Octubre',    value: 9  },
+    { label: 'Noviembre',  value: 10 },
+    { label: 'Diciembre',  value: 11 }
+];
+
+const yearOptions = computed(() => {
+    const y = new Date().getFullYear();
+    return Array.from({ length: 6 }, (_, i) => y - 2 + i);
+});
+
+const currentMonthLabel = computed(() => {
+    const d = new Date(selectedYear.value, selectedMonth.value, 1);
+    const raw = d.toLocaleDateString('es-PE', { month: 'long', year: 'numeric' });
+    return raw.charAt(0).toUpperCase() + raw.slice(1);
+});
+
+const isCurrentMonth = computed(() => {
+    const now = new Date();
+    return selectedYear.value === now.getFullYear() && selectedMonth.value === now.getMonth();
+});
+
+// Navegar meses
+const prevMonth = () => {
+    if (selectedMonth.value === 0) { selectedMonth.value = 11; selectedYear.value--; }
+    else { selectedMonth.value--; }
+    fetchGantt();
+};
+
+const nextMonth = () => {
+    if (selectedMonth.value === 11) { selectedMonth.value = 0; selectedYear.value++; }
+    else { selectedMonth.value++; }
+    fetchGantt();
+};
+
+const goToCurrentMonth = () => {
+    const now = new Date();
+    selectedYear.value  = now.getFullYear();
+    selectedMonth.value = now.getMonth();
+    fetchGantt();
+};
+
+// Cambiar de modo
+const switchToMonth = () => {
+    viewMode.value = 'month';
+    fetchGantt();
+};
+
+const switchToRange = () => {
+    // Pre-cargar el rango con el mes visible actualmente
+    if (!rangeFromManual.value) rangeFromManual.value = new Date(rangeFrom.value);
+    if (!rangeToManual.value)   rangeToManual.value   = new Date(rangeTo.value);
+    viewMode.value = 'range';
+    fetchGantt();
+};
 
 // ─── Config visual ────────────────────────────────────────────────────────────
 
@@ -179,14 +268,6 @@ const ganttRows = computed(() => {
 
 // ─── Inicialización y fetch ───────────────────────────────────────────────────
 
-function initDefaultRange() {
-    const now = new Date();
-    const first = new Date(now.getFullYear(), now.getMonth(), 1);
-    const last  = new Date(now.getFullYear(), now.getMonth() + 1, 0);
-    rangeFrom.value = first;
-    rangeTo.value   = last;
-}
-
 const toYMD = (d) => {
     if (!d) return null;
     const v = new Date(d);
@@ -263,7 +344,7 @@ const onFilterUsers = (event) => {
 };
 
 onMounted(async () => {
-    initDefaultRange();
+    // rangeFrom/rangeTo ya apuntan al mes actual gracias a los computed
     await Promise.all([loadFilterLists(), fetchGantt()]);
     filteredUserList.value = userList.value;
 });
@@ -297,14 +378,90 @@ const PRIORITY_COLORS = {
 
             <!-- Controles -->
             <div class="gantt-controls">
-                <!-- Rango de fechas -->
-                <div class="control-group">
-                    <label class="control-label">Desde</label>
-                    <Calendar v-model="rangeFrom" dateFormat="dd/mm/yy" :showIcon="true" class="control-input" />
-                </div>
-                <div class="control-group">
-                    <label class="control-label">Hasta</label>
-                    <Calendar v-model="rangeTo" dateFormat="dd/mm/yy" :showIcon="true" :minDate="rangeFrom ?? undefined" class="control-input" />
+
+                <!-- ── Selector de período ── -->
+                <div class="period-selector">
+                    <!-- Toggle modo -->
+                    <div class="mode-toggle">
+                        <button
+                            class="mode-btn"
+                            :class="{ 'mode-btn--active': viewMode === 'month' }"
+                            @click="switchToMonth"
+                        >
+                            <i class="pi pi-calendar mr-1 text-xs"></i>Por mes
+                        </button>
+                        <button
+                            class="mode-btn"
+                            :class="{ 'mode-btn--active': viewMode === 'range' }"
+                            @click="switchToRange"
+                        >
+                            <i class="pi pi-calendar-plus mr-1 text-xs"></i>Por rango
+                        </button>
+                    </div>
+
+                    <!-- Modo mes: navegación por flechas + selects -->
+                    <template v-if="viewMode === 'month'">
+                        <div class="month-nav">
+                            <button class="month-nav-btn" @click="prevMonth" v-tooltip.top="'Mes anterior'">
+                                <i class="pi pi-chevron-left"></i>
+                            </button>
+
+                            <div class="month-selects">
+                                <Select
+                                    v-model="selectedMonth"
+                                    :options="MONTHS"
+                                    optionLabel="label"
+                                    optionValue="value"
+                                    class="month-select-month"
+                                    @change="fetchGantt"
+                                />
+                                <Select
+                                    v-model="selectedYear"
+                                    :options="yearOptions"
+                                    class="month-select-year"
+                                    @change="fetchGantt"
+                                />
+                            </div>
+
+                            <button class="month-nav-btn" @click="nextMonth" v-tooltip.top="'Mes siguiente'">
+                                <i class="pi pi-chevron-right"></i>
+                            </button>
+
+                            <button
+                                v-if="!isCurrentMonth"
+                                class="month-today-btn"
+                                @click="goToCurrentMonth"
+                                v-tooltip.top="'Ir al mes actual'"
+                            >
+                                Hoy
+                            </button>
+                        </div>
+                    </template>
+
+                    <!-- Modo rango: calendarios from/to -->
+                    <template v-else>
+                        <div class="range-inputs">
+                            <div class="control-group">
+                                <label class="control-label">Desde</label>
+                                <Calendar
+                                    v-model="rangeFromManual"
+                                    dateFormat="dd/mm/yy"
+                                    :showIcon="true"
+                                    class="control-input"
+                                />
+                            </div>
+                            <div class="control-group">
+                                <label class="control-label">Hasta</label>
+                                <Calendar
+                                    v-model="rangeToManual"
+                                    dateFormat="dd/mm/yy"
+                                    :showIcon="true"
+                                    :minDate="rangeFromManual ?? undefined"
+                                    class="control-input"
+                                />
+                            </div>
+                        </div>
+                    </template>
                 </div>
 
                 <!-- Divisor visual -->
@@ -626,6 +783,119 @@ const PRIORITY_COLORS = {
 
 .control-input {
     min-width: 160px;
+}
+
+/* ── Selector de período ── */
+.period-selector {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    flex-wrap: wrap;
+}
+
+/* Toggle mes/rango */
+.mode-toggle {
+    display: flex;
+    background: var(--surface-100);
+    border-radius: 8px;
+    padding: 3px;
+    gap: 2px;
+    border: 1px solid var(--surface-200);
+}
+
+.mode-btn {
+    padding: 0.35rem 0.75rem;
+    border-radius: 6px;
+    font-size: 0.78rem;
+    font-weight: 600;
+    border: none;
+    cursor: pointer;
+    background: transparent;
+    color: var(--text-color-secondary);
+    transition: background 0.15s, color 0.15s;
+    white-space: nowrap;
+}
+
+.mode-btn:hover {
+    background: var(--surface-200);
+    color: var(--text-color);
+}
+
+.mode-btn--active {
+    background: var(--primary-500);
+    color: #fff;
+}
+
+.mode-btn--active:hover {
+    background: var(--primary-600);
+    color: #fff;
+}
+
+/* Navegación de mes */
+.month-nav {
+    display: flex;
+    align-items: center;
+    gap: 0.35rem;
+}
+
+.month-nav-btn {
+    width: 2rem;
+    height: 2rem;
+    border-radius: 6px;
+    border: 1px solid var(--surface-300);
+    background: var(--surface-0);
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: var(--text-color-secondary);
+    transition: background 0.15s, color 0.15s, border-color 0.15s;
+    flex-shrink: 0;
+}
+
+.month-nav-btn:hover {
+    background: var(--primary-50);
+    border-color: var(--primary-300);
+    color: var(--primary-600);
+}
+
+.month-selects {
+    display: flex;
+    align-items: center;
+    gap: 0.25rem;
+}
+
+.month-select-month {
+    min-width: 120px;
+}
+
+.month-select-year {
+    min-width: 80px;
+}
+
+.month-today-btn {
+    padding: 0.3rem 0.65rem;
+    border-radius: 6px;
+    border: 1px solid var(--primary-300);
+    background: var(--primary-50);
+    color: var(--primary-600);
+    font-size: 0.75rem;
+    font-weight: 700;
+    cursor: pointer;
+    transition: background 0.15s;
+    white-space: nowrap;
+}
+
+.month-today-btn:hover {
+    background: var(--primary-100);
+}
+
+/* Entradas de rango libre */
+.range-inputs {
+    display: flex;
+    gap: 0.5rem;
+    flex-wrap: wrap;
+    align-items: flex-end;
 }
 
 .control-divider {
@@ -1012,5 +1282,42 @@ const PRIORITY_COLORS = {
     .control-divider { display: none; }
     .control-actions { justify-content: stretch; }
     .control-actions :deep(.p-button) { flex: 1; }
+    .period-selector { flex-direction: column; align-items: stretch; }
+    .month-nav { justify-content: space-between; }
+    .month-selects { flex: 1; }
+    .month-select-month { flex: 1; min-width: 0; }
+    .month-select-year { min-width: 80px; }
+    .range-inputs { flex-direction: column; }
+}
+
+/* ── Modo oscuro — controles de período ── */
+.app-dark .mode-toggle {
+    background: var(--surface-800);
+    border-color: var(--surface-700);
+}
+
+.app-dark .mode-btn:hover {
+    background: var(--surface-700);
+}
+
+.app-dark .month-nav-btn {
+    background: var(--surface-800);
+    border-color: var(--surface-600);
+}
+
+.app-dark .month-nav-btn:hover {
+    background: var(--surface-700);
+    border-color: var(--primary-400);
+    color: var(--primary-300);
+}
+
+.app-dark .month-today-btn {
+    background: hsl(220, 40%, 18%);
+    border-color: var(--primary-500);
+    color: var(--primary-300);
+}
+
+.app-dark .month-today-btn:hover {
+    background: hsl(220, 40%, 22%);
 }
 </style>
