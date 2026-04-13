@@ -47,6 +47,24 @@ function formatDateTime(dateString) {
             <Column field="user.name" header="Reservado por" :sortable="true"></Column>
             <Column field="bed.name" header="Cama" :sortable="true"></Column>
             <Column field="notes" header="Notas" :sortable="true"></Column>
+            <Column header="Paciente / Admisión">
+                <template #body="{ data }">
+                    <template v-if="data.status === 'completada'">
+                        <div v-if="data.patient_name || data.admission_number" class="flex flex-col gap-0.5">
+                            <span class="font-medium text-sm">{{ data.patient_name ?? 'No registrado' }}</span>
+                            <span v-if="data.admission_number" class="text-xs text-color-secondary">
+                                <i class="pi pi-hashtag text-xs"></i> {{ data.admission_number }}
+                            </span>
+                            <span v-if="data.completed_by_nick" class="text-xs text-color-secondary">
+                                <i class="pi pi-user text-xs"></i> {{ data.completed_by_nick }}
+                                <template v-if="data.completed_at"> · {{ formatDateTime(data.completed_at) }}</template>
+                            </span>
+                        </div>
+                        <span v-else class="text-xs text-color-secondary italic">Admisión no registrada</span>
+                    </template>
+                    <span v-else class="text-color-secondary">—</span>
+                </template>
+            </Column>
             <Column field="created_at" header="Fecha de Reserva" :sortable="true">
                 <template #body="{ data }">
                     {{ formatDateTime(data.created_at) }}
@@ -68,6 +86,7 @@ function formatDateTime(dateString) {
                 <template #body="{ data }">
                     <div class="flex items-center justify-center gap-1">
                         <Button
+                            v-if="data.status === 'activa'"
                             type="button"
                             icon="pi pi-pencil"
                             class="p-button-rounded p-button-success p-button-sm"
@@ -75,10 +94,11 @@ function formatDateTime(dateString) {
                             @click="$emit('edit-reservation', data)"
                         />
                         <Button
+                            v-if="data.status === 'activa'"
                             type="button"
                             icon="pi pi-trash"
                             class="p-button-rounded p-button-warning p-button-sm"
-                            v-tooltip.top="'Eliminar'"
+                            v-tooltip.top="'Cancelar reserva'"
                             @click="$emit('delete-reservation', data)"
                         />
                         <Button

@@ -1,9 +1,10 @@
 <script setup>
 import { useBedReservationsStore } from '@/store/bedReservationsStore';
 import { useAuthStore } from '@/store/authStore';
+import { getStatusConfig } from '@/constants/bedReservation';
 import Button from 'primevue/button';
 import Dialog from 'primevue/dialog';
-import Select from 'primevue/select';
+import Tag from 'primevue/tag';
 import Textarea from 'primevue/textarea';
 import { useToast } from 'primevue/usetoast';
 import { computed, ref, watch } from 'vue';
@@ -29,29 +30,11 @@ const isSaving = ref(false);
 const isEditMode = computed(() => !!(props.reservation && props.reservation.id));
 const isCreateMode = computed(() => !isEditMode.value && !!props.bed);
 
-// Diálogo bloqueado si está completada o cancelada
-const isCompleted = computed(() => formData.value.status === 'completada' || formData.value.status === 'cancelada');
-
-// Opciones de estado según el modo
-// Estados: activa, confirmada, cancelada, completada
-const availableStatuses = computed(() => {
-    if (!isEditMode.value) {
-        // Modo crear: el estado se asigna automáticamente como 'activa'
-        return ['activa'];
-    }
-
-    // Modo editar: transiciones de estado
-    if (formData.value.status === 'activa') {
-        // Desde activa puede ir a: confirmada, cancelada o completada
-        return ['activa', 'confirmada', 'cancelada', 'completada'];
-    } else if (formData.value.status === 'confirmada') {
-        return ['confirmada', 'cancelada', 'completada'];
-    } else if (formData.value.status === 'cancelada' || formData.value.status === 'completada') {
-        // Estados finales, no editables
-        return [formData.value.status];
-    }
-    return ['activa', 'confirmada', 'cancelada'];
-});
+// Diálogo bloqueado si la reserva ya no puede editarse desde el frontend
+// (completada por Sisclin, cancelada manualmente, o expirada por inactividad)
+const isLocked = computed(() =>
+    ['completada', 'cancelada', 'expirada'].includes(formData.value.status)
+);
 
 // Título del diálogo
 const dialogTitle = computed(() => {
@@ -120,8 +103,13 @@ const submit = async () => {
 
     try {
         if (isEditMode.value) {
-            // Modo editar: solo status y notes pueden ser actualizados
-            await bedReservationsStore.updateReservation(formData.value);
+            // Modo editar: PUT solo acepta notas (y cambio de cama si aplica)
+            const payload = {
+                id: formData.value.id,
+                id_beds: formData.value.id_beds,
+                notes: formData.value.notes ?? ''
+            };
+            await bedReservationsStore.updateReservation(payload);
             toast.add({
                 severity: 'success',
                 summary: 'Éxito',
@@ -204,29 +192,57 @@ const closeDialog = () => {
                 </div>
             </template>
 
-            <!-- Modo Editar: Solo estado y notas -->
+            <!-- Modo Editar: Estado (solo lectura) y notas -->
             <template v-else-if="isEditMode">
                 <div class="field">
-                    <label for="status">Estado</label>
-                    <Select id="status" v-model="formData.status" :options="availableStatuses" placeholder="Seleccione un estado" :disabled="isCompleted" fluid />
-                    <small class="p-hint">
-                        <template v-if="formData.status === 'activa'"> Puede confirmar, completar o cancelar esta reserva </template>
-                        <template v-else-if="formData.status === 'confirmada'"> Puede completar o cancelar esta reserva </template>
-                        <template v-else-if="formData.status === 'cancelada'"> Esta reserva está cancelada y no puede ser modificada </template>
-                        <template v-else-if="formData.status === 'completada'"> Esta reserva está completada y no puede ser modificada </template>
-                    </small>
+                    <label>Estado</label>
+                    <div class="flex items-center gap-2 mt-1">
+                        <Tag
+                            :value="getStatusConfig(formData.status).label"
+                            :severity="getStatusConfig(formData.status).severity"
+                        >
+                            <template #icon>
+                                <i :class="getStatusConfig(formData.status).icon" class="mr-1 text-xs"></i>
+                            </template>
+                        </Tag>
+                        <small v-if="formData.status === 'completada'" class="text-color-secondary">
+                            Completada por Sisclin — no editable desde el sistema
+                        </small>
+                        <small v-else-if="formData.status === 'cancelada'" class="text-color-secondary">
+                            Cancelada — no puede ser modificada
+                        </small>
+                        <small v-else-if="formData.status === 'expirada'" class="text-color-secondary">
+                            Expiró sin ser utilizada — no puede ser modificada
+                        </small>
+                        <small v-else class="text-color-secondary">
+                            Solo puede editarse las notas. Para cancelar, use el botón de eliminar.
+                        </small>
+                    </div>
+                </div>
+
+                <div v-if="formData.status === 'completada'" class="bg-green-50 border-l-3 border-green-500 p-3 mb-4 text-sm">
+                    <div class="flex items-center gap-2 mb-1">
+                        <i class="pi pi-check-circle text-green-600"></i>
+                        <span class="font-semibold text-green-700">Paciente admitido</span>
+                    </div>
+                    <ul class="list-none p-0 m-0 text-green-700">
+                        <li v-if="formData.patient_name">Paciente: <strong>{{ formData.patient_name }}</strong></li>
+                        <li v-if="formData.admission_number">N° Admisión: <strong>{{ formData.admission_number }}</strong></li>
+                        <li v-else class="text-color-secondary italic text-xs">Admisión no registrada (dato histórico)</li>
+                        <li v-if="formData.completed_by_nick">Registrado por Sisclin: <strong>{{ formData.completed_by_nick }}</strong></li>
+                    </ul>
                 </div>
 
                 <div class="field">
                     <label for="notes">Notas</label>
-                    <Textarea id="notes" v-model="formData.notes" rows="4" :disabled="isCompleted" placeholder="Notas sobre la reserva" fluid />
+                    <Textarea id="notes" v-model="formData.notes" rows="4" :disabled="isLocked" placeholder="Notas sobre la reserva" fluid />
                 </div>
             </template>
         </div>
 
         <template #footer>
             <Button label="Cancelar" icon="pi pi-times" severity="secondary" text @click="closeDialog" />
-            <Button :label="isCreateMode ? 'Reservar' : 'Actualizar'" :icon="isCreateMode ? 'pi pi-calendar-plus' : 'pi pi-check'" @click="submit" :loading="isSaving" :disabled="isCompleted" />
+            <Button :label="isCreateMode ? 'Reservar' : 'Actualizar'" :icon="isCreateMode ? 'pi pi-calendar-plus' : 'pi pi-check'" @click="submit" :loading="isSaving" :disabled="isLocked" />
         </template>
     </Dialog>
 </template>

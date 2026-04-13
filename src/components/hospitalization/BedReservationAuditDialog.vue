@@ -254,9 +254,13 @@ watch(
                                     :severity="getAuditEventConfig(audit.event).severity"
                                     class="text-xs font-semibold"
                                 />
-                                <span v-if="audit.admission_number" class="audit-admission">
-                                    <i class="pi pi-hashtag text-xs"></i>
-                                    {{ audit.admission_number }}
+                                <span v-if="audit.patient_name || audit.admission_number" class="audit-admission">
+                                    <i class="pi pi-user text-xs"></i>
+                                    <span v-if="audit.patient_name">{{ audit.patient_name }}</span>
+                                    <span v-if="audit.patient_name && audit.admission_number" class="opacity-50 mx-1">·</span>
+                                    <span v-if="audit.admission_number">
+                                        <i class="pi pi-hashtag text-xs"></i>{{ audit.admission_number }}
+                                    </span>
                                 </span>
                             </div>
                             <span class="audit-date">{{ formatDate(audit.created_at) }}</span>

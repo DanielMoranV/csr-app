@@ -25,6 +25,7 @@ export const FIELD_LABELS = {
     id_beds:           'Cama',
     notes:             'Notas',
     admission_number:  'N° Admisión',
+    patient_name:      'Paciente',
     completed_by_nick: 'Usuario Sisclin',
     completed_at:      'Completado en'
 };

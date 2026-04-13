@@ -350,11 +350,7 @@ const handleCancelReservation = async () => {
     isLoadingReservation.value = true;
 
     try {
-        // Pasar los datos completos de la reserva para que el backend tenga todos los campos requeridos
-        await reservationsStore.cancelReservation(activeReservation.value.id, {
-            id_beds: activeReservation.value.id_beds,
-            id_users: activeReservation.value.id_users
-        });
+        await reservationsStore.deleteReservation(activeReservation.value.id);
 
         toast.add({
             severity: 'success',
