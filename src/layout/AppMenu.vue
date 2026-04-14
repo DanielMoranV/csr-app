@@ -34,13 +34,24 @@ const filteredMenu = computed(() => {
         });
     }
 
-    // Inyectar badge de comentarios de tickets sin leer
-    const ticketUnread = ticketsStore.globalUnreadCount;
-    if (ticketUnread > 0) {
+    // Inyectar badges de tickets: comentarios sin leer + tickets asignados pendientes
+    const ticketUnread  = ticketsStore.globalUnreadCount;
+    const ticketPending = ticketsStore.mySummary?.by_status?.pendiente ?? 0;
+
+    if (ticketUnread > 0 || ticketPending > 0) {
         filtered.forEach((section) => {
             if (section.items) {
                 const ticketItem = section.items.find((item) => item.to === '/tickets');
-                if (ticketItem) ticketItem.badge = ticketUnread > 99 ? '99+' : ticketUnread;
+                if (!ticketItem) return;
+
+                const badges = [];
+                if (ticketUnread > 0) {
+                    badges.push({ icon: 'pi pi-comments', value: ticketUnread > 99 ? '99+' : ticketUnread, severity: 'info' });
+                }
+                if (ticketPending > 0) {
+                    badges.push({ icon: 'pi pi-clock', value: ticketPending > 99 ? '99+' : ticketPending, severity: 'warn' });
+                }
+                ticketItem.badges = badges;
             }
         });
     }
@@ -62,6 +73,7 @@ const filteredMenu = computed(() => {
 onMounted(() => {
     docStore.fetchPermittedDocuments();
     ticketsStore.fetchGlobalUnreadCount();
+    ticketsStore.fetchMySummary();
     // Sincronizar el badge de tareas desde el conteo global de notificaciones
     notificationsStore.fetchUnreadCount();
 });

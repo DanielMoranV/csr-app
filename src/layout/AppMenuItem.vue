@@ -76,12 +76,22 @@ function checkActiveRoute(item) {
             <span class="layout-menuitem-text">{{ item.label }}</span>
             <i class="pi pi-fw pi-angle-down layout-submenu-toggler" v-if="item.items"></i>
             <span v-if="item.badge" class="layout-menuitem-badge" :class="item.badgeClass">{{ item.badge }}</span>
+            <span v-if="item.badges?.length" class="menuitem-badges-group">
+                <span v-for="(b, bi) in item.badges" :key="bi" class="menuitem-icon-badge" :data-severity="b.severity">
+                    <i :class="b.icon"></i>{{ b.value }}
+                </span>
+            </span>
         </a>
         <router-link v-if="item.to && !item.items && item.visible !== false" @click="itemClick($event, item, index)" :class="[item.class, { 'active-route': checkActiveRoute(item) }]" tabindex="0" :to="item.to">
             <i :class="item.icon" class="layout-menuitem-icon"></i>
             <span class="layout-menuitem-text">{{ item.label }}</span>
             <i class="pi pi-fw pi-angle-down layout-submenu-toggler" v-if="item.items"></i>
             <span v-if="item.badge" class="layout-menuitem-badge" :class="item.badgeClass">{{ item.badge }}</span>
+            <span v-if="item.badges?.length" class="menuitem-badges-group">
+                <span v-for="(b, bi) in item.badges" :key="bi" class="menuitem-icon-badge" :data-severity="b.severity">
+                    <i :class="b.icon"></i>{{ b.value }}
+                </span>
+            </span>
         </router-link>
         <Transition v-if="item.items && item.visible !== false" name="layout-submenu">
             <ul v-show="root ? true : isActiveMenu" class="layout-submenu">
@@ -106,5 +116,33 @@ function checkActiveRoute(item) {
     align-items: center;
     justify-content: center;
     line-height: 1;
+}
+
+/* Grupo de badges con icono (comentarios + pendientes) */
+.menuitem-badges-group {
+    margin-left: auto;
+    display: flex;
+    align-items: center;
+    gap: 0.25rem;
+    flex-shrink: 0;
+}
+
+.menuitem-icon-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.2rem;
+    padding: 0.2rem 0.42rem;
+    border-radius: 10px;
+    font-size: 0.7rem;
+    font-weight: 700;
+    line-height: 1;
+    white-space: nowrap;
+
+    i { font-size: 0.62rem; }
+
+    &[data-severity='info']   { background: #3b82f6; color: #fff; }
+    &[data-severity='warn']   { background: #f59e0b; color: #fff; }
+    &[data-severity='danger'] { background: #ef4444; color: #fff; }
+    &[data-severity='success'] { background: #22c55e; color: #fff; }
 }
 </style>
