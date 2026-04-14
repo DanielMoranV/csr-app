@@ -398,7 +398,7 @@ const setTicketStatus = (val) => {
             <div class="gantt-title-row">
                 <div class="flex items-center gap-3">
                     <Button icon="pi pi-arrow-left" text severity="secondary" @click="router.push({ name: 'tickets' })" v-tooltip.right="'Volver a Tickets'" />
-                    <i class="pi pi-chart-gantt text-primary-500" style="font-size:1.3rem"></i>
+                    <i class="pi pi-sliders-h text-primary-500" style="font-size:1.3rem"></i>
                     <h1 class="gantt-title">Diagrama de Gantt — Tickets</h1>
                 </div>
                 <span v-if="!isLoading && ganttRows.length > 0" class="gantt-count-pill">

@@ -141,7 +141,7 @@ const save = async () => {
         <!-- Encabezado -->
         <div class="impl-header">
             <div class="flex items-center gap-2">
-                <i class="pi pi-chart-gantt text-sm text-primary-500"></i>
+                <i class="pi pi-sliders-h text-sm text-primary-500"></i>
                 <span class="impl-title">Planificación de implementación</span>
             </div>
             <Tag
