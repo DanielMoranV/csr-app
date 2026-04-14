@@ -354,9 +354,14 @@ onMounted(async () => {
 
 // ─── Helpers de display ───────────────────────────────────────────────────────
 
-const formatDate = (d) => {
+const formatDate = (d, includeTime = false) => {
     if (!d) return '—';
-    return new Date(d).toLocaleDateString('es-PE', { day: '2-digit', month: '2-digit', year: 'numeric' });
+    const options = { day: '2-digit', month: '2-digit', year: 'numeric' };
+    if (includeTime) {
+        options.hour = '2-digit';
+        options.minute = '2-digit';
+    }
+    return new Date(d).toLocaleDateString('es-PE', options);
 };
 
 const PRIORITY_COLORS = {
@@ -608,7 +613,7 @@ const setTicketStatus = (val) => {
                     class="gantt-label-row"
                     :class="{ 'is-finished': isFinished(row.status) }"
                     @click="router.push({ name: 'tickets', query: { ticket_id: row.id } })"
-                    v-tooltip.right="`Abrir ticket #${row.id}`"
+                    v-tooltip.right="`#${row.id} · ${row.title} | Creado por: ${row.creator?.name ?? '—'} (${row.creator?.position ?? '—'}) el ${formatDate(row.created_at, true)}`"
                 >
                     <span class="gantt-label-id">#{{ row.id }}</span>
                     <div class="gantt-label-info">
@@ -631,16 +636,20 @@ const setTicketStatus = (val) => {
                                 {{ row.priority }}
                             </span>
                         </div>
-                        <div class="gantt-label-assignee-row">
+                        <div class="gantt-label-assignee-row" v-tooltip.top="'Asignado a'">
                             <template v-if="row.assignee">
-                                <i class="pi pi-user"></i>
-                                <span>{{ row.assignee.name }}</span>
+                                <i class="pi pi-user" style="font-size: 0.65rem"></i>
+                                <span style="font-size: 0.7rem">{{ row.assignee.name }} <small v-if="row.assignee.position" style="font-size: 0.62rem" class="opacity-60">({{ row.assignee.position }})</small></span>
                             </template>
                             <template v-else-if="row.assignee_position">
-                                <i class="pi pi-briefcase"></i>
-                                <span>{{ row.assignee_position }}</span>
+                                <i class="pi pi-briefcase" style="font-size: 0.65rem"></i>
+                                <span style="font-size: 0.7rem">{{ row.assignee_position }}</span>
                             </template>
-                            <span v-else class="no-assignee">Sin asignar</span>
+                            <span v-else class="no-assignee" style="font-size: 0.65rem">Sin asignar</span>
+                        </div>
+                        <div v-if="row.creator" class="gantt-label-assignee-row mt-0.5 opacity-60" v-tooltip.top="'Creado por'">
+                            <i class="pi pi-pencil" style="font-size: 0.6rem"></i>
+                            <span style="font-size: 0.65rem">{{ row.creator.name }} <small style="font-size: 0.6rem" class="opacity-70">{{ formatDate(row.created_at) }}</small></span>
                         </div>
                     </div>
                 </div>
@@ -687,7 +696,7 @@ const setTicketStatus = (val) => {
                             class="gantt-bar"
                             :class="row.cfg.bgClass"
                             :style="{ left: row.barLeft + '%', width: row.barWidth + '%' }"
-                            v-tooltip.top="`#${row.id} · ${row.title} | ${TICKET_STATUS[row.status]?.label ?? row.status} | ${formatDate(row.implementation_start)} → ${formatDate(row.implementation_end)}`"
+                            v-tooltip.top="`#${row.id} · ${row.title} | ${TICKET_STATUS[row.status]?.label ?? row.status} | ${formatDate(row.implementation_start)} → ${formatDate(row.implementation_end)} | Creado por: ${row.creator?.name ?? '—'} (${row.creator?.position ?? '—'}) el ${formatDate(row.created_at, true)}`"
                         >
                             <i :class="TICKET_STATUS[row.status]?.icon" class="gantt-bar-status-icon"></i>
                             <span class="gantt-bar-label">{{ row.title }}</span>
