@@ -138,10 +138,6 @@ export const useTicketCommentsStore = defineStore('ticketComments', () => {
      */
     const setCommentsTabActive = (active) => {
         state.isCommentsTabActive = !!active;
-        if (!active) {
-            // Reset on close so stale state doesn't affect future events
-            state.isCommentsTabActive = false;
-        }
     };
 
     /**

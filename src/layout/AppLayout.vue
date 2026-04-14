@@ -1,19 +1,15 @@
 <script setup>
 import { useLayout } from '@/layout/composables/layout';
-import { computed, onMounted, ref, watch } from 'vue';
+import { computed, ref, watch } from 'vue';
 import AppFooter from './AppFooter.vue';
 import AppSidebar from './AppSidebar.vue';
 import AppTopbar from './AppTopbar.vue';
 
-// Imports for real-time functionality
+// Auth store needed only for reactive layout state (no Echo here — channels managed in authStore/ticketsStore)
 import { useAuthStore } from '@/store/authStore';
-import { useTicketsStore } from '@/store/ticketsStore';
-import { slugify } from '@/utils/pusher-helpers';
-import useEcho from '@/websocket/echo';
 
 const { layoutConfig, layoutState, isSidebarActive } = useLayout();
 const authStore = useAuthStore();
-const ticketsStore = useTicketsStore();
 
 const outsideClickListener = ref(null);
 
@@ -62,62 +58,9 @@ function isOutsideClicked(event) {
     return !(sidebarEl.isSameNode(event.target) || sidebarEl.contains(event.target) || topbarEl.isSameNode(event.target) || topbarEl.contains(event.target));
 }
 
-// --- REAL-TIME WEBSOCKET LISTENERS ---
-onMounted(() => {
-    // Watch for login status changes to setup or teardown websocket listeners
-    watch(
-        () => authStore.isLoggedIn,
-        (isLoggedIn, wasLoggedIn) => {
-            if (isLoggedIn && authStore.authUser) {
-                const userId = authStore.authUser.id;
-                const userPosition = authStore.authUser.position?.name;
-
-                // Disconnect from any existing channels to prevent duplicates on hot-reload
-                useEcho.leave(`App.Models.User.${userId}`);
-                if (userPosition) {
-                    const positionSlug = slugify(userPosition);
-                    useEcho.leave(`tickets.position.${positionSlug}`);
-                }
-
-                // Listen for events on the private user channel
-                useEcho
-                    .private(`App.Models.User.${userId}`)
-                    .listen('.ticket.created', (e) => {
-                        ticketsStore.handleTicketCreated(e.ticket);
-                    })
-                    .listen('.ticket.updated', (e) => {
-                        ticketsStore.handleTicketUpdated(e.ticket);
-                    });
-
-                // Listen for events on the position-based presence channel
-                if (userPosition) {
-                    const positionSlug = slugify(userPosition);
-                    useEcho
-                        .join(`tickets.position.${positionSlug}`)
-                        .here((users) => {
-                            // Connected to position channel
-                        })
-                        .joining((user) => {
-                            // User joined position channel
-                        })
-                        .leaving((user) => {
-                            // User left position channel
-                        })
-                        .listen('.ticket.created', (e) => {
-                            ticketsStore.handleTicketCreated(e.ticket);
-                        })
-                        .listen('.ticket.updated', (e) => {
-                            ticketsStore.handleTicketUpdated(e.ticket);
-                        });
-                }
-            } else if (wasLoggedIn === true && isLoggedIn === false) {
-                // Only disconnect if the state changed from logged in to logged out
-                useEcho.disconnect();
-            }
-        },
-        { immediate: true } // Run on component mount
-    );
-});
+// Los canales WebSocket se gestionan centralmente:
+//   - suscripción: authStore.login() → ticketsStore.initEchoListeners()
+//   - limpieza:    authStore.logout() → ticketsStore.leaveEchoChannels()
 </script>
 
 <template>

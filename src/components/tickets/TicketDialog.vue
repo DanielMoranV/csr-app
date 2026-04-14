@@ -339,19 +339,6 @@ watch(
     }
 );
 
-// Watcher para hacer scroll cuando el diálogo se abra
-watch(
-    () => props.visible,
-    (visible) => {
-        if (visible && props.ticket?.id) {
-            // Hacer scroll después de que se carguen los comentarios
-            setTimeout(() => {
-                scrollToBottom();
-            }, 500);
-        }
-    }
-);
-
 // Métodos de carga y reset
 const loadTicketData = (ticket) => {
     Object.assign(ticketForm, {

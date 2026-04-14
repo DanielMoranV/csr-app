@@ -7,11 +7,13 @@ import AppMenuItem from './AppMenuItem.vue';
 
 import { useAuthStore } from '@/store/authStore.js';
 import { useDocumentManagementStore } from '@/store/documentManagementStore.js';
+import { useNotificationsStore } from '@/store/notificationsStore.js';
 import { useTicketsStore } from '@/store/ticketsStore.js';
 
 const { filterMenuItems } = usePermissions();
 const docStore = useDocumentManagementStore();
 const ticketsStore = useTicketsStore();
+const notificationsStore = useNotificationsStore();
 const authStore = useAuthStore();
 
 // Generar menú desde la configuración centralizada
@@ -43,12 +45,25 @@ const filteredMenu = computed(() => {
         });
     }
 
+    // Inyectar badge de notificaciones de tareas no leídas
+    const taskUnread = notificationsStore.state.unreadByModule?.['tasks'] || 0;
+    if (taskUnread > 0) {
+        filtered.forEach((section) => {
+            if (section.items) {
+                const taskItem = section.items.find((item) => item.to === '/hospital-tasks');
+                if (taskItem) taskItem.badge = taskUnread > 99 ? '99+' : taskUnread;
+            }
+        });
+    }
+
     return filtered;
 });
 
 onMounted(() => {
     docStore.fetchPermittedDocuments();
     ticketsStore.fetchGlobalUnreadCount();
+    // Sincronizar el badge de tareas desde el conteo global de notificaciones
+    notificationsStore.fetchUnreadCount();
 });
 </script>
 

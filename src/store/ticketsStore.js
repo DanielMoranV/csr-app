@@ -162,9 +162,10 @@ export const useTicketsStore = defineStore('tickets', () => {
         const commentsStore = useTicketCommentsStore();
         commentsStore.handleCommentCreated(comment, ticketId);
 
-        // Use is_read_by_me from payload (set to true for the author of the comment).
-        // Falls back to user_id comparison if the field is absent (older backend).
-        const isOwnComment = comment.is_read_by_me === true || (currentUser && comment.user_id === currentUser.id);
+        // Determinar si el comentario fue enviado por el usuario actual.
+        // El payload puede traer user_id (plano) o user.id (anidado) según la versión del backend.
+        const authorId = comment.user_id ?? comment.user?.id;
+        const isOwnComment = comment.is_read_by_me === true || (currentUser && authorId === currentUser.id);
         if (!isOwnComment) {
             const isViewingComments = commentsStore.state.currentTicketId === ticketId
                                       && commentsStore.state.isCommentsTabActive;
@@ -177,11 +178,9 @@ export const useTicketsStore = defineStore('tickets', () => {
                 // El usuario no está viendo ese ticket — actualizar badges
                 state.globalUnreadCount++;
 
-                // Incrementar también el bell de notificaciones
+                // Incrementar el bell de notificaciones sin mutar su estado interno
                 const notificationsStore = useNotificationsStore();
-                notificationsStore.state.unreadCount++;
-                notificationsStore.state.unreadByModule['tickets'] =
-                    (notificationsStore.state.unreadByModule['tickets'] || 0) + 1;
+                notificationsStore.bumpUnreadCount('tickets');
 
                 // Mostrar toast solo si no está en la vista del ticket
                 toast.add({
@@ -234,6 +233,46 @@ export const useTicketsStore = defineStore('tickets', () => {
         }
     };
 
+    /**
+     * Handle ticket.implementation_dates_set Echo event.
+     * Only received by the CREATOR of the ticket (on their private channel).
+     * Payload: { ticket_id, title, actor_id, schedule_status, implementation_start,
+     *            implementation_end, due_date, previous_start, previous_end }
+     */
+    const handleImplementationDatesSet = (e) => {
+        const { ticket_id, title, schedule_status, implementation_start, implementation_end } = e;
+        if (!ticket_id) return;
+
+        // Actualizar campos de implementación en la lista local (patch parcial)
+        const index = state.tickets.findIndex((t) => t.id === ticket_id);
+        if (index !== -1) {
+            state.tickets[index] = {
+                ...state.tickets[index],
+                implementation_start,
+                implementation_end,
+                schedule_status
+            };
+        }
+
+        // Actualizar currentTicket si está abierto
+        if (state.currentTicket?.id === ticket_id) {
+            state.currentTicket = {
+                ...state.currentTicket,
+                implementation_start,
+                implementation_end,
+                schedule_status
+            };
+        }
+
+        const isDelayed = schedule_status === 'delayed';
+        toast.add({
+            severity: isDelayed ? 'warn' : 'info',
+            summary: 'Plan de Implementación',
+            detail: `Ticket "${title}": ${isDelayed ? '⚠️ implementación con retraso' : '✅ implementación en plazo'} (${implementation_start} → ${implementation_end})`,
+            life: 7000
+        });
+    };
+
     const initEchoListeners = () => {
         const user = authStore.getUser;
         const userId = user?.id;
@@ -259,6 +298,7 @@ export const useTicketsStore = defineStore('tickets', () => {
                 .listen('.ticket.updated', handleTicketUpdated)
                 .listen('.ticket.assigned', handleTicketAssigned)
                 .listen('.ticket.status.changed', handleTicketStatusChanged)
+                .listen('.ticket.implementation_dates_set', handleImplementationDatesSet)
                 .listen('.ticket.comment.created', handleTicketCommentCreated)
                 .listen('.ticket.comment.updated', handleTicketCommentUpdated)
                 .listen('.ticket.comment.deleted', handleTicketCommentDeleted)
@@ -557,6 +597,7 @@ export const useTicketsStore = defineStore('tickets', () => {
         handleTicketUpdated,
         handleTicketAssigned,
         handleTicketStatusChanged,
+        handleImplementationDatesSet,
         handleTicketCommentCreated,
         handleTicketCommentUpdated,
         handleTicketCommentDeleted,

@@ -10,6 +10,9 @@ export const useNotificationsStore = defineStore('notifications', () => {
         unreadByModule: {},   // { tickets: 8, tasks: 4 }
         isLoading: false,
         isLoadingCount: false,
+        // Marca que el badge fue incrementado va Echo y la lista puede estar desactualizada.
+        // NotificationBell usa este flag para refrescar la lista al abrir el panel.
+        isDirty: false,
         pagination: {
             current_page: 1,
             last_page: 1,
@@ -48,6 +51,8 @@ export const useNotificationsStore = defineStore('notifications', () => {
                 } else if (Array.isArray(data)) {
                     state.notifications = data;
                 }
+                // La lista está actualizada: limpiar el flag dirty
+                state.isDirty = false;
             }
         } catch {
             // silently fail — notifications are not critical
@@ -123,6 +128,19 @@ export const useNotificationsStore = defineStore('notifications', () => {
     };
 
     /**
+     * Incrementa el conteo de no leídas para un módulo específico.
+     * Usar en lugar de mutar state directamente desde otros stores.
+     * Establece isDirty=true para que NotificationBell refresque la lista al abrir.
+     */
+    const bumpUnreadCount = (module) => {
+        state.unreadCount++;
+        if (module) {
+            state.unreadByModule[module] = (state.unreadByModule[module] || 0) + 1;
+        }
+        state.isDirty = true;
+    };
+
+    /**
      * Handle a new notification arriving via Echo.
      * Call this from ticketsStore or any store that listens to an echo event
      * that generates a notification (e.g., ticket.comment.created).
@@ -153,6 +171,7 @@ export const useNotificationsStore = defineStore('notifications', () => {
         markAsRead,
         markAllAsRead,
         loadMore,
+        bumpUnreadCount,
         handleNewNotification
     };
 });

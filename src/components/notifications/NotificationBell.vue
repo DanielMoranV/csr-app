@@ -13,8 +13,10 @@ const overlayRef = ref(null);
 
 const togglePanel = async (event) => {
     overlayRef.value.toggle(event);
-    // Load notifications when panel opens (first time or refresh)
-    if (notificationsStore.state.notifications.length === 0) {
+    // Cargar notificaciones si:
+    //   1. La lista está vacía (primera apertura), o
+    //   2. isDirty=true (llegó un evento Echo que incrementó el badge sin actualizar la lista)
+    if (notificationsStore.state.notifications.length === 0 || notificationsStore.state.isDirty) {
         await notificationsStore.fetchNotifications();
     }
 };

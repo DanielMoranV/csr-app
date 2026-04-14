@@ -1,7 +1,7 @@
 <script setup>
 import { useTicketsStore } from '@/store/ticketsStore.js';
 import { useToast } from 'primevue/usetoast';
-import { onMounted, onUnmounted, reactive, ref, watch } from 'vue';
+import { onMounted, reactive, ref, watch } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
 import Button from 'primevue/button';
 
@@ -81,9 +81,6 @@ onMounted(async () => {
         await ticketsStore.fetchTickets();
     }
 
-    // Inicializar listeners de eventos en tiempo real
-    ticketsStore.initEchoListeners();
-
     // Abrir ticket si viene de una notificación via query params
     if (route.query.ticket_id) {
         openTicketFromQuery(route.query.ticket_id, route.query.open_tab, route.query.comment_id);
@@ -100,10 +97,8 @@ watch(
     }
 );
 
-onUnmounted(() => {
-    // Limpiar listeners de eventos en tiempo real
-    ticketsStore.leaveEchoChannels();
-});
+// Los canales Echo se gestionan globalmente desde authStore (login/logout).
+// Esta vista no necesita suscribir ni cancelar canales en su ciclo de vida.
 
 // Métodos de gestión de tickets
 const openCreateTicketDialog = () => {

@@ -3,6 +3,7 @@ import cache from '@/utils/cache.js';
 import { defineStore } from 'pinia';
 import { computed, reactive } from 'vue';
 import { useTicketsStore } from './ticketsStore';
+import { useTasksStore } from './tasksStore';
 
 // Configuración de seguridad
 const TOKEN_STORAGE_KEY = 'token';
@@ -221,6 +222,8 @@ export const useAuthStore = defineStore('auth', () => {
                 saveAuthData(response.data);
                 const ticketsStore = useTicketsStore();
                 ticketsStore.initEchoListeners();
+                const tasksStore = useTasksStore();
+                tasksStore.initEchoListeners(response.data.user?.id);
                 return {
                     success: true,
                     message: response.message || 'Login exitoso',
@@ -316,9 +319,12 @@ export const useAuthStore = defineStore('auth', () => {
         } catch (error) {
             // Error handled
         } finally {
-            // Limpiar datos locales siempre
+            // Limpiar datos locales siempre — capturar userId antes de clearAuthData
+            const userId = state.user?.id;
             const ticketsStore = useTicketsStore();
             ticketsStore.leaveEchoChannels();
+            const tasksStore = useTasksStore();
+            tasksStore.leaveEchoChannels(userId);
             clearAuthData();
             state.isLoading = false;
         }
@@ -405,10 +411,18 @@ export const useAuthStore = defineStore('auth', () => {
 
     // Inicializar store al cargar
     const initialize = () => {
-        loadAuthDataFromCache();
+        const hasSession = loadAuthDataFromCache();
 
         // NOTA: setInterval auto-refresh removido - tokens ya no expiran
         // No es necesario refrescar periodicamente
+
+        // Si ya había sesión activa (recarga de página), iniciar canales Echo
+        if (hasSession && state.user?.id) {
+            const ticketsStore = useTicketsStore();
+            ticketsStore.initEchoListeners();
+            const tasksStore = useTasksStore();
+            tasksStore.initEchoListeners(state.user.id);
+        }
 
         // Marcar como inicializado
         state.isInitialized = true;
