@@ -285,9 +285,11 @@ const fetchGantt = async () => {
             from: toYMD(rangeFrom.value),
             to:   toYMD(rangeTo.value)
         };
-        if (filterScheduleStatus.value)   params.schedule_status   = filterScheduleStatus.value;
-        if (filterAssigneeUserId.value)   params.assignee_user_id  = filterAssigneeUserId.value;
-        if (filterAssigneePosition.value) params.assignee_position = filterAssigneePosition.value;
+        if (filterScheduleStatus.value)      params.schedule_status   = filterScheduleStatus.value;
+        if (filterAssigneeUserId.value)      params.assignee_user_id  = filterAssigneeUserId.value;
+        if (filterAssigneePosition.value)    params.assignee_position = filterAssigneePosition.value;
+        if (filterTicketStatus.value === 'active')   params.status = 'pendiente,en proceso';
+        if (filterTicketStatus.value === 'finished') params.status = 'concluido,anulado,rechazado';
 
         const response = await TicketService.getGantt(params);
         tickets.value = response?.data?.data ?? response?.data ?? [];
@@ -321,6 +323,7 @@ const clearFilters = () => {
     filterScheduleStatus.value   = null;
     filterAssigneeUserId.value   = null;
     filterAssigneePosition.value = null;
+    filterTicketStatus.value     = 'all';
     fetchGantt();
 };
 
@@ -361,6 +364,27 @@ const PRIORITY_COLORS = {
     media:   '#f59e0b',
     alta:    '#ef4444',
     urgente: '#dc2626'
+};
+
+// ─── Estado del ticket ────────────────────────────────────────────────────────
+
+const TICKET_STATUS = {
+    'pendiente':   { label: 'Pendiente',  icon: 'pi pi-clock',        severity: 'secondary' },
+    'en proceso':  { label: 'En proceso', icon: 'pi pi-sync',         severity: 'info'      },
+    'concluido':   { label: 'Concluido',  icon: 'pi pi-check-circle', severity: 'success'   },
+    'rechazado':   { label: 'Rechazado',  icon: 'pi pi-times-circle', severity: 'danger'    },
+    'anulado':     { label: 'Anulado',    icon: 'pi pi-ban',          severity: 'secondary' }
+};
+
+const FINISHED_STATUSES = new Set(['concluido', 'anulado', 'rechazado']);
+const isFinished = (status) => FINISHED_STATUSES.has(status);
+
+// Toggle: 'all' | 'active' | 'finished'
+const filterTicketStatus = ref('all');
+
+const setTicketStatus = (val) => {
+    filterTicketStatus.value = val;
+    fetchGantt();
 };
 </script>
 
@@ -433,6 +457,31 @@ const PRIORITY_COLORS = {
                 <div class="controls-band">
                     <span class="controls-band-label">Filtros</span>
                     <div class="filters-inner">
+
+                        <!-- Toggle estado ticket -->
+                        <div class="control-group">
+                            <label class="control-label"><i class="pi pi-ticket"></i> Tickets</label>
+                            <div class="status-toggle">
+                                <button
+                                    class="status-btn"
+                                    :class="{ 'status-btn--all': filterTicketStatus === 'all' }"
+                                    @click="setTicketStatus('all')"
+                                >Todos</button>
+                                <button
+                                    class="status-btn"
+                                    :class="{ 'status-btn--active': filterTicketStatus === 'active' }"
+                                    @click="setTicketStatus('active')"
+                                ><i class="pi pi-play-circle"></i> Activos</button>
+                                <button
+                                    class="status-btn"
+                                    :class="{ 'status-btn--done': filterTicketStatus === 'finished' }"
+                                    @click="setTicketStatus('finished')"
+                                ><i class="pi pi-check-circle"></i> Terminados</button>
+                            </div>
+                        </div>
+
+                        <div class="filter-divider"></div>
+
                         <div class="control-group">
                             <label class="control-label"><i class="pi pi-user"></i> Usuario asignado</label>
                             <Select
@@ -486,7 +535,7 @@ const PRIORITY_COLORS = {
                         <div class="control-actions">
                             <Button label="Actualizar" icon="pi pi-refresh" size="small" @click="fetchGantt" :loading="isLoading" />
                             <Button
-                                v-if="filterAssigneeUserId || filterAssigneePosition || filterScheduleStatus"
+                                v-if="filterAssigneeUserId || filterAssigneePosition || filterScheduleStatus || filterTicketStatus !== 'all'"
                                 label="Limpiar"
                                 icon="pi pi-times"
                                 severity="secondary"
@@ -500,11 +549,12 @@ const PRIORITY_COLORS = {
             </div>
 
             <!-- Active filter chips -->
-            <div v-if="filterAssigneeUserId || filterAssigneePosition || filterScheduleStatus" class="gantt-active-filters">
+            <div v-if="filterAssigneeUserId || filterAssigneePosition || filterScheduleStatus || filterTicketStatus !== 'all'" class="gantt-active-filters">
                 <span class="active-filters-label"><i class="pi pi-filter-fill mr-1"></i>Filtros activos:</span>
+                <Tag v-if="filterTicketStatus !== 'all'" :value="filterTicketStatus === 'active' ? 'Tickets: Activos' : 'Tickets: Terminados'" severity="info" class="text-xs" :removable="true" @remove="setTicketStatus('all')" />
                 <Tag v-if="filterAssigneeUserId" :value="`Usuario: ${userList.find(u => u.id === filterAssigneeUserId)?.name ?? filterAssigneeUserId}`" severity="info" class="text-xs" :removable="true" @remove="filterAssigneeUserId = null; fetchGantt()" />
                 <Tag v-if="filterAssigneePosition" :value="`Área: ${filterAssigneePosition}`" severity="info" class="text-xs" :removable="true" @remove="filterAssigneePosition = null; fetchGantt()" />
-                <Tag v-if="filterScheduleStatus" :value="`Estado: ${scheduleStatusOptions.find(o => o.value === filterScheduleStatus)?.label}`" severity="secondary" class="text-xs" :removable="true" @remove="filterScheduleStatus = null; fetchGantt()" />
+                <Tag v-if="filterScheduleStatus" :value="`Planif.: ${scheduleStatusOptions.find(o => o.value === filterScheduleStatus)?.label}`" severity="secondary" class="text-xs" :removable="true" @remove="filterScheduleStatus = null; fetchGantt()" />
             </div>
 
             <!-- Legend -->
@@ -556,6 +606,7 @@ const PRIORITY_COLORS = {
                     v-for="row in ganttRows"
                     :key="row.id"
                     class="gantt-label-row"
+                    :class="{ 'is-finished': isFinished(row.status) }"
                     @click="router.push({ name: 'tickets', query: { ticket_id: row.id } })"
                     v-tooltip.right="`Abrir ticket #${row.id}`"
                 >
@@ -563,6 +614,14 @@ const PRIORITY_COLORS = {
                     <div class="gantt-label-info">
                         <span class="gantt-label-title">{{ row.title }}</span>
                         <div class="gantt-label-meta">
+                            <span
+                                class="ticket-status-badge"
+                                :data-status="row.status"
+                                v-tooltip.top="TICKET_STATUS[row.status]?.label ?? row.status"
+                            >
+                                <i :class="TICKET_STATUS[row.status]?.icon ?? 'pi pi-circle'"></i>
+                                {{ TICKET_STATUS[row.status]?.label ?? row.status }}
+                            </span>
                             <Tag
                                 :value="SCHEDULE_STATUS[row.schedule_status]?.label ?? row.schedule_status"
                                 :severity="STATUS_SEVERITY[row.schedule_status] ?? 'secondary'"
@@ -607,7 +666,12 @@ const PRIORITY_COLORS = {
                 <div class="gantt-body-area">
                     <div v-if="todayOffset !== null" class="gantt-today-line" :style="{ left: todayOffset + '%' }"></div>
 
-                    <div v-for="row in ganttRows" :key="row.id" class="gantt-bar-row">
+                    <div
+                        v-for="row in ganttRows"
+                        :key="row.id"
+                        class="gantt-bar-row"
+                        :class="{ 'is-finished': isFinished(row.status) }"
+                    >
                         <!-- Grid bg cols -->
                         <div
                             v-for="col in headerColumns"
@@ -623,8 +687,9 @@ const PRIORITY_COLORS = {
                             class="gantt-bar"
                             :class="row.cfg.bgClass"
                             :style="{ left: row.barLeft + '%', width: row.barWidth + '%' }"
-                            v-tooltip.top="`#${row.id} · ${row.title} · ${formatDate(row.implementation_start)} → ${formatDate(row.implementation_end)}`"
+                            v-tooltip.top="`#${row.id} · ${row.title} | ${TICKET_STATUS[row.status]?.label ?? row.status} | ${formatDate(row.implementation_start)} → ${formatDate(row.implementation_end)}`"
                         >
+                            <i :class="TICKET_STATUS[row.status]?.icon" class="gantt-bar-status-icon"></i>
                             <span class="gantt-bar-label">{{ row.title }}</span>
                         </div>
 
@@ -632,7 +697,7 @@ const PRIORITY_COLORS = {
                         <div
                             v-else-if="row.schedule_status === 'unplanned'"
                             class="gantt-bar-unplanned"
-                            v-tooltip.top="`#${row.id} — Sin fechas de implementación definidas`"
+                            v-tooltip.top="`#${row.id} · ${TICKET_STATUS[row.status]?.label ?? row.status} — Sin fechas de implementación`"
                         >
                             <i class="pi pi-clock"></i>
                             <span>Sin planificar</span>
@@ -857,6 +922,50 @@ const PRIORITY_COLORS = {
     align-items: flex-end;
 }
 
+/* ── Status toggle ── */
+.status-toggle {
+    display: flex;
+    background: var(--surface-0);
+    border: 1px solid var(--surface-300);
+    border-radius: 8px;
+    padding: 3px;
+    gap: 2px;
+}
+
+.status-btn {
+    display: flex;
+    align-items: center;
+    gap: 0.3rem;
+    padding: 0.3rem 0.7rem;
+    border-radius: 6px;
+    font-size: 0.78rem;
+    font-weight: 600;
+    border: none;
+    cursor: pointer;
+    background: transparent;
+    color: var(--text-color-secondary);
+    transition: background 0.15s, color 0.15s;
+    white-space: nowrap;
+}
+
+.status-btn i { font-size: 0.72rem; }
+.status-btn:hover { background: var(--surface-200); color: var(--text-color); }
+
+.status-btn--all    { background: var(--surface-300); color: var(--text-color); }
+.status-btn--active { background: #3b82f6; color: #fff; }
+.status-btn--active:hover { background: #2563eb; color: #fff; }
+.status-btn--done   { background: #22c55e; color: #fff; }
+.status-btn--done:hover { background: #16a34a; color: #fff; }
+
+/* Divisor visual entre toggle y selects */
+.filter-divider {
+    width: 1px;
+    align-self: stretch;
+    background: var(--surface-200);
+    margin: 0.1rem 0.25rem;
+    flex-shrink: 0;
+}
+
 /* ── Active filter chips ── */
 .gantt-active-filters {
     display: flex;
@@ -1068,6 +1177,57 @@ const PRIORITY_COLORS = {
     font-size: 0.63rem;
     padding: 0.1rem 0.3rem;
     line-height: 1.4;
+}
+
+/* ── Ticket status badge ── */
+.ticket-status-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.22rem;
+    font-size: 0.62rem;
+    font-weight: 700;
+    padding: 0.1rem 0.35rem;
+    border-radius: 3px;
+    white-space: nowrap;
+    flex-shrink: 0;
+}
+
+.ticket-status-badge i { font-size: 0.58rem; }
+
+.ticket-status-badge[data-status="pendiente"]  { background: #e0e7ff; color: #3730a3; }
+.ticket-status-badge[data-status="en proceso"] { background: #dbeafe; color: #1d4ed8; }
+.ticket-status-badge[data-status="concluido"]  { background: #dcfce7; color: #15803d; }
+.ticket-status-badge[data-status="rechazado"]  { background: #fee2e2; color: #991b1b; }
+.ticket-status-badge[data-status="anulado"]    { background: #f3f4f6; color: #4b5563; }
+
+/* ── Icono en la barra ── */
+.gantt-bar-status-icon {
+    font-size: 0.68rem;
+    color: rgba(255,255,255,0.85);
+    flex-shrink: 0;
+}
+
+/* ── Estado terminado — filas atenuadas ── */
+.gantt-label-row.is-finished {
+    opacity: 0.6;
+}
+
+.gantt-label-row.is-finished:hover {
+    opacity: 1;
+}
+
+.gantt-bar-row.is-finished .gantt-bar {
+    opacity: 0.5;
+    filter: grayscale(0.35);
+}
+
+.gantt-bar-row.is-finished .gantt-bar:hover {
+    opacity: 0.85;
+    filter: none;
+}
+
+.gantt-bar-row.is-finished .gantt-bar-unplanned {
+    opacity: 0.35;
 }
 
 /* ─── Columna de barras (derecha) ─── */
@@ -1305,6 +1465,22 @@ const PRIORITY_COLORS = {
 .app-dark .gantt-priority-badge[data-priority="media"]   { background: #451a03; color: #fde68a; }
 .app-dark .gantt-priority-badge[data-priority="alta"]    { background: #450a0a; color: #fca5a5; }
 .app-dark .gantt-priority-badge[data-priority="urgente"] { background: #991b1b; color: #fff; }
+
+.app-dark .ticket-status-badge[data-status="pendiente"]  { background: #1e1b4b; color: #a5b4fc; }
+.app-dark .ticket-status-badge[data-status="en proceso"] { background: #1e3a5f; color: #93c5fd; }
+.app-dark .ticket-status-badge[data-status="concluido"]  { background: #14532d; color: #86efac; }
+.app-dark .ticket-status-badge[data-status="rechazado"]  { background: #450a0a; color: #fca5a5; }
+.app-dark .ticket-status-badge[data-status="anulado"]    { background: #374151; color: #9ca3af; }
+
+.app-dark .status-toggle {
+    background: var(--surface-800);
+    border-color: var(--surface-600);
+}
+
+.app-dark .status-btn:hover { background: var(--surface-700); }
+.app-dark .status-btn--all  { background: var(--surface-600); color: var(--text-color); }
+
+.app-dark .filter-divider { background: var(--surface-600); }
 
 /* ─── Responsive ─── */
 @media (max-width: 768px) {
