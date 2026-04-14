@@ -20,6 +20,7 @@ import Select from 'primevue/select';
 import AutoComplete from 'primevue/autocomplete';
 import { useConfirm } from 'primevue/useconfirm';
 import { computed, onMounted, ref } from 'vue';
+import * as XLSX from 'xlsx';
 import { medicalSpecialties } from '@/api/medicalSpecialties';
 
 const { doctors, isLoading, fetchDoctors, createDoctor, updateDoctor, deleteDoctor, documentTypeOptions, paymentPayrollOptions, setGlobalFilter, setDocumentTypeFilter, setPaymentPayrollFilter, clearFilters } = useDoctors();
@@ -219,6 +220,61 @@ const filteredDoctorsBySpecialty = computed(() => {
         return doctor.specialties && doctor.specialties.some(s => s.id === selectedSpecialty.value.id);
     });
 });
+
+// Helpers para exportar con etiquetas legibles
+const documentTypeLabels = { dni: 'DNI', ce: 'CE', passport: 'Pasaporte' };
+const colegioLabels = { cmp: 'CMP', cop: 'COP', cqfp: 'CQFP', cbp: 'CBP', cobp: 'COBP', cep: 'CEP', csp: 'CSP', cnp: 'CNP' };
+const typeLabels = {
+    medico: 'Médico', odontologo: 'Odontólogo', obstetriz: 'Obstetriz',
+    enfermero: 'Enfermero', nutricionista: 'Nutricionista', psicologo: 'Psicólogo',
+    tecnologo_medico: 'Tecnólogo Médico', quimico_farmaceutico: 'Químico Farmacéutico', biologo: 'Biólogo'
+};
+
+// Exportar a Excel
+const isExporting = ref(false);
+const exportToExcel = () => {
+    isExporting.value = true;
+    try {
+        const data = filteredDoctorsBySpecialty.value.map((doctor) => ({
+            Código: doctor.code || '',
+            Nombre: doctor.name || '',
+            'Tipo Profesional': typeLabels[doctor.type] || doctor.type || '',
+            'Tipo Documento': documentTypeLabels[doctor.document_type] || doctor.document_type || '',
+            'N° Documento': doctor.document_number || '',
+            Colegio: colegioLabels[doctor.colegio] || (doctor.colegio ? doctor.colegio.toUpperCase() : ''),
+            'N° Colegiatura': doctor.numero_colegiatura || '',
+            RNE: doctor.rne || '',
+            'Comisión (%)': doctor.commission_percentage ?? '',
+            Especialidades: (doctor.specialties || []).map((s) => s.name).join(', ')
+        }));
+
+        const worksheet = XLSX.utils.json_to_sheet(data);
+
+        // Ajustar ancho de columnas
+        worksheet['!cols'] = [
+            { wch: 12 }, // Código
+            { wch: 38 }, // Nombre
+            { wch: 22 }, // Tipo Profesional
+            { wch: 16 }, // Tipo Documento
+            { wch: 16 }, // N° Documento
+            { wch: 10 }, // Colegio
+            { wch: 18 }, // N° Colegiatura
+            { wch: 14 }, // RNE
+            { wch: 14 }, // Comisión (%)
+            { wch: 50 }  // Especialidades
+        ];
+
+        const workbook = XLSX.utils.book_new();
+        XLSX.utils.book_append_sheet(workbook, worksheet, 'Médicos');
+
+        const today = new Date().toISOString().split('T')[0];
+        XLSX.writeFile(workbook, `medicos_${today}.xlsx`);
+    } catch (err) {
+        console.error('Error al exportar a Excel:', err);
+    } finally {
+        isExporting.value = false;
+    }
+};
 </script>
 
 <template>
@@ -251,6 +307,13 @@ const filteredDoctorsBySpecialty = computed(() => {
                         severity="success"
                         outlined
                         @click="openCreateWithUserDialog"
+                    />
+                    <Button 
+                        label="Exportar Excel" 
+                        icon="pi pi-file-excel" 
+                        class="export-button"
+                        :loading="isExporting"
+                        @click="exportToExcel"
                     />
                     <Button label="Nuevo Médico" icon="pi pi-plus" class="add-button" @click="openNewDoctor" />
                 </div>
@@ -522,6 +585,59 @@ const filteredDoctorsBySpecialty = computed(() => {
     display: flex;
     align-items: center;
     margin: 0;
+}
+
+/* ============================================================================
+   EXPORT BUTTON
+   ============================================================================ */
+.export-button {
+    background: linear-gradient(135deg, #16a34a 0%, #15803d 100%) !important;
+    border: none !important;
+    color: white !important;
+    font-weight: 600;
+    padding: 0.75rem 1.5rem !important;
+    border-radius: 10px !important;
+    box-shadow:
+        0 4px 12px rgba(22, 163, 74, 0.3),
+        0 2px 8px rgba(21, 128, 61, 0.2) !important;
+    transition: all 0.3s ease !important;
+    position: relative;
+    overflow: hidden;
+}
+
+.export-button::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(135deg, transparent 0%, rgba(255, 255, 255, 0.2) 50%, transparent 100%);
+    transform: translateX(-100%);
+    transition: transform 0.6s ease;
+}
+
+.export-button:hover::before {
+    transform: translateX(100%);
+}
+
+.export-button:hover {
+    transform: translateY(-2px) !important;
+    box-shadow:
+        0 6px 16px rgba(22, 163, 74, 0.4),
+        0 3px 10px rgba(21, 128, 61, 0.3) !important;
+    background: linear-gradient(135deg, #15803d 0%, #166534 100%) !important;
+}
+
+:global(.dark) .export-button {
+    background: linear-gradient(135deg, #22c55e 0%, #16a34a 100%) !important;
+    box-shadow:
+        0 4px 12px rgba(34, 197, 94, 0.4),
+        0 2px 8px rgba(22, 163, 74, 0.3) !important;
+}
+
+:global(.dark) .export-button:hover {
+    background: linear-gradient(135deg, #4ade80 0%, #22c55e 100%) !important;
+    box-shadow:
+        0 6px 16px rgba(34, 197, 94, 0.5),
+        0 3px 10px rgba(22, 163, 74, 0.4) !important;
 }
 
 .add-button {
