@@ -353,7 +353,6 @@ const getPrioritySeverity = (priority) => {
                         v-tooltip.bottom="'Ver todos mis tickets asignados'"
                     >
                         <i class="pi pi-ticket"></i>
-                        <span class="kpi-n">{{ ticketsStore.mySummary.total }}</span>
                         <span class="kpi-l">Mis Tickets</span>
                     </button>
                     <button
@@ -373,7 +372,6 @@ const getPrioritySeverity = (priority) => {
                         v-tooltip.bottom="'Filtrar por En Proceso'"
                     >
                         <i class="pi pi-sync"></i>
-                        <span class="kpi-n">{{ ticketsStore.mySummary.by_status['en proceso'] }}</span>
                         <span class="kpi-l">En Proceso</span>
                     </button>
                 </div>
@@ -537,7 +535,7 @@ const getPrioritySeverity = (priority) => {
 }
 
 .title-h1 {
-    font-size: 1.05rem;
+    font-size: 1.3rem;
     font-weight: 700;
     color: var(--text-color);
     margin: 0;
