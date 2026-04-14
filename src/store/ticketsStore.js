@@ -21,6 +21,10 @@ export const useTicketsStore = defineStore('tickets', () => {
         isDeleting: false,
         lastFetch: null,
         globalUnreadCount: 0,   // total unread comments across all tickets (from GET /tickets/unread-comments-count)
+        mySummary: {            // resumen de tickets asignados al usuario actual (from GET /tickets/my-summary)
+            total: 0,
+            by_status: {}
+        },
         filters: {
             status: null,
             priority: null,
@@ -63,6 +67,11 @@ export const useTicketsStore = defineStore('tickets', () => {
                 life: 5000
             });
         }
+        // Refrescar resumen si el ticket nuevo nos fue asignado
+        const user = authStore.getUser;
+        const isAssignedToMe = ticket.assignee?.id === user?.id
+            || (user?.position && ticket.assignee_position === user.position);
+        if (isAssignedToMe) fetchMySummary();
     };
 
     const handleTicketUpdated = (e) => {
@@ -119,6 +128,9 @@ export const useTicketsStore = defineStore('tickets', () => {
             detail: notificationMessage,
             life: 5000
         });
+
+        // Refrescar resumen: puede que un ticket nos acabe de llegar o salir
+        fetchMySummary();
     };
 
     const handleTicketStatusChanged = (e) => {
@@ -149,6 +161,12 @@ export const useTicketsStore = defineStore('tickets', () => {
             detail: `Ticket "${ticket.title}" cambió de ${oldStatus} a ${newStatus}`,
             life: 5000
         });
+
+        // Refrescar resumen: el estado cambio puede afectar los conteos
+        const user = authStore.getUser;
+        const isAssignedToMe = ticket.assignee?.id === user?.id
+            || (user?.position && ticket.assignee_position === user.position);
+        if (isAssignedToMe) fetchMySummary();
     };
 
     const handleTicketCommentCreated = (e) => {
@@ -177,6 +195,9 @@ export const useTicketsStore = defineStore('tickets', () => {
             } else {
                 // El usuario no está viendo ese ticket — actualizar badges
                 state.globalUnreadCount++;
+
+                // Incrementar el contador por fila en la tabla de tickets
+                ticket.unread_comments_count = (ticket.unread_comments_count || 0) + 1;
 
                 // Incrementar el bell de notificaciones sin mutar su estado interno
                 const notificationsStore = useNotificationsStore();
@@ -374,6 +395,8 @@ export const useTicketsStore = defineStore('tickets', () => {
                 current_page: 1
             };
             state.lastFetch = Date.now();
+            // Refrescar resumen de mis tickets en paralelo (no bloquea el render)
+            fetchMySummary();
         } catch (error) {
             // Error handled
             toast.add({ severity: 'error', summary: 'Error', detail: 'No se pudieron cargar los tickets.', life: 3000 });
@@ -489,6 +512,17 @@ export const useTicketsStore = defineStore('tickets', () => {
     };
 
     // --- GLOBAL UNREAD COMMENTS COUNT ---
+
+    /**
+     * Pone a 0 el contador unread_comments_count de un ticket específico en la lista local.
+     * Llamar desde TicketDialog cuando el usuario marca todos los comentarios como leídos.
+     * @param {number} ticketId
+     */
+    const clearTicketUnreadCount = (ticketId) => {
+        const ticket = state.tickets.find((t) => t.id === ticketId);
+        if (ticket) ticket.unread_comments_count = 0;
+    };
+
     const fetchGlobalUnreadCount = async () => {
         try {
             const response = await TicketService.getGlobalUnreadCommentsCount();
@@ -497,6 +531,23 @@ export const useTicketsStore = defineStore('tickets', () => {
             }
         } catch {
             // silent — badge is non-critical
+        }
+    };
+
+    /**
+     * Fetch the personalized ticket summary for the current user.
+     * Calls GET /tickets/my-summary — lightweight endpoint, no pagination.
+     * Updates state.mySummary.total and state.mySummary.by_status.
+     */
+    const fetchMySummary = async () => {
+        try {
+            const response = await TicketService.getMySummary();
+            if (response?.success && response.data) {
+                state.mySummary.total = response.data.total ?? 0;
+                state.mySummary.by_status = response.data.by_status ?? {};
+            }
+        } catch {
+            // silent — summary is non-critical
         }
     };
 
@@ -577,6 +628,7 @@ export const useTicketsStore = defineStore('tickets', () => {
         filters: state.filters,
         pagination: computed(() => state.pagination),
         globalUnreadCount: computed(() => state.globalUnreadCount),
+        mySummary: computed(() => state.mySummary),
 
         // Getters
         allTickets,
@@ -591,6 +643,8 @@ export const useTicketsStore = defineStore('tickets', () => {
         updateTicketStatus,
         updateImplementation,
         fetchGlobalUnreadCount,
+        clearTicketUnreadCount,
+        fetchMySummary,
 
         // Real-time handlers
         handleTicketCreated,

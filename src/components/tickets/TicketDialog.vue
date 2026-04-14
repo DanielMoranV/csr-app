@@ -152,8 +152,9 @@ const markVisibleCommentsAsRead = async () => {
 
     await Promise.allSettled(unreadComments.map((c) => ticketCommentsStore.markCommentAsRead(ticketId, c.id)));
 
-    // Refrescar el badge del sidebar solo si había comentarios sin leer
+    // Actualizar el badge del sidebar y poner a 0 el badge por fila en la tabla
     ticketsStore.fetchGlobalUnreadCount();
+    ticketsStore.clearTicketUnreadCount(ticketId);
 };
 
 // Sincronizar el flag isCommentsTabActive con el tab visible

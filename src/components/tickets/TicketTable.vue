@@ -330,7 +330,17 @@ const getActionItems = (ticketData) => {
                     <div class="ticket-title-cell">
                         <i class="pi pi-tag title-icon"></i>
                         <div class="ticket-title-content">
-                            <span class="ticket-title">{{ data.title }}</span>
+                            <div class="ticket-title-row">
+                                <span class="ticket-title">{{ data.title }}</span>
+                                <span
+                                    v-if="data.unread_comments_count > 0"
+                                    class="unread-comments-badge"
+                                    v-tooltip.top="`${data.unread_comments_count} comentario${ data.unread_comments_count === 1 ? '' : 's' } sin leer`"
+                                >
+                                    <i class="pi pi-comment"></i>
+                                    {{ data.unread_comments_count > 99 ? '99+' : data.unread_comments_count }}
+                                </span>
+                            </div>
                             <!-- Info compacta para móvil -->
                             <div class="mobile-ticket-info">
                                 <Tag :severity="getPrioritySeverity(data.priority)" class="mobile-priority-tag" rounded>
@@ -989,11 +999,49 @@ const getActionItems = (ticketData) => {
 }
 
 /* Estilos para columna de título con info móvil */
+.ticket-title-row {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    flex-wrap: wrap;
+}
+
+.unread-comments-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.25rem;
+    background: #ef4444;
+    color: #ffffff;
+    font-size: 0.68rem;
+    font-weight: 700;
+    padding: 0.15rem 0.45rem;
+    border-radius: 20px;
+    flex-shrink: 0;
+    white-space: nowrap;
+    box-shadow: 0 1px 4px rgba(239, 68, 68, 0.4);
+    animation: badge-pulse 2s ease-in-out infinite;
+}
+
+.unread-comments-badge .pi {
+    font-size: 0.65rem;
+}
+
+@keyframes badge-pulse {
+    0%, 100% { opacity: 1; transform: scale(1); }
+    50% { opacity: 0.8; transform: scale(0.97); }
+}
+
 .ticket-title-content {
     display: flex;
     flex-direction: column;
-    gap: 0.5rem;
-    flex: 1;
+    gap: 0.25rem;
+    min-width: 0;
+}
+
+.ticket-title {
+    font-weight: 600;
+    color: var(--text-color);
+    word-break: break-word;
 }
 
 .mobile-ticket-info {

@@ -62,6 +62,16 @@ export const TicketService = {
     },
 
     /**
+     * Get a summary of tickets assigned to the current user (by user or position).
+     * GET /tickets/my-summary
+     * @returns {Promise} { data: { total: N, by_status: { pendiente: N, 'en proceso': N } } }
+     */
+    async getMySummary() {
+        const response = await api.get('/tickets/my-summary');
+        return response;
+    },
+
+    /**
      * Set or update implementation dates for a ticket.
      * Only the assignee of the ticket is authorized (403 otherwise).
      * PATCH /tickets/{id}/implementation

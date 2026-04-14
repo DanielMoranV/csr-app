@@ -317,62 +317,125 @@ const getPrioritySeverity = (priority) => {
 </script>
 
 <template>
-    <div class="tickets-management" :data-loading="ticketsStore.isLoading">
-        <!-- Header mejorado -->
-        <div class="header-section">
-            <div class="header-content">
-                <div class="title-section">
-                    <div class="title-wrapper">
-                        <div class="icon-container">
+    <div class="page">
+
+        <!-- ═══ Header unificado ═══ -->
+        <div class="page-header">
+
+            <!-- Franja de color superior -->
+            <div class="header-accent"></div>
+
+            <!-- Fila principal: título | KPI chips | acciones -->
+            <div class="header-main">
+
+                <!-- Título + breadcrumb -->
+                <div class="ph-title">
+                    <div class="title-line">
+                        <div class="title-icon">
                             <i class="pi pi-ticket"></i>
                         </div>
                         <div class="title-text">
-                            <h1>Gestión de Tickets</h1>
-                            <p>Administración y seguimiento de solicitudes y problemas</p>
+                            <h1 class="title-h1">Gestión de Tickets</h1>
+                            <div class="breadcrumb">
+                                <span>Dashboard</span>
+                                <i class="pi pi-chevron-right"></i>
+                                <span class="bc-active">Tickets</span>
+                            </div>
                         </div>
                     </div>
-                    <div class="breadcrumb-section">
-                        <span class="breadcrumb-item">Dashboard</span>
-                        <i class="pi pi-chevron-right breadcrumb-separator"></i>
-                        <span class="breadcrumb-current">Tickets</span>
-                    </div>
                 </div>
 
-                <!-- Acciones rápidas mejoradas -->
-                <div class="actions-section">
-                    <div class="quick-actions">
-                        <Button icon="pi pi-refresh" class="p-button-outlined action-btn" @click="ticketsStore.fetchTickets()" v-tooltip.bottom="'Actualizar lista'" :loading="ticketsStore.isLoading" severity="secondary" />
-                        <Button icon="pi pi-download" class="p-button-outlined action-btn" @click="exportTickets" v-tooltip.bottom="'Exportar tickets'" severity="info" />
-                        <Button icon="pi pi-sliders-h" class="p-button-outlined action-btn" @click="router.push({ name: 'ticket-gantt' })" v-tooltip.bottom="'Diagrama de Gantt'" severity="warn" />
-                        <Button label="Nuevo Ticket" icon="pi pi-plus" class="primary-action-btn" @click="openCreateTicketDialog" severity="success" />
-                    </div>
+                <!-- KPI chips (se posicionan en el centro en desktop, bajan a fila propia en tablet/mobile) -->
+                <div class="ph-kpi" v-if="ticketsStore.mySummary.total > 0">
+                    <button
+                        class="kpi-chip kpi-total"
+                        @click="ticketsStore.clearFilters()"
+                        v-tooltip.bottom="'Ver todos mis tickets asignados'"
+                    >
+                        <i class="pi pi-ticket"></i>
+                        <span class="kpi-n">{{ ticketsStore.mySummary.total }}</span>
+                        <span class="kpi-l">Mis Tickets</span>
+                    </button>
+                    <button
+                        v-if="ticketsStore.mySummary.by_status.pendiente"
+                        class="kpi-chip kpi-pendiente"
+                        @click="ticketsStore.setFilter('status', 'pendiente')"
+                        v-tooltip.bottom="'Filtrar por Pendiente'"
+                    >
+                        <i class="pi pi-clock"></i>
+                        <span class="kpi-n">{{ ticketsStore.mySummary.by_status.pendiente }}</span>
+                        <span class="kpi-l">Pendientes</span>
+                    </button>
+                    <button
+                        v-if="ticketsStore.mySummary.by_status['en proceso']"
+                        class="kpi-chip kpi-proceso"
+                        @click="ticketsStore.setFilter('status', 'en proceso')"
+                        v-tooltip.bottom="'Filtrar por En Proceso'"
+                    >
+                        <i class="pi pi-sync"></i>
+                        <span class="kpi-n">{{ ticketsStore.mySummary.by_status['en proceso'] }}</span>
+                        <span class="kpi-l">En Proceso</span>
+                    </button>
                 </div>
+
+                <!-- Acciones -->
+                <div class="ph-actions">
+                    <Button
+                        icon="pi pi-refresh"
+                        class="action-btn secondary-action"
+                        outlined
+                        severity="secondary"
+                        @click="ticketsStore.fetchTickets()"
+                        v-tooltip.bottom="'Actualizar lista'"
+                        :loading="ticketsStore.isLoading"
+                    />
+                    <Button
+                        icon="pi pi-download"
+                        class="action-btn secondary-action"
+                        outlined
+                        severity="info"
+                        @click="exportTickets"
+                        v-tooltip.bottom="'Exportar tickets'"
+                    />
+                    <Button
+                        icon="pi pi-sliders-h"
+                        class="action-btn secondary-action"
+                        outlined
+                        severity="warn"
+                        @click="router.push({ name: 'ticket-gantt' })"
+                        v-tooltip.bottom="'Diagrama de Gantt'"
+                    />
+                    <Button
+                        label="Nuevo Ticket"
+                        icon="pi pi-plus"
+                        class="new-btn"
+                        severity="success"
+                        @click="openCreateTicketDialog"
+                    />
+                </div>
+
             </div>
-        </div>
 
-        <!-- Contenido principal -->
-        <div class="main-content">
-            <!-- Panel de filtros -->
-            <div class="filters-section">
+            <!-- Fila de filtros (dentro de la misma card, separada con borde) -->
+            <div class="header-filters">
                 <TicketFilters />
             </div>
 
-            <!-- Tabla de tickets -->
-            <div class="table-section">
-                <TicketTable
-                    :tickets="ticketsStore.tickets"
-                    :loading="ticketsStore.isLoading"
-                    :empty-message="getEmptyMessage()"
-                    @view-ticket="viewTicketDetails"
-                    @edit-ticket="editTicket"
-                    @create-ticket="openCreateTicketDialog"
-                    @delete-ticket="confirmDeleteTicket"
-                    @refresh="ticketsStore.fetchTickets()"
-                    :get-status-severity="getStatusSeverity"
-                    :get-priority-severity="getPrioritySeverity"
-                />
-            </div>
         </div>
+
+        <!-- ═══ Tabla de tickets ═══ -->
+        <TicketTable
+            :tickets="ticketsStore.tickets"
+            :loading="ticketsStore.isLoading"
+            :empty-message="getEmptyMessage()"
+            @view-ticket="viewTicketDetails"
+            @edit-ticket="editTicket"
+            @create-ticket="openCreateTicketDialog"
+            @delete-ticket="confirmDeleteTicket"
+            @refresh="ticketsStore.fetchTickets()"
+            :get-status-severity="getStatusSeverity"
+            :get-priority-severity="getPrioritySeverity"
+        />
 
         <!-- Diálogo de ticket -->
         <TicketDialog
@@ -403,360 +466,262 @@ const getPrioritySeverity = (priority) => {
             @cancel="closeConfirmDialog"
         />
 
-        <!-- Toast container ya está disponible globalmente -->
     </div>
 </template>
 
 <style scoped>
-.tickets-management {
+/* ─── Página ─── */
+.page {
     min-height: 100vh;
-    background: linear-gradient(135deg, var(--surface-50) 0%, var(--surface-100) 100%);
+    background: var(--surface-ground);
+    padding: 1.25rem;
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
 }
 
-/* Header Section */
-.header-section {
+/* ─── Header card ─── */
+.page-header {
     background: var(--surface-card);
     border-radius: 12px;
-    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
-    margin-bottom: 2rem;
+    border: 1px solid var(--surface-border);
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.06);
     overflow: hidden;
-    position: relative;
 }
 
-.header-section::before {
-    content: '';
-    position: absolute;
-    top: 0;
-    left: 0;
-    right: 0;
-    height: 4px;
-    background: linear-gradient(90deg, var(--primary-500) 0%, var(--primary-300) 100%);
+.header-accent {
+    height: 3px;
+    background: linear-gradient(90deg, var(--primary-500) 0%, var(--primary-300) 50%, var(--primary-500) 100%);
+    background-size: 200% 100%;
+    animation: shimmer 4s linear infinite;
 }
 
-.header-content {
-    padding: 2rem;
-    display: flex;
-    justify-content: space-between;
-    align-items: flex-start;
-    gap: 2rem;
+@keyframes shimmer {
+    0%   { background-position: 200% 0; }
+    100% { background-position: -200% 0; }
 }
 
-.title-section {
-    flex: 1;
-}
-
-.title-wrapper {
+/* ─── Fila principal: título | kpi-chips | acciones ─── */
+.header-main {
     display: flex;
     align-items: center;
     gap: 1rem;
-    margin-bottom: 1rem;
+    padding: 0.9rem 1.25rem;
+    flex-wrap: wrap;
 }
 
-.icon-container {
-    width: 60px;
-    height: 60px;
-    background: var(--surface-100);
-    border: 1px solid var(--surface-200);
-    border-radius: 16px;
+/* ── Título ── */
+.ph-title {
+    flex: 0 0 auto;
+    order: 1;
+}
+
+.title-line {
+    display: flex;
+    align-items: center;
+    gap: 0.65rem;
+}
+
+.title-icon {
+    width: 38px;
+    height: 38px;
+    background: var(--primary-50);
+    border: 1px solid var(--primary-100);
+    border-radius: 10px;
     display: flex;
     align-items: center;
     justify-content: center;
-    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.12);
-    transition: all 0.3s ease;
-}
-
-.icon-container:hover {
-    transform: translateY(-2px);
-    box-shadow: 0 12px 32px rgba(0, 0, 0, 0.16);
-}
-
-.icon-container i {
-    font-size: 1.75rem;
-    color: var(--text-color);
-}
-
-.title-text h1 {
-    margin: 0;
-    font-size: 2.25rem;
-    font-weight: 700;
-    color: var(--text-color);
-    line-height: 1.2;
-}
-
-.title-text p {
-    margin: 0.5rem 0 0 0;
-    font-size: 1.125rem;
-    color: var(--text-color-secondary);
-    line-height: 1.4;
-}
-
-.breadcrumb-section {
-    display: flex;
-    align-items: center;
-    gap: 0.5rem;
-    font-size: 0.875rem;
-}
-
-.breadcrumb-item {
-    color: var(--text-color-secondary);
-    transition: color 0.2s ease;
-}
-
-.breadcrumb-item:hover {
-    color: var(--primary-500);
-    cursor: pointer;
-}
-
-.breadcrumb-separator {
-    color: var(--text-color-secondary);
-    font-size: 0.75rem;
-}
-
-.breadcrumb-current {
-    color: var(--primary-500);
-    font-weight: 600;
-}
-
-.actions-section {
+    color: var(--primary-600);
+    font-size: 1rem;
     flex-shrink: 0;
 }
 
-.quick-actions {
+.title-h1 {
+    font-size: 1.05rem;
+    font-weight: 700;
+    color: var(--text-color);
+    margin: 0;
+    line-height: 1.2;
+    white-space: nowrap;
+}
+
+.breadcrumb {
     display: flex;
     align-items: center;
-    gap: 0.75rem;
+    gap: 0.25rem;
+    font-size: 0.7rem;
+    color: var(--text-color-secondary);
+    margin-top: 0.1rem;
+}
+
+.breadcrumb i { font-size: 0.55rem; }
+.bc-active { color: var(--primary-500); font-weight: 600; }
+
+/* ── KPI chips ── */
+.ph-kpi {
+    flex: 1 1 auto;
+    order: 2;
+    display: flex;
+    align-items: center;
+    gap: 0.45rem;
+    flex-wrap: wrap;
+    justify-content: center;
+    min-width: 0;
+}
+
+.kpi-chip {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.35rem;
+    padding: 0.32rem 0.7rem;
+    border-radius: 20px;
+    border: 1px solid transparent;
+    background: none;
+    cursor: pointer;
+    font-family: inherit;
+    white-space: nowrap;
+    transition: transform 0.15s, box-shadow 0.15s, filter 0.15s;
+    user-select: none;
+}
+
+.kpi-chip:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 3px 10px rgba(0, 0, 0, 0.12);
+    filter: brightness(0.95);
+}
+
+.kpi-chip i { font-size: 0.76rem; }
+
+.kpi-n {
+    font-size: 0.95rem;
+    font-weight: 800;
+    line-height: 1;
+}
+
+.kpi-l {
+    font-size: 0.7rem;
+    font-weight: 600;
+    opacity: 0.85;
+}
+
+.kpi-total     { background: var(--primary-50);  color: var(--primary-700);  border-color: var(--primary-200); }
+.kpi-pendiente { background: #fef3c7;             color: #92400e;             border-color: #fde68a; }
+.kpi-proceso   { background: #dbeafe;             color: #1e40af;             border-color: #bfdbfe; }
+
+/* ── Acciones ── */
+.ph-actions {
+    flex: 0 0 auto;
+    order: 3;
+    display: flex;
+    align-items: center;
+    gap: 0.45rem;
 }
 
 .action-btn {
-    width: 2.75rem;
-    height: 2.75rem;
-    border-radius: 12px;
-    transition: all 0.3s ease;
-    border: 2px solid var(--surface-border);
+    width: 2.25rem !important;
+    height: 2.25rem !important;
+    padding: 0 !important;
+    border-radius: 8px !important;
+    transition: transform 0.15s, box-shadow 0.15s !important;
 }
 
 .action-btn:hover {
-    transform: translateY(-2px);
-    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.12);
+    transform: translateY(-1px) !important;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.12) !important;
 }
 
-.primary-action-btn {
-    padding: 0.75rem 1.5rem;
-    border-radius: 12px;
+.new-btn {
+    border-radius: 8px;
     font-weight: 600;
-    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.12);
-    transition: all 0.3s ease;
+    white-space: nowrap;
+    transition: transform 0.15s, box-shadow 0.15s;
 }
 
-.primary-action-btn:hover {
-    transform: translateY(-2px);
-    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.16);
+.new-btn:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 4px 14px rgba(0, 0, 0, 0.15);
 }
 
-/* Main Content */
-.main-content {
-    display: flex;
-    flex-direction: column;
-    gap: 2rem;
+/* ─── Fila de filtros ─── */
+.header-filters {
+    border-top: 1px solid var(--surface-100);
 }
 
-.stats-section,
-.filters-section,
-.table-section {
-    animation: fadeInUp 0.6s ease-out;
+/* Anular estilos de Card de TicketFilters dentro del header */
+:deep(.header-filters .p-card) {
+    box-shadow: none !important;
+    border: none !important;
+    border-radius: 0 !important;
+    background: transparent !important;
+    margin: 0 !important;
 }
 
-.stats-section {
-    animation-delay: 0.1s;
+:deep(.header-filters .p-card:hover) {
+    box-shadow: none !important;
+    transform: none !important;
 }
 
-.filters-section {
-    animation-delay: 0.2s;
+:deep(.header-filters .p-card-header) {
+    display: none !important;
 }
 
-.table-section {
-    animation-delay: 0.3s;
+:deep(.header-filters .p-card-body) {
+    padding: 0 !important;
 }
 
-/* Animations */
-@keyframes fadeInUp {
-    from {
-        opacity: 0;
-        transform: translateY(20px);
-    }
-    to {
-        opacity: 1;
-        transform: translateY(0);
-    }
+:deep(.header-filters .p-card-content) {
+    padding: 0 !important;
 }
 
-/* Responsive Design */
-@media (max-width: 1024px) {
-    .header-content {
-        padding: 1.5rem;
-        gap: 1.5rem;
-    }
+:deep(.header-filters .filter-grid) {
+    padding: 0.75rem 1.25rem !important;
+    gap: 0.75rem !important;
+}
 
-    .title-text h1 {
-        font-size: 2rem;
-    }
-
-    .icon-container {
-        width: 50px;
-        height: 50px;
-    }
-
-    .icon-container i {
-        font-size: 1.5rem;
+/* ─── Tablet (768–1023px): KPIs bajan a fila propia ─── */
+@media (min-width: 768px) and (max-width: 1023px) {
+    .ph-kpi {
+        order: 4;
+        flex: 0 0 100%;
+        justify-content: flex-start;
+        padding: 0.5rem 0 0.15rem;
+        border-top: 1px solid var(--surface-100);
+        margin-top: 0.35rem;
     }
 }
 
-@media (max-width: 768px) {
-    .tickets-management {
-        background: var(--surface-ground);
+/* ─── Mobile (<768px): apilado, botones secundarios ocultos ─── */
+@media (max-width: 767px) {
+    .page { padding: 0.75rem; gap: 0.75rem; }
+    .header-main { padding: 0.75rem; gap: 0.5rem; }
+
+    .ph-kpi {
+        order: 4;
+        flex: 0 0 100%;
+        justify-content: flex-start;
+        padding: 0.45rem 0 0;
+        border-top: 1px solid var(--surface-100);
+        margin-top: 0.25rem;
     }
 
-    .header-content {
-        flex-direction: column;
-        align-items: stretch;
-        padding: 1rem;
-        gap: 1.5rem;
-    }
+    .kpi-l { display: none; }
+    .kpi-chip { padding: 0.3rem 0.55rem; }
+    .kpi-n { font-size: 0.9rem; }
 
-    .title-wrapper {
-        gap: 0.75rem;
-    }
+    .secondary-action { display: none !important; }
 
-    .icon-container {
-        width: 45px;
-        height: 45px;
-    }
+    .title-h1 { font-size: 0.95rem; }
 
-    .icon-container i {
-        font-size: 1.25rem;
-    }
-
-    .title-text h1 {
-        font-size: 1.75rem;
-    }
-
-    .title-text p {
-        font-size: 1rem;
-    }
-
-    .quick-actions {
-        justify-content: space-between;
-        width: 100%;
-        flex-wrap: wrap;
-    }
-
-    .action-btn {
-        min-width: 44px;
-        min-height: 44px;
-    }
-
-    .primary-action-btn {
-        flex: 1;
-        min-width: 200px;
-        min-height: 44px;
-    }
-
-    .main-content {
-        gap: 1.5rem;
+    :deep(.header-filters .filter-grid) {
+        padding: 0.65rem 0.75rem !important;
     }
 }
 
-@media (max-width: 576px) {
-    .header-section {
-        margin-bottom: 1rem;
-        border-radius: 8px;
-    }
-
-    .header-content {
-        padding: 0.75rem;
-    }
-
-    .title-wrapper {
-        flex-direction: column;
-        align-items: center;
-        text-align: center;
-    }
-
-    .icon-container {
-        width: 40px;
-        height: 40px;
-        border-radius: 12px;
-    }
-
-    .icon-container i {
-        font-size: 1.1rem;
-    }
-
-    .title-text h1 {
-        font-size: 1.5rem;
-    }
-
-    .title-text p {
-        font-size: 0.9rem;
-    }
-
-    .breadcrumb-section {
-        flex-wrap: wrap;
-        justify-content: center;
-        font-size: 0.8rem;
-    }
-
-    .quick-actions {
-        flex-direction: column;
-        align-items: stretch;
-        gap: 0.5rem;
-    }
-
-    .action-btn {
-        width: 100%;
-        min-height: 48px;
-        height: auto;
-    }
-
-    .primary-action-btn {
-        margin-left: 0;
-        width: 100%;
-        min-height: 48px;
-        justify-content: center;
-    }
-
-    .main-content {
-        gap: 1rem;
-    }
-
-    /* Ajustar padding general */
-    .filters-section,
-    .table-section {
-        padding: 0;
-    }
-}
-
-/* Dark theme support */
-:root.app-dark .header-section::before {
-    background: linear-gradient(90deg, var(--primary-400) 0%, var(--primary-500) 100%);
-}
-
-/* Loading states */
-.tickets-management[data-loading='true'] .main-content > * {
-    opacity: 0.7;
-    pointer-events: none;
-}
-
-/* Focus styles for accessibility */
-.action-btn:focus,
-.primary-action-btn:focus {
+/* ─── Accesibilidad ─── */
+.kpi-chip:focus-visible,
+.action-btn:focus-visible,
+.new-btn:focus-visible {
     outline: 2px solid var(--primary-500);
     outline-offset: 2px;
-}
-
-.breadcrumb-item:focus {
-    outline: 2px solid var(--primary-500);
-    outline-offset: 1px;
-    border-radius: 4px;
 }
 </style>
