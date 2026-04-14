@@ -45,7 +45,7 @@ if (broadcaster === 'reverb') {
         enabledTransports: ['ws', 'wss'],
         authEndpoint: `${api_url}/broadcasting/auth`,
         auth: {
-            headers: getAuthHeaders
+            headers: getAuthHeaders()
         }
     };
 } else if (broadcaster === 'pusher') {
