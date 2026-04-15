@@ -2,6 +2,8 @@
 import { positions as positionsApi, users as usersApi } from '@/api';
 import { apiUtils } from '@/api/axios';
 import { TicketService } from '@/api/tickets';
+import { useAuthStore } from '@/store/authStore';
+import { usePermissions } from '@/composables/usePermissions';
 import Button from 'primevue/button';
 import Calendar from 'primevue/calendar';
 import Select from 'primevue/select';
@@ -12,6 +14,8 @@ import { useRouter } from 'vue-router';
 
 const router = useRouter();
 const toast  = useToast();
+const authStore = useAuthStore();
+const permissions = usePermissions();
 
 // ─── Estado ───────────────────────────────────────────────────────────────────
 
@@ -391,6 +395,37 @@ const setTicketStatus = (val) => {
     filterTicketStatus.value = val;
     fetchGantt();
 };
+
+const handleTicketClick = (ticket) => {
+    const currentUser = authStore.getUser;
+    if (!currentUser) return;
+
+    // 1. Acceso administrativo total (Sistemas, Gerencia, etc.)
+    if (permissions.hasFullAccess.value) {
+        return navigateToTicket(ticket.id);
+    }
+
+    // 2. Relación directa con el ticket
+    const isCreator = ticket.creator?.id === currentUser.id;
+    const isAssignee = ticket.assignee?.id === currentUser.id;
+    const isSamePosition = ticket.assignee_position && currentUser.position === ticket.assignee_position;
+
+    if (isCreator || isAssignee || isSamePosition) {
+        return navigateToTicket(ticket.id);
+    }
+
+    // 3. Bloquear y avisar
+    toast.add({
+        severity: 'warn',
+        summary: 'Acceso restringido',
+        detail: 'No tienes autorización para ver los detalles de este ticket.',
+        life: 5000
+    });
+};
+
+const navigateToTicket = (id) => {
+    router.push({ name: 'tickets', query: { ticket_id: id } });
+};
 </script>
 
 <template>
@@ -612,7 +647,7 @@ const setTicketStatus = (val) => {
                     :key="row.id"
                     class="gantt-label-row"
                     :class="{ 'is-finished': isFinished(row.status) }"
-                    @click="router.push({ name: 'tickets', query: { ticket_id: row.id } })"
+                    @click="handleTicketClick(row)"
                     v-tooltip.right="`#${row.id} · ${row.title} | Creado por: ${row.creator?.name ?? '—'} (${row.creator?.position ?? '—'}) el ${formatDate(row.created_at, true)}`"
                 >
                     <span class="gantt-label-id">#{{ row.id }}</span>
@@ -693,9 +728,10 @@ const setTicketStatus = (val) => {
                         <!-- Implementation bar -->
                         <div
                             v-if="row.barLeft !== null"
-                            class="gantt-bar"
+                            class="gantt-bar shadow-sm"
                             :class="row.cfg.bgClass"
                             :style="{ left: row.barLeft + '%', width: row.barWidth + '%' }"
+                            @click="handleTicketClick(row)"
                             v-tooltip.top="`#${row.id} · ${row.title} | ${TICKET_STATUS[row.status]?.label ?? row.status} | ${formatDate(row.implementation_start)} → ${formatDate(row.implementation_end)} | Creado por: ${row.creator?.name ?? '—'} (${row.creator?.position ?? '—'}) el ${formatDate(row.created_at, true)}`"
                         >
                             <i :class="TICKET_STATUS[row.status]?.icon" class="gantt-bar-status-icon"></i>
