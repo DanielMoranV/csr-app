@@ -400,8 +400,8 @@ const handleTicketClick = (ticket) => {
     const currentUser = authStore.getUser;
     if (!currentUser) return;
 
-    // 1. Acceso administrativo total (Sistemas, Gerencia, etc.)
-    if (permissions.hasFullAccess.value) {
+    // 1. Acceso administrativo total (Solo SISTEMAS tiene "God Mode" en tickets)
+    if (permissions.hasPosition(permissions.POSITIONS.SISTEMAS)) {
         return navigateToTicket(ticket.id);
     }
 
