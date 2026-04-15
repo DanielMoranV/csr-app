@@ -139,6 +139,37 @@ const getDueIn = (dateString, status) => {
     return `Queda ${Math.floor(days / 365)} año${Math.floor(days / 365) === 1 ? '' : 's'}`;
 };
 
+const formatDate = (dateString) => {
+    if (!dateString) return '';
+    const date = new Date(dateString);
+    return date.toLocaleDateString('es-PE', {
+        day: '2-digit',
+        month: '2-digit',
+        year: 'numeric'
+    });
+};
+
+const getScheduleSeverity = (status) => {
+    switch (status) {
+        case 'on_track': return 'success';
+        case 'at_risk': return 'warn';
+        case 'delayed': return 'danger';
+        case 'overdue': return 'danger';
+        default: return 'secondary';
+    }
+};
+
+const getScheduleLabel = (status) => {
+    switch (status) {
+        case 'on_track': return 'En plazo';
+        case 'at_risk': return 'En riesgo';
+        case 'delayed': return 'Con desfase';
+        case 'overdue': return 'Vencido';
+        case 'unplanned': return 'Sin planificar';
+        default: return status || 'No planificado';
+    }
+};
+
 const onImageError = (event) => {
     event.target.style.display = 'none';
     event.target.nextElementSibling.style.display = 'flex';
@@ -444,6 +475,33 @@ const getActionItems = (ticketData) => {
                 </template>
             </Column>
 
+            <!-- Plan de Implementación - Oculta en móvil -->
+            <Column field="implementation_start" header="Implementación" :sortable="true" style="min-width: 165px" class="column-implementation">
+                <template #body="{ data }">
+                    <div v-if="data.implementation_start || data.implementation_end" class="ticket-date-cell implementation-cell">
+                        <div v-if="data.implementation_start" class="date-main compact">
+                            <i class="pi pi-play date-icon start-icon"></i>
+                            <span class="date-label">DESDE:</span>
+                            <span class="date-value">{{ formatDate(data.implementation_start) }}</span>
+                        </div>
+                        <div v-if="data.implementation_end" class="date-main compact">
+                            <i class="pi pi-flag-fill date-icon end-icon"></i>
+                            <span class="date-label">HASTA:</span>
+                            <span class="date-value">{{ formatDate(data.implementation_end) }}</span>
+                        </div>
+                        <div v-if="data.schedule_status && data.schedule_status !== 'unplanned'" class="schedule-tag-container">
+                            <Tag :value="getScheduleLabel(data.schedule_status)" :severity="getScheduleSeverity(data.schedule_status)" class="schedule-tag" />
+                        </div>
+                    </div>
+                    <div v-else class="ticket-date-cell no-due-date">
+                        <i class="pi pi-calendar-minus"></i>
+                        <span>Sin planificar</span>
+                    </div>
+                </template>
+            </Column>
+
+
+
             <!-- Acciones -->
             <Column header="Acciones" :exportable="false" style="min-width: 110px" class="column-actions">
                 <template #body="{ data }">
@@ -685,6 +743,50 @@ const getActionItems = (ticketData) => {
     color: var(--text-color-secondary);
     font-style: italic;
     opacity: 0.7;
+}
+
+.implementation-cell {
+    padding: 0.15rem 0;
+}
+
+.date-main.compact {
+    gap: 0.35rem;
+    font-size: 0.85rem;
+    line-height: 1.2;
+}
+
+.date-label {
+    font-size: 0.65rem;
+    font-weight: 800;
+    color: var(--text-color-secondary);
+    min-width: 2.8rem;
+    letter-spacing: 0.02em;
+}
+
+.date-value {
+    color: var(--text-color);
+}
+
+.start-icon {
+    color: var(--primary-500);
+}
+
+.end-icon {
+    color: var(--success-500);
+}
+
+.schedule-tag-container {
+    margin-top: 0.4rem;
+    display: flex;
+}
+
+.schedule-tag {
+    font-size: 0.65rem !important;
+    text-transform: uppercase;
+    font-weight: 700;
+    padding: 0.15rem 0.6rem !important;
+    letter-spacing: 0.5px;
+    border-radius: 4px;
 }
 
 /* Acciones compactas */
@@ -1083,6 +1185,7 @@ const getActionItems = (ticketData) => {
     :deep(.column-status),
     :deep(.column-creator),
     :deep(.column-due-date),
+    :deep(.column-implementation),
     :deep(.column-created) {
         display: none !important;
     }
