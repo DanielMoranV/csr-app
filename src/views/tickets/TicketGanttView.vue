@@ -327,7 +327,7 @@ const clearFilters = () => {
     filterScheduleStatus.value   = null;
     filterAssigneeUserId.value   = null;
     filterAssigneePosition.value = null;
-    filterTicketStatus.value     = 'all';
+    filterTicketStatus.value     = 'active';
     fetchGantt();
 };
 
@@ -389,7 +389,7 @@ const FINISHED_STATUSES = new Set(['concluido', 'anulado', 'rechazado']);
 const isFinished = (status) => FINISHED_STATUSES.has(status);
 
 // Toggle: 'all' | 'active' | 'finished'
-const filterTicketStatus = ref('all');
+const filterTicketStatus = ref('active');
 
 const setTicketStatus = (val) => {
     filterTicketStatus.value = val;
