@@ -230,9 +230,9 @@ const getActionItems = (ticketData) => {
             icon: 'pi pi-pencil',
             command: () => handleEditTicket(ticketData)
         });
-        
+
         items.push({ separator: true });
-        
+
         items.push({
             label: 'Eliminar ticket',
             icon: 'pi pi-trash',
@@ -243,8 +243,6 @@ const getActionItems = (ticketData) => {
 
     return items;
 };
-
-
 </script>
 
 <template>
@@ -332,11 +330,7 @@ const getActionItems = (ticketData) => {
                         <div class="ticket-title-content">
                             <div class="ticket-title-row">
                                 <span class="ticket-title">{{ data.title }}</span>
-                                <span
-                                    v-if="data.unread_comments_count > 0"
-                                    class="unread-comments-badge"
-                                    v-tooltip.top="`${data.unread_comments_count} comentario${ data.unread_comments_count === 1 ? '' : 's' } sin leer`"
-                                >
+                                <span v-if="data.unread_comments_count > 0" class="unread-comments-badge" v-tooltip.top="`${data.unread_comments_count} comentario${data.unread_comments_count === 1 ? '' : 's'} sin leer`">
                                     <i class="pi pi-comment"></i>
                                     {{ data.unread_comments_count > 99 ? '99+' : data.unread_comments_count }}
                                 </span>
@@ -420,6 +414,19 @@ const getActionItems = (ticketData) => {
                 </template>
             </Column>
 
+            <!-- Fecha de Creación - Oculta en móvil -->
+            <Column field="created_at" header="Creado" :sortable="true" style="min-width: 140px" class="column-created">
+                <template #body="{ data }">
+                    <div class="ticket-date-cell">
+                        <div class="date-main">
+                            <i class="pi pi-calendar date-icon"></i>
+                            <span>{{ formatDateTime(data.created_at) }}</span>
+                        </div>
+                        <div class="date-relative">{{ getTimeAgo(data.created_at) }}</div>
+                    </div>
+                </template>
+            </Column>
+
             <!-- Fecha Límite - Oculta en móvil -->
             <Column field="due_date" header="Fecha Límite" :sortable="true" style="min-width: 140px" class="column-due-date">
                 <template #body="{ data }">
@@ -437,52 +444,13 @@ const getActionItems = (ticketData) => {
                 </template>
             </Column>
 
-            <!-- Fecha de Creación - Oculta en móvil -->
-            <Column field="created_at" header="Creado" :sortable="true" style="min-width: 140px" class="column-created">
-                <template #body="{ data }">
-                    <div class="ticket-date-cell">
-                        <div class="date-main">
-                            <i class="pi pi-calendar date-icon"></i>
-                            <span>{{ formatDateTime(data.created_at) }}</span>
-                        </div>
-                        <div class="date-relative">{{ getTimeAgo(data.created_at) }}</div>
-                    </div>
-                </template>
-            </Column>
-
             <!-- Acciones -->
             <Column header="Acciones" :exportable="false" style="min-width: 110px" class="column-actions">
                 <template #body="{ data }">
                     <div class="ticket-actions-compact" role="group" :aria-label="`Acciones para ticket ${data.title}`" @click.stop>
-                        <Button
-                            icon="pi pi-eye"
-                            size="small"
-                            severity="info"
-                            text
-                            rounded
-                            v-tooltip.top="'Ver detalles'"
-                            @click="handleViewTicket(data)"
-                        />
-                        <Button
-                            v-if="isCreatorOf(data)"
-                            icon="pi pi-pencil"
-                            size="small"
-                            severity="secondary"
-                            text
-                            rounded
-                            v-tooltip.top="'Editar'"
-                            @click="handleEditTicket(data)"
-                        />
-                        <Button
-                            v-if="isCreatorOf(data)"
-                            icon="pi pi-trash"
-                            size="small"
-                            severity="danger"
-                            text
-                            rounded
-                            v-tooltip.top="'Eliminar'"
-                            @click="handleDeleteTicket(data)"
-                        />
+                        <Button icon="pi pi-eye" size="small" severity="info" text rounded v-tooltip.top="'Ver detalles'" @click="handleViewTicket(data)" />
+                        <Button v-if="isCreatorOf(data)" icon="pi pi-pencil" size="small" severity="secondary" text rounded v-tooltip.top="'Editar'" @click="handleEditTicket(data)" />
+                        <Button v-if="isCreatorOf(data)" icon="pi pi-trash" size="small" severity="danger" text rounded v-tooltip.top="'Eliminar'" @click="handleDeleteTicket(data)" />
                     </div>
                 </template>
             </Column>
@@ -988,7 +956,6 @@ const getActionItems = (ticketData) => {
     color: var(--primary-400);
 }
 
-
 .ticket-title {
     display: -webkit-box;
     -webkit-line-clamp: 2;
@@ -1027,8 +994,15 @@ const getActionItems = (ticketData) => {
 }
 
 @keyframes badge-pulse {
-    0%, 100% { opacity: 1; transform: scale(1); }
-    50% { opacity: 0.8; transform: scale(0.97); }
+    0%,
+    100% {
+        opacity: 1;
+        transform: scale(1);
+    }
+    50% {
+        opacity: 0.8;
+        transform: scale(0.97);
+    }
 }
 
 .ticket-title-content {
@@ -1154,7 +1128,6 @@ const getActionItems = (ticketData) => {
     .ticket-actions-compact {
         justify-content: center;
     }
-
 }
 
 @media (max-width: 480px) {
@@ -1213,7 +1186,6 @@ const getActionItems = (ticketData) => {
     .ticket-user-name {
         font-size: 0.75rem;
     }
-
 }
 
 /* Animaciones y transiciones */
@@ -1235,7 +1207,6 @@ const getActionItems = (ticketData) => {
 :deep(.ticket-datatable .p-datatable-tbody > tr) {
     animation: fadeInUp 0.3s ease-out;
 }
-
 
 .ticket-datatable :deep(.p-datatable-tbody > tr[tabindex='0']) {
     cursor: pointer;
