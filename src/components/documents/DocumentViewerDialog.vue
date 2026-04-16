@@ -73,6 +73,13 @@ const showEdicionDialog = showFileUploadDialog;
 const edicionFile = uploadFile;
 const edicionFileInput = uploadFileInput;
 
+// ─── Edición: modo inserción de páginas ───────────────────────────
+/** 'replace' → reemplaza el PDF completo (legado). 'insert' → inserta páginas en posiciones exactas. */
+const edicionMode = ref('replace');
+/** [{ file: File, pageCount: number, inserciones: number[] }] */
+const insertionFiles = ref([]);
+const insertionFileInput = ref(null);
+
 // ─── Reject state ─────────────────────────────────────────────────
 const showRejectDialog = ref(false);
 const rejectComment = ref('');
@@ -589,6 +596,8 @@ const handleApprove = async () => {
     } else if (activeStep.value.tipo_accion === 'Edición') {
         fileUploadContext.value = 'edicion';
         uploadFile.value = null;
+        edicionMode.value = 'replace';
+        insertionFiles.value = [];
         showFileUploadDialog.value = true;
     } else if (activeStep.value.tipo_accion === 'VB con Sustento') {
         fileUploadContext.value = 'sustento';
@@ -728,16 +737,72 @@ const downloadSustento = async (versionId) => {
 // ─── Edición / VB con Sustento ───────────────────────────────────
 const handleUploadFileSelect = (e) => {
     const file = e.target.files?.[0];
-    if (!file || file.type !== 'application/pdf' || file.size > 10 * 1024 * 1024) return;
+    if (!file) return;
+    if (file.type !== 'application/pdf') {
+        toast.add({ severity: 'warn', summary: 'Tipo inválido', detail: 'Solo se aceptan archivos PDF', life: 3000 });
+        return;
+    }
+    if (file.size > 10 * 1024 * 1024) {
+        toast.add({ severity: 'warn', summary: 'Archivo muy grande', detail: 'El archivo supera los 10 MB', life: 3000 });
+        return;
+    }
     uploadFile.value = file;
 };
 
+const handleInsertionFileAdd = async (e) => {
+    const files = Array.from(e.target.files ?? []);
+    for (const file of files) {
+        if (file.type !== 'application/pdf') {
+            toast.add({ severity: 'warn', summary: 'Tipo inválido', detail: `"${file.name}" no es un PDF`, life: 3000 });
+            continue;
+        }
+        if (file.size > 50 * 1024 * 1024) {
+            toast.add({ severity: 'warn', summary: 'Archivo muy grande', detail: `"${file.name}" supera los 50 MB`, life: 3000 });
+            continue;
+        }
+        try {
+            const buffer = await file.arrayBuffer();
+            const pdf = await getDocument({ data: buffer }).promise;
+            const pageCount = pdf.numPages;
+            pdf.destroy();
+            insertionFiles.value.push({ file, pageCount, inserciones: Array(pageCount).fill(0) });
+        } catch {
+            toast.add({ severity: 'error', summary: 'Error', detail: `No se pudo leer "${file.name}"`, life: 3000 });
+        }
+    }
+    if (insertionFileInput.value) insertionFileInput.value.value = '';
+};
+
+const removeInsertionFile = (index) => {
+    insertionFiles.value.splice(index, 1);
+};
+
+const canSubmitEdicion = computed(() => {
+    if (fileUploadContext.value === 'sustento') return !!uploadFile.value;
+    if (edicionMode.value === 'replace') return !!uploadFile.value;
+    if (insertionFiles.value.length === 0) return false;
+    return insertionFiles.value.every((item) => item.inserciones.every((pos) => pos >= 0 && pos <= totalPages.value));
+});
+
 const submitFileUpload = async () => {
-    if (!uploadFile.value) return;
-    const fd = new FormData();
-    fd.append('file', uploadFile.value);
-    await submitApproveWithPayload(fd);
-    uploadFile.value = null;
+    if (edicionMode.value === 'replace' || fileUploadContext.value === 'sustento') {
+        if (!uploadFile.value) return;
+        const fd = new FormData();
+        fd.append('file', uploadFile.value);
+        await submitApproveWithPayload(fd);
+        uploadFile.value = null;
+    } else {
+        if (insertionFiles.value.length === 0) return;
+        const fd = new FormData();
+        insertionFiles.value.forEach((item, i) => {
+            fd.append(`paginas[${i}][archivo]`, item.file);
+            item.inserciones.forEach((pos, j) => {
+                fd.append(`paginas[${i}][inserciones][${j}]`, pos);
+            });
+        });
+        await submitApproveWithPayload(fd);
+        insertionFiles.value = [];
+    }
 };
 
 // ─── Reject ───────────────────────────────────────────────────────
@@ -1233,52 +1298,128 @@ const formatPermittedUsers = (step) => {
     <Dialog
         v-model:visible="showFileUploadDialog"
         :header="fileUploadContext === 'sustento' ? 'Adjuntar documento de sustento' : 'Subir versión editada'"
-        :style="{ width: '440px' }"
+        :style="{ width: fileUploadContext === 'edicion' && edicionMode === 'insert' ? '660px' : '440px' }"
         modal
         class="edicion-dialog"
     >
         <div class="edicion-body">
+            <!-- Descripción contextual -->
             <p class="edicion-hint">
                 <template v-if="fileUploadContext === 'sustento'">
                     Adjunta el documento de respaldo (comprobante, constancia, resolución, etc.). El documento principal <strong>no se modificará</strong>.
                 </template>
-                <template v-else>
+                <template v-else-if="edicionMode === 'replace'">
                     Sube el PDF con tus correcciones. Reemplazará la versión actual en el flujo de aprobación.
                 </template>
+                <template v-else>
+                    Agrega uno o más PDFs. Cada página del archivo subido se insertará en la posición que indiques dentro del documento base ({{ totalPages }} páginas).
+                </template>
             </p>
-            <input type="file" ref="uploadFileInput" accept="application/pdf" style="display: none" @change="handleUploadFileSelect" />
-            <div class="edicion-dropzone" @click="uploadFileInput?.click()">
-                <div v-if="!uploadFile" class="edicion-empty">
-                    <div class="edicion-upload-icon">
-                        <i :class="fileUploadContext === 'sustento' ? 'pi pi-paperclip' : 'pi pi-cloud-upload'"></i>
-                    </div>
-                    <p class="edicion-upload-title">
-                        {{ fileUploadContext === 'sustento' ? 'Haz clic para seleccionar el PDF de sustento' : 'Haz clic para seleccionar el PDF editado' }}
-                    </p>
-                    <p class="edicion-upload-sub">Solo archivos PDF · Máximo 10 MB</p>
-                </div>
-                <div v-else class="edicion-file-selected">
-                    <div class="edicion-file-icon">
-                        <i class="pi pi-file-pdf"></i>
-                    </div>
-                    <div class="edicion-file-info">
-                        <span class="edicion-file-name">{{ uploadFile.name }}</span>
-                        <span class="edicion-file-size">{{ (uploadFile.size / 1024 / 1024).toFixed(2) }} MB</span>
-                    </div>
-                    <button class="edicion-file-remove" @click.stop="uploadFile = null" title="Remover">×</button>
-                </div>
+
+            <!-- Toggle modo: solo visible para Edición -->
+            <div v-if="fileUploadContext === 'edicion'" class="edicion-mode-toggle">
+                <button :class="['mode-btn', edicionMode === 'replace' ? 'mode-btn--active' : '']" @click="edicionMode = 'replace'; uploadFile = null">
+                    <i class="pi pi-refresh"></i>
+                    Reemplazar PDF
+                </button>
+                <button :class="['mode-btn', edicionMode === 'insert' ? 'mode-btn--active' : '']" @click="edicionMode = 'insert'; insertionFiles = []">
+                    <i class="pi pi-plus-circle"></i>
+                    Insertar páginas
+                </button>
             </div>
+
+            <!-- ── Modo: Reemplazar (legado) ── -->
+            <template v-if="fileUploadContext === 'sustento' || edicionMode === 'replace'">
+                <input type="file" ref="uploadFileInput" accept="application/pdf" style="display: none" @change="handleUploadFileSelect" />
+                <div class="edicion-dropzone" @click="uploadFileInput?.click()">
+                    <div v-if="!uploadFile" class="edicion-empty">
+                        <div class="edicion-upload-icon">
+                            <i :class="fileUploadContext === 'sustento' ? 'pi pi-paperclip' : 'pi pi-cloud-upload'"></i>
+                        </div>
+                        <p class="edicion-upload-title">
+                            {{ fileUploadContext === 'sustento' ? 'Haz clic para seleccionar el PDF de sustento' : 'Haz clic para seleccionar el PDF editado' }}
+                        </p>
+                        <p class="edicion-upload-sub">Solo archivos PDF · Máximo 10 MB</p>
+                    </div>
+                    <div v-else class="edicion-file-selected">
+                        <div class="edicion-file-icon">
+                            <i class="pi pi-file-pdf"></i>
+                        </div>
+                        <div class="edicion-file-info">
+                            <span class="edicion-file-name">{{ uploadFile.name }}</span>
+                            <span class="edicion-file-size">{{ (uploadFile.size / 1024 / 1024).toFixed(2) }} MB</span>
+                        </div>
+                        <button class="edicion-file-remove" @click.stop="uploadFile = null" title="Remover">×</button>
+                    </div>
+                </div>
+            </template>
+
+            <!-- ── Modo: Insertar páginas ── -->
+            <template v-else>
+                <input type="file" ref="insertionFileInput" accept="application/pdf" multiple style="display: none" @change="handleInsertionFileAdd" />
+
+                <!-- Dropzone para agregar archivos -->
+                <div class="edicion-dropzone edicion-dropzone--insert" @click="insertionFileInput?.click()">
+                    <div class="edicion-empty">
+                        <div class="edicion-upload-icon">
+                            <i class="pi pi-file-plus"></i>
+                        </div>
+                        <p class="edicion-upload-title">Haz clic para agregar PDFs</p>
+                        <p class="edicion-upload-sub">Puedes subir varios archivos · Máximo 50 MB por archivo</p>
+                    </div>
+                </div>
+
+                <!-- Lista de archivos agregados -->
+                <div v-if="insertionFiles.length > 0" class="insertion-files-list">
+                    <div v-for="(item, fileIdx) in insertionFiles" :key="fileIdx" class="insertion-file-card">
+                        <!-- Cabecera del archivo -->
+                        <div class="insertion-file-header">
+                            <div class="insertion-file-header-info">
+                                <i class="pi pi-file-pdf insertion-file-pdf-icon"></i>
+                                <span class="insertion-file-name">{{ item.file.name }}</span>
+                                <span class="insertion-file-meta">{{ item.pageCount }} {{ item.pageCount === 1 ? 'página' : 'páginas' }} · {{ (item.file.size / 1024 / 1024).toFixed(2) }} MB</span>
+                            </div>
+                            <button class="edicion-file-remove" @click="removeInsertionFile(fileIdx)" title="Quitar archivo">×</button>
+                        </div>
+
+                        <!-- Selectores de posición por página -->
+                        <div class="insertion-positions">
+                            <div v-for="(_, pageIdx) in item.inserciones" :key="pageIdx" class="insertion-position-row">
+                                <span class="insertion-page-label">
+                                    <i class="pi pi-file text-xs"></i>
+                                    Pág. {{ pageIdx + 1 }}
+                                </span>
+                                <span class="insertion-arrow">→</span>
+                                <span class="insertion-pos-label">después de la página</span>
+                                <select
+                                    class="insertion-pos-select"
+                                    :value="item.inserciones[pageIdx]"
+                                    @change="item.inserciones[pageIdx] = Number($event.target.value)"
+                                >
+                                    <option :value="0">0 (al inicio)</option>
+                                    <option v-for="n in totalPages" :key="n" :value="n">{{ n }}{{ n === totalPages ? ' (al final)' : '' }}</option>
+                                </select>
+                                <span class="insertion-pos-hint">del doc. base</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <p v-if="insertionFiles.length === 0" class="insertion-empty-hint">
+                    <i class="pi pi-info-circle mr-1"></i> Agrega al menos un PDF para continuar.
+                </p>
+            </template>
         </div>
         <template #footer>
             <div class="dialog-footer">
                 <Button label="Cancelar" text severity="secondary" @click="showFileUploadDialog = false" />
                 <Button
-                    :label="fileUploadContext === 'sustento' ? 'Adjuntar y completar paso' : 'Subir y completar paso'"
-                    :icon="fileUploadContext === 'sustento' ? 'pi pi-paperclip' : 'pi pi-upload'"
+                    :label="fileUploadContext === 'sustento' ? 'Adjuntar y completar paso' : edicionMode === 'insert' ? 'Insertar y completar paso' : 'Subir y completar paso'"
+                    :icon="fileUploadContext === 'sustento' ? 'pi pi-paperclip' : edicionMode === 'insert' ? 'pi pi-plus-circle' : 'pi pi-upload'"
                     class="btn-edicion-confirm"
                     @click="submitFileUpload"
                     :loading="isSubmitting"
-                    :disabled="!uploadFile"
+                    :disabled="!canSubmitEdicion"
                 />
             </div>
         </template>
@@ -2423,6 +2564,223 @@ const formatPermittedUsers = (step) => {
     border-color: #059669 !important;
     color: white !important;
     font-weight: 600;
+}
+
+/* ── Toggle modo edición ── */
+.edicion-mode-toggle {
+    display: flex;
+    gap: 0.5rem;
+    background: #f1f5f9;
+    border-radius: 10px;
+    padding: 0.25rem;
+}
+
+.mode-btn {
+    flex: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.4rem;
+    padding: 0.5rem 0.75rem;
+    border: none;
+    border-radius: 8px;
+    font-size: 0.82rem;
+    font-weight: 600;
+    cursor: pointer;
+    background: transparent;
+    color: #64748b;
+    transition: all 0.2s ease;
+}
+
+.mode-btn:hover {
+    background: rgba(255, 255, 255, 0.7);
+    color: #334155;
+}
+
+.mode-btn--active {
+    background: #ffffff;
+    color: #0284c7;
+    box-shadow: 0 1px 4px rgba(0, 0, 0, 0.1);
+}
+
+:global(.dark) .edicion-mode-toggle {
+    background: #1e293b;
+}
+
+:global(.dark) .mode-btn--active {
+    background: #0f172a;
+    color: #38bdf8;
+}
+
+/* ── Modo inserción: dropzone compacto ── */
+.edicion-dropzone--insert {
+    min-height: 80px;
+    padding: 0.75rem;
+}
+
+.edicion-dropzone--insert .edicion-empty {
+    padding: 0.5rem;
+}
+
+.edicion-dropzone--insert .edicion-upload-icon {
+    width: 36px;
+    height: 36px;
+}
+
+/* ── Lista de archivos para inserción ── */
+.insertion-files-list {
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+    max-height: 340px;
+    overflow-y: auto;
+}
+
+.insertion-file-card {
+    border: 1px solid #e2e8f0;
+    border-radius: 10px;
+    overflow: hidden;
+}
+
+:global(.dark) .insertion-file-card {
+    border-color: #334155;
+}
+
+.insertion-file-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0.6rem 0.75rem;
+    background: #f8fafc;
+    border-bottom: 1px solid #e2e8f0;
+    gap: 0.5rem;
+}
+
+:global(.dark) .insertion-file-header {
+    background: #1e293b;
+    border-bottom-color: #334155;
+}
+
+.insertion-file-header-info {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    min-width: 0;
+    flex: 1;
+}
+
+.insertion-file-pdf-icon {
+    font-size: 1rem;
+    color: #dc2626;
+    flex-shrink: 0;
+}
+
+.insertion-file-name {
+    font-size: 0.82rem;
+    font-weight: 600;
+    color: #1e293b;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+:global(.dark) .insertion-file-name {
+    color: #e2e8f0;
+}
+
+.insertion-file-meta {
+    font-size: 0.72rem;
+    color: #94a3b8;
+    white-space: nowrap;
+    flex-shrink: 0;
+}
+
+/* ── Filas de posición por página ── */
+.insertion-positions {
+    display: flex;
+    flex-direction: column;
+    gap: 0;
+}
+
+.insertion-position-row {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.4rem 0.75rem;
+    font-size: 0.8rem;
+    border-bottom: 1px solid #f1f5f9;
+}
+
+.insertion-position-row:last-child {
+    border-bottom: none;
+}
+
+:global(.dark) .insertion-position-row {
+    border-bottom-color: #1e293b;
+}
+
+.insertion-page-label {
+    display: flex;
+    align-items: center;
+    gap: 0.25rem;
+    font-weight: 600;
+    color: #475569;
+    min-width: 54px;
+}
+
+:global(.dark) .insertion-page-label {
+    color: #94a3b8;
+}
+
+.insertion-arrow {
+    color: #94a3b8;
+    flex-shrink: 0;
+}
+
+.insertion-pos-label {
+    color: #64748b;
+    white-space: nowrap;
+    flex-shrink: 0;
+}
+
+.insertion-pos-select {
+    border: 1px solid #cbd5e1;
+    border-radius: 6px;
+    padding: 0.2rem 0.4rem;
+    font-size: 0.8rem;
+    color: #1e293b;
+    background: #fff;
+    cursor: pointer;
+    transition: border-color 0.2s;
+    flex-shrink: 0;
+}
+
+.insertion-pos-select:hover,
+.insertion-pos-select:focus {
+    border-color: #0284c7;
+    outline: none;
+}
+
+:global(.dark) .insertion-pos-select {
+    background: #0f172a;
+    color: #e2e8f0;
+    border-color: #334155;
+}
+
+.insertion-pos-hint {
+    color: #94a3b8;
+    font-size: 0.75rem;
+    white-space: nowrap;
+}
+
+.insertion-empty-hint {
+    font-size: 0.8rem;
+    color: #94a3b8;
+    text-align: center;
+    margin: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
 }
 
 /* ═══════════════════ REJECT DIALOG ═══════════════════ */
