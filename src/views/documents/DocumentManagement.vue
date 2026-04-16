@@ -41,6 +41,17 @@ const isMyTurn = (steps) => {
 };
 
 const currentUserId = computed(() => authStore.getUser?.id);
+const currentUserPosition = computed(() => authStore.getUser?.position);
+
+const isViewerOnly = (doc) => {
+    if (!currentUserId.value) return false;
+    if (Number(doc.creador?.id) === Number(currentUserId.value)) return false;
+    const isParticipant = doc.steps?.some((s) => s.permitted_users?.some((id) => Number(id) === Number(currentUserId.value)));
+    if (isParticipant) return false;
+    const byUser = doc.viewers?.users?.some((id) => Number(id) === Number(currentUserId.value));
+    const byPos = currentUserPosition.value && doc.viewers?.positions?.includes(currentUserPosition.value);
+    return !!(byUser || byPos);
+};
 
 const getStatusConfig = (status) => {
     switch (status) {
@@ -281,6 +292,10 @@ onMounted(() => {
                             <Badge v-else :value="data.estado_actual" :severity="getSeverity(data.estado_actual)" class="px-2 py-1 uppercase text-xs font-bold" />
 
                             <Badge v-if="isMyTurn(data.steps)" value="Tu turno" severity="danger" class="px-2 py-1 uppercase text-xs font-bold pulse-badge" />
+                            <div v-if="isViewerOnly(data)" class="viewer-only-badge" v-tooltip.top="'Solo tienes acceso de lectura'">
+                                <i class="pi pi-eye"></i>
+                                <span>Solo lectura</span>
+                            </div>
                         </div>
                     </template>
                 </Column>
@@ -1011,5 +1026,21 @@ onMounted(() => {
     .header-icon-badge i {
         font-size: 1.25rem;
     }
+}
+
+.viewer-only-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.3rem;
+    padding: 0.2rem 0.6rem;
+    border-radius: 9999px;
+    font-size: 0.7rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    color: #6366f1;
+    background: rgba(99, 102, 241, 0.1);
+    border: 1px solid #6366f1;
+    width: fit-content;
+    white-space: nowrap;
 }
 </style>

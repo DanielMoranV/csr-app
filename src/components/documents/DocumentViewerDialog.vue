@@ -2,12 +2,14 @@
 import apiClient from '@/api/axios.js';
 import { useDocumentManagement } from '@/composables/useDocumentManagement';
 import { useStamps } from '@/composables/useStamps';
+import { useUsers } from '@/composables/useUsers';
 import { useAuthStore } from '@/store/authStore';
 import { getDocument, GlobalWorkerOptions } from 'pdfjs-dist';
 import Button from 'primevue/button';
 import Dialog from 'primevue/dialog';
+import MultiSelect from 'primevue/multiselect';
 import Textarea from 'primevue/textarea';
-import { computed, nextTick, onUnmounted, ref, watch } from 'vue';
+import { computed, nextTick, onMounted, onUnmounted, ref, watch } from 'vue';
 
 // PDF.js worker (Vite ESM)
 GlobalWorkerOptions.workerSrc = new URL('pdfjs-dist/build/pdf.worker.min.mjs', import.meta.url).href;
@@ -18,10 +20,19 @@ const props = defineProps({
 });
 const emit = defineEmits(['update:visible', 'document-action']);
 
-const { fetchDocumentDetails, currentDocument, isLoading, rejectDocumentStep, signDocumentStep, addDocumentComment, getSeverity } = useDocumentManagement();
+const { fetchDocumentDetails, currentDocument, isLoading, rejectDocumentStep, signDocumentStep, addDocumentComment, updateDocumentViewers, deleteCommentAttachment, getSeverity } = useDocumentManagement();
 const authStore = useAuthStore();
+const { allUsers, initializePublicUsers, initializePositions, positionOptions: apiPositionOptions } = useUsers();
 
 const { stamps: stampsList, isLoading: stampsLoading, loadStamps, getStampBlobUrl, revokeAllBlobUrls } = useStamps();
+
+onMounted(async () => {
+    try {
+        await Promise.all([initializePublicUsers(), initializePositions()]);
+    } catch (e) {
+        console.warn('Error cargando usuarios/posiciones:', e);
+    }
+});
 
 // ─── PDF state ───────────────────────────────────────────────────
 const pdfCanvas = ref(null);
@@ -87,6 +98,25 @@ const rejectComment = ref('');
 // ─── Comments state ───────────────────────────────────────────────
 const newComment = ref('');
 const isAddingComment = ref(false);
+const commentAttachments = ref([]); // File[]
+const commentAttachmentInput = ref(null);
+const commentsListRef = ref(null);
+
+const scrollCommentsToBottom = () => {
+    nextTick(() => {
+        if (commentsListRef.value) {
+            commentsListRef.value.scrollTop = commentsListRef.value.scrollHeight;
+        }
+    });
+};
+
+// ─── Viewers state ─────────────────────────────────────────────────
+const showViewersDialog = ref(false);
+const viewersForm = ref({ users: [], positions: [] });
+const isSavingViewers = ref(false);
+
+const userOptions = computed(() => allUsers.value.map((u) => ({ label: `${u.name} (${u.position || 'Sin cargo'})`, value: u.id })));
+const positionOptions = computed(() => apiPositionOptions.value);
 
 // ─── Cleanup ──────────────────────────────────────────────────────
 const revokeBlobUrl = () => {
@@ -144,6 +174,7 @@ const loadDocument = async () => {
     isRenderingPdf.value = true;
     try {
         await fetchDocumentDetails(props.documentId);
+        scrollCommentsToBottom();
         if (currentDocument.value?.versions?.length) {
             // Ignorar versiones de sustento (es_sustento: true) para mostrar el doc principal
             const mainVersions = currentDocument.value.versions.filter((v) => !v.es_sustento);
@@ -819,17 +850,115 @@ const submitReject = async () => {
 };
 
 // ─── Comments ─────────────────────────────────────────────────────
+const handleCommentAttachmentSelect = (e) => {
+    const files = Array.from(e.target.files ?? []);
+    const valid = files.filter((f) => {
+        if (f.size > 10 * 1024 * 1024) return false;
+        return true;
+    });
+    commentAttachments.value = [...commentAttachments.value, ...valid];
+    if (commentAttachmentInput.value) commentAttachmentInput.value.value = '';
+};
+
+const removeCommentAttachment = (idx) => {
+    commentAttachments.value.splice(idx, 1);
+};
+
+const canSubmitComment = computed(() => newComment.value.trim().length > 0);
+
 const submitComment = async () => {
-    if (!newComment.value.trim()) return;
+    if (!canSubmitComment.value) return;
     isAddingComment.value = true;
     try {
-        const payload = { comentario: newComment.value };
-        if (currentVersionId.value) payload.version_id = currentVersionId.value;
+        let payload;
+        if (commentAttachments.value.length > 0) {
+            payload = new FormData();
+            payload.append('comentario', newComment.value.trim());
+            if (currentVersionId.value) payload.append('version_id', currentVersionId.value);
+            commentAttachments.value.forEach((f, i) => payload.append(`attachments[${i}]`, f));
+        } else {
+            payload = { comentario: newComment.value.trim() };
+            if (currentVersionId.value) payload.version_id = currentVersionId.value;
+        }
         await addDocumentComment(props.documentId, payload);
         newComment.value = '';
+        commentAttachments.value = [];
         await fetchDocumentDetails(props.documentId);
+        scrollCommentsToBottom();
     } finally {
         isAddingComment.value = false;
+    }
+};
+
+const downloadAttachment = async (docId, attachment) => {
+    try {
+        const response = await apiClient.get(`/documents/${docId}/comments/attachments/${attachment.id}`, { responseType: 'blob' });
+        const url = URL.createObjectURL(response.data);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = attachment.file_name;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        URL.revokeObjectURL(url);
+    } catch (e) {
+        console.error('Error descargando adjunto:', e);
+    }
+};
+
+const handleDeleteAttachment = async (docId, attachmentId) => {
+    try {
+        await deleteCommentAttachment(docId, attachmentId);
+        await fetchDocumentDetails(props.documentId);
+    } catch {
+        // handled by composable
+    }
+};
+
+const formatFileSize = (bytes) => {
+    if (!bytes) return '0 B';
+    const units = ['B', 'KB', 'MB', 'GB'];
+    const i = Math.floor(Math.log(bytes) / Math.log(1024));
+    return `${(bytes / Math.pow(1024, i)).toFixed(1)} ${units[i]}`;
+};
+
+const attachmentIcon = (mime) => {
+    if (!mime) return 'pi pi-file';
+    if (mime.includes('pdf')) return 'pi pi-file-pdf';
+    if (mime.startsWith('image/')) return 'pi pi-image';
+    if (mime.includes('word') || mime.includes('document')) return 'pi pi-file-word';
+    if (mime.includes('excel') || mime.includes('sheet')) return 'pi pi-file-excel';
+    return 'pi pi-file';
+};
+
+// ─── Viewers ──────────────────────────────────────────────────────
+const isDocumentCreator = computed(() => {
+    if (!currentDocument.value || !currentUser.value) return false;
+    return String(currentDocument.value.creador?.id) === String(currentUser.value.id);
+});
+
+const openViewersDialog = () => {
+    const v = currentDocument.value?.viewers;
+    viewersForm.value = {
+        users: v?.users?.map(Number) ?? [],
+        positions: v?.positions ?? []
+    };
+    showViewersDialog.value = true;
+};
+
+const saveViewers = async () => {
+    isSavingViewers.value = true;
+    try {
+        const payload = viewersForm.value.users.length === 0 && viewersForm.value.positions.length === 0
+            ? null
+            : { users: viewersForm.value.users, positions: viewersForm.value.positions };
+        await updateDocumentViewers(props.documentId, payload);
+        showViewersDialog.value = false;
+        await fetchDocumentDetails(props.documentId);
+    } catch {
+        // handled by composable
+    } finally {
+        isSavingViewers.value = false;
     }
 };
 
@@ -1115,13 +1244,34 @@ const formatPermittedUsers = (step) => {
                         </div>
                     </div>
 
+                    <!-- Visualizadores (solo visible para el creador) -->
+                    <div v-if="isDocumentCreator" class="panel-section">
+                        <div class="section-label-row">
+                            <p class="section-label" style="margin:0">Visualizadores</p>
+                            <button class="viewers-edit-btn" @click="openViewersDialog" v-tooltip.top="'Editar visualizadores'">
+                                <i class="pi pi-pen-to-square"></i>
+                            </button>
+                        </div>
+                        <div v-if="currentDocument.viewers?.users?.length || currentDocument.viewers?.positions?.length" class="viewers-chips">
+                            <span v-for="uid in currentDocument.viewers.users" :key="'u'+uid" class="viewer-chip viewer-chip--user">
+                                <i class="pi pi-user"></i>
+                                {{ allUsers.find(u => u.id === uid)?.name ?? `#${uid}` }}
+                            </span>
+                            <span v-for="pos in currentDocument.viewers.positions" :key="'p'+pos" class="viewer-chip viewer-chip--pos">
+                                <i class="pi pi-briefcase"></i>
+                                {{ pos }}
+                            </span>
+                        </div>
+                        <p v-else class="viewers-empty">Sin visualizadores asignados.</p>
+                    </div>
+
                     <!-- Comentarios -->
                     <div class="panel-section">
                         <p class="section-label">
                             Comentarios
                             <span v-if="currentDocument.comments?.length" class="comments-count">{{ currentDocument.comments.length }}</span>
                         </p>
-                        <div v-if="currentDocument.comments?.length" class="comments-list">
+                        <div v-if="currentDocument.comments?.length" ref="commentsListRef" class="comments-list">
                             <div v-for="c in currentDocument.comments" :key="c.id" class="comment-item">
                                 <div class="comment-avatar">{{ (c.usuario?.name ?? 'U').charAt(0).toUpperCase() }}</div>
                                 <div class="comment-body">
@@ -1129,14 +1279,55 @@ const formatPermittedUsers = (step) => {
                                         <span class="comment-author">{{ c.usuario?.name ?? 'Usuario' }}</span>
                                         <span class="comment-date">{{ formatDate(c.created_at) }}</span>
                                     </div>
-                                    <p class="comment-text">{{ c.comentario }}</p>
+                                    <p v-if="c.comentario" class="comment-text">{{ c.comentario }}</p>
+                                    <!-- Adjuntos del comentario -->
+                                    <div v-if="c.attachments?.length" class="comment-attachments">
+                                        <div v-for="att in c.attachments" :key="att.id" class="comment-attachment-item">
+                                            <i :class="attachmentIcon(att.mime_type)" class="att-icon"></i>
+                                            <span class="att-name">{{ att.file_name }}</span>
+                                            <span class="att-size">{{ formatFileSize(att.file_size) }}</span>
+                                            <button class="att-action-btn" @click="downloadAttachment(props.documentId, att)" v-tooltip.top="'Descargar'">
+                                                <i class="pi pi-download"></i>
+                                            </button>
+                                            <button
+                                                v-if="currentUser && (String(c.usuario?.id) === String(currentUser.id) || isDocumentCreator)"
+                                                class="att-action-btn att-action-btn--danger"
+                                                @click="handleDeleteAttachment(props.documentId, att.id)"
+                                                v-tooltip.top="'Eliminar adjunto'"
+                                            >
+                                                <i class="pi pi-trash"></i>
+                                            </button>
+                                        </div>
+                                    </div>
                                 </div>
                             </div>
                         </div>
                         <p v-else class="comments-empty">Sin comentarios aún.</p>
-                        <div class="comment-input-row">
-                            <Textarea v-model="newComment" rows="2" placeholder="Escribe un comentario..." class="comment-textarea" style="resize: none" />
-                            <Button icon="pi pi-send" class="btn-comment-send" :loading="isAddingComment" :disabled="!newComment.trim()" @click="submitComment" v-tooltip.left="'Enviar'" />
+                        <!-- Formulario de comentario -->
+                        <div class="comment-form">
+                            <!-- Preview de archivos seleccionados -->
+                            <div v-if="commentAttachments.length > 0" class="comment-attach-preview">
+                                <div v-for="(f, i) in commentAttachments" :key="i" class="comment-attach-chip">
+                                    <i :class="attachmentIcon(f.type)" class="att-chip-icon"></i>
+                                    <span class="att-chip-name">{{ f.name }}</span>
+                                    <span class="att-chip-size">{{ formatFileSize(f.size) }}</span>
+                                    <button class="att-chip-remove" @click="removeCommentAttachment(i)">×</button>
+                                </div>
+                            </div>
+                            <input type="file" ref="commentAttachmentInput" multiple style="display:none" @change="handleCommentAttachmentSelect" />
+                            <div class="comment-input-row">
+                                <button class="btn-attach-comment" @click="commentAttachmentInput?.click()" v-tooltip.top="'Adjuntar archivos'">
+                                    <i class="pi pi-paperclip"></i>
+                                </button>
+                                <Textarea
+                                    v-model="newComment"
+                                    rows="2"
+                                    :placeholder="commentAttachments.length > 0 ? 'Descripción del adjunto (requerida)...' : 'Escribe un comentario...'"
+                                    class="comment-textarea"
+                                    style="resize: none"
+                                />
+                                <Button icon="pi pi-send" class="btn-comment-send" :loading="isAddingComment" :disabled="!canSubmitComment" @click="submitComment" v-tooltip.left="'Enviar'" />
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -1441,6 +1632,53 @@ const formatPermittedUsers = (step) => {
             <div class="dialog-footer">
                 <Button label="Cancelar" text severity="secondary" @click="showRejectDialog = false" />
                 <Button label="Confirmar rechazo" icon="pi pi-times-circle" class="btn-reject-confirm" @click="submitReject" :disabled="!rejectComment.trim()" />
+            </div>
+        </template>
+    </Dialog>
+
+    <!-- ═══════════════════ DIÁLOGO VIEWERS ═══════════════════ -->
+    <Dialog v-model:visible="showViewersDialog" header="Editar visualizadores" :style="{ width: '520px' }" modal class="viewers-dialog">
+        <div class="viewers-dialog-body">
+            <p class="viewers-dialog-hint">
+                Los visualizadores pueden ver el documento y sus archivos, pero <strong>no pueden actuar en ningún paso</strong>.
+            </p>
+            <div class="viewers-dialog-field">
+                <label class="viewers-field-label"><i class="pi pi-users mr-1"></i>Usuarios</label>
+                <MultiSelect
+                    v-model="viewersForm.users"
+                    :options="userOptions"
+                    optionLabel="label"
+                    optionValue="value"
+                    placeholder="Seleccionar usuarios..."
+                    display="chip"
+                    :filter="true"
+                    class="w-full"
+                    :maxSelectedLabels="3"
+                />
+            </div>
+            <div class="viewers-dialog-field">
+                <label class="viewers-field-label"><i class="pi pi-briefcase mr-1"></i>Cargos</label>
+                <MultiSelect
+                    v-model="viewersForm.positions"
+                    :options="positionOptions"
+                    optionLabel="label"
+                    optionValue="value"
+                    placeholder="Seleccionar cargos..."
+                    display="chip"
+                    :filter="true"
+                    class="w-full"
+                    :maxSelectedLabels="3"
+                />
+            </div>
+            <p class="viewers-dialog-note">
+                <i class="pi pi-info-circle mr-1"></i>
+                Para quitar todos los visualizadores, deja ambos campos vacíos y guarda.
+            </p>
+        </div>
+        <template #footer>
+            <div class="dialog-footer">
+                <Button label="Cancelar" text severity="secondary" @click="showViewersDialog = false" />
+                <Button label="Guardar" icon="pi pi-check" class="btn-viewers-save" @click="saveViewers" :loading="isSavingViewers" />
             </div>
         </template>
     </Dialog>
@@ -2178,6 +2416,245 @@ const formatPermittedUsers = (step) => {
     padding: 0 !important;
     flex-shrink: 0;
     border-radius: 8px !important;
+}
+
+/* ─── Viewers section ─── */
+.section-label-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 0.5rem;
+}
+
+.viewers-edit-btn {
+    background: none;
+    border: none;
+    cursor: pointer;
+    color: #64748b;
+    padding: 0.2rem 0.35rem;
+    border-radius: 6px;
+    transition: color 0.2s, background 0.2s;
+    line-height: 1;
+}
+
+.viewers-edit-btn:hover {
+    color: #0284c7;
+    background: #f0f9ff;
+}
+
+.viewers-chips {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.35rem;
+}
+
+.viewer-chip {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.3rem;
+    font-size: 0.72rem;
+    font-weight: 600;
+    padding: 0.2rem 0.55rem;
+    border-radius: 9999px;
+}
+
+.viewer-chip--user {
+    background: #eff6ff;
+    color: #2563eb;
+    border: 1px solid #bfdbfe;
+}
+
+.viewer-chip--pos {
+    background: #f0fdf4;
+    color: #16a34a;
+    border: 1px solid #bbf7d0;
+}
+
+.viewers-empty {
+    font-size: 0.78rem;
+    color: #94a3b8;
+    margin: 0;
+}
+
+/* ─── Viewers dialog ─── */
+.viewers-dialog-body {
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+    padding: 0.25rem 0;
+}
+
+.viewers-dialog-hint {
+    font-size: 0.82rem;
+    color: #475569;
+    margin: 0;
+    line-height: 1.5;
+}
+
+.viewers-dialog-field {
+    display: flex;
+    flex-direction: column;
+    gap: 0.35rem;
+}
+
+.viewers-field-label {
+    font-size: 0.8rem;
+    font-weight: 600;
+    color: #374151;
+    display: flex;
+    align-items: center;
+}
+
+.viewers-dialog-note {
+    font-size: 0.75rem;
+    color: #94a3b8;
+    margin: 0;
+    display: flex;
+    align-items: center;
+}
+
+.btn-viewers-save {
+    background: #0284c7 !important;
+    border-color: #0284c7 !important;
+    color: white !important;
+    font-weight: 600;
+}
+
+/* ─── Comment attachments ─── */
+.comment-form {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+}
+
+.comment-attach-preview {
+    display: flex;
+    flex-direction: column;
+    gap: 0.3rem;
+}
+
+.comment-attach-chip {
+    display: flex;
+    align-items: center;
+    gap: 0.4rem;
+    padding: 0.3rem 0.5rem;
+    background: #f8fafc;
+    border: 1px solid #e2e8f0;
+    border-radius: 6px;
+    font-size: 0.75rem;
+}
+
+.att-chip-icon {
+    color: #0284c7;
+    flex-shrink: 0;
+}
+
+.att-chip-name {
+    flex: 1;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    color: #1e293b;
+    font-weight: 500;
+}
+
+.att-chip-size {
+    color: #94a3b8;
+    white-space: nowrap;
+    flex-shrink: 0;
+}
+
+.att-chip-remove {
+    background: none;
+    border: none;
+    cursor: pointer;
+    color: #94a3b8;
+    font-size: 1rem;
+    line-height: 1;
+    padding: 0 0.1rem;
+    flex-shrink: 0;
+    border-radius: 3px;
+}
+
+.att-chip-remove:hover {
+    color: #dc2626;
+}
+
+.btn-attach-comment {
+    background: none;
+    border: 1px solid #e2e8f0;
+    border-radius: 8px;
+    cursor: pointer;
+    color: #64748b;
+    padding: 0.3rem 0.5rem;
+    height: 36px;
+    flex-shrink: 0;
+    transition: all 0.2s;
+    align-self: flex-end;
+}
+
+.btn-attach-comment:hover {
+    color: #0284c7;
+    border-color: #0284c7;
+    background: #f0f9ff;
+}
+
+.comment-attachments {
+    display: flex;
+    flex-direction: column;
+    gap: 0.25rem;
+    margin-top: 0.35rem;
+}
+
+.comment-attachment-item {
+    display: flex;
+    align-items: center;
+    gap: 0.4rem;
+    padding: 0.3rem 0.5rem;
+    background: #f8fafc;
+    border: 1px solid #e2e8f0;
+    border-radius: 6px;
+    font-size: 0.75rem;
+}
+
+.att-icon {
+    color: #0284c7;
+    flex-shrink: 0;
+}
+
+.att-name {
+    flex: 1;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    color: #1e293b;
+    font-weight: 500;
+}
+
+.att-size {
+    color: #94a3b8;
+    white-space: nowrap;
+    flex-shrink: 0;
+}
+
+.att-action-btn {
+    background: none;
+    border: none;
+    cursor: pointer;
+    color: #94a3b8;
+    padding: 0.15rem 0.25rem;
+    border-radius: 4px;
+    transition: color 0.2s;
+    flex-shrink: 0;
+    line-height: 1;
+}
+
+.att-action-btn:hover {
+    color: #0284c7;
+}
+
+.att-action-btn--danger:hover {
+    color: #dc2626;
 }
 
 /* ═══════════════════ SIGNING PANEL (shared drawing + placing) ═══════════════════ */

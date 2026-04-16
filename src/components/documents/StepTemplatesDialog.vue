@@ -27,7 +27,7 @@ const panel = ref('list');
 const editingTemplate = ref(null); // null = creating
 
 // ─── Form state ──────────────────────────────────────────────────
-const form = ref({ nombre: '', descripcion: '', is_public: false, items: [] });
+const form = ref({ nombre: '', descripcion: '', is_public: false, viewers: { users: [], positions: [] }, items: [] });
 const formErrors = ref({});
 
 const currentUserId = computed(() => authStore.getUser?.id);
@@ -65,7 +65,7 @@ watch(
 // ─── Navigation ──────────────────────────────────────────────────
 const openCreate = () => {
     editingTemplate.value = null;
-    form.value = { nombre: '', descripcion: '', is_public: false, items: [] };
+    form.value = { nombre: '', descripcion: '', is_public: false, viewers: { users: [], positions: [] }, items: [] };
     formErrors.value = {};
     addItem();
     panel.value = 'form';
@@ -77,6 +77,10 @@ const openEdit = (tpl) => {
         nombre: tpl.nombre,
         descripcion: tpl.descripcion ?? '',
         is_public: !!tpl.is_public,
+        viewers: {
+            users: tpl.viewers?.users?.map(Number) ?? [],
+            positions: tpl.viewers?.positions ?? []
+        },
         items: (tpl.items ?? []).map((it) => ({
             orden: it.orden,
             tipo_accion: it.tipo_accion,
@@ -122,10 +126,13 @@ const validate = () => {
 // ─── Submit ───────────────────────────────────────────────────────
 const submit = async () => {
     if (!validate()) return;
+    const { users: vUsers, positions: vPos } = form.value.viewers;
+    const viewers = vUsers.length > 0 || vPos.length > 0 ? { users: vUsers, positions: vPos } : null;
     const payload = {
         nombre: form.value.nombre.trim(),
         descripcion: form.value.descripcion.trim() || undefined,
         is_public: form.value.is_public,
+        viewers,
         items: form.value.items
     };
     try {
@@ -257,6 +264,36 @@ const getActionColor = (tipo) => {
                         <label for="tpl-visibility" class="text-sm font-bold cursor-pointer">Plantilla pública</label>
                         <span class="text-xs text-gray-500">Si se activa, todos los usuarios podrán ver y utilizar esta plantilla (solo tú podrás editarla).</span>
                     </div>
+                </div>
+            </div>
+
+            <!-- Visualizadores -->
+            <div class="form-field">
+                <label class="form-label">Visualizadores <span class="opt">(opcional)</span></label>
+                <p class="tpl-viewers-hint">Usuarios o cargos que pueden ver esta plantilla pero no editarla.</p>
+                <div class="tpl-viewers-selects">
+                    <MultiSelect
+                        v-model="form.viewers.users"
+                        :options="userOptions"
+                        optionLabel="label"
+                        optionValue="value"
+                        placeholder="Usuarios visualizadores..."
+                        display="chip"
+                        :filter="true"
+                        class="w-full"
+                        :maxSelectedLabels="2"
+                    />
+                    <MultiSelect
+                        v-model="form.viewers.positions"
+                        :options="positionOptions"
+                        optionLabel="label"
+                        optionValue="value"
+                        placeholder="Cargos visualizadores..."
+                        display="chip"
+                        :filter="true"
+                        class="w-full"
+                        :maxSelectedLabels="2"
+                    />
                 </div>
             </div>
 
@@ -641,5 +678,18 @@ const getActionColor = (tipo) => {
     .tpl-grid {
         grid-template-columns: 1fr;
     }
+}
+
+.tpl-viewers-hint {
+    font-size: 0.78rem;
+    color: #94a3b8;
+    margin: 0.1rem 0 0.5rem 0;
+    line-height: 1.4;
+}
+
+.tpl-viewers-selects {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
 }
 </style>

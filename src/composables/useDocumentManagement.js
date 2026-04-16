@@ -109,6 +109,28 @@ export function useDocumentManagement() {
         }
     };
 
+    const updateDocumentViewers = async (documentId, viewers) => {
+        try {
+            const response = await store.updateDocumentViewers(documentId, { viewers });
+            const message = apiUtils.getMessage(response) || 'Visualizadores actualizados';
+            toast.add({ severity: 'success', summary: 'Actualizado', detail: message, life: 3000 });
+            return response;
+        } catch (error) {
+            handleError(error, 'Error al actualizar visualizadores');
+            throw error;
+        }
+    };
+
+    const deleteCommentAttachment = async (documentId, attachmentId) => {
+        try {
+            await store.deleteCommentAttachment(documentId, attachmentId);
+            toast.add({ severity: 'success', summary: 'Eliminado', detail: 'Adjunto eliminado', life: 3000 });
+        } catch (error) {
+            handleError(error, 'Error al eliminar el adjunto');
+            throw error;
+        }
+    };
+
     // Utils
     const getSeverity = (status) => {
         switch (status) {
@@ -167,6 +189,8 @@ export function useDocumentManagement() {
         signDocumentStep,
         rejectDocumentStep,
         addDocumentComment,
+        updateDocumentViewers,
+        deleteCommentAttachment,
         deleteDocument,
         getSeverity
     };

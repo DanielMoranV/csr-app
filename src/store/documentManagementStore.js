@@ -113,13 +113,41 @@ export const useDocumentManagementStore = defineStore('documentManagement', {
             }
         },
 
+        async updateDocumentViewers(id, payload) {
+            this.isSaving = true;
+            try {
+                const response = await apiClient.put(`/documents/${id}/viewers`, payload);
+                this.lastFetch = null;
+                return response;
+            } catch (error) {
+                console.error(`Error updating viewers for document ${id}:`, error);
+                throw error;
+            } finally {
+                this.isSaving = false;
+            }
+        },
+
         async addComment(documentId, payload) {
             this.isSaving = true;
             try {
-                const response = await apiClient.post(`/documents/${documentId}/comments`, payload);
+                const config = payload instanceof FormData ? { headers: { 'Content-Type': 'multipart/form-data' } } : {};
+                const response = await apiClient.post(`/documents/${documentId}/comments`, payload, config);
                 return response;
             } catch (error) {
                 console.error(`Error adding comment to doc ${documentId}:`, error);
+                throw error;
+            } finally {
+                this.isSaving = false;
+            }
+        },
+
+        async deleteCommentAttachment(documentId, attachmentId) {
+            this.isSaving = true;
+            try {
+                const response = await apiClient.delete(`/documents/${documentId}/comments/attachments/${attachmentId}`);
+                return response;
+            } catch (error) {
+                console.error(`Error deleting attachment ${attachmentId}:`, error);
                 throw error;
             } finally {
                 this.isSaving = false;

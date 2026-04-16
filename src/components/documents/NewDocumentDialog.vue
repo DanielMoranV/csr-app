@@ -65,7 +65,8 @@ const formData = ref({
     titulo: '',
     descripcion: '',
     file: null,
-    steps: []
+    steps: [],
+    viewers: { users: [], positions: [] }
 });
 
 const touchedFields = ref({
@@ -116,7 +117,8 @@ const resetForm = () => {
         titulo: '',
         descripcion: '',
         file: null,
-        steps: []
+        steps: [],
+        viewers: { users: [], positions: [] }
     };
     touchedFields.value = { titulo: false, file: false };
     isDragging.value = false;
@@ -228,6 +230,15 @@ const submitDocument = async () => {
             data.append('descripcion', formData.value.descripcion);
         }
         data.append('file', formData.value.file);
+
+        // Viewers (opcional)
+        const { users: vUsers, positions: vPos } = formData.value.viewers;
+        if (vUsers.length > 0) {
+            vUsers.forEach((id) => data.append('viewers[users][]', id));
+        }
+        if (vPos.length > 0) {
+            vPos.forEach((p) => data.append('viewers[positions][]', p));
+        }
 
         if (stepsMode.value === 'template') {
             // Opción B: desde plantilla
@@ -391,6 +402,40 @@ const formatFileSize = (bytes) => {
                                 </div>
                             </div>
                             <small v-if="touchedFields.file && formData.file === null" class="modern-error block mt-2">Es necesario adjuntar un documento.</small>
+                        </div>
+
+                        <!-- Visualizadores (opcional) -->
+                        <div class="form-group viewers-section">
+                            <label class="modern-label">
+                                Visualizadores <span class="label-optional">(Opcional)</span>
+                            </label>
+                            <p class="viewers-hint">Usuarios o cargos que podrán ver el documento, pero no actuar en los pasos.</p>
+                            <div class="viewers-selects">
+                                <MultiSelect
+                                    v-model="formData.viewers.users"
+                                    :options="userOptions"
+                                    optionLabel="label"
+                                    optionValue="value"
+                                    placeholder="Usuarios visualizadores..."
+                                    display="chip"
+                                    :filter="true"
+                                    class="w-full"
+                                    :maxSelectedLabels="2"
+                                    :disabled="loading"
+                                />
+                                <MultiSelect
+                                    v-model="formData.viewers.positions"
+                                    :options="positionOptions"
+                                    optionLabel="label"
+                                    optionValue="value"
+                                    placeholder="Cargos visualizadores..."
+                                    display="chip"
+                                    :filter="true"
+                                    class="w-full"
+                                    :maxSelectedLabels="2"
+                                    :disabled="loading"
+                                />
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -1140,5 +1185,23 @@ const formatFileSize = (bytes) => {
     border-radius: 20px !important;
     border: none !important;
     box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25) !important;
+}
+
+/* Viewers section */
+.viewers-section {
+    margin-top: 1rem;
+}
+
+.viewers-hint {
+    font-size: 0.78rem;
+    color: #94a3b8;
+    margin: 0.15rem 0 0.6rem 0;
+    line-height: 1.4;
+}
+
+.viewers-selects {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
 }
 </style>
