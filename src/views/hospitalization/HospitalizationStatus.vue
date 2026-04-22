@@ -85,8 +85,13 @@ const filteredRooms = computed(() => {
     rooms = rooms.filter((room) => {
         // Determinar el estado predominante de la habitación
         const totalBeds = room.beds.length;
-        const occupiedBeds = room.beds.filter((bed) => bed.status === 'occupied' && !bed.attention?.discharge_is_future).length;
-        const dischargeScheduledBeds = room.beds.filter((bed) => bed.status === 'occupied' && bed.attention?.discharge_is_future).length;
+        // Detectar camas ocupadas (sin alta futura) y con alta programada (nuevo status explícito o fallback)
+        const occupiedBeds = room.beds.filter(
+            (bed) => bed.status === 'occupied' && !bed.attention?.discharge_is_future
+        ).length;
+        const dischargeScheduledBeds = room.beds.filter(
+            (bed) => bed.status === 'discharge_scheduled' || (bed.status === 'occupied' && bed.attention?.discharge_is_future)
+        ).length;
         const reservedBeds = room.beds.filter((bed) => bed.is_reserved || bed.status === 'reserved' || bed.status === 'reservada').length;
         const freeBeds = totalBeds - occupiedBeds - dischargeScheduledBeds - reservedBeds;
 

@@ -87,10 +87,11 @@ export const useHospitalizationStore = defineStore('hospitalization', () => {
                                     tasks: newHospitalization.tasks || []
                                 };
 
-                                // Cama ocupada mientras is_active sea true (incluyendo alta programada futura)
+                                // Cama ocupada mientras is_active sea true.
+                                // Si tiene alta futura programada, usar el status específico 'discharge_scheduled'.
                                 if (newHospitalization.is_active) {
                                     bed.attention = transformedAttention;
-                                    bed.status = 'occupied';
+                                    bed.status = newHospitalization.discharge_is_future ? 'discharge_scheduled' : 'occupied';
                                 } else {
                                     bed.attention = null;
                                     bed.status = 'free';
@@ -174,10 +175,11 @@ export const useHospitalizationStore = defineStore('hospitalization', () => {
                                     tasks: updatedHospitalization.tasks || []
                                 };
 
-                                // Cama ocupada mientras is_active sea true (incluyendo alta programada futura)
+                                // Cama ocupada mientras is_active sea true.
+                                // Si tiene alta futura programada, usar el status específico 'discharge_scheduled'.
                                 if (updatedHospitalization.is_active) {
                                     bed.attention = transformedAttention;
-                                    bed.status = 'occupied';
+                                    bed.status = updatedHospitalization.discharge_is_future ? 'discharge_scheduled' : 'occupied';
                                 } else {
                                     bed.attention = null;
                                     bed.status = 'free';

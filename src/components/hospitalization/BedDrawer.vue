@@ -161,7 +161,23 @@ const getSexLabel = (sex) => {
 
 // Obtener severidad del estado de la cama
 const getBedStatusSeverity = (status) => {
-    return status === 'occupied' ? 'danger' : 'success';
+    switch (status) {
+        case 'occupied': return 'danger';
+        case 'discharge_scheduled': return 'warn';
+        case 'reserved':
+        case 'reservada': return 'warning';
+        default: return 'success';
+    }
+};
+
+const getBedStatusLabel = (status) => {
+    switch (status) {
+        case 'occupied': return 'OCUPADA';
+        case 'discharge_scheduled': return 'ALTA PROG.';
+        case 'reserved':
+        case 'reservada': return 'RESERVADA';
+        default: return 'LIBRE';
+    }
 };
 
 // Handlers para las acciones
@@ -307,10 +323,10 @@ const activeReservation = computed(() => {
 });
 
 // Computed para determinar si se puede reservar
+// Solo camas con status 'free' y sin reserva activa pueden reservarse
 const canReserve = computed(() => {
     if (!props.bed) return false;
-    // Solo se puede reservar si está libre y no tiene reserva activa
-    return (props.bed.status === 'free' || props.bed.is_available) && !isReserved.value;
+    return props.bed.status === 'free' && !isReserved.value;
 });
 
 // Handlers para reservas
@@ -391,7 +407,7 @@ watch(
                     <div class="flex items-center gap-2">
                         <i class="pi pi-bed text-primary text-lg"></i>
                         <h3 class="text-lg font-bold m-0">Cama {{ bed.bed_number }}</h3>
-                        <Tag :value="bed.status === 'occupied' ? 'OCUPADA' : 'LIBRE'" :severity="getBedStatusSeverity(bed.status)" class="text-xs" />
+                        <Tag :value="getBedStatusLabel(bed.status)" :severity="getBedStatusSeverity(bed.status)" class="text-xs" />
                     </div>
                     <!-- Número de admisión prominente con icono de copiar -->
                     <div v-if="bed.status === 'occupied' && attention.number" class="flex items-center gap-1 bg-primary-100 px-2 py-1 border-round">
@@ -480,8 +496,8 @@ watch(
 
         <!-- Contenido principal -->
         <div v-if="bed" class="h-full">
-            <!-- Solo mostrar contenido si la cama está ocupada -->
-            <div v-if="bed.status === 'occupied' && attention">
+            <!-- Solo mostrar contenido si la cama está ocupada o tiene alta programada -->
+            <div v-if="(bed.status === 'occupied' || bed.status === 'discharge_scheduled') && attention">
                 <Tabs v-model:value="activeTab" class="bed-drawer-tabs h-full">
                     <TabList class="mb-4">
                         <Tab value="0">

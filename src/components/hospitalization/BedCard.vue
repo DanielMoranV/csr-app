@@ -17,8 +17,26 @@ const getStatusSeverity = (status) => {
             return 'danger';
         case 'free':
             return 'success';
+        case 'discharge_scheduled':
+            return 'warn';
         default:
             return 'info';
+    }
+};
+
+const getStatusLabel = (status) => {
+    switch (status) {
+        case 'occupied':
+            return 'OCUPADA';
+        case 'free':
+            return 'LIBRE';
+        case 'discharge_scheduled':
+            return 'ALTA PROG.';
+        case 'reserved':
+        case 'reservada':
+            return 'RESERVADA';
+        default:
+            return status?.toUpperCase() ?? 'DESCONOCIDO';
     }
 };
 
@@ -105,11 +123,11 @@ const getTasksTooltip = (tasks) => {
     <div class="p-3 surface-card shadow-2 border-round mb-3">
         <div class="flex justify-content-between align-items-center mb-3">
             <span class="font-semibold text-lg">Cama: {{ bed.bed_number }}</span>
-            <Tag :value="bed.status === 'occupied' ? 'OCUPADA' : 'LIBRE'" :severity="getStatusSeverity(bed.status)" />
+            <Tag :value="getStatusLabel(bed.status)" :severity="getStatusSeverity(bed.status)" />
         </div>
 
-        <!-- Cama ocupada - Vista resumida -->
-        <div v-if="bed.status === 'occupied' && attentions.length">
+        <!-- Cama ocupada o con alta programada - Vista resumida -->
+        <div v-if="(bed.status === 'occupied' || bed.status === 'discharge_scheduled') && attentions.length">
             <!-- Advertencias rápidas -->
             <div v-if="hasMultipleAttentions || activeAttentions.length > 1" class="mb-3">
                 <Message v-if="hasMultipleAttentions" severity="warn" :closable="false" class="mb-1 text-sm"> Múltiples atenciones detectadas </Message>
@@ -140,7 +158,7 @@ const getTasksTooltip = (tasks) => {
                     <div class="flex align-items-center gap-2 mt-2">
                         <Tag v-if="att.details?.ram" value="RAM" severity="warn" class="text-xs" v-tooltip.top="'Paciente con Reacciones Alérgicas a Medicamentos (RAM)'" />
                         <Tag v-if="att.details?.medical_order" value="Órdenes" severity="info" class="text-xs" v-tooltip.top="'Tiene órdenes médicas registradas'" />
-                        <Tag v-if="att.tasks?.length" :value="`${getPendingTasks(att.tasks).length} pend." ` :severity="getPendingTasks(att.tasks).length > 0 ? 'warning' : 'success'" class="text-xs" v-tooltip.top="getTasksTooltip(att.tasks)" />
+                        <Tag v-if="att.tasks?.length" :value="`${getPendingTasks(att.tasks).length} pend.`" :severity="getPendingTasks(att.tasks).length > 0 ? 'warning' : 'success'" class="text-xs" v-tooltip.top="getTasksTooltip(att.tasks)" />
                     </div>
                 </div>
             </div>

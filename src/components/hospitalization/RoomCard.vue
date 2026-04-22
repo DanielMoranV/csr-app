@@ -241,7 +241,10 @@ const formatReservationDate = (dateString) => {
 // Computed properties for room statistics
 const roomStats = computed(() => {
     const totalBeds = props.room.beds.length;
-    const occupiedBeds = props.room.beds.filter((bed) => bed.status === 'occupied').length;
+    // Las camas con 'occupied' y 'discharge_scheduled' cuentan como ocupadas
+    const occupiedBeds = props.room.beds.filter(
+        (bed) => bed.status === 'occupied' || bed.status === 'discharge_scheduled'
+    ).length;
     const freeBeds = totalBeds - occupiedBeds;
     const occupancyRate = totalBeds > 0 ? Math.round((occupiedBeds / totalBeds) * 100) : 0;
 
@@ -351,7 +354,9 @@ onUnmounted(() => {
 });
 
 // Determina si una cama está en estado "Alta programada"
+// Acepta el nuevo status explícito 'discharge_scheduled' O el fallback por attention flags
 const isBedDischargeScheduled = (bed) => {
+    if (bed.status === 'discharge_scheduled') return true;
     return (
         bed.status === 'occupied' &&
         bed.attention?.is_active === true &&
@@ -472,8 +477,8 @@ const handleEarlyRelease = (bed) => {
                     <div v-if="!hasOverdueTasks(bed) && hasNearingDueTasks(bed)" class="warning-triangle">
                         <i class="pi pi-exclamation-triangle"></i>
                     </div>
-                    <!-- Cama Ocupada - Vista Expandida -->
-                    <div v-if="bed.status === 'occupied' && bed.attention" class="bed-content bed-content--occupied">
+                    <!-- Cama Ocupada o Alta Programada - Vista Expandida -->
+                    <div v-if="(bed.status === 'occupied' || bed.status === 'discharge_scheduled') && bed.attention" class="bed-content bed-content--occupied">
                         <!-- Header de la cama -->
                         <div class="bed-header">
                             <div class="bed-header-left">
