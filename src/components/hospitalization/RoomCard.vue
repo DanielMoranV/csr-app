@@ -1,13 +1,16 @@
 <script setup>
 import CudyrBadge from '@/components/cudyr/CudyrBadge.vue';
+import { hospitalAttentions } from '@/api/hospitalAttentions';
+import { usePermissions } from '@/composables/usePermissions';
 import Badge from 'primevue/badge';
 import Tag from 'primevue/tag';
-import { usePermissions } from '@/composables/usePermissions';
+import Button from 'primevue/button';
 import { useToast } from 'primevue/usetoast';
-import { computed, defineEmits, ref } from 'vue';
+import { useConfirm } from 'primevue/useconfirm';
+import { computed, defineEmits, ref, onMounted, onUnmounted } from 'vue';
 import BedDrawer from './BedDrawer.vue';
 
-const { isSecretaria } = usePermissions();
+const { isSecretaria, canEarlyRelease } = usePermissions();
 
 const props = defineProps({
     room: {
@@ -19,6 +22,7 @@ const props = defineProps({
 const emit = defineEmits(['refresh-data']);
 
 const toast = useToast();
+const confirm = useConfirm();
 
 // Función para copiar al portapapeles
 const copyToClipboard = (text) => {
@@ -310,6 +314,98 @@ const hasPendingTasks = (bed) => {
 
     return attention.tasks.some((task) => (task.status === 'pendiente' || task.status === 'en_proceso') && (!task.alert_status || task.alert_status === 'normal'));
 };
+// ──────────────────────────────────────────────
+// Alta Programada — Countdown logic
+// ──────────────────────────────────────────────
+
+/**
+ * Calcula el tiempo restante hasta la hora de alta.
+ * @param {string} exitAt - ISO string del backend
+ * @returns {{ hours: number, minutes: number, totalMinutes: number } | null}
+ */
+const getCountdown = (exitAt) => {
+    if (!exitAt) return null;
+    const diffMs = new Date(exitAt) - new Date();
+    if (diffMs <= 0) return null;
+    const totalMinutes = Math.floor(diffMs / 60000);
+    const hours = Math.floor(totalMinutes / 60);
+    const minutes = totalMinutes % 60;
+    return { hours, minutes, totalMinutes };
+};
+
+// Contador reactivo para forzar recálculo del template cada 30s
+const countdownTick = ref(0);
+let countdownInterval = null;
+
+onMounted(() => {
+    countdownInterval = setInterval(() => {
+        countdownTick.value++;
+    }, 30_000);
+});
+
+onUnmounted(() => {
+    if (countdownInterval) {
+        clearInterval(countdownInterval);
+        countdownInterval = null;
+    }
+});
+
+// Determina si una cama está en estado "Alta programada"
+const isBedDischargeScheduled = (bed) => {
+    return (
+        bed.status === 'occupied' &&
+        bed.attention?.is_active === true &&
+        bed.attention?.discharge_is_future === true
+    );
+};
+
+// Estado de carga del botón liberar cama (por bed id)
+const releasingBedId = ref(null);
+
+// Liberar cama anticipadamente
+const handleEarlyRelease = (bed) => {
+    const attentionId = bed.attention?.hospital_attention_id;
+    if (!attentionId) return;
+
+    confirm.require({
+        header: 'Confirmar liberación anticipada',
+        message: '¿Confirmar salida anticipada del paciente? Esta acción marcará la cama como disponible de inmediato.',
+        icon: 'pi pi-exclamation-triangle',
+        acceptIcon: 'pi pi-check',
+        rejectIcon: 'pi pi-times',
+        acceptLabel: 'Liberar cama',
+        rejectLabel: 'Cancelar',
+        acceptClass: 'p-button-warning',
+        accept: async () => {
+            releasingBedId.value = bed.id;
+            try {
+                await hospitalAttentions.earlyRelease(attentionId);
+                toast.add({
+                    severity: 'success',
+                    summary: 'Cama liberada',
+                    detail: 'La cama ha sido marcada como disponible.',
+                    life: 3000
+                });
+                // El evento bed_released de Pusher actualizará la cama;
+                // si no llega, el store lo maneja con fallback local.
+            } catch (error) {
+                const status = error?.response?.status;
+                const message =
+                    status === 422
+                        ? 'El paciente no tiene un alta futura programada.'
+                        : (error?.response?.data?.message || 'Error al liberar la cama.');
+                toast.add({
+                    severity: 'error',
+                    summary: 'Error',
+                    detail: message,
+                    life: 5000
+                });
+            } finally {
+                releasingBedId.value = null;
+            }
+        }
+    });
+};
 </script>
 
 <template>
@@ -359,14 +455,15 @@ const hasPendingTasks = (bed) => {
                     class="bed-indicator"
                     :class="{
                         'bed-indicator--occupied': bed.status === 'occupied',
-                        'bed-indicator--occupied-male': bed.status === 'occupied' && bed.attention?.patient?.sex === 'M',
-                        'bed-indicator--occupied-female': bed.status === 'occupied' && bed.attention?.patient?.sex === 'F',
+                        'bed-indicator--discharge-scheduled': isBedDischargeScheduled(bed),
+                        'bed-indicator--occupied-male': bed.status === 'occupied' && bed.attention?.patient?.sex === 'M' && !isBedDischargeScheduled(bed),
+                        'bed-indicator--occupied-female': bed.status === 'occupied' && bed.attention?.patient?.sex === 'F' && !isBedDischargeScheduled(bed),
                         'bed-indicator--reserved': (bed.status === 'reserved' || bed.status === 'reservada' || bed.is_reserved) && bed.status !== 'occupied',
                         'bed-indicator--free': (bed.status === 'free' || bed.status === 'disponible') && !bed.is_reserved && bed.status !== 'occupied' && bed.status !== 'reserved' && bed.status !== 'reservada',
-                        'bed-indicator--alert': bed.attention && bed.status === 'occupied' && !bed.attention.discharge_date && !bed.attention.exit_date,
-                        'bed-indicator--overdue': hasOverdueTasks(bed),
-                        'bed-indicator--nearing-due': !hasOverdueTasks(bed) && hasNearingDueTasks(bed),
-                        'bed-indicator--pending': !hasOverdueTasks(bed) && !hasNearingDueTasks(bed) && hasPendingTasks(bed),
+                        'bed-indicator--alert': bed.attention && bed.status === 'occupied' && !bed.attention.discharge_date && !bed.attention.exit_date && !isBedDischargeScheduled(bed),
+                        'bed-indicator--overdue': hasOverdueTasks(bed) && !isBedDischargeScheduled(bed),
+                        'bed-indicator--nearing-due': !hasOverdueTasks(bed) && hasNearingDueTasks(bed) && !isBedDischargeScheduled(bed),
+                        'bed-indicator--pending': !hasOverdueTasks(bed) && !hasNearingDueTasks(bed) && hasPendingTasks(bed) && !isBedDischargeScheduled(bed),
                         'bed-indicator--read-only': isSecretaria
                     }"
                     @click="openBedDrawer(bed)"
@@ -478,6 +575,40 @@ const hasPendingTasks = (bed) => {
                                 severity="info"
                                 class="indicator-tag"
                                 v-tooltip.top="getLatestDetails(bed.attention.details)?.images_exams || 'Tiene exámenes de imágenes registrados'"
+                            />
+                        </div>
+
+                        <!-- Alta Programada: badge + countdown -->
+                        <div v-if="isBedDischargeScheduled(bed)" class="discharge-scheduled-badge" :key="countdownTick">
+                            <i class="pi pi-clock"></i>
+                            <template v-if="getCountdown(bed.attention.exit_at)">
+                                <span>Alta en</span>
+                                <strong v-if="getCountdown(bed.attention.exit_at).hours > 0">
+                                    {{ getCountdown(bed.attention.exit_at).hours }}h
+                                </strong>
+                                <strong
+                                    :class="{
+                                        'countdown--urgent': getCountdown(bed.attention.exit_at).totalMinutes < 15
+                                    }"
+                                >
+                                    {{ getCountdown(bed.attention.exit_at).minutes }}m
+                                </strong>
+                            </template>
+                            <span v-else class="countdown-expired">Liberando...</span>
+                        </div>
+
+                        <!-- Botón liberar cama anticipadamente -->
+                        <div v-if="isBedDischargeScheduled(bed) && canEarlyRelease && !isSecretaria" class="early-release-container">
+                            <Button
+                                label="Liberar cama"
+                                icon="pi pi-door-open"
+                                size="small"
+                                severity="warning"
+                                outlined
+                                class="early-release-btn"
+                                :loading="releasingBedId === bed.id"
+                                @click.stop="handleEarlyRelease(bed)"
+                                v-tooltip.top="'Liberar cama antes del alta programada'"
                             />
                         </div>
                     </div>
@@ -1739,5 +1870,103 @@ const hasPendingTasks = (bed) => {
 .app-dark .bed-indicator--reserved:hover {
     border-color: #fbbf24;
     box-shadow: 0 2px 8px rgba(251, 191, 36, 0.25);
+}
+
+/* ──────────────────────────────────────────────
+   Alta Programada — Estado Azul (discharge_is_future: true)
+   ────────────────────────────────────────────── */
+.bed-indicator--discharge-scheduled {
+    background: linear-gradient(135deg, #eff6ff 0%, #dbeafe 100%) !important;
+    border: 2px solid #60a5fa !important;
+    color: #1e40af;
+    animation: discharge-breathe 3s ease-in-out infinite !important;
+}
+
+.bed-indicator--discharge-scheduled:hover {
+    background: linear-gradient(135deg, #dbeafe 0%, #bfdbfe 100%) !important;
+    border-color: #3b82f6 !important;
+    box-shadow: 0 4px 14px rgba(59, 130, 246, 0.3);
+}
+
+@keyframes discharge-breathe {
+    0%, 100% {
+        box-shadow: 0 0 0 0 rgba(59, 130, 246, 0.15);
+        border-color: #60a5fa;
+    }
+    50% {
+        box-shadow: 0 0 0 6px rgba(59, 130, 246, 0);
+        border-color: #3b82f6;
+    }
+}
+
+/* Modo oscuro - Alta programada */
+.app-dark .bed-indicator--discharge-scheduled {
+    background: linear-gradient(135deg, hsl(220, 60%, 15%) 0%, hsl(220, 55%, 20%) 100%) !important;
+    border-color: rgba(96, 165, 250, 0.5) !important;
+    color: #bfdbfe;
+}
+
+.app-dark .bed-indicator--discharge-scheduled:hover {
+    background: linear-gradient(135deg, hsl(220, 55%, 20%) 0%, hsl(220, 50%, 25%) 100%) !important;
+    border-color: #60a5fa !important;
+    box-shadow: 0 4px 14px rgba(96, 165, 250, 0.25);
+}
+
+/* Badge de alta programada dentro de la tarjeta */
+.discharge-scheduled-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.3rem;
+    font-size: 0.72rem;
+    font-weight: 700;
+    color: #1d4ed8;
+    background: rgba(59, 130, 246, 0.12);
+    border: 1px solid rgba(59, 130, 246, 0.3);
+    border-radius: 6px;
+    padding: 0.2rem 0.5rem;
+    margin-top: 0.25rem;
+    flex-wrap: wrap;
+}
+
+.discharge-scheduled-badge i {
+    font-size: 0.78rem;
+    color: #2563eb;
+}
+
+.countdown--urgent {
+    color: #ea580c !important;
+    animation: urgent-pulse 1.5s ease-in-out infinite;
+}
+
+@keyframes urgent-pulse {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.6; }
+}
+
+.countdown-expired {
+    color: #9ca3af;
+    font-style: italic;
+}
+
+.app-dark .discharge-scheduled-badge {
+    color: #93c5fd;
+    background: rgba(59, 130, 246, 0.15);
+    border-color: rgba(96, 165, 250, 0.35);
+}
+
+.app-dark .discharge-scheduled-badge i {
+    color: #60a5fa;
+}
+
+/* Botón de liberación anticipada */
+.early-release-container {
+    margin-top: 0.375rem;
+}
+
+.early-release-btn {
+    width: 100%;
+    font-size: 0.7rem !important;
+    padding: 0.3rem 0.5rem !important;
+    justify-content: center;
 }
 </style>

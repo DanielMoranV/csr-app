@@ -1,5 +1,5 @@
-import { computed } from 'vue';
 import { POSITIONS } from '@/config/permissions';
+import { computed } from 'vue';
 import { useAuth } from './useAuth';
 
 // Re-exportar POSITIONS para uso directo desde este composable
@@ -97,7 +97,7 @@ export function usePermissions() {
     const canPerformDangerousActions = computed(() => {
         return belongsToGroup('DANGER_ZONE');
     });
-    
+
     // Verificar si es Secretaria
     const isSecretaria = computed(() => {
         return hasPosition(POSITIONS.SECRETARIA);
@@ -106,6 +106,11 @@ export function usePermissions() {
     // Verificar si es Coordinador de Hospitalización
     const isCoordinadorHospitalizacion = computed(() => {
         return hasPosition(POSITIONS.COORDINADOR_HOSPITALIZACION);
+    });
+
+    // Verificar si puede liberar una cama anticipadamente (antes del alta programada)
+    const canEarlyRelease = computed(() => {
+        return hasAnyPosition([POSITIONS.HOSPITALIZACION, POSITIONS.COORDINADOR_HOSPITALIZACION, POSITIONS.DIRECTOR_MEDICO, POSITIONS.ADMINISTRACION, POSITIONS.ADMISION]);
     });
 
     // Filtrar items de menú basado en permisos
@@ -156,6 +161,7 @@ export function usePermissions() {
         canPerformDangerousActions,
         isSecretaria,
         isCoordinadorHospitalizacion,
+        canEarlyRelease,
 
         // Utilidades
         filterMenuItems,

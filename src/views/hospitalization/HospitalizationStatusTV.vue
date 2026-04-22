@@ -67,7 +67,8 @@ const globalStats = computed(() => {
             totalTasks: 0,
             tasksNearingDue: 0,
             tasksOverdue: 0,
-            alertRooms: 0
+            alertRooms: 0,
+            dischargeScheduledBeds: 0
         };
 
     let totalBeds = 0;
@@ -76,6 +77,7 @@ const globalStats = computed(() => {
     let tasksNearingDue = 0;
     let tasksOverdue = 0;
     let alertRooms = 0;
+    let dischargeScheduledBeds = 0;
 
     state.value.status.forEach((room) => {
         totalBeds += room.beds.length;
@@ -83,6 +85,11 @@ const globalStats = computed(() => {
         room.beds.forEach((bed) => {
             if (bed.status === 'occupied' && bed.attention) {
                 occupiedBeds++;
+
+                // Contar camas con alta programada
+                if (bed.attention.discharge_is_future) {
+                    dischargeScheduledBeds++;
+                }
 
                 if (bed.attention.tasks) {
                     bed.attention.tasks.forEach((task) => {
@@ -120,7 +127,8 @@ const globalStats = computed(() => {
         totalTasks,
         tasksNearingDue,
         tasksOverdue,
-        alertRooms
+        alertRooms,
+        dischargeScheduledBeds
     };
 });
 
@@ -315,6 +323,15 @@ const formatDate = (date) => {
                     <div class="tv-header-stat-info">
                         <span class="tv-header-stat-value">{{ globalStats.alertRooms }}</span>
                         <span class="tv-header-stat-label">ALERTAS</span>
+                    </div>
+                </div>
+
+                <!-- Alta Programada -->
+                <div v-if="globalStats.dischargeScheduledBeds > 0" class="tv-header-stat-item tv-header-stat--discharge">
+                    <i class="pi pi-clock"></i>
+                    <div class="tv-header-stat-info">
+                        <span class="tv-header-stat-value">{{ globalStats.dischargeScheduledBeds }}</span>
+                        <span class="tv-header-stat-label">ALTA PROG.</span>
                     </div>
                 </div>
             </div>
@@ -866,6 +883,26 @@ const formatDate = (date) => {
         margin-top: 0.25rem !important;
         padding-top: 0.25rem !important;
         font-size: 0.8rem !important;
+    }
+}
+
+/* Alta Programada stat badge en header TV */
+.tv-header-stat--discharge {
+    border-left: 3px solid #60a5fa;
+    background: linear-gradient(90deg, rgba(96, 165, 250, 0.12) 0%, rgba(30, 41, 59, 0) 100%);
+    animation: tv-discharge-pulse 4s ease-in-out infinite;
+}
+
+.tv-header-stat--discharge i {
+    color: #60a5fa;
+}
+
+@keyframes tv-discharge-pulse {
+    0%, 100% {
+        box-shadow: 0 0 0 0 rgba(96, 165, 250, 0);
+    }
+    50% {
+        box-shadow: 0 0 8px 0 rgba(96, 165, 250, 0.2);
     }
 }
 </style>

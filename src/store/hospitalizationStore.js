@@ -66,6 +66,10 @@ export const useHospitalizationStore = defineStore('hospitalization', () => {
                                     discharge_date: newHospitalization.exit_at,
                                     request_at: newHospitalization.request_at,
                                     medical_discharge_type: newHospitalization.medical_discharge_type,
+                                    // Alta programada
+                                    exit_at: newHospitalization.exit_at,
+                                    discharge_is_future: newHospitalization.discharge_is_future ?? false,
+                                    minutes_until_discharge: newHospitalization.minutes_until_discharge ?? null,
                                     patient: {
                                         id: newHospitalization.patient.id,
                                         name: newHospitalization.patient.name,
@@ -76,14 +80,15 @@ export const useHospitalizationStore = defineStore('hospitalization', () => {
                                     },
                                     doctor: newHospitalization.doctor,
                                     insurance: newHospitalization.insurance,
+                                    code_insurance: newHospitalization.code_insurance,
                                     type_attention: newHospitalization.type_attention,
                                     cie10: newHospitalization.cie10,
                                     details: newHospitalization.details_attention || [],
                                     tasks: newHospitalization.tasks || []
                                 };
 
-                                // Update the bed's attention information and status
-                                if (newHospitalization.is_active && !newHospitalization.exit_at) {
+                                // Cama ocupada mientras is_active sea true (incluyendo alta programada futura)
+                                if (newHospitalization.is_active) {
                                     bed.attention = transformedAttention;
                                     bed.status = 'occupied';
                                 } else {
@@ -148,6 +153,10 @@ export const useHospitalizationStore = defineStore('hospitalization', () => {
                                     discharge_date: updatedHospitalization.exit_at,
                                     request_at: updatedHospitalization.request_at,
                                     medical_discharge_type: updatedHospitalization.medical_discharge_type,
+                                    // Alta programada
+                                    exit_at: updatedHospitalization.exit_at,
+                                    discharge_is_future: updatedHospitalization.discharge_is_future ?? false,
+                                    minutes_until_discharge: updatedHospitalization.minutes_until_discharge ?? null,
                                     patient: {
                                         id: updatedHospitalization.patient.id,
                                         name: updatedHospitalization.patient.name,
@@ -158,14 +167,15 @@ export const useHospitalizationStore = defineStore('hospitalization', () => {
                                     },
                                     doctor: updatedHospitalization.doctor,
                                     insurance: updatedHospitalization.insurance,
+                                    code_insurance: updatedHospitalization.code_insurance,
                                     type_attention: updatedHospitalization.type_attention,
                                     cie10: updatedHospitalization.cie10,
                                     details: updatedHospitalization.details_attention || [],
                                     tasks: updatedHospitalization.tasks || []
                                 };
 
-                                // Update the bed's attention information and status
-                                if (updatedHospitalization.is_active && !updatedHospitalization.exit_at) {
+                                // Cama ocupada mientras is_active sea true (incluyendo alta programada futura)
+                                if (updatedHospitalization.is_active) {
                                     bed.attention = transformedAttention;
                                     bed.status = 'occupied';
                                 } else {
@@ -464,6 +474,51 @@ export const useHospitalizationStore = defineStore('hospitalization', () => {
         });
     };
 
+    // Alta programada: discharge_scheduled — la cama pasa a estado azul con temporizador
+    const handleDischargeScheduled = (eventData) => {
+        // Usamos la misma lógica que handleHospitalizationUpdated;
+        // el payload tiene el objeto hospital_attention actualizado con
+        // discharge_is_future: true y exit_at con la hora de alta
+        handleHospitalizationUpdated(eventData);
+    };
+
+    // Cama liberada: bed_released — la cama pasa a disponible
+    const handleBedReleased = (eventData) => {
+        const data = eventData.data;
+        if (!data) return;
+
+        const bedId = data.id_beds;
+        const hospitalizationId = data.id;
+
+        if (bedId) {
+            let found = false;
+            state.status.forEach((room) => {
+                room.beds?.forEach((bed) => {
+                    if (bed.id === bedId) {
+                        bed.attention = null;
+                        bed.status = 'free';
+                        found = true;
+                    }
+                });
+            });
+
+            if (!found) {
+                // Buscar por attention id como fallback
+                state.status.forEach((room) => {
+                    room.beds?.forEach((bed) => {
+                        if (bed.attention?.hospital_attention_id === hospitalizationId) {
+                            bed.attention = null;
+                            bed.status = 'free';
+                        }
+                    });
+                });
+            }
+        } else {
+            // Sin bed id, refrescar todo
+            fetchHospitalizationStatus();
+        }
+    };
+
     return {
         state,
         hospitalizationStatus,
@@ -481,6 +536,9 @@ export const useHospitalizationStore = defineStore('hospitalization', () => {
         // CUDYR event handlers
         handleCudyrEvaluationCreated,
         handleCudyrEvaluationUpdated,
-        handleCudyrEvaluationDeleted
+        handleCudyrEvaluationDeleted,
+        // Alta programada
+        handleDischargeScheduled,
+        handleBedReleased
     };
 });

@@ -133,6 +133,18 @@ export function useRealtimeEvents(options = {}) {
                 if (updateAudits && updateAttentions) {
                     hospitalAttentionsStore.handleAuditDeleted(e);
                 }
+            })
+            // Alta programada: paciente tiene alta en el futuro, cama sigue ocupada
+            .listen('.hospitalization.discharge_scheduled', (e) => {
+                if (updateHospitalization) {
+                    hospitalizationStore.handleDischargeScheduled(e);
+                }
+            })
+            // Cama liberada: llegó la hora de alta o se liberó manualmente
+            .listen('.hospitalization.bed_released', (e) => {
+                if (updateHospitalization) {
+                    hospitalizationStore.handleBedReleased(e);
+                }
             });
 
         // Canal hospital-dashboard - para estadísticas del dashboard

@@ -44,6 +44,9 @@ export const hospitalAttentions = {
     // Approve attention by Medical Director
     approve: (id) => axios.patch(`/hospital-attentions/${id}/approve`),
 
+    // Early release — liberar cama antes de la hora de alta programada
+    earlyRelease: (id) => axios.patch(`/hospital-attentions/${id}/early-release`),
+
     // Details Attention - Nuevos endpoints por fecha
     getAttentionDetails: (attentionId, params) => axios.get(`/attentions/${attentionId}/details`, { params }),
     getAttentionDetailsByDate: (attentionId, date) => axios.get(`/attentions/${attentionId}/details/${date}`),

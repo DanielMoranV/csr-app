@@ -82,15 +82,18 @@ const activeRooms = computed(() => {
                     return false;
                 }
 
-                // Una atención está activa si:
-                // 1. No tiene fecha de salida (exit_date, discharge_date)
-                // 2. O si tiene is_active en true
-                const hasExitDate = bed.attention.exit_date || bed.attention.discharge_date;
-                const isActiveByFlag = bed.attention.is_active !== false; // Si no existe el campo, asumimos true si está ocupada
+                // Una atención está activa si is_active es true.
+                // Camas con discharge_is_future: true tienen exit_at pero siguen activas.
+                if (bed.attention.is_active === false) return false;
 
-                const isActive = !hasExitDate && isActiveByFlag;
+                // Si no tiene flag is_active, verificar que no tenga discharge_date sin alta futura
+                if (bed.attention.is_active === undefined) {
+                    const hasExitDate = bed.attention.exit_date || bed.attention.discharge_date;
+                    const hasFutureDischarge = bed.attention.discharge_is_future === true;
+                    if (hasExitDate && !hasFutureDischarge) return false;
+                }
 
-                return isActive;
+                return true;
             });
 
             return {
@@ -292,7 +295,10 @@ const tableData = computed(() => {
                     insurance_label: insuranceInfo.label,
                     insurance_color: insuranceInfo.color,
                     insurance_name: bed.attention.insurance,
-                    code_insurance: bed.attention.code_insurance
+                    code_insurance: bed.attention.code_insurance,
+                    // Alta programada
+                    discharge_is_future: bed.attention.discharge_is_future ?? false,
+                    exit_at: bed.attention.exit_at ?? null
                 });
             }
         });
@@ -575,6 +581,7 @@ onUnmounted(() => {
                                 >
                                     {{ bed.room_type_formatted }}
                                 </span>
+                                <span v-if="bed.discharge_is_future" class="discharge-badge-vr" v-tooltip.top="`Alta programada hoy`">⏱</span>
                             </div>
                             <div class="vr-patient">
                                 <div class="vr-patient-name">
@@ -1966,5 +1973,22 @@ onUnmounted(() => {
     .bed-card-doctor {
         font-size: 0.625rem;
     }
+}
+
+/* Badge de alta programada en vista vertical y cards */
+.discharge-badge-vr {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 0.7rem;
+    background: rgba(59, 130, 246, 0.15);
+    border: 1px solid rgba(59, 130, 246, 0.35);
+    border-radius: 4px;
+    padding: 0.1rem 0.3rem;
+    color: #1d4ed8;
+    font-style: normal;
+    line-height: 1;
+    margin-left: 0.2rem;
+    cursor: help;
 }
 </style>

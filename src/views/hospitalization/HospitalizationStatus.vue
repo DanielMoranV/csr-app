@@ -44,7 +44,8 @@ const smartSortEnabled = ref(cache.getItem(CACHE_KEY_SMART_SORT) ?? false);
 const occupancyFilters = ref({
     occupied: true,
     free: true,
-    reserved: true
+    reserved: true,
+    dischargeScheduled: true
 });
 
 // Opciones para el dropdown de habitaciones
@@ -84,21 +85,20 @@ const filteredRooms = computed(() => {
     rooms = rooms.filter((room) => {
         // Determinar el estado predominante de la habitación
         const totalBeds = room.beds.length;
-        const occupiedBeds = room.beds.filter((bed) => bed.status === 'occupied').length;
+        const occupiedBeds = room.beds.filter((bed) => bed.status === 'occupied' && !bed.attention?.discharge_is_future).length;
+        const dischargeScheduledBeds = room.beds.filter((bed) => bed.status === 'occupied' && bed.attention?.discharge_is_future).length;
         const reservedBeds = room.beds.filter((bed) => bed.is_reserved || bed.status === 'reserved' || bed.status === 'reservada').length;
-        const freeBeds = totalBeds - occupiedBeds - reservedBeds;
+        const freeBeds = totalBeds - occupiedBeds - dischargeScheduledBeds - reservedBeds;
 
-        // Una habitación se considera "ocupada" si tiene al menos 1 cama ocupada
         const hasOccupied = occupiedBeds > 0;
-        // Una habitación se considera "reservada" si tiene al menos 1 cama reservada (y no está completamente ocupada)
+        const hasDischargeScheduled = dischargeScheduledBeds > 0;
         const hasReserved = reservedBeds > 0 && occupiedBeds < totalBeds;
-        // Una habitación se considera "libre" si todas las camas están libres
         const isFree = freeBeds === totalBeds;
 
-        // Aplicar filtros
         if (isFree && !occupancyFilters.value.free) return false;
         if (hasReserved && !occupancyFilters.value.reserved) return false;
         if (hasOccupied && !occupancyFilters.value.occupied) return false;
+        if (hasDischargeScheduled && !occupancyFilters.value.dischargeScheduled) return false;
 
         return true;
     });
@@ -239,7 +239,8 @@ const clearAllFilters = () => {
     occupancyFilters.value = {
         occupied: true,
         free: true,
-        reserved: true
+        reserved: true,
+        dischargeScheduled: true
     };
 };
 
@@ -524,6 +525,13 @@ onUnmounted(() => {
                                         <span>Reservadas</span>
                                     </label>
                                 </div>
+                                <div class="occupancy-checkbox-compact">
+                                    <Checkbox v-model="occupancyFilters.dischargeScheduled" inputId="filter-discharge" :binary="true" />
+                                    <label for="filter-discharge" class="occupancy-label-compact">
+                                        <i class="pi pi-clock" style="color: #3b82f6"></i>
+                                        <span>Alta prog.</span>
+                                    </label>
+                                </div>
                             </div>
                         </div>
 
@@ -532,7 +540,7 @@ onUnmounted(() => {
                         <div class="filter-item filter-item--actions">
                             <Badge :value="`${filteredRooms.length} hab.`" severity="info" size="small" />
                             <Button
-                                v-if="selectedRoom || !occupancyFilters.occupied || !occupancyFilters.free || !occupancyFilters.reserved"
+                                v-if="selectedRoom || !occupancyFilters.occupied || !occupancyFilters.free || !occupancyFilters.reserved || !occupancyFilters.dischargeScheduled"
                                 icon="pi pi-filter-slash"
                                 @click="clearAllFilters"
                                 severity="secondary"
