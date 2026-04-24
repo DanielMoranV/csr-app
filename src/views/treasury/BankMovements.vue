@@ -1,11 +1,13 @@
 <script setup>
 import BankMovementsAuditDialog from '@/components/treasury/BankMovementsAuditDialog.vue';
+import BankMovementsImportDialog from '@/components/treasury/BankMovementsImportDialog.vue';
 import { TreasuryService } from '@/service/TreasuryService';
 import { FilterMatchMode } from '@primevue/core/api';
 import { useToast } from 'primevue/usetoast';
 import { onMounted, ref, watch } from 'vue';
 
 const auditDialogRef = ref(null);
+const importDialogRef = ref(null);
 
 const toast = useToast();
 
@@ -342,6 +344,7 @@ const directionLocked = (categoryId) => {
                     </IconField>
                     <Button label="+ Agregar fila" icon="pi pi-plus" class="action-button" @click="addNewRow" />
                     <Button label="Transferencia" icon="pi pi-arrow-right-arrow-left" class="transfer-button" @click="openNewTransfer" />
+                    <Button label="Importar" icon="pi pi-upload" class="import-button" @click="importDialogRef.open(filterAccount)" />
                     <Button label="Auditoría" icon="pi pi-history" class="audit-button" @click="auditDialogRef.openDeletedAudit()" />
                 </div>
             </div>
@@ -504,6 +507,9 @@ const directionLocked = (categoryId) => {
                     </template>
                 </Column>
             </DataTable>
+
+            <!-- Modal Importación Masiva -->
+            <BankMovementsImportDialog ref="importDialogRef" :accounts="accounts" @imported="loadMovements" />
 
             <!-- Modal Auditoría -->
             <BankMovementsAuditDialog ref="auditDialogRef" />
@@ -1633,5 +1639,19 @@ const directionLocked = (categoryId) => {
     font-style: italic;
     color: #10b981;
     font-weight: 500;
+}
+
+.import-button {
+    background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%) !important;
+    border: none !important;
+    border-radius: 10px !important;
+    box-shadow: 0 3px 10px rgba(245, 158, 11, 0.3) !important;
+    transition: all 0.3s ease !important;
+    white-space: nowrap;
+}
+.import-button:hover {
+    transform: translateY(-2px) !important;
+    box-shadow: 0 5px 15px rgba(245, 158, 11, 0.4) !important;
+    background: linear-gradient(135deg, #d97706 0%, #b45309 100%) !important;
 }
 </style>

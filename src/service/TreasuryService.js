@@ -106,5 +106,15 @@ export const TreasuryService = {
     },
     getDeletedMovements(page = 1) {
         return axios.get('/bank-movements/audit/deleted', { params: { page } });
+    },
+
+    // 10. Importación Masiva de Movimientos
+    downloadImportTemplate() {
+        return axios.get('/treasury/import/template', { responseType: 'blob' });
+    },
+    importBankMovements(formData) {
+        return axios.post('/treasury/import/bank-movements', formData, {
+            headers: { 'Content-Type': 'multipart/form-data' }
+        });
     }
 };
