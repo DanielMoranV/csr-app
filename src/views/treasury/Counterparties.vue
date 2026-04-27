@@ -1,4 +1,5 @@
 <script setup>
+import CounterpartiesImportDialog from '@/components/treasury/CounterpartiesImportDialog.vue';
 import { TreasuryService } from '@/service/TreasuryService';
 import { FilterMatchMode } from '@primevue/core/api';
 import { useToast } from 'primevue/usetoast';
@@ -15,6 +16,7 @@ const filters = ref({
     global: { value: null, matchMode: FilterMatchMode.CONTAINS }
 });
 const submitted = ref(false);
+const importDialogRef = ref(null);
 
 const types = ref([
     { label: 'Proveedor', value: 'Proveedor' },
@@ -135,6 +137,7 @@ const deleteCounterparty = async () => {
                         </InputIcon>
                         <InputText v-model="filters['global'].value" placeholder="Buscar contrapartes..." class="search-input-modern" />
                     </IconField>
+                    <Button label="Importar" icon="pi pi-upload" class="import-button" @click="importDialogRef.open()" v-tooltip.top="'Importación masiva desde Excel'" />
                     <Button label="Nueva Contraparte" icon="pi pi-plus" class="action-button" @click="openNew" />
                 </div>
             </div>
@@ -254,6 +257,9 @@ const deleteCounterparty = async () => {
                     <Button label="Sí, eliminar" icon="pi pi-check" severity="danger" @click="deleteCounterparty" />
                 </template>
             </Dialog>
+
+            <!-- Dialog Importación Masiva -->
+            <CounterpartiesImportDialog ref="importDialogRef" @imported="loadCounterparties" />
         </div>
     </div>
 </template>
@@ -517,6 +523,20 @@ const deleteCounterparty = async () => {
     transform: translateY(-2px) !important;
     box-shadow: 0 5px 15px rgba(16, 185, 129, 0.4) !important;
     background: linear-gradient(135deg, #059669 0%, #047857 100%) !important;
+}
+.import-button {
+    background: transparent !important;
+    border: 2px solid #10b981 !important;
+    color: #10b981 !important;
+    border-radius: 10px !important;
+    transition: all 0.3s ease !important;
+    white-space: nowrap;
+}
+.import-button:hover {
+    background: linear-gradient(135deg, #10b981 0%, #059669 100%) !important;
+    color: #fff !important;
+    transform: translateY(-2px) !important;
+    box-shadow: 0 5px 15px rgba(16, 185, 129, 0.3) !important;
 }
 
 /* ============================================================================

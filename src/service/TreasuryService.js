@@ -116,5 +116,15 @@ export const TreasuryService = {
         return axios.post('/treasury/import/bank-movements', formData, {
             headers: { 'Content-Type': 'multipart/form-data' }
         });
+    },
+
+    // 11. Importación Masiva de Contrapartes
+    downloadCounterpartiesTemplate() {
+        return axios.get('/treasury/import/counterparties/template', { responseType: 'blob' });
+    },
+    importCounterparties(formData) {
+        return axios.post('/treasury/import/counterparties', formData, {
+            headers: { 'Content-Type': 'multipart/form-data' }
+        });
     }
 };
