@@ -76,9 +76,12 @@ const activeRooms = computed(() => {
 
     const filtered = state.value.status
         .map((room) => {
-            // Filtrar solo camas ocupadas con atención activa
+            // Filtrar camas ocupadas y con alta programada que aún no salieron
             const activeBeds = room.beds.filter((bed) => {
-                if (bed.status !== 'occupied' || !bed.attention) {
+                const isOccupied = bed.status === 'occupied';
+                const isDischargeScheduled = bed.status === 'discharge_scheduled';
+
+                if ((!isOccupied && !isDischargeScheduled) || !bed.attention) {
                     return false;
                 }
 
@@ -117,10 +120,14 @@ const activeRooms = computed(() => {
 const stats = computed(() => {
     const totalRooms = activeRooms.value.length;
     const totalPatients = activeRooms.value.reduce((sum, room) => sum + room.beds.length, 0);
+    const dischargeCount = activeRooms.value.reduce((sum, room) => {
+        return sum + room.beds.filter((bed) => bed.attention?.discharge_is_future === true).length;
+    }, 0);
 
     return {
         totalRooms,
-        totalPatients
+        totalPatients,
+        dischargeCount
     };
 });
 
@@ -148,6 +155,18 @@ const formatEntryDate = (dateString) => {
     const month = String(date.getMonth() + 1).padStart(2, '0');
     const year = date.getFullYear();
     return `${day}/${month}/${year}`;
+};
+
+// Formatear countdown de alta programada (ej: "2h 30m" o "45m")
+const formatDischargeCountdown = (exitAt) => {
+    if (!exitAt) return null;
+    const diffMs = new Date(exitAt) - new Date();
+    if (diffMs <= 0) return null;
+    const totalMinutes = Math.floor(diffMs / 60000);
+    const hours = Math.floor(totalMinutes / 60);
+    const minutes = totalMinutes % 60;
+    if (hours > 0) return `${hours}h ${minutes}m`;
+    return `${minutes}m`;
 };
 
 // Formatear hora
@@ -442,6 +461,11 @@ onUnmounted(() => {
                     <span class="stat-value">{{ stats.totalPatients }}</span>
                     <span class="stat-label">Pac</span>
                 </div>
+                <div v-if="stats.dischargeCount > 0" class="stat-item stat-item--discharge">
+                    <i class="pi pi-clock"></i>
+                    <span class="stat-value">{{ stats.dischargeCount }}</span>
+                    <span class="stat-label">Alta Prog.</span>
+                </div>
 
                 <div class="realtime-badge" :class="{ active: isListening }">
                     <i class="pi pi-circle-fill"></i>
@@ -533,7 +557,7 @@ onUnmounted(() => {
                     </div>
                     <div class="vertical-body">
                         <!-- En modo portrait, mostrar TODOS los datos en columna 1 -->
-                        <div v-for="(bed, index) in tableDataColumns.column1" :key="`col1-${index}`" class="vertical-row vertical-row-col1" :style="{ backgroundColor: bed.room_color }">
+                        <div v-for="(bed, index) in tableDataColumns.column1" :key="`col1-${index}`" class="vertical-row vertical-row-col1" :class="{ 'vertical-row--discharge': bed.discharge_is_future }" :style="{ backgroundColor: bed.room_color }">
                             <div class="vr-bed">
                                 <span class="bed-number">{{ bed.bed_number }}</span>
                                 <span
@@ -555,9 +579,9 @@ onUnmounted(() => {
                                         {{ bed.insurance_label }}
                                     </span>
                                 </div>
-                                <div class="vr-patient-doctor" v-if="bed.doctor">
-                                    <i class="pi pi-user-md"></i>
-                                    {{ bed.doctor }}
+                                <div class="vr-patient-doctor" v-if="bed.doctor || bed.discharge_is_future">
+                                    <template v-if="bed.doctor"><i class="pi pi-user-md"></i>{{ bed.doctor }}</template>
+                                    <span v-if="bed.discharge_is_future" class="discharge-badge-vr" v-tooltip.top="`Alta programada — ${formatDischargeCountdown(bed.exit_at) ?? 'pronto'}`">⏱ Alta en {{ formatDischargeCountdown(bed.exit_at) }}</span>
                                 </div>
                             </div>
                             <div class="vr-date">
@@ -567,7 +591,13 @@ onUnmounted(() => {
                             <div class="vr-days">{{ bed.days }}</div>
                         </div>
                         <!-- En modo portrait, también mostrar los datos de columna 2 en columna 1 -->
-                        <div v-for="(bed, index) in tableDataColumns.column2" :key="`col1-extra-${index}`" class="vertical-row vertical-row-col2-in-col1" :style="{ backgroundColor: bed.room_color }">
+                        <div
+                            v-for="(bed, index) in tableDataColumns.column2"
+                            :key="`col1-extra-${index}`"
+                            class="vertical-row vertical-row-col2-in-col1"
+                            :class="{ 'vertical-row--discharge': bed.discharge_is_future }"
+                            :style="{ backgroundColor: bed.room_color }"
+                        >
                             <div class="vr-bed">
                                 <span class="bed-number">{{ bed.bed_number }}</span>
                                 <span
@@ -581,7 +611,6 @@ onUnmounted(() => {
                                 >
                                     {{ bed.room_type_formatted }}
                                 </span>
-                                <span v-if="bed.discharge_is_future" class="discharge-badge-vr" v-tooltip.top="`Alta programada hoy`">⏱</span>
                             </div>
                             <div class="vr-patient">
                                 <div class="vr-patient-name">
@@ -590,9 +619,9 @@ onUnmounted(() => {
                                         {{ bed.insurance_label }}
                                     </span>
                                 </div>
-                                <div class="vr-patient-doctor" v-if="bed.doctor">
-                                    <i class="pi pi-user-md"></i>
-                                    {{ bed.doctor }}
+                                <div class="vr-patient-doctor" v-if="bed.doctor || bed.discharge_is_future">
+                                    <template v-if="bed.doctor"><i class="pi pi-user-md"></i>{{ bed.doctor }}</template>
+                                    <span v-if="bed.discharge_is_future" class="discharge-badge-vr" v-tooltip.top="`Alta programada — ${formatDischargeCountdown(bed.exit_at) ?? 'pronto'}`">⏱ {{ formatDischargeCountdown(bed.exit_at) }}</span>
                                 </div>
                             </div>
                             <div class="vr-date">
@@ -613,7 +642,7 @@ onUnmounted(() => {
                         <div class="vh-days">Días</div>
                     </div>
                     <div class="vertical-body">
-                        <div v-for="(bed, index) in tableDataColumns.column2" :key="`col2-${index}`" class="vertical-row" :style="{ backgroundColor: bed.room_color }">
+                        <div v-for="(bed, index) in tableDataColumns.column2" :key="`col2-${index}`" class="vertical-row" :class="{ 'vertical-row--discharge': bed.discharge_is_future }" :style="{ backgroundColor: bed.room_color }">
                             <div class="vr-bed">
                                 <span class="bed-number">{{ bed.bed_number }}</span>
                                 <span
@@ -635,9 +664,9 @@ onUnmounted(() => {
                                         {{ bed.insurance_label }}
                                     </span>
                                 </div>
-                                <div class="vr-patient-doctor" v-if="bed.doctor">
-                                    <i class="pi pi-user-md"></i>
-                                    {{ bed.doctor }}
+                                <div class="vr-patient-doctor" v-if="bed.doctor || bed.discharge_is_future">
+                                    <template v-if="bed.doctor"><i class="pi pi-user-md"></i>{{ bed.doctor }}</template>
+                                    <span v-if="bed.discharge_is_future" class="discharge-badge-vr" v-tooltip.top="`Alta programada — ${formatDischargeCountdown(bed.exit_at) ?? 'pronto'}`">⏱ {{ formatDischargeCountdown(bed.exit_at) }}</span>
                                 </div>
                             </div>
                             <div class="vr-date">
@@ -653,7 +682,7 @@ onUnmounted(() => {
 
         <!-- Vista Cards - Grid horizontal compacto -->
         <div v-else-if="viewMode === 'cards'" class="cards-horizontal-grid">
-            <div v-for="(bed, index) in tableData" :key="index" class="bed-card-horizontal" :style="{ backgroundColor: bed.room_color }">
+            <div v-for="(bed, index) in tableData" :key="index" class="bed-card-horizontal" :class="{ 'bed-card-horizontal--discharge': bed.discharge_is_future }" :style="{ backgroundColor: bed.room_color }">
                 <div class="bed-card-header">
                     <span class="bed-card-number">{{ bed.bed_number }}</span>
                     <span
@@ -677,6 +706,10 @@ onUnmounted(() => {
                 <div class="bed-card-doctor" v-if="bed.doctor">
                     <i class="pi pi-user-md"></i>
                     <span>{{ bed.doctor }}</span>
+                </div>
+                <div v-if="bed.discharge_is_future" class="bed-card-discharge" v-tooltip.top="`Alta programada`">
+                    <i class="pi pi-clock"></i>
+                    <span>Alta en {{ formatDischargeCountdown(bed.exit_at) ?? 'pronto' }}</span>
                 </div>
                 <div class="bed-card-footer">
                     <div class="bed-card-date-time">
@@ -779,6 +812,23 @@ onUnmounted(() => {
     text-transform: uppercase;
     letter-spacing: 0.25px;
     font-weight: 600;
+}
+
+.stat-item--discharge {
+    background: rgba(59, 130, 246, 0.12);
+    border: 1px solid rgba(59, 130, 246, 0.3);
+}
+
+.stat-item--discharge i {
+    color: #3b82f6;
+}
+
+.stat-item--discharge .stat-value {
+    color: #1d4ed8;
+}
+
+.stat-item--discharge .stat-label {
+    color: #3b82f6;
 }
 
 .header-actions {
@@ -1990,5 +2040,35 @@ onUnmounted(() => {
     line-height: 1;
     margin-left: 0.2rem;
     cursor: help;
+    white-space: nowrap;
+}
+
+.vertical-row--discharge {
+    border-left-color: #3b82f6 !important;
+    outline: 1px solid rgba(59, 130, 246, 0.25);
+    outline-offset: -1px;
+}
+
+.bed-card-discharge {
+    display: flex;
+    align-items: center;
+    gap: 0.25rem;
+    font-size: 0.688rem;
+    font-weight: 700;
+    color: #1d4ed8;
+    background: rgba(59, 130, 246, 0.12);
+    border: 1px solid rgba(59, 130, 246, 0.3);
+    border-radius: 4px;
+    padding: 0.2rem 0.4rem;
+}
+
+.bed-card-discharge i {
+    font-size: 0.688rem;
+}
+
+.bed-card-horizontal--discharge {
+    border-left-color: #3b82f6 !important;
+    outline: 1px solid rgba(59, 130, 246, 0.3);
+    outline-offset: -1px;
 }
 </style>
