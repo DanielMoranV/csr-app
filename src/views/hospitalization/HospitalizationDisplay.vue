@@ -2071,4 +2071,44 @@ onUnmounted(() => {
     outline: 1px solid rgba(59, 130, 246, 0.3);
     outline-offset: -1px;
 }
+
+/* Modo oscuro — alta programada */
+.app-dark .stat-item--discharge {
+    background: rgba(96, 165, 250, 0.15);
+    border-color: rgba(96, 165, 250, 0.4);
+}
+
+.app-dark .stat-item--discharge i {
+    color: #60a5fa;
+}
+
+.app-dark .stat-item--discharge .stat-value {
+    color: #93c5fd;
+}
+
+.app-dark .stat-item--discharge .stat-label {
+    color: #60a5fa;
+}
+
+.app-dark .discharge-badge-vr {
+    background: rgba(96, 165, 250, 0.2);
+    border-color: rgba(96, 165, 250, 0.45);
+    color: #93c5fd;
+}
+
+.app-dark .vertical-row--discharge {
+    border-left-color: #60a5fa !important;
+    outline-color: rgba(96, 165, 250, 0.3);
+}
+
+.app-dark .bed-card-discharge {
+    background: rgba(96, 165, 250, 0.15);
+    border-color: rgba(96, 165, 250, 0.4);
+    color: #93c5fd;
+}
+
+.app-dark .bed-card-horizontal--discharge {
+    border-left-color: #60a5fa !important;
+    outline-color: rgba(96, 165, 250, 0.3);
+}
 </style>
