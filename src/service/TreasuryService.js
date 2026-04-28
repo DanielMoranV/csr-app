@@ -86,6 +86,9 @@ export const TreasuryService = {
     },
 
     // 7. Importación de Honorarios Médicos
+    downloadMedicalHonoraryTemplate() {
+        return axios.get('/treasury/import/medical-honorary/template', { responseType: 'blob' });
+    },
     importMedicalHonorary(formData) {
         return axios.post('/treasury/import/medical-honorary', formData, {
             headers: { 'Content-Type': 'multipart/form-data' }

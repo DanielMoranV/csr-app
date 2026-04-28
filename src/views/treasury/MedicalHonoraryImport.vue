@@ -15,6 +15,7 @@ const fileInputRef = ref(null);
 
 const importing = ref(false);
 const importResult = ref(null); // { created, errors, message, status }
+const downloadingTemplate = ref(false);
 
 // ─── LOAD ACCOUNTS ────────────────────────────────────────────────────────────
 onMounted(async () => {
@@ -68,6 +69,24 @@ const fileSizeLabel = computed(() => {
 });
 
 const canImport = computed(() => selectedAccount.value && selectedFile.value && !importing.value);
+
+// ─── TEMPLATE DOWNLOAD ────────────────────────────────────────────────────────
+const downloadTemplate = async () => {
+    downloadingTemplate.value = true;
+    try {
+        const res = await TreasuryService.downloadMedicalHonoraryTemplate();
+        const url = URL.createObjectURL(res.data);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = 'plantilla_honorarios_medicos.xlsx';
+        a.click();
+        URL.revokeObjectURL(url);
+    } catch {
+        toast.add({ severity: 'error', summary: 'Error', detail: 'No se pudo descargar la plantilla', life: 3000 });
+    } finally {
+        downloadingTemplate.value = false;
+    }
+};
 
 // ─── IMPORT ───────────────────────────────────────────────────────────────────
 const doImport = async () => {
@@ -136,6 +155,24 @@ const doImport = async () => {
                         Honorarios Médicos — carga desde archivo Excel
                     </p>
                 </div>
+            </div>
+
+            <!-- Template download banner -->
+            <div class="template-banner">
+                <div class="template-banner-info">
+                    <i class="pi pi-info-circle template-banner-icon"></i>
+                    <div>
+                        <div class="template-banner-title">¿Primera vez? Descarga la plantilla Excel</div>
+                        <div class="template-banner-sub">Incluye la hoja <strong>CUENTAS</strong> con los códigos de retención y un desplegable para TIPO_DOC</div>
+                    </div>
+                </div>
+                <Button
+                    label="Descargar Plantilla"
+                    icon="pi pi-download"
+                    class="template-download-btn"
+                    :loading="downloadingTemplate"
+                    @click="downloadTemplate"
+                />
             </div>
 
             <div class="import-layout">
@@ -608,4 +645,31 @@ const doImport = async () => {
 .result-error-dot { font-size: 0.35rem; color: #ef4444; margin-top: 0.35rem; flex-shrink: 0; }
 
 .result-reset-btn { color: #059669 !important; font-weight: 600 !important; margin-top: 0.5rem; }
+
+/* ─── TEMPLATE BANNER ─────────────────────────────────────────────────────── */
+.template-banner {
+    display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 1rem;
+    padding: 1rem 1.25rem;
+    margin-bottom: 1.75rem;
+    background: linear-gradient(135deg, #eff6ff, #dbeafe);
+    border: 1px solid #bfdbfe;
+    border-radius: 12px;
+}
+.template-banner-info { display: flex; align-items: flex-start; gap: 0.75rem; flex: 1; min-width: 0; }
+.template-banner-icon { font-size: 1.1rem; color: #2563eb; margin-top: 0.1rem; flex-shrink: 0; }
+.template-banner-title { font-size: 0.88rem; font-weight: 700; color: #1e40af; }
+.template-banner-sub { font-size: 0.78rem; color: #3b82f6; margin-top: 0.15rem; }
+.template-download-btn {
+    background: linear-gradient(135deg, #3b82f6, #2563eb) !important;
+    border: none !important; border-radius: 8px !important;
+    font-size: 0.85rem !important; font-weight: 700 !important;
+    white-space: nowrap; flex-shrink: 0;
+    box-shadow: 0 3px 10px rgba(59,130,246,0.35) !important;
+    transition: all 0.2s ease !important;
+}
+.template-download-btn:hover {
+    background: linear-gradient(135deg, #2563eb, #1d4ed8) !important;
+    transform: translateY(-1px) !important;
+    box-shadow: 0 5px 14px rgba(59,130,246,0.45) !important;
+}
 </style>
