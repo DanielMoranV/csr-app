@@ -23,9 +23,9 @@ const togglePanel = async (event) => {
 
 // Module visual config
 const moduleConfig = {
-    tickets:   { icon: 'pi pi-ticket',       color: '#3b82f6', label: 'Ticket',    route: '/tickets' },
-    tasks:     { icon: 'pi pi-check-square', color: '#10b981', label: 'Tarea',     route: '/tareas' },
-    documents: { icon: 'pi pi-file',         color: '#f59e0b', label: 'Documento', route: '/documentos' }
+    tickets: { icon: 'pi pi-ticket', color: '#3b82f6', label: 'Ticket', route: '/tickets' },
+    tasks: { icon: 'pi pi-check-square', color: '#10b981', label: 'Tarea', route: '/tareas' },
+    documents: { icon: 'pi pi-file', color: '#f59e0b', label: 'Documento', route: '/documentos' }
 };
 
 const getModuleConfig = (module) => moduleConfig[module] || { icon: 'pi pi-bell', color: '#6b7280', label: 'Sistema', route: null };
@@ -89,12 +89,7 @@ const handleLoadMore = async () => {
 <template>
     <div class="notification-bell-wrapper">
         <!-- Bell button -->
-        <button
-            id="notification-bell-btn"
-            class="layout-topbar-action notification-bell-btn"
-            aria-label="Notificaciones"
-            @click="togglePanel"
-        >
+        <button id="notification-bell-btn" class="layout-topbar-action notification-bell-btn" aria-label="Notificaciones" @click="togglePanel">
             <i class="pi pi-bell"></i>
             <span v-if="badgeLabel" class="notification-badge">{{ badgeLabel }}</span>
         </button>
@@ -109,13 +104,7 @@ const handleLoadMore = async () => {
                         {{ notificationsStore.state.unreadCount }}
                     </span>
                 </span>
-                <button
-                    v-if="notificationsStore.state.unreadCount > 0"
-                    class="notif-mark-all-btn"
-                    @click="handleMarkAllAsRead"
-                >
-                    Marcar todas como leídas
-                </button>
+                <button v-if="notificationsStore.state.unreadCount > 0" class="notif-mark-all-btn" @click="handleMarkAllAsRead">Marcar todas como leídas</button>
             </div>
 
             <!-- Loading skeletons -->
@@ -165,15 +154,7 @@ const handleLoadMore = async () => {
 
             <!-- Load more -->
             <div v-if="notificationsStore.hasMorePages" class="notif-footer">
-                <Button
-                    label="Cargar más"
-                    icon="pi pi-chevron-down"
-                    text
-                    size="small"
-                    :loading="notificationsStore.state.isLoading"
-                    @click="handleLoadMore"
-                    fluid
-                />
+                <Button label="Cargar más" icon="pi pi-chevron-down" text size="small" :loading="notificationsStore.state.isLoading" @click="handleLoadMore" fluid />
             </div>
         </OverlayPanel>
     </div>
@@ -211,8 +192,12 @@ const handleLoadMore = async () => {
 }
 
 @keyframes badge-pop {
-    0% { transform: scale(0); }
-    100% { transform: scale(1); }
+    0% {
+        transform: scale(0);
+    }
+    100% {
+        transform: scale(1);
+    }
 }
 
 /* --- Overlay Panel Global Overrides (via :deep) --- */

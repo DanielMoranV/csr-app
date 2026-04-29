@@ -118,9 +118,7 @@ export function usePdfScheduleExport() {
 
         doc.setFontSize(16);
         doc.setFont('helvetica', 'bold');
-        const title = categoryLabel
-            ? `HORARIO DE ${specialtyName} - ${categoryLabel}`
-            : `HORARIO DE ${specialtyName}`;
+        const title = categoryLabel ? `HORARIO DE ${specialtyName} - ${categoryLabel}` : `HORARIO DE ${specialtyName}`;
         doc.text(title, 148, 15, { align: 'center' });
 
         doc.setFontSize(12);
@@ -212,9 +210,7 @@ export function usePdfScheduleExport() {
                                 const shortName = doctorName.length > 18 ? doctorName.substring(0, 15) + '...' : doctorName;
 
                                 // For custom schedules show time range instead of shift code
-                                const prefix = shiftCode === 'P'
-                                    ? `${(schedule.start_time || '').substring(0, 5)}-${(schedule.end_time || '').substring(0, 5)}`
-                                    : shiftCode;
+                                const prefix = shiftCode === 'P' ? `${(schedule.start_time || '').substring(0, 5)}-${(schedule.end_time || '').substring(0, 5)}` : shiftCode;
 
                                 doc.setFontSize(7);
                                 const textX = x + 2;

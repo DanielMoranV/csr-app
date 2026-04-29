@@ -32,9 +32,7 @@ const isCreateMode = computed(() => !isEditMode.value && !!props.bed);
 
 // Diálogo bloqueado si la reserva ya no puede editarse desde el frontend
 // (completada por Sisclin, cancelada manualmente, o expirada por inactividad)
-const isLocked = computed(() =>
-    ['completada', 'cancelada', 'expirada'].includes(formData.value.status)
-);
+const isLocked = computed(() => ['completada', 'cancelada', 'expirada'].includes(formData.value.status));
 
 // Título del diálogo
 const dialogTitle = computed(() => {
@@ -197,26 +195,15 @@ const closeDialog = () => {
                 <div class="field">
                     <label>Estado</label>
                     <div class="flex items-center gap-2 mt-1">
-                        <Tag
-                            :value="getStatusConfig(formData.status).label"
-                            :severity="getStatusConfig(formData.status).severity"
-                        >
+                        <Tag :value="getStatusConfig(formData.status).label" :severity="getStatusConfig(formData.status).severity">
                             <template #icon>
                                 <i :class="getStatusConfig(formData.status).icon" class="mr-1 text-xs"></i>
                             </template>
                         </Tag>
-                        <small v-if="formData.status === 'completada'" class="text-color-secondary">
-                            Completada por Sisclin — no editable desde el sistema
-                        </small>
-                        <small v-else-if="formData.status === 'cancelada'" class="text-color-secondary">
-                            Cancelada — no puede ser modificada
-                        </small>
-                        <small v-else-if="formData.status === 'expirada'" class="text-color-secondary">
-                            Expiró sin ser utilizada — no puede ser modificada
-                        </small>
-                        <small v-else class="text-color-secondary">
-                            Solo puede editarse las notas. Para cancelar, use el botón de eliminar.
-                        </small>
+                        <small v-if="formData.status === 'completada'" class="text-color-secondary"> Completada por Sisclin — no editable desde el sistema </small>
+                        <small v-else-if="formData.status === 'cancelada'" class="text-color-secondary"> Cancelada — no puede ser modificada </small>
+                        <small v-else-if="formData.status === 'expirada'" class="text-color-secondary"> Expiró sin ser utilizada — no puede ser modificada </small>
+                        <small v-else class="text-color-secondary"> Solo puede editarse las notas. Para cancelar, use el botón de eliminar. </small>
                     </div>
                 </div>
 
@@ -226,10 +213,16 @@ const closeDialog = () => {
                         <span class="font-semibold text-green-700">Paciente admitido</span>
                     </div>
                     <ul class="list-none p-0 m-0 text-green-700">
-                        <li v-if="formData.patient_name">Paciente: <strong>{{ formData.patient_name }}</strong></li>
-                        <li v-if="formData.admission_number">N° Admisión: <strong>{{ formData.admission_number }}</strong></li>
+                        <li v-if="formData.patient_name">
+                            Paciente: <strong>{{ formData.patient_name }}</strong>
+                        </li>
+                        <li v-if="formData.admission_number">
+                            N° Admisión: <strong>{{ formData.admission_number }}</strong>
+                        </li>
                         <li v-else class="text-color-secondary italic text-xs">Admisión no registrada (dato histórico)</li>
-                        <li v-if="formData.completed_by_nick">Registrado por Sisclin: <strong>{{ formData.completed_by_nick }}</strong></li>
+                        <li v-if="formData.completed_by_nick">
+                            Registrado por Sisclin: <strong>{{ formData.completed_by_nick }}</strong>
+                        </li>
                     </ul>
                 </div>
 

@@ -94,7 +94,7 @@ const historyEvents = computed(() => {
 <template>
     <div class="ticket-status-history-container">
         <h3 class="history-title">Historial de Estados</h3>
-        
+
         <div v-if="isLoading" class="text-center p-4">
             <i class="pi pi-spin pi-spinner text-2xl text-primary"></i>
             <p class="mt-2 text-600">Cargando historial...</p>

@@ -1,3 +1,51 @@
+<script setup>
+import Button from 'primevue/button';
+import Column from 'primevue/column';
+import DataTable from 'primevue/datatable';
+import Dialog from 'primevue/dialog';
+import InputNumber from 'primevue/inputnumber';
+import Message from 'primevue/message';
+import { computed, ref } from 'vue';
+
+const props = defineProps({
+    selectedServices: {
+        type: Array,
+        default: () => []
+    },
+    visible: {
+        type: Boolean,
+        default: false
+    }
+});
+
+const emit = defineEmits(['apply', 'update:visible']);
+
+const percentage = ref(0);
+
+const previewData = computed(() => {
+    return props.selectedServices.map((service) => ({
+        ...service,
+        newCommission: (service.amount * percentage.value) / 100
+    }));
+});
+
+const totalCommissions = computed(() => {
+    return previewData.value.reduce((sum, item) => sum + item.newCommission, 0);
+});
+
+const apply = () => {
+    if (percentage.value > 0) {
+        emit('apply', percentage.value);
+        close();
+    }
+};
+
+const close = () => {
+    emit('update:visible', false);
+    percentage.value = 0;
+};
+</script>
+
 <template>
     <Dialog :visible="visible" @update:visible="$emit('update:visible', $event)" header="Aplicar Comisión a Servicios Seleccionados" :style="{ width: '700px' }" :modal="true">
         <div class="p-fluid">
@@ -48,51 +96,3 @@
         </template>
     </Dialog>
 </template>
-
-<script setup>
-import Button from 'primevue/button';
-import Column from 'primevue/column';
-import DataTable from 'primevue/datatable';
-import Dialog from 'primevue/dialog';
-import InputNumber from 'primevue/inputnumber';
-import Message from 'primevue/message';
-import { computed, ref } from 'vue';
-
-const props = defineProps({
-    selectedServices: {
-        type: Array,
-        default: () => []
-    },
-    visible: {
-        type: Boolean,
-        default: false
-    }
-});
-
-const emit = defineEmits(['apply', 'update:visible']);
-
-const percentage = ref(0);
-
-const previewData = computed(() => {
-    return props.selectedServices.map((service) => ({
-        ...service,
-        newCommission: (service.amount * percentage.value) / 100
-    }));
-});
-
-const totalCommissions = computed(() => {
-    return previewData.value.reduce((sum, item) => sum + item.newCommission, 0);
-});
-
-const apply = () => {
-    if (percentage.value > 0) {
-        emit('apply', percentage.value);
-        close();
-    }
-};
-
-const close = () => {
-    emit('update:visible', false);
-    percentage.value = 0;
-};
-</script>

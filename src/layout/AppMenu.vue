@@ -35,7 +35,7 @@ const filteredMenu = computed(() => {
     }
 
     // Inyectar badges de tickets: comentarios sin leer + tickets asignados pendientes
-    const ticketUnread  = ticketsStore.globalUnreadCount;
+    const ticketUnread = ticketsStore.globalUnreadCount;
     const ticketPending = ticketsStore.mySummary?.by_status?.pendiente ?? 0;
 
     if (ticketUnread > 0 || ticketPending > 0) {

@@ -151,22 +151,33 @@ const formatDate = (dateString) => {
 
 const getScheduleSeverity = (status) => {
     switch (status) {
-        case 'on_track': return 'success';
-        case 'at_risk': return 'warn';
-        case 'delayed': return 'danger';
-        case 'overdue': return 'danger';
-        default: return 'secondary';
+        case 'on_track':
+            return 'success';
+        case 'at_risk':
+            return 'warn';
+        case 'delayed':
+            return 'danger';
+        case 'overdue':
+            return 'danger';
+        default:
+            return 'secondary';
     }
 };
 
 const getScheduleLabel = (status) => {
     switch (status) {
-        case 'on_track': return 'En plazo';
-        case 'at_risk': return 'En riesgo';
-        case 'delayed': return 'Con desfase';
-        case 'overdue': return 'Vencido';
-        case 'unplanned': return 'Sin planificar';
-        default: return status || 'No planificado';
+        case 'on_track':
+            return 'En plazo';
+        case 'at_risk':
+            return 'En riesgo';
+        case 'delayed':
+            return 'Con desfase';
+        case 'overdue':
+            return 'Vencido';
+        case 'unplanned':
+            return 'Sin planificar';
+        default:
+            return status || 'No planificado';
     }
 };
 
@@ -499,8 +510,6 @@ const getActionItems = (ticketData) => {
                     </div>
                 </template>
             </Column>
-
-
 
             <!-- Acciones -->
             <Column header="Acciones" :exportable="false" style="min-width: 110px" class="column-actions">

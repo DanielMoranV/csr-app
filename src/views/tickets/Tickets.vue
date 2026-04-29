@@ -318,16 +318,13 @@ const getPrioritySeverity = (priority) => {
 
 <template>
     <div class="page">
-
         <!-- ═══ Header unificado ═══ -->
         <div class="page-header">
-
             <!-- Franja de color superior -->
             <div class="header-accent"></div>
 
             <!-- Fila principal: título | KPI chips | acciones -->
             <div class="header-main">
-
                 <!-- Título + breadcrumb -->
                 <div class="ph-title">
                     <div class="title-line">
@@ -347,30 +344,16 @@ const getPrioritySeverity = (priority) => {
 
                 <!-- KPI chips (se posicionan en el centro en desktop, bajan a fila propia en tablet/mobile) -->
                 <div class="ph-kpi" v-if="ticketsStore.mySummary.total > 0">
-                    <button
-                        class="kpi-chip kpi-total"
-                        @click="ticketsStore.clearFilters()"
-                        v-tooltip.bottom="'Ver todos mis tickets asignados'"
-                    >
+                    <button class="kpi-chip kpi-total" @click="ticketsStore.clearFilters()" v-tooltip.bottom="'Ver todos mis tickets asignados'">
                         <i class="pi pi-ticket"></i>
                         <span class="kpi-l">Mis Tickets</span>
                     </button>
-                    <button
-                        v-if="ticketsStore.mySummary.by_status.pendiente"
-                        class="kpi-chip kpi-pendiente"
-                        @click="ticketsStore.setFilter('status', 'pendiente')"
-                        v-tooltip.bottom="'Filtrar por Pendiente'"
-                    >
+                    <button v-if="ticketsStore.mySummary.by_status.pendiente" class="kpi-chip kpi-pendiente" @click="ticketsStore.setFilter('status', 'pendiente')" v-tooltip.bottom="'Filtrar por Pendiente'">
                         <i class="pi pi-clock"></i>
                         <span class="kpi-n">{{ ticketsStore.mySummary.by_status.pendiente }}</span>
                         <span class="kpi-l">Pendientes</span>
                     </button>
-                    <button
-                        v-if="ticketsStore.mySummary.by_status['en proceso']"
-                        class="kpi-chip kpi-proceso"
-                        @click="ticketsStore.setFilter('status', 'en proceso')"
-                        v-tooltip.bottom="'Filtrar por En Proceso'"
-                    >
+                    <button v-if="ticketsStore.mySummary.by_status['en proceso']" class="kpi-chip kpi-proceso" @click="ticketsStore.setFilter('status', 'en proceso')" v-tooltip.bottom="'Filtrar por En Proceso'">
                         <i class="pi pi-sync"></i>
                         <span class="kpi-l">En Proceso</span>
                     </button>
@@ -378,47 +361,17 @@ const getPrioritySeverity = (priority) => {
 
                 <!-- Acciones -->
                 <div class="ph-actions">
-                    <Button
-                        icon="pi pi-refresh"
-                        class="action-btn secondary-action"
-                        outlined
-                        severity="secondary"
-                        @click="ticketsStore.fetchTickets()"
-                        v-tooltip.bottom="'Actualizar lista'"
-                        :loading="ticketsStore.isLoading"
-                    />
-                    <Button
-                        icon="pi pi-download"
-                        class="action-btn secondary-action"
-                        outlined
-                        severity="info"
-                        @click="exportTickets"
-                        v-tooltip.bottom="'Exportar tickets'"
-                    />
-                    <Button
-                        icon="pi pi-sliders-h"
-                        class="action-btn secondary-action"
-                        outlined
-                        severity="warn"
-                        @click="router.push({ name: 'ticket-gantt' })"
-                        v-tooltip.bottom="'Diagrama de Gantt'"
-                    />
-                    <Button
-                        label="Nuevo Ticket"
-                        icon="pi pi-plus"
-                        class="new-btn"
-                        severity="success"
-                        @click="openCreateTicketDialog"
-                    />
+                    <Button icon="pi pi-refresh" class="action-btn secondary-action" outlined severity="secondary" @click="ticketsStore.fetchTickets()" v-tooltip.bottom="'Actualizar lista'" :loading="ticketsStore.isLoading" />
+                    <Button icon="pi pi-download" class="action-btn secondary-action" outlined severity="info" @click="exportTickets" v-tooltip.bottom="'Exportar tickets'" />
+                    <Button icon="pi pi-sliders-h" class="action-btn secondary-action" outlined severity="warn" @click="router.push({ name: 'ticket-gantt' })" v-tooltip.bottom="'Diagrama de Gantt'" />
+                    <Button label="Nuevo Ticket" icon="pi pi-plus" class="new-btn" severity="success" @click="openCreateTicketDialog" />
                 </div>
-
             </div>
 
             <!-- Fila de filtros (dentro de la misma card, separada con borde) -->
             <div class="header-filters">
                 <TicketFilters />
             </div>
-
         </div>
 
         <!-- ═══ Tabla de tickets ═══ -->
@@ -463,7 +416,6 @@ const getPrioritySeverity = (priority) => {
             @confirm="handleConfirmAction"
             @cancel="closeConfirmDialog"
         />
-
     </div>
 </template>
 
@@ -495,8 +447,12 @@ const getPrioritySeverity = (priority) => {
 }
 
 @keyframes shimmer {
-    0%   { background-position: 200% 0; }
-    100% { background-position: -200% 0; }
+    0% {
+        background-position: 200% 0;
+    }
+    100% {
+        background-position: -200% 0;
+    }
 }
 
 /* ─── Fila principal: título | kpi-chips | acciones ─── */
@@ -552,8 +508,13 @@ const getPrioritySeverity = (priority) => {
     margin-top: 0.1rem;
 }
 
-.breadcrumb i { font-size: 0.55rem; }
-.bc-active { color: var(--primary-500); font-weight: 600; }
+.breadcrumb i {
+    font-size: 0.55rem;
+}
+.bc-active {
+    color: var(--primary-500);
+    font-weight: 600;
+}
 
 /* ── KPI chips ── */
 .ph-kpi {
@@ -578,7 +539,10 @@ const getPrioritySeverity = (priority) => {
     cursor: pointer;
     font-family: inherit;
     white-space: nowrap;
-    transition: transform 0.15s, box-shadow 0.15s, filter 0.15s;
+    transition:
+        transform 0.15s,
+        box-shadow 0.15s,
+        filter 0.15s;
     user-select: none;
 }
 
@@ -588,7 +552,9 @@ const getPrioritySeverity = (priority) => {
     filter: brightness(0.95);
 }
 
-.kpi-chip i { font-size: 0.76rem; }
+.kpi-chip i {
+    font-size: 0.76rem;
+}
 
 .kpi-n {
     font-size: 0.95rem;
@@ -602,9 +568,21 @@ const getPrioritySeverity = (priority) => {
     opacity: 0.85;
 }
 
-.kpi-total     { background: var(--primary-50);  color: var(--primary-700);  border-color: var(--primary-200); }
-.kpi-pendiente { background: #fef3c7;             color: #92400e;             border-color: #fde68a; }
-.kpi-proceso   { background: #dbeafe;             color: #1e40af;             border-color: #bfdbfe; }
+.kpi-total {
+    background: var(--primary-50);
+    color: var(--primary-700);
+    border-color: var(--primary-200);
+}
+.kpi-pendiente {
+    background: #fef3c7;
+    color: #92400e;
+    border-color: #fde68a;
+}
+.kpi-proceso {
+    background: #dbeafe;
+    color: #1e40af;
+    border-color: #bfdbfe;
+}
 
 /* ── Acciones ── */
 .ph-actions {
@@ -620,7 +598,9 @@ const getPrioritySeverity = (priority) => {
     height: 2.25rem !important;
     padding: 0 !important;
     border-radius: 8px !important;
-    transition: transform 0.15s, box-shadow 0.15s !important;
+    transition:
+        transform 0.15s,
+        box-shadow 0.15s !important;
 }
 
 .action-btn:hover {
@@ -632,7 +612,9 @@ const getPrioritySeverity = (priority) => {
     border-radius: 8px;
     font-weight: 600;
     white-space: nowrap;
-    transition: transform 0.15s, box-shadow 0.15s;
+    transition:
+        transform 0.15s,
+        box-shadow 0.15s;
 }
 
 .new-btn:hover {
@@ -690,8 +672,14 @@ const getPrioritySeverity = (priority) => {
 
 /* ─── Mobile (<768px): apilado, botones secundarios ocultos ─── */
 @media (max-width: 767px) {
-    .page { padding: 0.75rem; gap: 0.75rem; }
-    .header-main { padding: 0.75rem; gap: 0.5rem; }
+    .page {
+        padding: 0.75rem;
+        gap: 0.75rem;
+    }
+    .header-main {
+        padding: 0.75rem;
+        gap: 0.5rem;
+    }
 
     .ph-kpi {
         order: 4;
@@ -702,13 +690,23 @@ const getPrioritySeverity = (priority) => {
         margin-top: 0.25rem;
     }
 
-    .kpi-l { display: none; }
-    .kpi-chip { padding: 0.3rem 0.55rem; }
-    .kpi-n { font-size: 0.9rem; }
+    .kpi-l {
+        display: none;
+    }
+    .kpi-chip {
+        padding: 0.3rem 0.55rem;
+    }
+    .kpi-n {
+        font-size: 0.9rem;
+    }
 
-    .secondary-action { display: none !important; }
+    .secondary-action {
+        display: none !important;
+    }
 
-    .title-h1 { font-size: 0.95rem; }
+    .title-h1 {
+        font-size: 0.95rem;
+    }
 
     :deep(.header-filters .filter-grid) {
         padding: 0.65rem 0.75rem !important;

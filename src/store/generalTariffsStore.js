@@ -27,11 +27,7 @@ export const useGeneralTariffsStore = defineStore('generalTariffs', () => {
             const searchTerm = state.filters.global.toLowerCase();
             filtered = filtered.filter((tariff) => {
                 // Ajustar según los campos que tenga el tarifario
-                return (
-                    (tariff.code && tariff.code.toLowerCase().includes(searchTerm)) ||
-                    (tariff.description && tariff.description.toLowerCase().includes(searchTerm)) ||
-                    (tariff.name && tariff.name.toLowerCase().includes(searchTerm))
-                );
+                return (tariff.code && tariff.code.toLowerCase().includes(searchTerm)) || (tariff.description && tariff.description.toLowerCase().includes(searchTerm)) || (tariff.name && tariff.name.toLowerCase().includes(searchTerm));
             });
         }
 

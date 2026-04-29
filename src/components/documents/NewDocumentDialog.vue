@@ -406,9 +406,7 @@ const formatFileSize = (bytes) => {
 
                         <!-- Visualizadores (opcional) -->
                         <div class="form-group viewers-section">
-                            <label class="modern-label">
-                                Visualizadores <span class="label-optional">(Opcional)</span>
-                            </label>
+                            <label class="modern-label"> Visualizadores <span class="label-optional">(Opcional)</span> </label>
                             <p class="viewers-hint">Usuarios o cargos que podrán ver el documento, pero no actuar en los pasos.</p>
                             <div class="viewers-selects">
                                 <MultiSelect

@@ -79,10 +79,7 @@ const getMonthAmount = (monthData, type, categoryName) => {
 };
 
 const getAnnualAmount = (type, categoryName) => {
-    const arr =
-        type === 'ingreso'
-            ? reportData.value?.annual_totals?.ingresos_by_category
-            : reportData.value?.annual_totals?.egresos_by_category;
+    const arr = type === 'ingreso' ? reportData.value?.annual_totals?.ingresos_by_category : reportData.value?.annual_totals?.egresos_by_category;
     return arr?.find((x) => x.category_name === categoryName)?.amount ?? null;
 };
 
@@ -180,12 +177,8 @@ onMounted(async () => {
                 <!-- Mode toggle -->
                 <div class="control-block">
                     <div class="mode-toggle">
-                        <button :class="['mode-btn', accountMode === 'all' ? 'active' : '']" @click="accountMode = 'all'">
-                            <i class="pi pi-database mr-1"></i>Todas las Cuentas
-                        </button>
-                        <button :class="['mode-btn', accountMode === 'individual' ? 'active' : '']" @click="accountMode = 'individual'">
-                            <i class="pi pi-list mr-1"></i>Cuentas Individ.
-                        </button>
+                        <button :class="['mode-btn', accountMode === 'all' ? 'active' : '']" @click="accountMode = 'all'"><i class="pi pi-database mr-1"></i>Todas las Cuentas</button>
+                        <button :class="['mode-btn', accountMode === 'individual' ? 'active' : '']" @click="accountMode = 'individual'"><i class="pi pi-list mr-1"></i>Cuentas Individ.</button>
                     </div>
                 </div>
 
@@ -274,7 +267,7 @@ onMounted(async () => {
 
                         <tr v-for="i in ingresoFillerCount" :key="`fill-${i}`" class="row-filler">
                             <td class="col-label sticky-left"></td>
-                            <td v-for="m in months" :key="m.month" class="col-month money-cell filler-dash">S/  -</td>
+                            <td v-for="m in months" :key="m.month" class="col-month money-cell filler-dash">S/ -</td>
                             <td class="col-totals sticky-right totals-cell"></td>
                         </tr>
 
@@ -282,9 +275,7 @@ onMounted(async () => {
                             <td class="col-label sticky-left">TOTAL DE INGRESOS</td>
                             <td v-for="m in months" :key="m.month" class="col-month money-cell trend-cell">
                                 {{ fmt(m.total_ingresos) }}
-                                <span v-if="m.trend_ingresos" :class="['trend-badge', m.trend_ingresos.up ? 'trend-up' : 'trend-down']">
-                                    {{ m.trend_ingresos.up ? '▲' : '▼' }} {{ m.trend_ingresos.pct }}%
-                                </span>
+                                <span v-if="m.trend_ingresos" :class="['trend-badge', m.trend_ingresos.up ? 'trend-up' : 'trend-down']"> {{ m.trend_ingresos.up ? '▲' : '▼' }} {{ m.trend_ingresos.pct }}% </span>
                             </td>
                             <td class="col-totals sticky-right money-cell">{{ fmt(reportData.annual_totals?.total_ingresos) }}</td>
                         </tr>
@@ -308,9 +299,7 @@ onMounted(async () => {
                             <td class="col-label sticky-left">TOTAL DE EGRESOS</td>
                             <td v-for="m in months" :key="m.month" class="col-month money-cell trend-cell">
                                 {{ fmt(m.total_egresos) }}
-                                <span v-if="m.trend_egresos" :class="['trend-badge', m.trend_egresos.up ? 'trend-down' : 'trend-up']">
-                                    {{ m.trend_egresos.up ? '▲' : '▼' }} {{ m.trend_egresos.pct }}%
-                                </span>
+                                <span v-if="m.trend_egresos" :class="['trend-badge', m.trend_egresos.up ? 'trend-down' : 'trend-up']"> {{ m.trend_egresos.up ? '▲' : '▼' }} {{ m.trend_egresos.pct }}% </span>
                             </td>
                             <td class="col-totals sticky-right money-cell">{{ fmt(reportData.annual_totals?.total_egresos) }}</td>
                         </tr>
@@ -567,8 +556,13 @@ onMounted(async () => {
 }
 
 @keyframes pulse-skeleton {
-    0%, 100% { opacity: 1; }
-    50% { opacity: 0.5; }
+    0%,
+    100% {
+        opacity: 1;
+    }
+    50% {
+        opacity: 0.5;
+    }
 }
 
 /* ── State boxes ─────────────────────────────────────────────────────────────── */
@@ -660,23 +654,23 @@ thead .sticky-right {
 
 /* ── Table header ────────────────────────────────────────────────────────────── */
 .th-dark {
-    background: #1F6F8B;
+    background: #1f6f8b;
     color: white;
     font-weight: 700;
     font-size: 0.72rem;
     text-transform: uppercase;
     letter-spacing: 0.04em;
-    border: 1px solid #2C8FB5;
+    border: 1px solid #2c8fb5;
     line-height: 1.3;
     vertical-align: middle;
 }
 
 /* ── Row: INICIAL ────────────────────────────────────────────────────────────── */
 .row-inicial td {
-    background: #1F6F8B;
+    background: #1f6f8b;
     color: #ffffff;
     font-weight: 700;
-    border: 1px solid #2C8FB5;
+    border: 1px solid #2c8fb5;
 }
 
 /* ── Row: Section header (+/-) ───────────────────────────────────────────────── */
@@ -686,13 +680,13 @@ thead .sticky-right {
 }
 
 .row-section--ingreso td {
-    background: #2EAD6F;
-    border: 1px solid #27966A;
+    background: #2ead6f;
+    border: 1px solid #27966a;
 }
 
 .row-section--egreso td {
-    background: #F2994A;
-    border: 1px solid #E08838;
+    background: #f2994a;
+    border: 1px solid #e08838;
 }
 
 .section-label {
@@ -702,34 +696,34 @@ thead .sticky-right {
 
 /* ── Row: Ingreso categories ─────────────────────────────────────────────────── */
 .row-ingreso-cat td {
-    background: #E9F7EF;
+    background: #e9f7ef;
     color: #1a2e20;
-    border: 1px solid #C8EDD5;
+    border: 1px solid #c8edd5;
     transition: background 0.15s;
 }
 
 .row-ingreso-cat.row-alt td {
-    background: #F4FAF6;
+    background: #f4faf6;
 }
 
 .row-ingreso-cat:hover td {
-    background: #D4EDDC;
+    background: #d4eddc;
 }
 
 /* ── Row: Egreso categories ──────────────────────────────────────────────────── */
 .row-egreso-cat td {
-    background: #FFF4E6;
+    background: #fff4e6;
     color: #2e1e0a;
-    border: 1px solid #F9DFC0;
+    border: 1px solid #f9dfc0;
     transition: background 0.15s;
 }
 
 .row-egreso-cat.row-alt td {
-    background: #FFF9F2;
+    background: #fff9f2;
 }
 
 .row-egreso-cat:hover td {
-    background: #FDEBD0;
+    background: #fdebd0;
 }
 
 .cat-label {
@@ -739,12 +733,12 @@ thead .sticky-right {
 
 /* ── Row: Filler ─────────────────────────────────────────────────────────────── */
 .row-filler td {
-    background: #F4FAF6;
-    border: 1px solid #C8EDD5;
+    background: #f4faf6;
+    border: 1px solid #c8edd5;
 }
 
 .filler-dash {
-    color: #A8D5B8 !important;
+    color: #a8d5b8 !important;
     font-size: 0.75rem;
 }
 
@@ -756,29 +750,29 @@ thead .sticky-right {
 }
 
 .row-total--ingreso td {
-    background: #1F8A70;
-    border: 1px solid #1A7560;
+    background: #1f8a70;
+    border: 1px solid #1a7560;
 }
 
 .row-total--egreso td {
-    background: #D97830;
-    border: 1px solid #C46A22;
+    background: #d97830;
+    border: 1px solid #c46a22;
 }
 
 /* ── Row: Saldo ──────────────────────────────────────────────────────────────── */
 .row-saldo td {
-    background: #1F8A70;
+    background: #1f8a70;
     color: white;
     font-weight: 700;
-    border: 1px solid #1A7560;
+    border: 1px solid #1a7560;
 }
 
 /* ── Row: Disposición ────────────────────────────────────────────────────────── */
 .row-disposicion td {
-    background: #2C8FB5;
+    background: #2c8fb5;
     color: white;
     font-weight: 600;
-    border: 1px solid #1F6F8B;
+    border: 1px solid #1f6f8b;
     line-height: 1.35;
 }
 
@@ -790,9 +784,9 @@ thead .sticky-right {
 
 /* ── Totals column: fondo neutro claro en filas de detalle ───────────────────── */
 .totals-cell {
-    background: #EEF2F7 !important;
-    color: #1F2937 !important;
-    border-color: #D5DCE8 !important;
+    background: #eef2f7 !important;
+    color: #1f2937 !important;
+    border-color: #d5dce8 !important;
 }
 
 /* ── Utility ─────────────────────────────────────────────────────────────────── */
@@ -803,7 +797,7 @@ thead .sticky-right {
 }
 
 .negative-val {
-    color: #E45858 !important;
+    color: #e45858 !important;
     font-weight: 700;
 }
 
@@ -841,7 +835,7 @@ thead .sticky-right {
 
 .trend-up {
     background: rgba(31, 138, 112, 0.15);
-    color: #1F8A70;
+    color: #1f8a70;
 }
 
 .trend-down {
@@ -857,12 +851,30 @@ thead .sticky-right {
 }
 
 /* ── Semáforo de saldo ───────────────────────────────────────────────────────── */
-.saldo-cell { padding: 0.35rem 0.6rem !important; }
+.saldo-cell {
+    padding: 0.35rem 0.6rem !important;
+}
 
-.saldo-cell.sem-muy-bueno { background: #1F8A70; color: #fff; border-color: #1A7560 !important; }
-.saldo-cell.sem-normal    { background: #2C8FB5; color: #fff; border-color: #1F6F8B !important; }
-.saldo-cell.sem-riesgo    { background: #F2994A; color: #fff; border-color: #E08838 !important; }
-.saldo-cell.sem-perdida   { background: #E45858; color: #fff; border-color: #C0392B !important; }
+.saldo-cell.sem-muy-bueno {
+    background: #1f8a70;
+    color: #fff;
+    border-color: #1a7560 !important;
+}
+.saldo-cell.sem-normal {
+    background: #2c8fb5;
+    color: #fff;
+    border-color: #1f6f8b !important;
+}
+.saldo-cell.sem-riesgo {
+    background: #f2994a;
+    color: #fff;
+    border-color: #e08838 !important;
+}
+.saldo-cell.sem-perdida {
+    background: #e45858;
+    color: #fff;
+    border-color: #c0392b !important;
+}
 
 .saldo-num {
     text-align: right;

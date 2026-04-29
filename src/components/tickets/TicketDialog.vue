@@ -567,7 +567,12 @@ const AVATAR_COLORS = ['#6366f1', '#8b5cf6', '#ec4899', '#0ea5e9', '#10b981', '#
 
 const getUserInitials = (user) => {
     if (!user?.name) return '?';
-    return user.name.split(' ').slice(0, 2).map((w) => w[0]).join('').toUpperCase();
+    return user.name
+        .split(' ')
+        .slice(0, 2)
+        .map((w) => w[0])
+        .join('')
+        .toUpperCase();
 };
 
 const getUserColor = (userId) => AVATAR_COLORS[(userId || 0) % AVATAR_COLORS.length];
@@ -762,20 +767,12 @@ const confirmDeleteComment = (comment) => {
                                 </label>
                                 <!-- Status is read-only here. Use the TicketStatusChanger in the footer to change it. -->
                                 <div class="status-readonly-field">
-                                    <span
-                                        v-if="ticketForm.status"
-                                        class="status-badge-display"
-                                        :class="`status-badge-${ticketForm.status?.replace(' ', '-')}`"
-                                    >
-                                        <i :class="['pi', statusOptions.find(s => s.value === ticketForm.status)?.icon || 'pi-circle']" class="mr-1"></i>
-                                        {{ statusOptions.find(s => s.value === ticketForm.status)?.label || ticketForm.status }}
+                                    <span v-if="ticketForm.status" class="status-badge-display" :class="`status-badge-${ticketForm.status?.replace(' ', '-')}`">
+                                        <i :class="['pi', statusOptions.find((s) => s.value === ticketForm.status)?.icon || 'pi-circle']" class="mr-1"></i>
+                                        {{ statusOptions.find((s) => s.value === ticketForm.status)?.label || ticketForm.status }}
                                     </span>
-                                    <span v-else class="status-badge-display status-badge-pending">
-                                        <i class="pi pi-clock mr-1"></i> Pendiente
-                                    </span>
-                                    <small v-if="!isCreateMode" class="field-help text-500 block mt-1">
-                                        <i class="pi pi-info-circle"></i> Usa el botón de estado del footer para cambiar
-                                    </small>
+                                    <span v-else class="status-badge-display status-badge-pending"> <i class="pi pi-clock mr-1"></i> Pendiente </span>
+                                    <small v-if="!isCreateMode" class="field-help text-500 block mt-1"> <i class="pi pi-info-circle"></i> Usa el botón de estado del footer para cambiar </small>
                                 </div>
                             </div>
                         </div>
@@ -870,11 +867,7 @@ const confirmDeleteComment = (comment) => {
                 </form>
 
                 <!-- Planificación de implementación (solo tickets existentes) -->
-                <TicketImplementationForm
-                    v-if="isEditing && currentTicket"
-                    :ticket="currentTicket"
-                    @updated="loadTicketData"
-                />
+                <TicketImplementationForm v-if="isEditing && currentTicket" :ticket="currentTicket" @updated="loadTicketData" />
             </TabPanel>
 
             <TabPanel header="📈 Historial de Estados" :disabled="!isEditing">
@@ -890,9 +883,7 @@ const confirmDeleteComment = (comment) => {
             <TabPanel header="💬 Comentarios" :disabled="!isEditing">
                 <div class="chat-wrapper">
                     <div ref="chatContainer" class="chat-container">
-                        <div v-if="ticketCommentsStore.state.isLoading" class="text-center p-4">
-                            <i class="pi pi-spin pi-spinner text-xl"></i> Cargando comentarios...
-                        </div>
+                        <div v-if="ticketCommentsStore.state.isLoading" class="text-center p-4"><i class="pi pi-spin pi-spinner text-xl"></i> Cargando comentarios...</div>
                         <div v-else-if="ticketCommentsStore.allComments.length === 0" class="text-center p-4 text-500">
                             <i class="pi pi-comment text-4xl text-300 mb-3"></i>
                             <div>No hay comentarios para este ticket.</div>
@@ -900,7 +891,6 @@ const confirmDeleteComment = (comment) => {
                         </div>
                         <div v-else class="comments-list">
                             <template v-for="(comment, index) in ticketCommentsStore.allComments" :key="comment.id">
-
                                 <!-- Separador de día -->
                                 <div v-if="isNewDay(index)" class="day-separator">
                                     <span class="day-separator-label">{{ getDayLabel(comment.created_at) }}</span>
@@ -929,24 +919,13 @@ const confirmDeleteComment = (comment) => {
                                     <!-- Burbuja -->
                                     <div class="comment-bubble">
                                         <!-- Nombre del autor (solo primera burbuja del grupo) -->
-                                        <div
-                                            v-if="!isOwnComment(comment) && (isNewDay(index) || !isSameUserAsPrev(index))"
-                                            class="comment-author-name"
-                                            :style="{ color: getUserColor(comment.user_id) }"
-                                        >
+                                        <div v-if="!isOwnComment(comment) && (isNewDay(index) || !isSameUserAsPrev(index))" class="comment-author-name" :style="{ color: getUserColor(comment.user_id) }">
                                             {{ comment.user?.name || 'Usuario' }}
                                         </div>
 
                                         <!-- Modo edición inline -->
                                         <div v-if="editingCommentId === comment.id" class="comment-edit-form">
-                                            <Textarea
-                                                v-model="editingCommentContent"
-                                                rows="3"
-                                                class="comment-edit-textarea"
-                                                fluid
-                                                auto-resize
-                                                @keydown.escape="cancelEditComment"
-                                            />
+                                            <Textarea v-model="editingCommentContent" rows="3" class="comment-edit-textarea" fluid auto-resize @keydown.escape="cancelEditComment" />
                                             <div class="comment-edit-actions">
                                                 <Button
                                                     label="Guardar"
@@ -956,15 +935,7 @@ const confirmDeleteComment = (comment) => {
                                                     :loading="ticketCommentsStore.state.isUpdating"
                                                     :disabled="!editingCommentContent.trim() || editingCommentContent.trim() === comment.content"
                                                 />
-                                                <Button
-                                                    label="Cancelar"
-                                                    icon="pi pi-times"
-                                                    size="small"
-                                                    severity="secondary"
-                                                    outlined
-                                                    @click="cancelEditComment"
-                                                    :disabled="ticketCommentsStore.state.isUpdating"
-                                                />
+                                                <Button label="Cancelar" icon="pi pi-times" size="small" severity="secondary" outlined @click="cancelEditComment" :disabled="ticketCommentsStore.state.isUpdating" />
                                             </div>
                                         </div>
 
@@ -973,22 +944,15 @@ const confirmDeleteComment = (comment) => {
                                             <div class="comment-content">{{ comment.content }}</div>
                                             <div class="comment-meta">
                                                 <span class="comment-time">{{ formatCommentTime(comment.created_at) }}</span>
-                                                <span v-if="wasEdited(comment)" class="comment-edited-tag">
-                                                    <i class="pi pi-pencil"></i> editado
-                                                </span>
+                                                <span v-if="wasEdited(comment)" class="comment-edited-tag"> <i class="pi pi-pencil"></i> editado </span>
                                             </div>
                                             <!-- Visto / Enviado (solo comentarios propios) -->
                                             <template v-if="isOwnComment(comment)">
-                                                <div
-                                                    v-if="ticketCommentsStore.readReceipts[comment.id]?.length > 0"
-                                                    class="comment-seen-by"
-                                                >
+                                                <div v-if="ticketCommentsStore.readReceipts[comment.id]?.length > 0" class="comment-seen-by">
                                                     <i class="pi pi-check-circle"></i>
                                                     <span>
                                                         Visto por {{ ticketCommentsStore.readReceipts[comment.id][0].read_by.name }}
-                                                        <template v-if="ticketCommentsStore.readReceipts[comment.id].length > 1">
-                                                            y {{ ticketCommentsStore.readReceipts[comment.id].length - 1 }} más
-                                                        </template>
+                                                        <template v-if="ticketCommentsStore.readReceipts[comment.id].length > 1"> y {{ ticketCommentsStore.readReceipts[comment.id].length - 1 }} más </template>
                                                     </span>
                                                 </div>
                                                 <div v-else class="comment-seen-by comment-seen-pending">
@@ -999,53 +963,24 @@ const confirmDeleteComment = (comment) => {
                                         </template>
 
                                         <!-- Acciones (hover, solo comentarios propios) -->
-                                        <div
-                                            v-if="isOwnComment(comment) && editingCommentId !== comment.id"
-                                            class="comment-actions"
-                                        >
-                                            <button
-                                                class="comment-action-btn"
-                                                title="Editar"
-                                                @click="startEditComment(comment)"
-                                                :disabled="ticketCommentsStore.state.isDeleting"
-                                            >
+                                        <div v-if="isOwnComment(comment) && editingCommentId !== comment.id" class="comment-actions">
+                                            <button class="comment-action-btn" title="Editar" @click="startEditComment(comment)" :disabled="ticketCommentsStore.state.isDeleting">
                                                 <i class="pi pi-pencil"></i>
                                             </button>
-                                            <button
-                                                class="comment-action-btn comment-action-delete"
-                                                title="Eliminar"
-                                                @click="confirmDeleteComment(comment)"
-                                                :disabled="ticketCommentsStore.state.isDeleting"
-                                            >
+                                            <button class="comment-action-btn comment-action-delete" title="Eliminar" @click="confirmDeleteComment(comment)" :disabled="ticketCommentsStore.state.isDeleting">
                                                 <i class="pi pi-trash"></i>
                                             </button>
                                         </div>
                                     </div>
                                 </div>
-
                             </template>
                         </div>
                     </div>
 
                     <div v-if="isEditing && canAddCommentsOrAttachments" class="new-comment-form">
                         <div class="new-comment-input-row">
-                            <Textarea
-                                v-model="newCommentContent"
-                                rows="2"
-                                placeholder="Escribe un comentario... (Ctrl+Enter para enviar)"
-                                fluid
-                                auto-resize
-                                @keydown.ctrl.enter.prevent="addComment"
-                            />
-                            <Button
-                                icon="pi pi-send"
-                                class="new-comment-send-btn"
-                                :loading="ticketCommentsStore.state.isAdding"
-                                :disabled="!newCommentContent.trim()"
-                                @click="addComment"
-                                rounded
-                                aria-label="Enviar comentario"
-                            />
+                            <Textarea v-model="newCommentContent" rows="2" placeholder="Escribe un comentario... (Ctrl+Enter para enviar)" fluid auto-resize @keydown.ctrl.enter.prevent="addComment" />
+                            <Button icon="pi pi-send" class="new-comment-send-btn" :loading="ticketCommentsStore.state.isAdding" :disabled="!newCommentContent.trim()" @click="addComment" rounded aria-label="Enviar comentario" />
                         </div>
                     </div>
                     <div v-else-if="isEditing && !canAddCommentsOrAttachments" class="comment-readonly-notice">
@@ -1070,33 +1005,17 @@ const confirmDeleteComment = (comment) => {
             <div class="flex justify-content-between align-items-center w-full">
                 <!-- Botón Editar visible solo en modo vista para creadores -->
                 <div v-if="isViewMode && canEdit">
-                    <Button
-                        label="Editar Ticket"
-                        icon="pi pi-pencil"
-                        @click="$emit('switch-to-edit')"
-                        severity="primary"
-                    />
+                    <Button label="Editar Ticket" icon="pi pi-pencil" @click="$emit('switch-to-edit')" severity="primary" />
                 </div>
-                <div v-else-if="!isViewMode" class="text-500 text-sm">
-                    * Campos obligatorios
-                </div>
+                <div v-else-if="!isViewMode" class="text-500 text-sm">* Campos obligatorios</div>
                 <div v-else>
                     <!-- Espacio vacío para mantener alineación -->
                 </div>
 
                 <!-- Botones de acción -->
                 <div class="flex align-items-center gap-2">
-                    <TicketStatusChanger
-                        v-if="canChangeStatus"
-                        :ticket="currentTicket"
-                    />
-                    <Button
-                        :label="isViewMode ? 'Cerrar' : 'Cancelar'"
-                        icon="pi pi-times"
-                        class="p-button-outlined"
-                        @click="closeDialog"
-                        :disabled="saving"
-                    />
+                    <TicketStatusChanger v-if="canChangeStatus" :ticket="currentTicket" />
+                    <Button :label="isViewMode ? 'Cerrar' : 'Cancelar'" icon="pi pi-times" class="p-button-outlined" @click="closeDialog" :disabled="saving" />
                     <Button
                         v-if="!isViewMode"
                         :label="isCreateMode ? 'Crear Ticket' : 'Actualizar Ticket'"
@@ -1243,7 +1162,7 @@ const confirmDeleteComment = (comment) => {
     color: #fff;
     flex-shrink: 0;
     letter-spacing: 0.03em;
-    box-shadow: 0 1px 3px rgba(0,0,0,0.15);
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.15);
 }
 
 /* Placeholder transparent cuando es mensaje agrupado */
@@ -1270,7 +1189,7 @@ const confirmDeleteComment = (comment) => {
     color: var(--text-color);
     border: 1px solid color-mix(in srgb, var(--primary-color) 25%, transparent);
     border-bottom-right-radius: 4px;
-    box-shadow: 0 1px 2px rgba(0,0,0,0.06);
+    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.06);
 }
 
 /* Comentarios de otros */
@@ -1279,7 +1198,7 @@ const confirmDeleteComment = (comment) => {
     border: 1px solid var(--surface-border);
     color: var(--text-color);
     border-bottom-left-radius: 4px;
-    box-shadow: 0 1px 2px rgba(0,0,0,0.06);
+    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.06);
 }
 
 /* Primero del grupo sin esquina redondeada arriba */
@@ -1369,7 +1288,7 @@ const confirmDeleteComment = (comment) => {
     border: 1px solid var(--surface-border);
     border-radius: 8px;
     padding: 0.15rem 0.25rem;
-    box-shadow: 0 2px 8px rgba(0,0,0,0.12);
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.12);
     opacity: 0;
     pointer-events: none;
     transition: opacity 0.15s ease;
@@ -1390,7 +1309,9 @@ const confirmDeleteComment = (comment) => {
     color: var(--text-color-secondary);
     font-size: 0.72rem;
     line-height: 1;
-    transition: color 0.15s, background 0.15s;
+    transition:
+        color 0.15s,
+        background 0.15s;
 }
 
 .comment-action-btn:hover:not(:disabled) {
@@ -1418,9 +1339,9 @@ const confirmDeleteComment = (comment) => {
 .comment-edit-textarea {
     border-radius: 8px;
     font-size: 0.88rem;
-    background: rgba(255,255,255,0.15) !important;
+    background: rgba(255, 255, 255, 0.15) !important;
     color: inherit !important;
-    border-color: rgba(255,255,255,0.3) !important;
+    border-color: rgba(255, 255, 255, 0.3) !important;
 }
 
 .comment-edit-actions {
@@ -1435,8 +1356,14 @@ const confirmDeleteComment = (comment) => {
 }
 
 @keyframes comment-highlight-fade {
-    0%   { outline: 2px solid var(--primary-color); outline-offset: 2px; }
-    100% { outline: 2px solid transparent; outline-offset: 2px; }
+    0% {
+        outline: 2px solid var(--primary-color);
+        outline-offset: 2px;
+    }
+    100% {
+        outline: 2px solid transparent;
+        outline-offset: 2px;
+    }
 }
 
 /* ========================================

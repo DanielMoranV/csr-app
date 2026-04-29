@@ -898,7 +898,8 @@ const formatDate = (date) => {
 }
 
 @keyframes tv-discharge-pulse {
-    0%, 100% {
+    0%,
+    100% {
         box-shadow: 0 0 0 0 rgba(96, 165, 250, 0);
     }
     50% {

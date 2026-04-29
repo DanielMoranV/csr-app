@@ -22,7 +22,7 @@ export const useDoctorSchedulesStore = defineStore('doctorSchedules', () => {
             doctor_id: null,
             id_medical_specialty: null, // Filter by medical specialty
             start_date: null, // New filter for start date
-            end_date: null,   // New filter for end date
+            end_date: null, // New filter for end date
             category: null,
             status: null,
             upcoming: false,
@@ -116,7 +116,7 @@ export const useDoctorSchedulesStore = defineStore('doctorSchedules', () => {
                     hasDataProperty: data?.data !== undefined,
                     dataContent: data?.data,
                     isDataArray: Array.isArray(data?.data),
-                    finalSchedules: Array.isArray(data) ? data : (Array.isArray(data?.data) ? data.data : (Array.isArray(data?.data?.data) ? data.data.data : []))
+                    finalSchedules: Array.isArray(data) ? data : Array.isArray(data?.data) ? data.data : Array.isArray(data?.data?.data) ? data.data.data : []
                 });
 
                 // Handle different response structures:
@@ -254,8 +254,7 @@ export const useDoctorSchedulesStore = defineStore('doctorSchedules', () => {
             if (apiUtils.isSuccess(response)) {
                 // Standard format: { success: true, data: { successful, failed, ... } }
                 results = apiUtils.getData(response);
-            } else if (response && typeof response === 'object' &&
-                       'successful' in response && 'failed' in response && 'total' in response) {
+            } else if (response && typeof response === 'object' && 'successful' in response && 'failed' in response && 'total' in response) {
                 // Batch format: { successful, failed, total, message } (no "success" field)
                 results = response;
                 console.log('⚠️ [createScheduleBatch] Respuesta en formato batch (sin "success" field)');
@@ -274,7 +273,7 @@ export const useDoctorSchedulesStore = defineStore('doctorSchedules', () => {
 
             // Add successful schedules to state
             if (results.successful && results.successful.length > 0) {
-                results.successful.forEach(item => {
+                results.successful.forEach((item) => {
                     if (item.schedule) {
                         state.schedules.push(item.schedule);
                     }

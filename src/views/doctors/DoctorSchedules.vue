@@ -298,12 +298,7 @@ const handleClearFilters = () => {
 };
 
 const hasActiveFilters = computed(() => {
-    return (
-        specialtyFilter.value ||
-        (enableDoctorFilter.value && doctorFilter.value) ||
-        monthFilter.value ||
-        categoryFilter.value !== 'emergency'
-    );
+    return specialtyFilter.value || (enableDoctorFilter.value && doctorFilter.value) || monthFilter.value || categoryFilter.value !== 'emergency';
 });
 
 // PDF Export Handler

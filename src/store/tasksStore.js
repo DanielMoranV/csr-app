@@ -210,18 +210,10 @@ export const useTasksStore = defineStore('tasks', () => {
         if (!userId) return;
 
         // Canal público — todos los usuarios de tareas
-        useEcho
-            .channel('tasks')
-            .listen('.task.created', handleTaskCreated)
-            .listen('.task.updated', handleTaskUpdated)
-            .listen('.task.overdue', handleTaskOverdue)
-            .listen('.task.nearing-due', handleTaskNearingDue);
+        useEcho.channel('tasks').listen('.task.created', handleTaskCreated).listen('.task.updated', handleTaskUpdated).listen('.task.overdue', handleTaskOverdue).listen('.task.nearing-due', handleTaskNearingDue);
 
         // Canal privado — tareas asignadas específicamente a este usuario
-        useEcho
-            .private(`user.${userId}.tasks`)
-            .listen('.task.created', handleTaskCreated)
-            .listen('.task.updated', handleTaskUpdated);
+        useEcho.private(`user.${userId}.tasks`).listen('.task.created', handleTaskCreated).listen('.task.updated', handleTaskUpdated);
 
         echoListening.value = true;
     };

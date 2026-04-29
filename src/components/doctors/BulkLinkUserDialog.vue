@@ -44,7 +44,7 @@ const dialogVisible = computed({
     set: (value) => emit('update:visible', value)
 });
 
-const selectedMatches = computed(() => matches.value.filter(m => m.selected));
+const selectedMatches = computed(() => matches.value.filter((m) => m.selected));
 
 const selectedCount = computed(() => selectedMatches.value.length);
 
@@ -53,48 +53,43 @@ const progressPercentage = computed(() => {
     return Math.round((currentProcessing.value / totalToProcess.value) * 100);
 });
 
-const successCount = computed(() => results.value.filter(r => r.success).length);
-const errorCount = computed(() => results.value.filter(r => !r.success).length);
+const successCount = computed(() => results.value.filter((r) => r.success).length);
+const errorCount = computed(() => results.value.filter((r) => !r.success).length);
 
 // Methods
 function findMatches() {
     isAnalyzing.value = true;
     matches.value = [];
-    
-    try {
 
+    try {
         // Crear mapa de usuarios por DNI para búsqueda O(1)
         const usersByDni = new Map();
         const medicalPositions = ['MEDICOS', 'EMERGENCIA', 'DIRECTOR MEDICO', 'AUDITOR MEDICO'];
-        
-        usersStore.allUsers.forEach(user => {
+
+        usersStore.allUsers.forEach((user) => {
             if (medicalPositions.includes(user.position) && user.dni) {
                 usersByDni.set(user.dni, user);
             }
         });
-        
 
-        
         // Crear set de usuarios ya vinculados (verificar TODOS los médicos en el store)
         const linkedUserIds = new Set();
-        
+
         // Verificar todos los médicos del store, no solo los de props
-        doctorsStore.allDoctors.forEach(doctor => {
+        doctorsStore.allDoctors.forEach((doctor) => {
             if (doctor.user_id) {
                 linkedUserIds.add(doctor.user_id);
             }
         });
-        
 
-        
         // Buscar coincidencias
-        props.doctors.forEach(doctor => {
+        props.doctors.forEach((doctor) => {
             // Excluir médicos ya vinculados
             if (doctor.user_id) return;
-            
+
             // Buscar usuario con mismo DNI
             const matchingUser = usersByDni.get(doctor.document_number);
-            
+
             // Verificar que el usuario existe y NO está vinculado a ningún médico
             if (matchingUser && !linkedUserIds.has(matchingUser.id)) {
                 matches.value.push({
@@ -104,7 +99,6 @@ function findMatches() {
                 });
             }
         });
-        
 
         if (matches.value.length === 0) {
             toast.add({
@@ -120,16 +114,16 @@ function findMatches() {
 }
 
 function selectAll() {
-    matches.value.forEach(match => match.selected = true);
+    matches.value.forEach((match) => (match.selected = true));
 }
 
 function deselectAll() {
-    matches.value.forEach(match => match.selected = false);
+    matches.value.forEach((match) => (match.selected = false));
 }
 
 async function processBulkLink() {
     const toProcess = selectedMatches.value;
-    
+
     if (toProcess.length === 0) {
         toast.add({
             severity: 'warn',
@@ -139,19 +133,19 @@ async function processBulkLink() {
         });
         return;
     }
-    
+
     isProcessing.value = true;
     currentProcessing.value = 0;
     totalToProcess.value = toProcess.length;
     results.value = [];
-    
+
     for (let i = 0; i < toProcess.length; i++) {
         const match = toProcess[i];
         currentProcessing.value = i + 1;
-        
+
         try {
             const response = await doctorsStore.linkUser(match.doctor.id, match.user.id);
-            
+
             results.value.push({
                 doctor: match.doctor,
                 user: match.user,
@@ -166,14 +160,14 @@ async function processBulkLink() {
                 message: error.response?.data?.message || error.message || 'Error desconocido'
             });
         }
-        
+
         // Pequeña pausa para evitar sobrecarga del servidor
-        await new Promise(resolve => setTimeout(resolve, 100));
+        await new Promise((resolve) => setTimeout(resolve, 100));
     }
-    
+
     isProcessing.value = false;
     showResults.value = true;
-    
+
     // Mostrar resumen
     toast.add({
         severity: successCount.value > 0 ? 'success' : 'error',
@@ -187,87 +181,56 @@ function handleClose() {
     if (showResults.value && successCount.value > 0) {
         emit('completed', results.value);
     }
-    
+
     // Reset
     matches.value = [];
     results.value = [];
     showResults.value = false;
     currentProcessing.value = 0;
     totalToProcess.value = 0;
-    
+
     dialogVisible.value = false;
 }
 
 function backToSelection() {
     showResults.value = false;
     // Remover matches exitosos
-    const successfulDoctorIds = new Set(
-        results.value.filter(r => r.success).map(r => r.doctor.id)
-    );
-    matches.value = matches.value.filter(m => !successfulDoctorIds.has(m.doctor.id));
+    const successfulDoctorIds = new Set(results.value.filter((r) => r.success).map((r) => r.doctor.id));
+    matches.value = matches.value.filter((m) => !successfulDoctorIds.has(m.doctor.id));
 }
 
 // Watchers
-watch(() => props.visible, async (newVal) => {
-    if (newVal) {
-        await usersStore.fetchUsers();
-        findMatches();
+watch(
+    () => props.visible,
+    async (newVal) => {
+        if (newVal) {
+            await usersStore.fetchUsers();
+            findMatches();
+        }
     }
-});
+);
 </script>
 
 <template>
-    <Dialog
-        v-model:visible="dialogVisible"
-        header="Vinculación Masiva por DNI"
-        :modal="true"
-        :closable="!isProcessing"
-        :style="{ width: '900px' }"
-        @hide="handleClose"
-    >
+    <Dialog v-model:visible="dialogVisible" header="Vinculación Masiva por DNI" :modal="true" :closable="!isProcessing" :style="{ width: '900px' }" @hide="handleClose">
         <!-- Vista de Selección -->
         <div v-if="!showResults" class="bulk-link-dialog">
             <!-- Información -->
             <Message severity="info" :closable="false" class="mb-4">
-                <strong>Matching automático por DNI:</strong> El sistema ha encontrado {{ matches.length }} 
-                {{ matches.length === 1 ? 'coincidencia' : 'coincidencias' }} entre médicos sin vincular y usuarios médicos.
+                <strong>Matching automático por DNI:</strong> El sistema ha encontrado {{ matches.length }} {{ matches.length === 1 ? 'coincidencia' : 'coincidencias' }} entre médicos sin vincular y usuarios médicos.
             </Message>
 
             <!-- Acciones de selección -->
             <div v-if="matches.length > 0" class="selection-actions mb-3">
                 <div class="flex gap-2">
-                    <Button 
-                        label="Seleccionar Todos" 
-                        icon="pi pi-check-square" 
-                        size="small"
-                        severity="secondary"
-                        outlined
-                        @click="selectAll"
-                        :disabled="isProcessing"
-                    />
-                    <Button 
-                        label="Deseleccionar Todos" 
-                        icon="pi pi-stop" 
-                        size="small"
-                        severity="secondary"
-                        outlined
-                        @click="deselectAll"
-                        :disabled="isProcessing"
-                    />
+                    <Button label="Seleccionar Todos" icon="pi pi-check-square" size="small" severity="secondary" outlined @click="selectAll" :disabled="isProcessing" />
+                    <Button label="Deseleccionar Todos" icon="pi pi-stop" size="small" severity="secondary" outlined @click="deselectAll" :disabled="isProcessing" />
                 </div>
                 <Tag :value="`${selectedCount} seleccionados`" severity="info" />
             </div>
 
             <!-- Tabla de coincidencias -->
-            <DataTable
-                v-if="matches.length > 0"
-                :value="matches"
-                :loading="isAnalyzing"
-                class="p-datatable-sm"
-                stripedRows
-                :paginator="matches.length > 10"
-                :rows="10"
-            >
+            <DataTable v-if="matches.length > 0" :value="matches" :loading="isAnalyzing" class="p-datatable-sm" stripedRows :paginator="matches.length > 10" :rows="10">
                 <Column style="width: 50px">
                     <template #body="{ data }">
                         <Checkbox v-model="data.selected" :binary="true" :disabled="isProcessing" />
@@ -312,9 +275,7 @@ watch(() => props.visible, async (newVal) => {
             <div v-else class="empty-state text-center py-5">
                 <i class="pi pi-info-circle text-4xl text-muted mb-3"></i>
                 <h3 class="text-muted">No se encontraron coincidencias</h3>
-                <p class="text-muted">
-                    No hay médicos sin vincular que coincidan con usuarios por DNI.
-                </p>
+                <p class="text-muted">No hay médicos sin vincular que coincidan con usuarios por DNI.</p>
             </div>
 
             <!-- Barra de progreso -->
@@ -329,23 +290,12 @@ watch(() => props.visible, async (newVal) => {
 
         <!-- Vista de Resultados -->
         <div v-else class="results-view">
-            <Message :severity="errorCount === 0 ? 'success' : 'warn'" :closable="false" class="mb-4">
-                <strong>Proceso completado:</strong> {{ successCount }} vinculaciones exitosas, {{ errorCount }} fallidas.
-            </Message>
+            <Message :severity="errorCount === 0 ? 'success' : 'warn'" :closable="false" class="mb-4"> <strong>Proceso completado:</strong> {{ successCount }} vinculaciones exitosas, {{ errorCount }} fallidas. </Message>
 
-            <DataTable
-                :value="results"
-                class="p-datatable-sm"
-                stripedRows
-                :paginator="results.length > 10"
-                :rows="10"
-            >
+            <DataTable :value="results" class="p-datatable-sm" stripedRows :paginator="results.length > 10" :rows="10">
                 <Column header="Estado" style="width: 80px">
                     <template #body="{ data }">
-                        <i 
-                            :class="data.success ? 'pi pi-check-circle text-green-500' : 'pi pi-times-circle text-red-500'"
-                            class="text-xl"
-                        ></i>
+                        <i :class="data.success ? 'pi pi-check-circle text-green-500' : 'pi pi-times-circle text-red-500'" class="text-xl"></i>
                     </template>
                 </Column>
 
@@ -379,32 +329,12 @@ watch(() => props.visible, async (newVal) => {
 
         <template #footer>
             <div class="flex justify-content-between">
-                <Button
-                    v-if="showResults && errorCount > 0"
-                    label="Volver a Selección"
-                    icon="pi pi-arrow-left"
-                    severity="secondary"
-                    @click="backToSelection"
-                />
+                <Button v-if="showResults && errorCount > 0" label="Volver a Selección" icon="pi pi-arrow-left" severity="secondary" @click="backToSelection" />
                 <div v-else></div>
-                
+
                 <div class="flex gap-2">
-                    <Button
-                        label="Cerrar"
-                        icon="pi pi-times"
-                        severity="secondary"
-                        @click="handleClose"
-                        :disabled="isProcessing"
-                    />
-                    <Button
-                        v-if="!showResults"
-                        label="Vincular Seleccionados"
-                        icon="pi pi-link"
-                        severity="success"
-                        @click="processBulkLink"
-                        :loading="isProcessing"
-                        :disabled="selectedCount === 0 || isProcessing"
-                    />
+                    <Button label="Cerrar" icon="pi pi-times" severity="secondary" @click="handleClose" :disabled="isProcessing" />
+                    <Button v-if="!showResults" label="Vincular Seleccionados" icon="pi pi-link" severity="success" @click="processBulkLink" :loading="isProcessing" :disabled="selectedCount === 0 || isProcessing" />
                 </div>
             </div>
         </template>

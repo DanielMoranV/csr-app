@@ -44,25 +44,25 @@ const hasLinkedUser = computed(() => {
 // Filtrar usuarios por posiciones médicas que no estén ya vinculados
 const availableUsers = computed(() => {
     const medicalPositions = ['MEDICOS', 'EMERGENCIA', 'DIRECTOR MEDICO', 'AUDITOR MEDICO'];
-    
-    return usersStore.allUsers.filter(user => {
-        // Solo usuarios con posiciones médicas
-        if (!medicalPositions.includes(user.position)) return false;
-        
-        // Si el usuario ya está vinculado a este médico, incluirlo
-        if (props.doctor?.user_id === user.id) return true;
-        
-        // Excluir usuarios que ya están vinculados a otros médicos
-        const isLinkedToOtherDoctor = doctorsStore.allDoctors.some(
-            doc => doc.user_id === user.id && doc.id !== props.doctor?.id
-        );
-        
-        return !isLinkedToOtherDoctor;
-    }).map(user => ({
-        label: `${user.name} (${user.dni}) - ${user.position}`,
-        value: user.id,
-        user: user
-    }));
+
+    return usersStore.allUsers
+        .filter((user) => {
+            // Solo usuarios con posiciones médicas
+            if (!medicalPositions.includes(user.position)) return false;
+
+            // Si el usuario ya está vinculado a este médico, incluirlo
+            if (props.doctor?.user_id === user.id) return true;
+
+            // Excluir usuarios que ya están vinculados a otros médicos
+            const isLinkedToOtherDoctor = doctorsStore.allDoctors.some((doc) => doc.user_id === user.id && doc.id !== props.doctor?.id);
+
+            return !isLinkedToOtherDoctor;
+        })
+        .map((user) => ({
+            label: `${user.name} (${user.dni}) - ${user.position}`,
+            value: user.id,
+            user: user
+        }));
 });
 
 // Methods
@@ -101,7 +101,7 @@ async function handleLink() {
 
     try {
         const response = await doctorsStore.linkUser(props.doctor.id, selectedUserId.value);
-        
+
         if (response.success) {
             toast.add({
                 severity: 'success',
@@ -109,7 +109,7 @@ async function handleLink() {
                 detail: 'Usuario vinculado exitosamente',
                 life: 3000
             });
-            
+
             emit('linked', response.data);
             await loadLinkedUser();
             selectedUserId.value = null;
@@ -131,7 +131,7 @@ async function handleUnlink() {
 
     try {
         const response = await doctorsStore.unlinkUser(props.doctor.id);
-        
+
         if (response.success) {
             toast.add({
                 severity: 'success',
@@ -139,7 +139,7 @@ async function handleUnlink() {
                 detail: 'Usuario desvinculado exitosamente',
                 life: 3000
             });
-            
+
             emit('unlinked', response.data);
             linkedUserInfo.value = null;
             selectedUserId.value = null;
@@ -162,12 +162,15 @@ function handleClose() {
 }
 
 // Watchers
-watch(() => props.visible, async (newVal) => {
-    if (newVal && props.doctor) {
-        await loadLinkedUser();
-        await usersStore.fetchUsers();
+watch(
+    () => props.visible,
+    async (newVal) => {
+        if (newVal && props.doctor) {
+            await loadLinkedUser();
+            await usersStore.fetchUsers();
+        }
     }
-});
+);
 
 onMounted(async () => {
     if (props.visible && props.doctor) {
@@ -178,32 +181,19 @@ onMounted(async () => {
 </script>
 
 <template>
-    <Dialog
-        v-model:visible="dialogVisible"
-        :header="`Vincular Usuario - ${doctor?.name || ''}`"
-        :modal="true"
-        :closable="true"
-        :style="{ width: '600px' }"
-        @hide="handleClose"
-    >
+    <Dialog v-model:visible="dialogVisible" :header="`Vincular Usuario - ${doctor?.name || ''}`" :modal="true" :closable="true" :style="{ width: '600px' }" @hide="handleClose">
         <div class="link-user-dialog">
             <!-- Usuario actualmente vinculado -->
             <div v-if="hasLinkedUser && linkedUserInfo" class="linked-user-section mb-4">
                 <Message severity="info" :closable="false">
                     <div class="flex align-items-center justify-content-between">
                         <div>
-                            <strong>Usuario vinculado:</strong><br>
-                            <span class="mt-1">{{ linkedUserInfo.name }}</span><br>
+                            <strong>Usuario vinculado:</strong><br />
+                            <span class="mt-1">{{ linkedUserInfo.name }}</span
+                            ><br />
                             <small class="text-muted">DNI: {{ linkedUserInfo.dni }} | Email: {{ linkedUserInfo.email }}</small>
                         </div>
-                        <Button
-                            label="Desvincular"
-                            icon="pi pi-times"
-                            severity="danger"
-                            size="small"
-                            :loading="isUnlinking"
-                            @click="handleUnlink"
-                        />
+                        <Button label="Desvincular" icon="pi pi-times" severity="danger" size="small" :loading="isUnlinking" @click="handleUnlink" />
                     </div>
                 </Message>
             </div>
@@ -229,21 +219,15 @@ onMounted(async () => {
                                 <i class="pi pi-user"></i>
                                 <div>
                                     <div class="font-semibold">{{ slotProps.option.user.name }}</div>
-                                    <small class="text-muted">
-                                        {{ slotProps.option.user.dni }} - {{ slotProps.option.user.position }}
-                                    </small>
+                                    <small class="text-muted"> {{ slotProps.option.user.dni }} - {{ slotProps.option.user.position }} </small>
                                 </div>
                             </div>
                         </template>
                     </Dropdown>
-                    <small class="text-muted mt-2 block">
-                        Solo se muestran usuarios con posiciones médicas que no estén vinculados a otros médicos.
-                    </small>
+                    <small class="text-muted mt-2 block"> Solo se muestran usuarios con posiciones médicas que no estén vinculados a otros médicos. </small>
                 </div>
 
-                <Message v-if="availableUsers.length === 0" severity="warn" :closable="false" class="mt-3">
-                    No hay usuarios médicos disponibles para vincular.
-                </Message>
+                <Message v-if="availableUsers.length === 0" severity="warn" :closable="false" class="mt-3"> No hay usuarios médicos disponibles para vincular. </Message>
             </div>
 
             <!-- Información adicional -->
@@ -261,22 +245,8 @@ onMounted(async () => {
 
         <template #footer>
             <div class="flex justify-content-end gap-2">
-                <Button
-                    label="Cancelar"
-                    icon="pi pi-times"
-                    severity="secondary"
-                    @click="handleClose"
-                    :disabled="isLinking || isUnlinking"
-                />
-                <Button
-                    v-if="!hasLinkedUser"
-                    label="Vincular"
-                    icon="pi pi-link"
-                    severity="success"
-                    @click="handleLink"
-                    :loading="isLinking"
-                    :disabled="!selectedUserId"
-                />
+                <Button label="Cancelar" icon="pi pi-times" severity="secondary" @click="handleClose" :disabled="isLinking || isUnlinking" />
+                <Button v-if="!hasLinkedUser" label="Vincular" icon="pi pi-link" severity="success" @click="handleLink" :loading="isLinking" :disabled="!selectedUserId" />
             </div>
         </template>
     </Dialog>

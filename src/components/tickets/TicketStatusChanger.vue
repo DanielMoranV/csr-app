@@ -27,9 +27,7 @@ const selectedStatus = ref(props.ticket.status);
 const allowedTransitions = computed(() => ticketsStore.getAllowedTransitions(props.ticket));
 
 // Opciones del dropdown filtradas a las transiciones permitidas
-const availableOptions = computed(() =>
-    ticketsStore.statusOptions.filter((opt) => allowedTransitions.value.includes(opt.value))
-);
+const availableOptions = computed(() => ticketsStore.statusOptions.filter((opt) => allowedTransitions.value.includes(opt.value)));
 
 // El usuario no puede cambiar el estado si no tiene transiciones disponibles
 const canChangeStatus = computed(() => allowedTransitions.value.length > 0);
@@ -82,7 +80,7 @@ const getStatusLabel = (status) => {
 // Manejar cambio de estado con confirmación
 const handleStatusChange = (event) => {
     const newStatus = event.value;
-    
+
     // Si no cambió realmente, no hacer nada
     if (newStatus === props.ticket.status) {
         return;

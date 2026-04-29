@@ -37,11 +37,11 @@ const dialogVisible = computed({
 const doctorName = computed(() => props.doctor?.name || '');
 
 const currentSpecialtyIds = computed(() => {
-    return props.doctor?.specialties?.map(s => s.id) || [];
+    return props.doctor?.specialties?.map((s) => s.id) || [];
 });
 
 const availableSpecialties = computed(() => {
-    return specialties.value.map(specialty => ({
+    return specialties.value.map((specialty) => ({
         id: specialty.id,
         name: specialty.name,
         description: specialty.description
@@ -51,7 +51,7 @@ const availableSpecialties = computed(() => {
 // Methods
 const loadDoctorSpecialties = () => {
     if (props.doctor?.specialties) {
-        selectedSpecialties.value = props.doctor.specialties.map(s => s.id);
+        selectedSpecialties.value = props.doctor.specialties.map((s) => s.id);
     } else {
         selectedSpecialties.value = [];
     }
@@ -67,8 +67,8 @@ const handleSave = async () => {
         const currentIds = new Set(currentSpecialtyIds.value);
         const selectedIds = new Set(selectedSpecialties.value);
 
-        const toAttach = [...selectedIds].filter(id => !currentIds.has(id));
-        const toDetach = [...currentIds].filter(id => !selectedIds.has(id));
+        const toAttach = [...selectedIds].filter((id) => !currentIds.has(id));
+        const toDetach = [...currentIds].filter((id) => !selectedIds.has(id));
 
         // Ejecutar attach y detach
         const promises = [];
@@ -118,11 +118,14 @@ const handleClose = () => {
 };
 
 // Watchers
-watch(() => props.visible, (visible) => {
-    if (visible) {
-        loadDoctorSpecialties();
+watch(
+    () => props.visible,
+    (visible) => {
+        if (visible) {
+            loadDoctorSpecialties();
+        }
     }
-});
+);
 
 // Lifecycle
 onMounted(async () => {
@@ -133,14 +136,7 @@ onMounted(async () => {
 </script>
 
 <template>
-    <Dialog
-        v-model:visible="dialogVisible"
-        :header="`Gestionar Especialidades - ${doctorName}`"
-        :modal="true"
-        :closable="!isSaving"
-        :style="{ width: '600px' }"
-        class="specialty-assignment-dialog"
-    >
+    <Dialog v-model:visible="dialogVisible" :header="`Gestionar Especialidades - ${doctorName}`" :modal="true" :closable="!isSaving" :style="{ width: '600px' }" class="specialty-assignment-dialog">
         <div class="dialog-content">
             <!-- Doctor Info -->
             <div class="doctor-info">
@@ -160,31 +156,14 @@ onMounted(async () => {
             <div v-if="currentSpecialtyIds.length > 0" class="current-specialties mb-4">
                 <label class="mb-2">Especialidades actuales:</label>
                 <div class="specialty-chips">
-                    <Chip
-                        v-for="specialty in doctor?.specialties"
-                        :key="specialty.id"
-                        :label="specialty.name"
-                        icon="pi pi-heart"
-                        class="specialty-chip"
-                    />
+                    <Chip v-for="specialty in doctor?.specialties" :key="specialty.id" :label="specialty.name" icon="pi pi-heart" class="specialty-chip" />
                 </div>
             </div>
 
             <!-- Specialty Selection -->
             <div class="field">
                 <label for="specialties" class="font-semibold">Seleccionar Especialidades</label>
-                <MultiSelect
-                    v-model="selectedSpecialties"
-                    :options="availableSpecialties"
-                    optionLabel="name"
-                    optionValue="id"
-                    placeholder="Seleccione las especialidades"
-                    :loading="isLoading"
-                    :disabled="isSaving"
-                    filter
-                    class="w-full"
-                    display="chip"
-                >
+                <MultiSelect v-model="selectedSpecialties" :options="availableSpecialties" optionLabel="name" optionValue="id" placeholder="Seleccione las especialidades" :loading="isLoading" :disabled="isSaving" filter class="w-full" display="chip">
                     <template #option="{ option }">
                         <div class="specialty-option">
                             <i class="pi pi-heart mr-2"></i>
@@ -215,20 +194,8 @@ onMounted(async () => {
 
         <template #footer>
             <div class="dialog-footer">
-                <Button
-                    label="Cancelar"
-                    icon="pi pi-times"
-                    class="p-button-text"
-                    @click="handleClose"
-                    :disabled="isSaving"
-                />
-                <Button
-                    label="Guardar Cambios"
-                    icon="pi pi-check"
-                    @click="handleSave"
-                    :loading="isSaving"
-                    :disabled="isSaving"
-                />
+                <Button label="Cancelar" icon="pi pi-times" class="p-button-text" @click="handleClose" :disabled="isSaving" />
+                <Button label="Guardar Cambios" icon="pi pi-check" @click="handleSave" :loading="isSaving" :disabled="isSaving" />
             </div>
         </template>
     </Dialog>

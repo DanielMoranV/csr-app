@@ -46,7 +46,7 @@ class ExcelParserService {
         }
 
         const firstRow = data[0];
-        requiredColumns.forEach(col => {
+        requiredColumns.forEach((col) => {
             if (!(col in firstRow)) {
                 errors.push(`Falta columna requerida: ${col}`);
             }
@@ -71,7 +71,7 @@ class ExcelParserService {
             serviceName: row.servicio || row.descripcion || 'Servicio médico',
             amount: parseFloat(row.importe) || 0,
             patientName: row.paciente || '',
-            specialty: row.segus || '',  // Campo de especialidad
+            specialty: row.segus || '', // Campo de especialidad
             rawData: row
         };
     }
@@ -86,17 +86,17 @@ class ExcelParserService {
         const cia = row.cia?.toString().trim().toUpperCase() || '';
         const codSeg = row.cod_seg?.toString().trim() || '';
         const importe = parseFloat(row.importe) || 0;
-        
+
         // Regla 1: Excluir si comprobante es "-------------" o vacío Y cia es "PARTICULAR"
         const isInvalidComprobante = comprobante === '' || comprobante === '-------------';
         const isParticular = cia === 'PARTICULAR';
         const rule1 = isInvalidComprobante && isParticular;
-        
+
         // Regla 2: Excluir si cod_seg es "00.19.27" Y monto es 0.04 o 0.05
         const isSpecificCodSeg = codSeg === '00.19.27';
         const isSpecificAmount = importe === 0.04 || importe === 0.05;
         const rule2 = isSpecificCodSeg && isSpecificAmount;
-        
+
         return rule1 || rule2;
     }
 
@@ -107,7 +107,7 @@ class ExcelParserService {
      */
     parseExcelDate(excelDate) {
         if (!excelDate) return null;
-        
+
         // Si ya es string, verificar formato
         if (typeof excelDate === 'string') {
             // Si está en formato DD/MM/YYYY, convertir a YYYY-MM-DD
@@ -122,22 +122,22 @@ class ExcelParserService {
             }
             return excelDate;
         }
-        
+
         // Si es número serial de Excel
         if (typeof excelDate === 'number') {
             // Excel almacena fechas como días desde 1900-01-01
             // Convertir a fecha JavaScript sin problemas de zona horaria
             const excelEpoch = new Date(1899, 11, 30); // 30 de diciembre de 1899
             const date = new Date(excelEpoch.getTime() + excelDate * 86400000); // 86400000 ms = 1 día
-            
+
             // Usar UTC para evitar problemas de zona horaria
             const year = date.getUTCFullYear();
             const month = String(date.getUTCMonth() + 1).padStart(2, '0');
             const day = String(date.getUTCDate()).padStart(2, '0');
-            
+
             return `${year}-${month}-${day}`;
         }
-        
+
         return null;
     }
 
@@ -173,7 +173,7 @@ class ExcelParserService {
      */
     groupByDoctor(services) {
         const grouped = new Map();
-        services.forEach(service => {
+        services.forEach((service) => {
             if (!service.doctorCode) return;
             if (!grouped.has(service.doctorCode)) {
                 grouped.set(service.doctorCode, []);

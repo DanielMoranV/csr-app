@@ -20,8 +20,9 @@ export const useTicketsStore = defineStore('tickets', () => {
         isSaving: false,
         isDeleting: false,
         lastFetch: null,
-        globalUnreadCount: 0,   // total unread comments across all tickets (from GET /tickets/unread-comments-count)
-        mySummary: {            // resumen de tickets asignados al usuario actual (from GET /tickets/my-summary)
+        globalUnreadCount: 0, // total unread comments across all tickets (from GET /tickets/unread-comments-count)
+        mySummary: {
+            // resumen de tickets asignados al usuario actual (from GET /tickets/my-summary)
             total: 0,
             by_status: {}
         },
@@ -69,8 +70,7 @@ export const useTicketsStore = defineStore('tickets', () => {
         }
         // Refrescar resumen si el ticket nuevo nos fue asignado
         const user = authStore.getUser;
-        const isAssignedToMe = ticket.assignee?.id === user?.id
-            || (user?.position && ticket.assignee_position === user.position);
+        const isAssignedToMe = ticket.assignee?.id === user?.id || (user?.position && ticket.assignee_position === user.position);
         if (isAssignedToMe) fetchMySummary();
     };
 
@@ -164,8 +164,7 @@ export const useTicketsStore = defineStore('tickets', () => {
 
         // Refrescar resumen: el estado cambio puede afectar los conteos
         const user = authStore.getUser;
-        const isAssignedToMe = ticket.assignee?.id === user?.id
-            || (user?.position && ticket.assignee_position === user.position);
+        const isAssignedToMe = ticket.assignee?.id === user?.id || (user?.position && ticket.assignee_position === user.position);
         if (isAssignedToMe) fetchMySummary();
     };
 
@@ -185,8 +184,7 @@ export const useTicketsStore = defineStore('tickets', () => {
         const authorId = comment.user_id ?? comment.user?.id;
         const isOwnComment = comment.is_read_by_me === true || (currentUser && authorId === currentUser.id);
         if (!isOwnComment) {
-            const isViewingComments = commentsStore.state.currentTicketId === ticketId
-                                      && commentsStore.state.isCommentsTabActive;
+            const isViewingComments = commentsStore.state.currentTicketId === ticketId && commentsStore.state.isCommentsTabActive;
 
             if (isViewingComments) {
                 // El usuario tiene el chat abierto — marcar como leído de inmediato
@@ -323,7 +321,7 @@ export const useTicketsStore = defineStore('tickets', () => {
                 .listen('.ticket.comment.created', handleTicketCommentCreated)
                 .listen('.ticket.comment.updated', handleTicketCommentUpdated)
                 .listen('.ticket.comment.deleted', handleTicketCommentDeleted)
-                .listen('.ticket.comment.read', handleTicketCommentRead);   // only on private channel
+                .listen('.ticket.comment.read', handleTicketCommentRead); // only on private channel
         }
 
         if (userPosition) {
@@ -452,25 +450,25 @@ export const useTicketsStore = defineStore('tickets', () => {
         state.isSaving = true;
         try {
             const response = await TicketService.updateTicketStatus(ticketId, newStatus);
-            
+
             // Actualizar ticket en la lista local
             const index = state.tickets.findIndex((t) => t.id === ticketId);
             if (index !== -1) {
                 state.tickets[index] = response.data;
             }
-            
+
             // Actualizar ticket actual si está seleccionado
             if (state.currentTicket && state.currentTicket.id === ticketId) {
                 state.currentTicket = response.data;
             }
-            
+
             toast.add({
                 severity: 'success',
                 summary: 'Estado Actualizado',
                 detail: `Estado cambiado a: ${newStatus}`,
                 life: 3000
             });
-            
+
             return response;
         } catch (error) {
             // Manejar errores específicos
@@ -571,10 +569,9 @@ export const useTicketsStore = defineStore('tickets', () => {
         const isFinal = ['concluido', 'rechazado', 'anulado'].includes(ticket.status);
         if (isFinal) return [];
 
-        const isCreator  = ticket.creator?.id === user.id;
+        const isCreator = ticket.creator?.id === user.id;
         const isAssignee = ticket.assignee?.id === user.id;
-        const samePos    = !!(user.position && ticket.assignee_position
-                            && user.position === ticket.assignee_position);
+        const samePos = !!(user.position && ticket.assignee_position && user.position === ticket.assignee_position);
 
         const allowed = new Set();
 

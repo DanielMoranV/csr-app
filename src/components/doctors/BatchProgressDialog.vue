@@ -62,7 +62,7 @@ const formatDate = (dateStr) => {
 const groupedErrors = computed(() => {
     const groups = {};
 
-    props.results.failed.forEach(item => {
+    props.results.failed.forEach((item) => {
         const errorKey = item.error || 'Error desconocido';
         if (!groups[errorKey]) {
             groups[errorKey] = {
@@ -101,15 +101,7 @@ const handleClose = () => {
 </script>
 
 <template>
-    <Dialog
-        v-model:visible="dialogVisible"
-        header="Creación Masiva de Horarios"
-        :modal="true"
-        :closable="!loading"
-        :closeOnEscape="!loading"
-        class="w-full md:w-[600px]"
-        @hide="handleClose"
-    >
+    <Dialog v-model:visible="dialogVisible" header="Creación Masiva de Horarios" :modal="true" :closable="!loading" :closeOnEscape="!loading" class="w-full md:w-[600px]" @hide="handleClose">
         <div class="batch-progress-content">
             <!-- Loading State -->
             <div v-if="loading" class="loading-section">
@@ -118,13 +110,9 @@ const handleClose = () => {
                 </div>
                 <h3 class="loading-title">Enviando Horarios...</h3>
                 <p class="loading-subtitle">Por favor espere mientras se procesan los horarios</p>
-                
-                <ProgressBar 
-                    :value="progressPercentage" 
-                    class="progress-bar"
-                    :showValue="false"
-                />
-                
+
+                <ProgressBar :value="progressPercentage" class="progress-bar" :showValue="false" />
+
                 <div class="progress-stats">
                     <span class="stat-item">
                         <i class="pi pi-check-circle text-green-500"></i>
@@ -144,7 +132,7 @@ const handleClose = () => {
             <!-- Complete State -->
             <div v-else-if="isComplete" class="complete-section">
                 <!-- Success Icon -->
-                <div class="result-icon" :class="{ 'success': !hasErrors, 'warning': hasErrors }">
+                <div class="result-icon" :class="{ success: !hasErrors, warning: hasErrors }">
                     <i v-if="!hasErrors" class="pi pi-check-circle"></i>
                     <i v-else class="pi pi-exclamation-triangle"></i>
                 </div>
@@ -153,9 +141,7 @@ const handleClose = () => {
                 <h3 class="result-title">
                     {{ hasErrors ? 'Proceso Completado con Errores' : '¡Proceso Completado!' }}
                 </h3>
-                <p class="result-subtitle">
-                    {{ results.successful.length }} de {{ results.total }} horarios creados exitosamente
-                </p>
+                <p class="result-subtitle">{{ results.successful.length }} de {{ results.total }} horarios creados exitosamente</p>
 
                 <!-- Success Rate -->
                 <div class="success-rate">
@@ -172,11 +158,7 @@ const handleClose = () => {
                         Horarios Creados ({{ results.successful.length }})
                     </h4>
                     <div class="results-list success-list">
-                        <div 
-                            v-for="(item, index) in results.successful" 
-                            :key="'success-' + index"
-                            class="result-item success-item"
-                        >
+                        <div v-for="(item, index) in results.successful" :key="'success-' + index" class="result-item success-item">
                             <i class="pi pi-check"></i>
                             <span>{{ formatDate(item.date) }}</span>
                         </div>
@@ -191,11 +173,7 @@ const handleClose = () => {
                     </h4>
                     <div class="results-list error-list">
                         <!-- Grouped by error type -->
-                        <div
-                            v-for="(group, groupIndex) in groupedErrors"
-                            :key="'error-group-' + groupIndex"
-                            class="error-group"
-                        >
+                        <div v-for="(group, groupIndex) in groupedErrors" :key="'error-group-' + groupIndex" class="error-group">
                             <div class="error-group-header">
                                 <i class="pi pi-exclamation-circle"></i>
                                 <div class="error-group-info">
@@ -204,11 +182,7 @@ const handleClose = () => {
                                 </div>
                             </div>
                             <div class="error-group-items">
-                                <div
-                                    v-for="(item, itemIndex) in group.items"
-                                    :key="'error-item-' + itemIndex"
-                                    class="error-detail-item"
-                                >
+                                <div v-for="(item, itemIndex) in group.items" :key="'error-item-' + itemIndex" class="error-detail-item">
                                     <i class="pi pi-calendar"></i>
                                     <div class="error-detail-content">
                                         <div class="error-detail-row">
@@ -240,12 +214,7 @@ const handleClose = () => {
 
         <template #footer>
             <div class="flex justify-end">
-                <Button
-                    label="Cerrar"
-                    icon="pi pi-times"
-                    @click="handleClose"
-                    :disabled="loading"
-                />
+                <Button label="Cerrar" icon="pi pi-times" @click="handleClose" :disabled="loading" />
             </div>
         </template>
     </Dialog>

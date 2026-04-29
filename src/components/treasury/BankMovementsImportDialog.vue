@@ -166,7 +166,6 @@ const handleClose = () => {
              STEP 1 — SETUP
         ════════════════════════════════════════════════════════════════ -->
         <div v-if="step === 'setup'" class="dialog-body">
-
             <!-- Download template -->
             <div class="template-banner">
                 <div class="template-banner-left">
@@ -189,15 +188,7 @@ const handleClose = () => {
                     <i class="pi pi-building form-label-icon"></i>
                     Cuenta Bancaria Destino <span class="required-star">*</span>
                 </label>
-                <Dropdown
-                    v-model="importAccountId"
-                    :options="accounts"
-                    optionLabel="displayName"
-                    optionValue="id"
-                    filter
-                    placeholder="Seleccione la cuenta bancaria"
-                    class="w-full"
-                />
+                <Dropdown v-model="importAccountId" :options="accounts" optionLabel="displayName" optionValue="id" filter placeholder="Seleccione la cuenta bancaria" class="w-full" />
             </div>
 
             <!-- File -->
@@ -206,7 +197,7 @@ const handleClose = () => {
                     <i class="pi pi-file-excel form-label-icon"></i>
                     Archivo Excel (.xlsx / .xls) <span class="required-star">*</span>
                 </label>
-                <input ref="fileInputRef" type="file" accept=".xlsx,.xls" style="display:none" @change="onFileChange" />
+                <input ref="fileInputRef" type="file" accept=".xlsx,.xls" style="display: none" @change="onFileChange" />
                 <div class="file-upload-zone" :class="{ 'has-file': importFile }" @click="fileInputRef.click()">
                     <template v-if="importFile">
                         <i class="pi pi-file-excel file-zone-icon file-zone-icon--ready"></i>
@@ -231,14 +222,7 @@ const handleClose = () => {
                     Año del Extracto
                     <span class="optional-tag">Opcional</span>
                 </label>
-                <InputNumber
-                    v-model="importYear"
-                    :min="2000"
-                    :max="2099"
-                    :useGrouping="false"
-                    placeholder="Ej: 2026 — solo si las fechas vienen en formato DD-MM"
-                    class="w-full"
-                />
+                <InputNumber v-model="importYear" :min="2000" :max="2099" :useGrouping="false" placeholder="Ej: 2026 — solo si las fechas vienen en formato DD-MM" class="w-full" />
                 <small class="field-hint">Necesario únicamente cuando el archivo usa fechas sin año (extractos BBVA).</small>
             </div>
         </div>
@@ -247,20 +231,25 @@ const handleClose = () => {
              STEP 2 — PREVIEW
         ════════════════════════════════════════════════════════════════ -->
         <div v-else-if="step === 'preview'" class="dialog-body">
-
             <!-- Summary chips -->
             <div class="preview-summary">
                 <div class="summary-chip summary-chip--success">
                     <i class="pi pi-check-circle"></i>
-                    <span><strong>{{ dryResult.valid }}</strong> filas válidas</span>
+                    <span
+                        ><strong>{{ dryResult.valid }}</strong> filas válidas</span
+                    >
                 </div>
                 <div class="summary-chip" :class="dryResult.warnings > 0 ? 'summary-chip--warn' : 'summary-chip--neutral'">
                     <i class="pi pi-exclamation-triangle"></i>
-                    <span><strong>{{ dryResult.warnings }}</strong> advertencias</span>
+                    <span
+                        ><strong>{{ dryResult.warnings }}</strong> advertencias</span
+                    >
                 </div>
                 <div class="summary-chip" :class="dryResult.errors.length > 0 ? 'summary-chip--error' : 'summary-chip--neutral'">
                     <i class="pi pi-times-circle"></i>
-                    <span><strong>{{ dryResult.errors.length }}</strong> errores</span>
+                    <span
+                        ><strong>{{ dryResult.errors.length }}</strong> errores</span
+                    >
                 </div>
             </div>
 
@@ -317,14 +306,18 @@ const handleClose = () => {
             <div class="done-chips">
                 <div class="summary-chip summary-chip--success">
                     <i class="pi pi-database"></i>
-                    <span><strong>{{ doneResult.created }}</strong> movimientos creados</span>
+                    <span
+                        ><strong>{{ doneResult.created }}</strong> movimientos creados</span
+                    >
                 </div>
                 <div v-if="doneResult.warnings > 0" class="summary-chip summary-chip--warn">
                     <i class="pi pi-exclamation-triangle"></i>
-                    <span><strong>{{ doneResult.warnings }}</strong> filas omitidas</span>
+                    <span
+                        ><strong>{{ doneResult.warnings }}</strong> filas omitidas</span
+                    >
                 </div>
             </div>
-            <div v-if="doneResult.warnings_detail.length > 0" class="preview-section" style="width:100%">
+            <div v-if="doneResult.warnings_detail.length > 0" class="preview-section" style="width: 100%">
                 <div class="preview-section-header preview-section-header--warn">
                     <i class="pi pi-exclamation-triangle"></i>
                     Filas omitidas por duplicado
@@ -350,14 +343,7 @@ const handleClose = () => {
                 <!-- PREVIEW footer -->
                 <template v-else-if="step === 'preview'">
                     <Button label="Volver" icon="pi pi-arrow-left" class="dialog-cancel-btn" text @click="backToSetup" :disabled="loading" />
-                    <Button
-                        v-if="dryResult.canImport"
-                        label="Confirmar importación"
-                        icon="pi pi-check"
-                        class="dialog-confirm-btn"
-                        :loading="loading"
-                        @click="handleConfirm"
-                    />
+                    <Button v-if="dryResult.canImport" label="Confirmar importación" icon="pi pi-check" class="dialog-confirm-btn" :loading="loading" @click="handleConfirm" />
                 </template>
 
                 <!-- DONE footer -->

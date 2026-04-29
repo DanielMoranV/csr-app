@@ -8,21 +8,21 @@ import CategoryTypeTag from './components/CategoryTypeTag.vue';
 const toast = useToast();
 
 // ── Tabla ──────────────────────────────────────────────────────────────────
-const categories   = ref([]);
-const loading      = ref(true);
-const pdfLoading   = ref(false);
-const filters      = ref({ global: { value: null, matchMode: FilterMatchMode.CONTAINS } });
+const categories = ref([]);
+const loading = ref(true);
+const pdfLoading = ref(false);
+const filters = ref({ global: { value: null, matchMode: FilterMatchMode.CONTAINS } });
 
 // ── CRUD ───────────────────────────────────────────────────────────────────
 const categoryDialog = ref(false);
-const deleteDialog   = ref(false);
-const category       = ref({});
-const submitted      = ref(false);
-const saving         = ref(false);
-const deleting       = ref(false);
-const deleteMode     = ref('delete'); // 'delete' | 'deactivate'
-const movementTypes  = ref([]);
-const serverErrors   = ref({});
+const deleteDialog = ref(false);
+const category = ref({});
+const submitted = ref(false);
+const saving = ref(false);
+const deleting = ref(false);
+const deleteMode = ref('delete'); // 'delete' | 'deactivate'
+const movementTypes = ref([]);
+const serverErrors = ref({});
 
 // ── Carga ──────────────────────────────────────────────────────────────────
 const loadCategories = async () => {
@@ -52,7 +52,7 @@ const exportPdf = async () => {
     try {
         const response = await TreasuryService.getMovementCategoriesPdf();
         const blob = new Blob([response.data], { type: 'application/pdf' });
-        const url  = URL.createObjectURL(blob);
+        const url = URL.createObjectURL(blob);
         window.open(url, '_blank');
         setTimeout(() => URL.revokeObjectURL(url), 10000);
         toast.add({ severity: 'success', summary: 'PDF generado', detail: 'El reporte se abrió en una nueva pestaña', life: 3000 });
@@ -65,14 +65,14 @@ const exportPdf = async () => {
 
 // ── Dialog Crear/Editar ────────────────────────────────────────────────────
 const openNew = () => {
-    category.value  = { name: '', description: '', movement_type_id: null, is_active: true };
+    category.value = { name: '', description: '', movement_type_id: null, is_active: true };
     submitted.value = false;
     serverErrors.value = {};
     categoryDialog.value = true;
 };
 
 const editCategory = (row) => {
-    category.value  = { ...row, movement_type_id: row.movement_type?.id ?? row.movement_type_id };
+    category.value = { ...row, movement_type_id: row.movement_type?.id ?? row.movement_type_id };
     submitted.value = false;
     serverErrors.value = {};
     categoryDialog.value = true;
@@ -80,22 +80,22 @@ const editCategory = (row) => {
 
 const hideDialog = () => {
     categoryDialog.value = false;
-    submitted.value      = false;
-    serverErrors.value   = {};
+    submitted.value = false;
+    serverErrors.value = {};
 };
 
 const saveCategory = async () => {
     submitted.value = true;
     if (!category.value.name?.trim() || !category.value.movement_type_id) return;
 
-    saving.value       = true;
+    saving.value = true;
     serverErrors.value = {};
     try {
         const payload = {
-            name:             category.value.name.trim(),
-            description:      category.value.description || '',
+            name: category.value.name.trim(),
+            description: category.value.description || '',
             movement_type_id: category.value.movement_type_id,
-            is_active:        category.value.is_active
+            is_active: category.value.is_active
         };
         if (category.value.id) {
             await TreasuryService.updateMovementCategory(category.value.id, payload);
@@ -120,7 +120,7 @@ const saveCategory = async () => {
 
 // ── Dialog Eliminar ────────────────────────────────────────────────────────
 const confirmDelete = (row) => {
-    category.value   = row;
+    category.value = row;
     deleteMode.value = 'delete';
     deleteDialog.value = true;
 };
@@ -134,7 +134,7 @@ const deleteCategory = async () => {
         loadCategories();
     } catch (error) {
         if (error.response?.status === 409) {
-            deleteMode.value = 'deactivate';   // muta el dialog al flujo de desactivación
+            deleteMode.value = 'deactivate'; // muta el dialog al flujo de desactivación
         } else {
             toast.add({ severity: 'error', summary: 'Error', detail: 'No se pudo eliminar la categoría', life: 3000 });
         }
@@ -198,34 +198,12 @@ onMounted(() => {
                         </InputIcon>
                         <InputText v-model="filters['global'].value" placeholder="Buscar categorías..." class="search-input-modern" />
                     </IconField>
-                    <Button
-                        label="Nueva Categoría"
-                        icon="pi pi-plus"
-                        class="action-button"
-                        @click="openNew"
-                    />
-                    <Button
-                        label="Exportar PDF"
-                        icon="pi pi-file-pdf"
-                        class="pdf-button"
-                        :loading="pdfLoading"
-                        @click="exportPdf"
-                    />
+                    <Button label="Nueva Categoría" icon="pi pi-plus" class="action-button" @click="openNew" />
+                    <Button label="Exportar PDF" icon="pi pi-file-pdf" class="pdf-button" :loading="pdfLoading" @click="exportPdf" />
                 </div>
             </div>
 
-            <DataTable
-                :value="categories"
-                :paginator="true"
-                :rows="10"
-                dataKey="id"
-                :filters="filters"
-                :loading="loading"
-                showGridlines
-                responsiveLayout="scroll"
-                :emptyMessage="undefined"
-                class="modern-datatable"
-            >
+            <DataTable :value="categories" :paginator="true" :rows="10" dataKey="id" :filters="filters" :loading="loading" showGridlines responsiveLayout="scroll" :emptyMessage="undefined" class="modern-datatable">
                 <template #empty>
                     <div class="empty-state">
                         <div class="empty-icon-wrapper">
@@ -262,10 +240,7 @@ onMounted(() => {
 
                 <Column field="is_active" header="Estado" :sortable="true" style="min-width: 8rem; width: 8rem">
                     <template #body="{ data }">
-                        <Tag
-                            :value="data.is_active ? 'Activo' : 'Inactivo'"
-                            :severity="data.is_active ? 'success' : 'danger'"
-                        />
+                        <Tag :value="data.is_active ? 'Activo' : 'Inactivo'" :severity="data.is_active ? 'success' : 'danger'" />
                     </template>
                 </Column>
 
@@ -300,19 +275,9 @@ onMounted(() => {
                             <i class="pi pi-tag form-label-icon"></i>
                             Nombre <span class="required-star">*</span>
                         </label>
-                        <InputText
-                            id="cat-name"
-                            v-model.trim="category.name"
-                            autofocus
-                            placeholder="Ej: HONORARIOS MÉDICOS"
-                            :class="['form-input', { 'p-invalid': (submitted && !category.name) || serverErrors.name }]"
-                        />
-                        <small class="p-error" v-if="submitted && !category.name">
-                            <i class="pi pi-exclamation-circle mr-1"></i>El nombre es requerido.
-                        </small>
-                        <small class="p-error" v-for="err in (serverErrors.name || [])" :key="err">
-                            <i class="pi pi-exclamation-circle mr-1"></i>{{ err }}
-                        </small>
+                        <InputText id="cat-name" v-model.trim="category.name" autofocus placeholder="Ej: HONORARIOS MÉDICOS" :class="['form-input', { 'p-invalid': (submitted && !category.name) || serverErrors.name }]" />
+                        <small class="p-error" v-if="submitted && !category.name"> <i class="pi pi-exclamation-circle mr-1"></i>El nombre es requerido. </small>
+                        <small class="p-error" v-for="err in serverErrors.name || []" :key="err"> <i class="pi pi-exclamation-circle mr-1"></i>{{ err }} </small>
                     </div>
 
                     <!-- Tipo de Movimiento -->
@@ -330,12 +295,8 @@ onMounted(() => {
                             placeholder="Seleccionar tipo..."
                             :class="['form-input', { 'p-invalid': (submitted && !category.movement_type_id) || serverErrors.movement_type_id }]"
                         />
-                        <small class="p-error" v-if="submitted && !category.movement_type_id">
-                            <i class="pi pi-exclamation-circle mr-1"></i>El tipo de movimiento es requerido.
-                        </small>
-                        <small class="p-error" v-for="err in (serverErrors.movement_type_id || [])" :key="err">
-                            <i class="pi pi-exclamation-circle mr-1"></i>{{ err }}
-                        </small>
+                        <small class="p-error" v-if="submitted && !category.movement_type_id"> <i class="pi pi-exclamation-circle mr-1"></i>El tipo de movimiento es requerido. </small>
+                        <small class="p-error" v-for="err in serverErrors.movement_type_id || []" :key="err"> <i class="pi pi-exclamation-circle mr-1"></i>{{ err }} </small>
                     </div>
 
                     <!-- Descripción + Estado -->
@@ -346,13 +307,7 @@ onMounted(() => {
                                 Descripción
                                 <span class="optional-tag">Opcional</span>
                             </label>
-                            <Textarea
-                                id="cat-desc"
-                                v-model="category.description"
-                                rows="3"
-                                placeholder="Descripción de la categoría..."
-                                class="form-input form-textarea"
-                            />
+                            <Textarea id="cat-desc" v-model="category.description" rows="3" placeholder="Descripción de la categoría..." class="form-input form-textarea" />
                         </div>
                         <div class="form-field">
                             <label class="form-label">
@@ -372,13 +327,7 @@ onMounted(() => {
                 <template #footer>
                     <div class="dialog-footer">
                         <Button label="Cancelar" icon="pi pi-times" class="dialog-cancel-btn" text @click="hideDialog" />
-                        <Button
-                            :label="category.id ? 'Actualizar' : 'Guardar'"
-                            icon="pi pi-check"
-                            class="dialog-save-btn"
-                            :loading="saving"
-                            @click="saveCategory"
-                        />
+                        <Button :label="category.id ? 'Actualizar' : 'Guardar'" icon="pi pi-check" class="dialog-save-btn" :loading="saving" @click="saveCategory" />
                     </div>
                 </template>
             </Dialog>
@@ -400,33 +349,24 @@ onMounted(() => {
                 <div class="delete-body">
                     <template v-if="deleteMode === 'delete'">
                         <i class="pi pi-exclamation-triangle delete-icon-warning"></i>
-                        <p>¿Estás seguro que deseas eliminar la categoría <strong>{{ category.name }}</strong>?</p>
+                        <p>
+                            ¿Estás seguro que deseas eliminar la categoría <strong>{{ category.name }}</strong
+                            >?
+                        </p>
                     </template>
                     <template v-else>
                         <i class="pi pi-info-circle delete-icon-info"></i>
-                        <p>La categoría <strong>{{ category.name }}</strong> tiene movimientos asociados y no puede eliminarse. ¿Deseas <strong>desactivarla</strong> en su lugar?</p>
+                        <p>
+                            La categoría <strong>{{ category.name }}</strong> tiene movimientos asociados y no puede eliminarse. ¿Deseas <strong>desactivarla</strong> en su lugar?
+                        </p>
                     </template>
                 </div>
 
                 <template #footer>
                     <div class="dialog-footer">
                         <Button label="Cancelar" icon="pi pi-times" class="dialog-cancel-btn" text @click="deleteDialog = false" />
-                        <Button
-                            v-if="deleteMode === 'delete'"
-                            label="Sí, eliminar"
-                            icon="pi pi-trash"
-                            severity="danger"
-                            :loading="deleting"
-                            @click="deleteCategory"
-                        />
-                        <Button
-                            v-else
-                            label="Sí, desactivar"
-                            icon="pi pi-ban"
-                            severity="warning"
-                            :loading="deleting"
-                            @click="deactivateCategory"
-                        />
+                        <Button v-if="deleteMode === 'delete'" label="Sí, eliminar" icon="pi pi-trash" severity="danger" :loading="deleting" @click="deleteCategory" />
+                        <Button v-else label="Sí, desactivar" icon="pi pi-ban" severity="warning" :loading="deleting" @click="deactivateCategory" />
                     </div>
                 </template>
             </Dialog>
@@ -439,24 +379,56 @@ onMounted(() => {
    ANIMATIONS
    ============================================================================ */
 @keyframes shimmer {
-    0%, 100% { transform: translateX(-100%) rotate(45deg); }
-    50%       { transform: translateX(100%)  rotate(45deg); }
+    0%,
+    100% {
+        transform: translateX(-100%) rotate(45deg);
+    }
+    50% {
+        transform: translateX(100%) rotate(45deg);
+    }
 }
 @keyframes pulse {
-    0%, 100% { transform: scale(1); }
-    50%       { transform: scale(1.05); }
+    0%,
+    100% {
+        transform: scale(1);
+    }
+    50% {
+        transform: scale(1.05);
+    }
 }
 @keyframes gradientShift {
-    0%, 100% { background-position: 0%   50%; }
-    50%       { background-position: 100% 50%; }
+    0%,
+    100% {
+        background-position: 0% 50%;
+    }
+    50% {
+        background-position: 100% 50%;
+    }
 }
 @keyframes fadeIn {
-    from { opacity: 0; transform: translateY(10px); }
-    to   { opacity: 1; transform: translateY(0);    }
+    from {
+        opacity: 0;
+        transform: translateY(10px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
 }
 @keyframes iconPulse {
-    0%, 100% { transform: scale(1);    box-shadow: 0 4px 12px rgba(16,185,129,0.3), 0 2px 8px rgba(5,150,105,0.2); }
-    50%       { transform: scale(1.05); box-shadow: 0 6px 16px rgba(16,185,129,0.4), 0 3px 10px rgba(5,150,105,0.3); }
+    0%,
+    100% {
+        transform: scale(1);
+        box-shadow:
+            0 4px 12px rgba(16, 185, 129, 0.3),
+            0 2px 8px rgba(5, 150, 105, 0.2);
+    }
+    50% {
+        transform: scale(1.05);
+        box-shadow:
+            0 6px 16px rgba(16, 185, 129, 0.4),
+            0 3px 10px rgba(5, 150, 105, 0.3);
+    }
 }
 
 /* ============================================================================
@@ -479,7 +451,9 @@ onMounted(() => {
 .main-card::before {
     content: '';
     position: absolute;
-    top: 0; left: 0; right: 0;
+    top: 0;
+    left: 0;
+    right: 0;
     height: 3px;
     background: linear-gradient(90deg, #10b981, #059669, #10b981, #047857);
     background-size: 200% 100%;
@@ -500,26 +474,42 @@ onMounted(() => {
     margin-bottom: 2rem;
 }
 .header-icon-wrapper {
-    width: 64px; height: 64px;
+    width: 64px;
+    height: 64px;
     border-radius: 16px;
-    display: flex; align-items: center; justify-content: center;
+    display: flex;
+    align-items: center;
+    justify-content: center;
     background: linear-gradient(135deg, #10b981 0%, #059669 50%, #047857 100%);
-    box-shadow: 0 8px 20px rgba(16,185,129,0.3), 0 4px 12px rgba(5,150,105,0.4);
+    box-shadow:
+        0 8px 20px rgba(16, 185, 129, 0.3),
+        0 4px 12px rgba(5, 150, 105, 0.4);
     animation: pulse 2s ease-in-out infinite;
-    position: relative; overflow: hidden;
+    position: relative;
+    overflow: hidden;
 }
 .header-icon-wrapper::before {
     content: '';
-    position: absolute; top: -50%; left: -50%;
-    width: 200%; height: 200%;
-    background: linear-gradient(135deg, transparent, rgba(255,255,255,0.2), transparent);
+    position: absolute;
+    top: -50%;
+    left: -50%;
+    width: 200%;
+    height: 200%;
+    background: linear-gradient(135deg, transparent, rgba(255, 255, 255, 0.2), transparent);
     animation: shimmer 3s infinite;
 }
-.header-icon-wrapper i { font-size: 2rem; color: #ffffff; z-index: 1; }
+.header-icon-wrapper i {
+    font-size: 2rem;
+    color: #ffffff;
+    z-index: 1;
+}
 
-.header-content { flex: 1; }
+.header-content {
+    flex: 1;
+}
 .header-title {
-    font-size: 1.75rem; font-weight: 700;
+    font-size: 1.75rem;
+    font-weight: 700;
     margin: 0 0 0.5rem 0;
     background: linear-gradient(135deg, #10b981 0%, #059669 100%);
     -webkit-background-clip: text;
@@ -529,7 +519,8 @@ onMounted(() => {
 .header-subtitle {
     color: var(--text-color-secondary);
     font-size: 1rem;
-    display: flex; align-items: center;
+    display: flex;
+    align-items: center;
     margin: 0;
 }
 
@@ -548,47 +539,83 @@ onMounted(() => {
 }
 .table-header-modern::after {
     content: '';
-    position: absolute; bottom: -2px; left: 0; right: 0;
+    position: absolute;
+    bottom: -2px;
+    left: 0;
+    right: 0;
     height: 2px;
     background: linear-gradient(90deg, #10b981, #059669, #10b981);
     background-size: 200% 100%;
     animation: gradientShift 3s ease infinite;
 }
 
-.header-left { display: flex; align-items: center; gap: 1rem; }
+.header-left {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+}
 
 .header-icon-badge {
-    width: 48px; height: 48px;
+    width: 48px;
+    height: 48px;
     border-radius: 12px;
     background: linear-gradient(135deg, #10b981 0%, #059669 50%, #047857 100%);
-    display: flex; align-items: center; justify-content: center;
-    box-shadow: 0 4px 12px rgba(16,185,129,0.3), 0 2px 8px rgba(5,150,105,0.2);
-    position: relative; overflow: hidden;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    box-shadow:
+        0 4px 12px rgba(16, 185, 129, 0.3),
+        0 2px 8px rgba(5, 150, 105, 0.2);
+    position: relative;
+    overflow: hidden;
     animation: iconPulse 2s ease-in-out infinite;
 }
 .header-icon-badge::before {
     content: '';
-    position: absolute; inset: 0;
-    background: linear-gradient(135deg, transparent 0%, rgba(255,255,255,0.15) 50%, transparent 100%);
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(135deg, transparent 0%, rgba(255, 255, 255, 0.15) 50%, transparent 100%);
     animation: shimmer 3s ease-in-out infinite;
 }
-.header-icon-badge i { font-size: 1.5rem; color: white; position: relative; z-index: 1; }
+.header-icon-badge i {
+    font-size: 1.5rem;
+    color: white;
+    position: relative;
+    z-index: 1;
+}
 
-.header-info { display: flex; flex-direction: column; gap: 0.25rem; }
-.header-title-small { font-size: 1.125rem; font-weight: 700; color: var(--text-color); }
+.header-info {
+    display: flex;
+    flex-direction: column;
+    gap: 0.25rem;
+}
+.header-title-small {
+    font-size: 1.125rem;
+    font-weight: 700;
+    color: var(--text-color);
+}
 .header-count {
-    font-size: 0.813rem; font-weight: 600;
+    font-size: 0.813rem;
+    font-weight: 600;
     color: #059669;
     background: linear-gradient(135deg, #d1fae5 0%, #ecfdf5 100%);
     padding: 0.188rem 0.625rem;
-    border-radius: 6px; display: inline-block; width: fit-content;
+    border-radius: 6px;
+    display: inline-block;
+    width: fit-content;
     border: 1px solid #6ee7b7;
-    box-shadow: 0 2px 4px rgba(16,185,129,0.1);
+    box-shadow: 0 2px 4px rgba(16, 185, 129, 0.1);
 }
 
-.header-actions-modern { display: flex; gap: 0.75rem; align-items: center; }
+.header-actions-modern {
+    display: flex;
+    gap: 0.75rem;
+    align-items: center;
+}
 
-.search-field { width: 280px; }
+.search-field {
+    width: 280px;
+}
 .search-input-modern {
     border-radius: 10px;
     border: 2px solid var(--surface-border);
@@ -598,21 +625,26 @@ onMounted(() => {
     background: var(--surface-ground);
     color: var(--text-color);
 }
-.search-input-modern:hover { border-color: #a7f3d0; }
-.search-input-modern:focus { border-color: #10b981; box-shadow: 0 0 0 3px rgba(16,185,129,0.1); }
+.search-input-modern:hover {
+    border-color: #a7f3d0;
+}
+.search-input-modern:focus {
+    border-color: #10b981;
+    box-shadow: 0 0 0 3px rgba(16, 185, 129, 0.1);
+}
 
 /* PDF button – teal-to-red gradient to visually distinguish it */
 .pdf-button {
     background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%) !important;
     border: none !important;
     border-radius: 10px !important;
-    box-shadow: 0 3px 10px rgba(239,68,68,0.3) !important;
+    box-shadow: 0 3px 10px rgba(239, 68, 68, 0.3) !important;
     transition: all 0.3s ease !important;
     white-space: nowrap;
 }
 .pdf-button:hover {
     transform: translateY(-2px) !important;
-    box-shadow: 0 5px 15px rgba(239,68,68,0.4) !important;
+    box-shadow: 0 5px 15px rgba(239, 68, 68, 0.4) !important;
     background: linear-gradient(135deg, #dc2626 0%, #b91c1c 100%) !important;
 }
 
@@ -646,11 +678,13 @@ onMounted(() => {
     display: inline-flex;
     align-items: center;
     justify-content: center;
-    min-width: 2rem; height: 2rem;
+    min-width: 2rem;
+    height: 2rem;
     border-radius: 8px;
     background: var(--surface-ground);
     border: 1px solid var(--surface-border);
-    font-size: 0.8rem; font-weight: 700;
+    font-size: 0.8rem;
+    font-weight: 700;
     color: var(--text-color-secondary);
 }
 .category-name {
@@ -676,23 +710,33 @@ onMounted(() => {
     animation: fadeIn 0.4s ease-out;
 }
 .empty-icon-wrapper {
-    width: 80px; height: 80px;
+    width: 80px;
+    height: 80px;
     border-radius: 20px;
     background: linear-gradient(135deg, #d1fae5 0%, #ecfdf5 100%);
     border: 2px solid #a7f3d0;
-    display: flex; align-items: center; justify-content: center;
+    display: flex;
+    align-items: center;
+    justify-content: center;
     margin-bottom: 1.25rem;
-    box-shadow: 0 8px 20px rgba(16,185,129,0.12);
+    box-shadow: 0 8px 20px rgba(16, 185, 129, 0.12);
 }
-.empty-icon-wrapper i { font-size: 2.25rem; color: #10b981; }
+.empty-icon-wrapper i {
+    font-size: 2.25rem;
+    color: #10b981;
+}
 .empty-title {
-    font-size: 1.2rem; font-weight: 700;
+    font-size: 1.2rem;
+    font-weight: 700;
     color: var(--text-color);
     margin: 0 0 0.5rem 0;
 }
 .empty-subtitle {
-    font-size: 0.9rem; color: var(--text-color-secondary);
-    margin: 0; max-width: 360px; line-height: 1.6;
+    font-size: 0.9rem;
+    color: var(--text-color-secondary);
+    margin: 0;
+    max-width: 360px;
+    line-height: 1.6;
 }
 :global(.dark) .empty-icon-wrapper {
     background: linear-gradient(135deg, #064e3b 0%, #065f46 100%);
@@ -706,17 +750,21 @@ onMounted(() => {
     background: linear-gradient(135deg, #10b981 0%, #059669 100%) !important;
     border: none !important;
     border-radius: 10px !important;
-    box-shadow: 0 3px 10px rgba(16,185,129,0.3) !important;
+    box-shadow: 0 3px 10px rgba(16, 185, 129, 0.3) !important;
     transition: all 0.3s ease !important;
     white-space: nowrap;
 }
 .action-button:hover {
     transform: translateY(-2px) !important;
-    box-shadow: 0 5px 15px rgba(16,185,129,0.4) !important;
+    box-shadow: 0 5px 15px rgba(16, 185, 129, 0.4) !important;
     background: linear-gradient(135deg, #059669 0%, #047857 100%) !important;
 }
 
-.action-buttons { display: flex; gap: 0.5rem; align-items: center; }
+.action-buttons {
+    display: flex;
+    gap: 0.5rem;
+    align-items: center;
+}
 
 /* ============================================================================
    DIALOG STYLES
@@ -727,99 +775,178 @@ onMounted(() => {
     border-bottom: none;
 }
 :deep(.category-dialog .p-dialog-content),
-:deep(.delete-dialog .p-dialog-content) { padding: 0; }
+:deep(.delete-dialog .p-dialog-content) {
+    padding: 0;
+}
 :deep(.category-dialog .p-dialog-footer),
 :deep(.delete-dialog .p-dialog-footer) {
     padding: 0;
     border-top: 1px solid var(--surface-border);
 }
 
-.dialog-header { display: flex; align-items: center; gap: 1rem; }
+.dialog-header {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+}
 .dialog-header-icon {
-    width: 52px; height: 52px;
+    width: 52px;
+    height: 52px;
     border-radius: 14px;
     background: linear-gradient(135deg, #10b981 0%, #059669 50%, #047857 100%);
-    display: flex; align-items: center; justify-content: center;
-    box-shadow: 0 6px 16px rgba(16,185,129,0.3);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    box-shadow: 0 6px 16px rgba(16, 185, 129, 0.3);
     flex-shrink: 0;
 }
 .dialog-header-icon.icon-danger {
     background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%);
-    box-shadow: 0 6px 16px rgba(239,68,68,0.3);
+    box-shadow: 0 6px 16px rgba(239, 68, 68, 0.3);
 }
 .dialog-header-icon.icon-warning {
     background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%);
-    box-shadow: 0 6px 16px rgba(245,158,11,0.3);
+    box-shadow: 0 6px 16px rgba(245, 158, 11, 0.3);
 }
-.dialog-header-icon i { font-size: 1.6rem; color: #fff; }
+.dialog-header-icon i {
+    font-size: 1.6rem;
+    color: #fff;
+}
 
-.dialog-title { font-size: 1.2rem; font-weight: 700; color: var(--text-color); margin: 0 0 0.15rem 0; }
-.dialog-subtitle { font-size: 0.8rem; color: var(--text-color-secondary); margin: 0; }
+.dialog-title {
+    font-size: 1.2rem;
+    font-weight: 700;
+    color: var(--text-color);
+    margin: 0 0 0.15rem 0;
+}
+.dialog-subtitle {
+    font-size: 0.8rem;
+    color: var(--text-color-secondary);
+    margin: 0;
+}
 
 .dialog-body {
     padding: 1.5rem;
-    display: flex; flex-direction: column; gap: 1rem;
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
 }
 
-.form-field { display: flex; flex-direction: column; gap: 0.4rem; }
-.form-label {
-    font-size: 0.8rem; font-weight: 600;
-    color: var(--text-color-secondary);
-    display: flex; align-items: center; gap: 0.35rem;
-    text-transform: uppercase; letter-spacing: 0.04em;
+.form-field {
+    display: flex;
+    flex-direction: column;
+    gap: 0.4rem;
 }
-.form-label-icon { font-size: 0.75rem; color: #10b981; }
-.required-star { color: #ef4444; font-weight: 700; }
+.form-label {
+    font-size: 0.8rem;
+    font-weight: 600;
+    color: var(--text-color-secondary);
+    display: flex;
+    align-items: center;
+    gap: 0.35rem;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+}
+.form-label-icon {
+    font-size: 0.75rem;
+    color: #10b981;
+}
+.required-star {
+    color: #ef4444;
+    font-weight: 700;
+}
 .optional-tag {
-    background: var(--surface-100); color: var(--text-color-secondary);
-    font-size: 0.68rem; padding: 0.1rem 0.4rem;
-    border-radius: 4px; font-weight: 500;
+    background: var(--surface-100);
+    color: var(--text-color-secondary);
+    font-size: 0.68rem;
+    padding: 0.1rem 0.4rem;
+    border-radius: 4px;
+    font-weight: 500;
     border: 1px solid var(--surface-border);
     text-transform: none;
 }
-.form-input { width: 100%; border-radius: 8px; transition: all 0.2s ease; }
+.form-input {
+    width: 100%;
+    border-radius: 8px;
+    transition: all 0.2s ease;
+}
 :deep(.form-input:focus) {
     border-color: #10b981 !important;
-    box-shadow: 0 0 0 3px rgba(16,185,129,0.12) !important;
+    box-shadow: 0 0 0 3px rgba(16, 185, 129, 0.12) !important;
 }
-.form-textarea { resize: vertical; }
+.form-textarea {
+    resize: vertical;
+}
 
-.form-grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; }
+.form-grid-2 {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 1rem;
+}
 
 .status-toggle {
-    display: flex; align-items: center; gap: 0.75rem;
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
     padding: 0.6rem 0.875rem;
     background: var(--surface-ground);
     border: 1px solid var(--surface-border);
-    border-radius: 8px; cursor: pointer;
+    border-radius: 8px;
+    cursor: pointer;
     transition: border-color 0.2s;
 }
-.status-toggle:hover { border-color: #10b981; }
-.status-label { cursor: pointer; }
+.status-toggle:hover {
+    border-color: #10b981;
+}
+.status-label {
+    cursor: pointer;
+}
 
 /* Delete dialog body */
 .delete-body {
     padding: 1.5rem;
-    display: flex; align-items: flex-start; gap: 1rem;
+    display: flex;
+    align-items: flex-start;
+    gap: 1rem;
 }
-.delete-body p { margin: 0; color: var(--text-color); line-height: 1.6; }
-.delete-icon-warning { font-size: 2rem; color: #f59e0b; flex-shrink: 0; }
-.delete-icon-info    { font-size: 2rem; color: #3b82f6; flex-shrink: 0; }
+.delete-body p {
+    margin: 0;
+    color: var(--text-color);
+    line-height: 1.6;
+}
+.delete-icon-warning {
+    font-size: 2rem;
+    color: #f59e0b;
+    flex-shrink: 0;
+}
+.delete-icon-info {
+    font-size: 2rem;
+    color: #3b82f6;
+    flex-shrink: 0;
+}
 
 .dialog-footer {
-    display: flex; justify-content: flex-end; align-items: center;
-    gap: 0.75rem; padding: 1rem 1.5rem;
+    display: flex;
+    justify-content: flex-end;
+    align-items: center;
+    gap: 0.75rem;
+    padding: 1rem 1.5rem;
 }
-.dialog-cancel-btn { color: var(--text-color-secondary) !important; border-radius: 8px !important; }
+.dialog-cancel-btn {
+    color: var(--text-color-secondary) !important;
+    border-radius: 8px !important;
+}
 .dialog-save-btn {
     background: linear-gradient(135deg, #10b981 0%, #059669 100%) !important;
-    border: none !important; border-radius: 8px !important;
-    box-shadow: 0 3px 10px rgba(16,185,129,0.3) !important;
-    transition: all 0.2s ease !important; font-weight: 600 !important;
+    border: none !important;
+    border-radius: 8px !important;
+    box-shadow: 0 3px 10px rgba(16, 185, 129, 0.3) !important;
+    transition: all 0.2s ease !important;
+    font-weight: 600 !important;
 }
 .dialog-save-btn:hover {
     transform: translateY(-1px) !important;
-    box-shadow: 0 5px 14px rgba(16,185,129,0.4) !important;
+    box-shadow: 0 5px 14px rgba(16, 185, 129, 0.4) !important;
     background: linear-gradient(135deg, #059669 0%, #047857 100%) !important;
 }
 </style>

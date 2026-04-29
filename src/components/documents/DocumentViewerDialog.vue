@@ -538,9 +538,7 @@ const activeStep = computed(() => {
     if (!currentDocument.value?.steps || !currentUser.value) return null;
 
     // Pasos pendientes/notificados ordenados por orden ascendente
-    const pending = [...currentDocument.value.steps]
-        .filter((s) => s.estado_paso === 'Pendiente' || s.estado_paso === 'Notificado')
-        .sort((a, b) => a.orden - b.orden);
+    const pending = [...currentDocument.value.steps].filter((s) => s.estado_paso === 'Pendiente' || s.estado_paso === 'Notificado').sort((a, b) => a.orden - b.orden);
 
     if (!pending.length) return null;
 
@@ -949,9 +947,7 @@ const openViewersDialog = () => {
 const saveViewers = async () => {
     isSavingViewers.value = true;
     try {
-        const payload = viewersForm.value.users.length === 0 && viewersForm.value.positions.length === 0
-            ? null
-            : { users: viewersForm.value.users, positions: viewersForm.value.positions };
+        const payload = viewersForm.value.users.length === 0 && viewersForm.value.positions.length === 0 ? null : { users: viewersForm.value.users, positions: viewersForm.value.positions };
         await updateDocumentViewers(props.documentId, payload);
         showViewersDialog.value = false;
         await fetchDocumentDetails(props.documentId);
@@ -1247,17 +1243,17 @@ const formatPermittedUsers = (step) => {
                     <!-- Visualizadores (solo visible para el creador) -->
                     <div v-if="isDocumentCreator" class="panel-section">
                         <div class="section-label-row">
-                            <p class="section-label" style="margin:0">Visualizadores</p>
+                            <p class="section-label" style="margin: 0">Visualizadores</p>
                             <button class="viewers-edit-btn" @click="openViewersDialog" v-tooltip.top="'Editar visualizadores'">
                                 <i class="pi pi-pen-to-square"></i>
                             </button>
                         </div>
                         <div v-if="currentDocument.viewers?.users?.length || currentDocument.viewers?.positions?.length" class="viewers-chips">
-                            <span v-for="uid in currentDocument.viewers.users" :key="'u'+uid" class="viewer-chip viewer-chip--user">
+                            <span v-for="uid in currentDocument.viewers.users" :key="'u' + uid" class="viewer-chip viewer-chip--user">
                                 <i class="pi pi-user"></i>
-                                {{ allUsers.find(u => u.id === uid)?.name ?? `#${uid}` }}
+                                {{ allUsers.find((u) => u.id === uid)?.name ?? `#${uid}` }}
                             </span>
-                            <span v-for="pos in currentDocument.viewers.positions" :key="'p'+pos" class="viewer-chip viewer-chip--pos">
+                            <span v-for="pos in currentDocument.viewers.positions" :key="'p' + pos" class="viewer-chip viewer-chip--pos">
                                 <i class="pi pi-briefcase"></i>
                                 {{ pos }}
                             </span>
@@ -1314,18 +1310,12 @@ const formatPermittedUsers = (step) => {
                                     <button class="att-chip-remove" @click="removeCommentAttachment(i)">×</button>
                                 </div>
                             </div>
-                            <input type="file" ref="commentAttachmentInput" multiple style="display:none" @change="handleCommentAttachmentSelect" />
+                            <input type="file" ref="commentAttachmentInput" multiple style="display: none" @change="handleCommentAttachmentSelect" />
                             <div class="comment-input-row">
                                 <button class="btn-attach-comment" @click="commentAttachmentInput?.click()" v-tooltip.top="'Adjuntar archivos'">
                                     <i class="pi pi-paperclip"></i>
                                 </button>
-                                <Textarea
-                                    v-model="newComment"
-                                    rows="2"
-                                    :placeholder="commentAttachments.length > 0 ? 'Descripción del adjunto (requerida)...' : 'Escribe un comentario...'"
-                                    class="comment-textarea"
-                                    style="resize: none"
-                                />
+                                <Textarea v-model="newComment" rows="2" :placeholder="commentAttachments.length > 0 ? 'Descripción del adjunto (requerida)...' : 'Escribe un comentario...'" class="comment-textarea" style="resize: none" />
                                 <Button icon="pi pi-send" class="btn-comment-send" :loading="isAddingComment" :disabled="!canSubmitComment" @click="submitComment" v-tooltip.left="'Enviar'" />
                             </div>
                         </div>
@@ -1496,24 +1486,30 @@ const formatPermittedUsers = (step) => {
         <div class="edicion-body">
             <!-- Descripción contextual -->
             <p class="edicion-hint">
-                <template v-if="fileUploadContext === 'sustento'">
-                    Adjunta el documento de respaldo (comprobante, constancia, resolución, etc.). El documento principal <strong>no se modificará</strong>.
-                </template>
-                <template v-else-if="edicionMode === 'replace'">
-                    Sube el PDF con tus correcciones. Reemplazará la versión actual en el flujo de aprobación.
-                </template>
-                <template v-else>
-                    Agrega uno o más PDFs. Cada página del archivo subido se insertará en la posición que indiques dentro del documento base ({{ totalPages }} páginas).
-                </template>
+                <template v-if="fileUploadContext === 'sustento'"> Adjunta el documento de respaldo (comprobante, constancia, resolución, etc.). El documento principal <strong>no se modificará</strong>. </template>
+                <template v-else-if="edicionMode === 'replace'"> Sube el PDF con tus correcciones. Reemplazará la versión actual en el flujo de aprobación. </template>
+                <template v-else> Agrega uno o más PDFs. Cada página del archivo subido se insertará en la posición que indiques dentro del documento base ({{ totalPages }} páginas). </template>
             </p>
 
             <!-- Toggle modo: solo visible para Edición -->
             <div v-if="fileUploadContext === 'edicion'" class="edicion-mode-toggle">
-                <button :class="['mode-btn', edicionMode === 'replace' ? 'mode-btn--active' : '']" @click="edicionMode = 'replace'; uploadFile = null">
+                <button
+                    :class="['mode-btn', edicionMode === 'replace' ? 'mode-btn--active' : '']"
+                    @click="
+                        edicionMode = 'replace';
+                        uploadFile = null;
+                    "
+                >
                     <i class="pi pi-refresh"></i>
                     Reemplazar PDF
                 </button>
-                <button :class="['mode-btn', edicionMode === 'insert' ? 'mode-btn--active' : '']" @click="edicionMode = 'insert'; insertionFiles = []">
+                <button
+                    :class="['mode-btn', edicionMode === 'insert' ? 'mode-btn--active' : '']"
+                    @click="
+                        edicionMode = 'insert';
+                        insertionFiles = [];
+                    "
+                >
                     <i class="pi pi-plus-circle"></i>
                     Insertar páginas
                 </button>
@@ -1582,11 +1578,7 @@ const formatPermittedUsers = (step) => {
                                 </span>
                                 <span class="insertion-arrow">→</span>
                                 <span class="insertion-pos-label">después de la página</span>
-                                <select
-                                    class="insertion-pos-select"
-                                    :value="item.inserciones[pageIdx]"
-                                    @change="item.inserciones[pageIdx] = Number($event.target.value)"
-                                >
+                                <select class="insertion-pos-select" :value="item.inserciones[pageIdx]" @change="item.inserciones[pageIdx] = Number($event.target.value)">
                                     <option :value="0">0 (al inicio)</option>
                                     <option v-for="n in totalPages" :key="n" :value="n">{{ n }}{{ n === totalPages ? ' (al final)' : '' }}</option>
                                 </select>
@@ -1596,9 +1588,7 @@ const formatPermittedUsers = (step) => {
                     </div>
                 </div>
 
-                <p v-if="insertionFiles.length === 0" class="insertion-empty-hint">
-                    <i class="pi pi-info-circle mr-1"></i> Agrega al menos un PDF para continuar.
-                </p>
+                <p v-if="insertionFiles.length === 0" class="insertion-empty-hint"><i class="pi pi-info-circle mr-1"></i> Agrega al menos un PDF para continuar.</p>
             </template>
         </div>
         <template #footer>
@@ -1639,36 +1629,14 @@ const formatPermittedUsers = (step) => {
     <!-- ═══════════════════ DIÁLOGO VIEWERS ═══════════════════ -->
     <Dialog v-model:visible="showViewersDialog" header="Editar visualizadores" :style="{ width: '520px' }" modal class="viewers-dialog">
         <div class="viewers-dialog-body">
-            <p class="viewers-dialog-hint">
-                Los visualizadores pueden ver el documento y sus archivos, pero <strong>no pueden actuar en ningún paso</strong>.
-            </p>
+            <p class="viewers-dialog-hint">Los visualizadores pueden ver el documento y sus archivos, pero <strong>no pueden actuar en ningún paso</strong>.</p>
             <div class="viewers-dialog-field">
                 <label class="viewers-field-label"><i class="pi pi-users mr-1"></i>Usuarios</label>
-                <MultiSelect
-                    v-model="viewersForm.users"
-                    :options="userOptions"
-                    optionLabel="label"
-                    optionValue="value"
-                    placeholder="Seleccionar usuarios..."
-                    display="chip"
-                    :filter="true"
-                    class="w-full"
-                    :maxSelectedLabels="3"
-                />
+                <MultiSelect v-model="viewersForm.users" :options="userOptions" optionLabel="label" optionValue="value" placeholder="Seleccionar usuarios..." display="chip" :filter="true" class="w-full" :maxSelectedLabels="3" />
             </div>
             <div class="viewers-dialog-field">
                 <label class="viewers-field-label"><i class="pi pi-briefcase mr-1"></i>Cargos</label>
-                <MultiSelect
-                    v-model="viewersForm.positions"
-                    :options="positionOptions"
-                    optionLabel="label"
-                    optionValue="value"
-                    placeholder="Seleccionar cargos..."
-                    display="chip"
-                    :filter="true"
-                    class="w-full"
-                    :maxSelectedLabels="3"
-                />
+                <MultiSelect v-model="viewersForm.positions" :options="positionOptions" optionLabel="label" optionValue="value" placeholder="Seleccionar cargos..." display="chip" :filter="true" class="w-full" :maxSelectedLabels="3" />
             </div>
             <p class="viewers-dialog-note">
                 <i class="pi pi-info-circle mr-1"></i>
@@ -2433,7 +2401,9 @@ const formatPermittedUsers = (step) => {
     color: #64748b;
     padding: 0.2rem 0.35rem;
     border-radius: 6px;
-    transition: color 0.2s, background 0.2s;
+    transition:
+        color 0.2s,
+        background 0.2s;
     line-height: 1;
 }
 

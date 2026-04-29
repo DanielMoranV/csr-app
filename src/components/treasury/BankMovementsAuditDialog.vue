@@ -7,8 +7,8 @@ const toast = useToast();
 
 // ─── State ────────────────────────────────────────────────────────────────────
 const visible = ref(false);
-const activeTab = ref('history');  // 'history' | 'deleted'
-const mode = ref('history');       // 'history' = solo historial | 'deleted' = solo eliminados | 'both' = ambos
+const activeTab = ref('history'); // 'history' | 'deleted'
+const mode = ref('history'); // 'history' = solo historial | 'deleted' = solo eliminados | 'both' = ambos
 const auditMovement = ref(null);
 
 const auditHistory = ref([]);
@@ -79,22 +79,26 @@ const switchToDeleted = async () => {
 };
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
-const getEventSeverity = (event) => ({ created: 'success', updated: 'info', deleted: 'danger' }[event] || 'secondary');
-const getEventIcon = (event) => ({ created: 'pi pi-plus-circle', updated: 'pi pi-pencil', deleted: 'pi pi-trash' }[event] || 'pi pi-circle');
-const getEventLabel = (event) => ({ created: 'Creado', updated: 'Actualizado', deleted: 'Eliminado' }[event] || event);
+const getEventSeverity = (event) => ({ created: 'success', updated: 'info', deleted: 'danger' })[event] || 'secondary';
+const getEventIcon = (event) => ({ created: 'pi pi-plus-circle', updated: 'pi pi-pencil', deleted: 'pi pi-trash' })[event] || 'pi pi-circle';
+const getEventLabel = (event) => ({ created: 'Creado', updated: 'Actualizado', deleted: 'Eliminado' })[event] || event;
 
 const fieldLabels = {
-    amount: 'Monto', movement_direction: 'Tipo', movement_date: 'Fecha',
-    voucher: 'Voucher', reference: 'Referencia', beneficiary: 'Beneficiario',
-    movement_category_id: 'Categoría', counterparty_id: 'Tercero', bank_account_id: 'Cuenta'
+    amount: 'Monto',
+    movement_direction: 'Tipo',
+    movement_date: 'Fecha',
+    voucher: 'Voucher',
+    reference: 'Referencia',
+    beneficiary: 'Beneficiario',
+    movement_category_id: 'Categoría',
+    counterparty_id: 'Tercero',
+    bank_account_id: 'Cuenta'
 };
 
 const getChangedFields = (oldValues, newValues) => {
     if (!oldValues || !newValues) return [];
     const keys = [...new Set([...Object.keys(oldValues), ...Object.keys(newValues)])];
-    return keys
-        .filter((k) => String(oldValues[k] ?? '') !== String(newValues[k] ?? ''))
-        .map((k) => ({ field: fieldLabels[k] || k, old: oldValues[k] ?? '—', new: newValues[k] ?? '—' }));
+    return keys.filter((k) => String(oldValues[k] ?? '') !== String(newValues[k] ?? '')).map((k) => ({ field: fieldLabels[k] || k, old: oldValues[k] ?? '—', new: newValues[k] ?? '—' }));
 };
 
 const formatAuditDate = (value) => {
@@ -118,12 +122,8 @@ const formatCurrency = (value) => new Intl.NumberFormat('es-PE', { style: 'curre
                     <p v-else>Movimientos eliminados del sistema</p>
                 </div>
                 <div class="audit-tabs" v-if="mode === 'both'">
-                    <button :class="['audit-tab-btn', activeTab === 'history' ? 'active' : '']" @click="activeTab = 'history'">
-                        <i class="pi pi-list mr-1"></i>Historial
-                    </button>
-                    <button :class="['audit-tab-btn', activeTab === 'deleted' ? 'active deleted' : '']" @click="switchToDeleted">
-                        <i class="pi pi-trash mr-1"></i>Eliminados
-                    </button>
+                    <button :class="['audit-tab-btn', activeTab === 'history' ? 'active' : '']" @click="activeTab = 'history'"><i class="pi pi-list mr-1"></i>Historial</button>
+                    <button :class="['audit-tab-btn', activeTab === 'deleted' ? 'active deleted' : '']" @click="switchToDeleted"><i class="pi pi-trash mr-1"></i>Eliminados</button>
                 </div>
             </div>
         </template>
@@ -147,12 +147,8 @@ const formatCurrency = (value) => new Intl.NumberFormat('es-PE', { style: 'curre
                     <div class="audit-entry-body">
                         <div class="audit-entry-header">
                             <Tag :value="getEventLabel(entry.event)" :severity="getEventSeverity(entry.event)" class="audit-event-tag" />
-                            <span class="audit-entry-date">
-                                <i class="pi pi-clock mr-1"></i>{{ formatAuditDate(entry.created_at) }}
-                            </span>
-                            <span class="audit-entry-user" v-if="entry.user">
-                                <i class="pi pi-user mr-1"></i>{{ entry.user.name }}
-                            </span>
+                            <span class="audit-entry-date"> <i class="pi pi-clock mr-1"></i>{{ formatAuditDate(entry.created_at) }} </span>
+                            <span class="audit-entry-user" v-if="entry.user"> <i class="pi pi-user mr-1"></i>{{ entry.user.name }} </span>
                         </div>
                         <div v-if="entry.event === 'updated' && getChangedFields(entry.old_values, entry.new_values).length" class="audit-changes">
                             <table class="audit-changes-table">
@@ -172,12 +168,8 @@ const formatCurrency = (value) => new Intl.NumberFormat('es-PE', { style: 'curre
                                 </tbody>
                             </table>
                         </div>
-                        <div v-else-if="entry.event === 'created'" class="audit-hint">
-                            <i class="pi pi-info-circle mr-1"></i>Movimiento registrado en el sistema.
-                        </div>
-                        <div v-else-if="entry.event === 'deleted'" class="audit-hint deleted">
-                            <i class="pi pi-exclamation-triangle mr-1"></i>Movimiento eliminado del sistema.
-                        </div>
+                        <div v-else-if="entry.event === 'created'" class="audit-hint"><i class="pi pi-info-circle mr-1"></i>Movimiento registrado en el sistema.</div>
+                        <div v-else-if="entry.event === 'deleted'" class="audit-hint deleted"><i class="pi pi-exclamation-triangle mr-1"></i>Movimiento eliminado del sistema.</div>
                     </div>
                 </div>
             </div>
@@ -205,11 +197,7 @@ const formatCurrency = (value) => new Intl.NumberFormat('es-PE', { style: 'curre
                     </Column>
                     <Column header="Tipo" style="min-width: 7rem">
                         <template #body="{ data }">
-                            <Tag
-                                v-if="data.old_values?.movement_direction"
-                                :value="data.old_values.movement_direction === 'IN' ? 'Ingreso' : 'Egreso'"
-                                :severity="data.old_values.movement_direction === 'IN' ? 'success' : 'danger'"
-                            />
+                            <Tag v-if="data.old_values?.movement_direction" :value="data.old_values.movement_direction === 'IN' ? 'Ingreso' : 'Egreso'" :severity="data.old_values.movement_direction === 'IN' ? 'success' : 'danger'" />
                             <span v-else>—</span>
                         </template>
                     </Column>
@@ -225,9 +213,7 @@ const formatCurrency = (value) => new Intl.NumberFormat('es-PE', { style: 'curre
                     </Column>
                     <Column header="Eliminado por" style="min-width: 10rem">
                         <template #body="{ data }">
-                            <span v-if="data.user" class="audit-user-cell">
-                                <i class="pi pi-user mr-1"></i>{{ data.user.name }}
-                            </span>
+                            <span v-if="data.user" class="audit-user-cell"> <i class="pi pi-user mr-1"></i>{{ data.user.name }} </span>
                             <span v-else>—</span>
                         </template>
                     </Column>
@@ -385,12 +371,33 @@ const formatCurrency = (value) => new Intl.NumberFormat('es-PE', { style: 'curre
     flex-shrink: 0;
     z-index: 1;
 }
-.audit-entry-dot.created { background: #dcfce7; color: #16a34a; border: 2px solid #86efac; }
-.audit-entry-dot.updated { background: #dbeafe; color: #2563eb; border: 2px solid #93c5fd; }
-.audit-entry-dot.deleted { background: #fee2e2; color: #dc2626; border: 2px solid #fca5a5; }
-:global(.dark) .audit-entry-dot.created { background: #14532d; color: #4ade80; }
-:global(.dark) .audit-entry-dot.updated { background: #1e3a8a; color: #60a5fa; }
-:global(.dark) .audit-entry-dot.deleted { background: #7f1d1d; color: #f87171; }
+.audit-entry-dot.created {
+    background: #dcfce7;
+    color: #16a34a;
+    border: 2px solid #86efac;
+}
+.audit-entry-dot.updated {
+    background: #dbeafe;
+    color: #2563eb;
+    border: 2px solid #93c5fd;
+}
+.audit-entry-dot.deleted {
+    background: #fee2e2;
+    color: #dc2626;
+    border: 2px solid #fca5a5;
+}
+:global(.dark) .audit-entry-dot.created {
+    background: #14532d;
+    color: #4ade80;
+}
+:global(.dark) .audit-entry-dot.updated {
+    background: #1e3a8a;
+    color: #60a5fa;
+}
+:global(.dark) .audit-entry-dot.deleted {
+    background: #7f1d1d;
+    color: #f87171;
+}
 
 .audit-entry-body {
     flex: 1;
@@ -447,9 +454,19 @@ const formatCurrency = (value) => new Intl.NumberFormat('es-PE', { style: 'curre
     border-top: 1px solid var(--surface-border);
     vertical-align: middle;
 }
-.field-name { font-weight: 600; color: var(--text-color); }
-.old-value  { color: #ef4444; text-decoration: line-through; opacity: 0.8; }
-.new-value  { color: #16a34a; font-weight: 600; }
+.field-name {
+    font-weight: 600;
+    color: var(--text-color);
+}
+.old-value {
+    color: #ef4444;
+    text-decoration: line-through;
+    opacity: 0.8;
+}
+.new-value {
+    color: #16a34a;
+    font-weight: 600;
+}
 
 .audit-hint {
     font-size: 0.78rem;
@@ -457,7 +474,9 @@ const formatCurrency = (value) => new Intl.NumberFormat('es-PE', { style: 'curre
     display: flex;
     align-items: center;
 }
-.audit-hint.deleted { color: #dc2626; }
+.audit-hint.deleted {
+    color: #dc2626;
+}
 
 /* ─── Deleted table ───────────────────────────────────────────────────────── */
 .audit-deleted-table {
@@ -489,8 +508,14 @@ const formatCurrency = (value) => new Intl.NumberFormat('es-PE', { style: 'curre
     font-family: monospace;
 }
 
-.amount-in  { color: #10b981; font-weight: 700; }
-.amount-out { color: #ef4444; font-weight: 700; }
+.amount-in {
+    color: #10b981;
+    font-weight: 700;
+}
+.amount-out {
+    color: #ef4444;
+    font-weight: 700;
+}
 
 .audit-user-cell {
     display: flex;

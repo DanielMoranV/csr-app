@@ -151,7 +151,6 @@ const handleClose = () => {
              STEP 1 — SETUP
         ════════════════════════════════════════════════════════════════ -->
         <div v-if="step === 'setup'" class="dialog-body">
-
             <!-- Download template -->
             <div class="template-banner">
                 <div class="template-banner-left">
@@ -212,7 +211,7 @@ const handleClose = () => {
                     <i class="pi pi-file-excel form-label-icon"></i>
                     Archivo Excel (.xlsx / .xls) <span class="required-star">*</span>
                 </label>
-                <input ref="fileInputRef" type="file" accept=".xlsx,.xls" style="display:none" @change="onFileChange" />
+                <input ref="fileInputRef" type="file" accept=".xlsx,.xls" style="display: none" @change="onFileChange" />
                 <div class="file-upload-zone" :class="{ 'has-file': importFile }" @click="fileInputRef.click()">
                     <template v-if="importFile">
                         <i class="pi pi-file-excel file-zone-icon file-zone-icon--ready"></i>
@@ -235,20 +234,25 @@ const handleClose = () => {
              STEP 2 — PREVIEW
         ════════════════════════════════════════════════════════════════ -->
         <div v-else-if="step === 'preview'" class="dialog-body">
-
             <!-- Summary chips -->
             <div class="preview-summary">
                 <div class="summary-chip summary-chip--success">
                     <i class="pi pi-check-circle"></i>
-                    <span><strong>{{ dryResult.valid }}</strong> filas válidas</span>
+                    <span
+                        ><strong>{{ dryResult.valid }}</strong> filas válidas</span
+                    >
                 </div>
                 <div class="summary-chip" :class="dryResult.warnings > 0 ? 'summary-chip--warn' : 'summary-chip--neutral'">
                     <i class="pi pi-exclamation-triangle"></i>
-                    <span><strong>{{ dryResult.warnings }}</strong> advertencias</span>
+                    <span
+                        ><strong>{{ dryResult.warnings }}</strong> advertencias</span
+                    >
                 </div>
                 <div class="summary-chip" :class="dryResult.errors.length > 0 ? 'summary-chip--error' : 'summary-chip--neutral'">
                     <i class="pi pi-times-circle"></i>
-                    <span><strong>{{ dryResult.errors.length }}</strong> errores</span>
+                    <span
+                        ><strong>{{ dryResult.errors.length }}</strong> errores</span
+                    >
                 </div>
             </div>
 
@@ -305,14 +309,18 @@ const handleClose = () => {
             <div class="done-chips">
                 <div class="summary-chip summary-chip--success">
                     <i class="pi pi-users"></i>
-                    <span><strong>{{ doneResult.created }}</strong> contrapartes creadas</span>
+                    <span
+                        ><strong>{{ doneResult.created }}</strong> contrapartes creadas</span
+                    >
                 </div>
                 <div v-if="doneResult.warnings > 0" class="summary-chip summary-chip--warn">
                     <i class="pi pi-exclamation-triangle"></i>
-                    <span><strong>{{ doneResult.warnings }}</strong> filas omitidas</span>
+                    <span
+                        ><strong>{{ doneResult.warnings }}</strong> filas omitidas</span
+                    >
                 </div>
             </div>
-            <div v-if="doneResult.warnings_detail.length > 0" class="preview-section" style="width:100%">
+            <div v-if="doneResult.warnings_detail.length > 0" class="preview-section" style="width: 100%">
                 <div class="preview-section-header preview-section-header--warn">
                     <i class="pi pi-exclamation-triangle"></i>
                     Filas omitidas por duplicado
@@ -336,14 +344,7 @@ const handleClose = () => {
 
                 <template v-else-if="step === 'preview'">
                     <Button label="Volver" icon="pi pi-arrow-left" class="dialog-cancel-btn" text @click="backToSetup" :disabled="loading" />
-                    <Button
-                        v-if="dryResult.canImport"
-                        label="Confirmar importación"
-                        icon="pi pi-check"
-                        class="dialog-confirm-btn"
-                        :loading="loading"
-                        @click="handleConfirm"
-                    />
+                    <Button v-if="dryResult.canImport" label="Confirmar importación" icon="pi pi-check" class="dialog-confirm-btn" :loading="loading" @click="handleConfirm" />
                 </template>
 
                 <template v-else-if="step === 'done'">
@@ -492,7 +493,7 @@ const handleClose = () => {
 .col-item:nth-child(even) {
     border-right: none;
 }
-.col-item:nth-last-child(-n+2) {
+.col-item:nth-last-child(-n + 2) {
     border-bottom: none;
 }
 .col-letter {
@@ -713,8 +714,12 @@ const handleClose = () => {
     padding: 0.35rem 0;
     border-bottom: 1px solid var(--surface-border);
 }
-.preview-section-header--error { color: #b91c1c; }
-.preview-section-header--warn  { color: #b45309; }
+.preview-section-header--error {
+    color: #b91c1c;
+}
+.preview-section-header--warn {
+    color: #b45309;
+}
 
 /* ── Message list ── */
 .message-list {
@@ -789,13 +794,17 @@ const handleClose = () => {
     font-size: 0.9rem;
     color: #14532d;
 }
-:global(.dark) .all-clear-title { color: #86efac; }
+:global(.dark) .all-clear-title {
+    color: #86efac;
+}
 .all-clear-sub {
     display: block;
     font-size: 0.8rem;
     color: #166534;
 }
-:global(.dark) .all-clear-sub { color: #4ade80; }
+:global(.dark) .all-clear-sub {
+    color: #4ade80;
+}
 
 /* ── Done step ── */
 .done-body {
@@ -803,7 +812,9 @@ const handleClose = () => {
     text-align: center;
     padding: 2rem 1.5rem;
 }
-.done-icon-wrapper { margin-bottom: 0.5rem; }
+.done-icon-wrapper {
+    margin-bottom: 0.5rem;
+}
 .done-icon {
     font-size: 3.5rem;
     color: #10b981;

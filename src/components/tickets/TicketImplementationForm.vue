@@ -27,20 +27,17 @@ const currentUser = computed(() => authStore.getUser);
 
 const isAssignee = computed(() => {
     if (!currentUser.value || !props.ticket) return false;
-    return (
-        props.ticket.assignee?.id === currentUser.value.id ||
-        props.ticket.assignee_position === currentUser.value.position
-    );
+    return props.ticket.assignee?.id === currentUser.value.id || props.ticket.assignee_position === currentUser.value.position;
 });
 
 // ─── schedule_status config ───────────────────────────────────────────────────
 
 const SCHEDULE_STATUS = {
     unplanned: { label: 'Sin planificar', severity: 'secondary', icon: 'pi pi-clock' },
-    on_track:  { label: 'En plazo',       severity: 'success',   icon: 'pi pi-check-circle' },
-    at_risk:   { label: 'En riesgo',      severity: 'warn',      icon: 'pi pi-exclamation-triangle' },
-    delayed:   { label: 'Con desfase',    severity: 'danger',    icon: 'pi pi-times-circle' },
-    overdue:   { label: 'Vencido',        severity: 'danger',    icon: 'pi pi-ban' }
+    on_track: { label: 'En plazo', severity: 'success', icon: 'pi pi-check-circle' },
+    at_risk: { label: 'En riesgo', severity: 'warn', icon: 'pi pi-exclamation-triangle' },
+    delayed: { label: 'Con desfase', severity: 'danger', icon: 'pi pi-times-circle' },
+    overdue: { label: 'Vencido', severity: 'danger', icon: 'pi pi-ban' }
 };
 
 const scheduleConfig = computed(() => {
@@ -50,15 +47,11 @@ const scheduleConfig = computed(() => {
 
 // ─── Estado del formulario ────────────────────────────────────────────────────
 
-const hasDates = computed(() =>
-    props.ticket.implementation_start && props.ticket.implementation_end
-);
+const hasDates = computed(() => props.ticket.implementation_start && props.ticket.implementation_end);
 
 const dateRangeError = computed(() => {
     if (!implStart.value || !implEnd.value) return null;
-    return new Date(implEnd.value) < new Date(implStart.value)
-        ? 'La fecha de fin debe ser igual o posterior al inicio'
-        : null;
+    return new Date(implEnd.value) < new Date(implStart.value) ? 'La fecha de fin debe ser igual o posterior al inicio' : null;
 });
 
 const exceedsDueDate = computed(() => {
@@ -66,16 +59,14 @@ const exceedsDueDate = computed(() => {
     return new Date(implEnd.value) > new Date(props.ticket.due_date);
 });
 
-const canSave = computed(() =>
-    implStart.value && implEnd.value && !dateRangeError.value && !isSaving.value
-);
+const canSave = computed(() => implStart.value && implEnd.value && !dateRangeError.value && !isSaving.value);
 
 // Inicializar con los valores actuales del ticket
 watch(
     () => props.ticket,
     (ticket) => {
         implStart.value = ticket?.implementation_start ? new Date(ticket.implementation_start) : null;
-        implEnd.value   = ticket?.implementation_end   ? new Date(ticket.implementation_end)   : null;
+        implEnd.value = ticket?.implementation_end ? new Date(ticket.implementation_end) : null;
     },
     { immediate: true }
 );
@@ -85,18 +76,16 @@ watch(
 const formatDate = (dateString) => {
     if (!dateString) return '—';
     return new Date(dateString).toLocaleDateString('es-PE', {
-        day: '2-digit', month: '2-digit', year: 'numeric'
+        day: '2-digit',
+        month: '2-digit',
+        year: 'numeric'
     });
 };
 
 const toYMD = (date) => {
     if (!date) return null;
     const d = new Date(date);
-    return [
-        d.getFullYear(),
-        String(d.getMonth() + 1).padStart(2, '0'),
-        String(d.getDate()).padStart(2, '0')
-    ].join('-');
+    return [d.getFullYear(), String(d.getMonth() + 1).padStart(2, '0'), String(d.getDate()).padStart(2, '0')].join('-');
 };
 
 // ─── Acción guardar ───────────────────────────────────────────────────────────
@@ -108,7 +97,7 @@ const save = async () => {
     try {
         const response = await ticketsStore.updateImplementation(props.ticket.id, {
             implementation_start: toYMD(implStart.value),
-            implementation_end:   toYMD(implEnd.value)
+            implementation_end: toYMD(implEnd.value)
         });
 
         const updated = response?.data?.data ?? response?.data;
@@ -121,7 +110,7 @@ const save = async () => {
         emit('updated', updated);
     } catch (error) {
         const status = error?.response?.status ?? error?.status;
-        const msg    = error?.response?.data?.message ?? 'No se pudieron guardar las fechas';
+        const msg = error?.response?.data?.message ?? 'No se pudieron guardar las fechas';
 
         if (status === 403) {
             toast.add({ severity: 'error', summary: 'Sin permiso', detail: 'Solo el asignado puede definir las fechas de implementación.', life: 5000 });
@@ -144,11 +133,7 @@ const save = async () => {
                 <i class="pi pi-sliders-h text-sm text-primary-500"></i>
                 <span class="impl-title">Planificación de implementación</span>
             </div>
-            <Tag
-                :value="scheduleConfig.label"
-                :severity="scheduleConfig.severity"
-                class="text-xs"
-            >
+            <Tag :value="scheduleConfig.label" :severity="scheduleConfig.severity" class="text-xs">
                 <template #icon>
                     <i :class="scheduleConfig.icon" class="mr-1 text-xs"></i>
                 </template>
@@ -168,9 +153,7 @@ const save = async () => {
                         <span class="impl-date-value">{{ formatDate(ticket.implementation_end) }}</span>
                     </div>
                 </template>
-                <span v-else class="text-xs text-color-secondary italic">
-                    El asignado aún no ha definido las fechas de implementación.
-                </span>
+                <span v-else class="text-xs text-color-secondary italic"> El asignado aún no ha definido las fechas de implementación. </span>
             </div>
         </template>
 
@@ -180,51 +163,27 @@ const save = async () => {
                 <div class="impl-form-row">
                     <div class="impl-form-field">
                         <label class="impl-field-label">Inicio planificado</label>
-                        <Calendar
-                            v-model="implStart"
-                            dateFormat="dd/mm/yy"
-                            :showIcon="true"
-                            placeholder="dd/mm/aaaa"
-                            class="w-full"
-                        />
+                        <Calendar v-model="implStart" dateFormat="dd/mm/yy" :showIcon="true" placeholder="dd/mm/aaaa" class="w-full" />
                     </div>
                     <div class="impl-form-field">
                         <label class="impl-field-label">Fin planificado</label>
-                        <Calendar
-                            v-model="implEnd"
-                            dateFormat="dd/mm/yy"
-                            :showIcon="true"
-                            :minDate="implStart ?? undefined"
-                            placeholder="dd/mm/aaaa"
-                            class="w-full"
-                        />
+                        <Calendar v-model="implEnd" dateFormat="dd/mm/yy" :showIcon="true" :minDate="implStart ?? undefined" placeholder="dd/mm/aaaa" class="w-full" />
                     </div>
                 </div>
 
                 <!-- Error de rango -->
-                <small v-if="dateRangeError" class="p-error block mt-1">
-                    <i class="pi pi-times-circle mr-1"></i>{{ dateRangeError }}
-                </small>
+                <small v-if="dateRangeError" class="p-error block mt-1"> <i class="pi pi-times-circle mr-1"></i>{{ dateRangeError }} </small>
 
                 <!-- Aviso de desfase (no bloqueante) -->
                 <div v-if="exceedsDueDate && !dateRangeError" class="impl-warning">
                     <i class="pi pi-exclamation-triangle text-orange-500"></i>
                     <span>
                         La fecha de fin supera el plazo exigido
-                        <strong>({{ formatDate(ticket.due_date) }})</strong>.
-                        El sistema lo registrará como <em>Con desfase</em> y notificará al solicitante.
+                        <strong>({{ formatDate(ticket.due_date) }})</strong>. El sistema lo registrará como <em>Con desfase</em> y notificará al solicitante.
                     </span>
                 </div>
 
-                <Button
-                    label="Guardar fechas"
-                    icon="pi pi-save"
-                    size="small"
-                    class="mt-3"
-                    :loading="isSaving"
-                    :disabled="!canSave"
-                    @click="save"
-                />
+                <Button label="Guardar fechas" icon="pi pi-save" size="small" class="mt-3" :loading="isSaving" :disabled="!canSave" @click="save" />
             </div>
         </template>
     </div>

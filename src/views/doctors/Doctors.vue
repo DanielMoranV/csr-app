@@ -66,7 +66,7 @@ const loadSpecialties = async () => {
     try {
         const response = await medicalSpecialties.getAll();
         if (response.data) {
-            specialties.value = Array.isArray(response.data) ? response.data : (response.data.data || []);
+            specialties.value = Array.isArray(response.data) ? response.data : response.data.data || [];
         }
     } catch (err) {
         console.error('Error al cargar especialidades:', err);
@@ -193,9 +193,7 @@ const searchSpecialty = (event) => {
     if (!query) {
         filteredSpecialties.value = specialties.value;
     } else {
-        filteredSpecialties.value = specialties.value.filter(specialty => 
-            specialty.name.toLowerCase().includes(query)
-        );
+        filteredSpecialties.value = specialties.value.filter((specialty) => specialty.name.toLowerCase().includes(query));
     }
 };
 
@@ -216,8 +214,8 @@ const filteredDoctorsBySpecialty = computed(() => {
     if (!selectedSpecialty.value) {
         return doctors.value;
     }
-    return doctors.value.filter(doctor => {
-        return doctor.specialties && doctor.specialties.some(s => s.id === selectedSpecialty.value.id);
+    return doctors.value.filter((doctor) => {
+        return doctor.specialties && doctor.specialties.some((s) => s.id === selectedSpecialty.value.id);
     });
 });
 
@@ -225,9 +223,15 @@ const filteredDoctorsBySpecialty = computed(() => {
 const documentTypeLabels = { dni: 'DNI', ce: 'CE', passport: 'Pasaporte' };
 const colegioLabels = { cmp: 'CMP', cop: 'COP', cqfp: 'CQFP', cbp: 'CBP', cobp: 'COBP', cep: 'CEP', csp: 'CSP', cnp: 'CNP' };
 const typeLabels = {
-    medico: 'Médico', odontologo: 'Odontólogo', obstetriz: 'Obstetriz',
-    enfermero: 'Enfermero', nutricionista: 'Nutricionista', psicologo: 'Psicólogo',
-    tecnologo_medico: 'Tecnólogo Médico', quimico_farmaceutico: 'Químico Farmacéutico', biologo: 'Biólogo'
+    medico: 'Médico',
+    odontologo: 'Odontólogo',
+    obstetriz: 'Obstetriz',
+    enfermero: 'Enfermero',
+    nutricionista: 'Nutricionista',
+    psicologo: 'Psicólogo',
+    tecnologo_medico: 'Tecnólogo Médico',
+    quimico_farmaceutico: 'Químico Farmacéutico',
+    biologo: 'Biólogo'
 };
 
 // Exportar a Excel
@@ -261,7 +265,7 @@ const exportToExcel = () => {
             { wch: 18 }, // N° Colegiatura
             { wch: 14 }, // RNE
             { wch: 14 }, // Comisión (%)
-            { wch: 50 }  // Especialidades
+            { wch: 50 } // Especialidades
         ];
 
         const workbook = XLSX.utils.book_new();
@@ -293,28 +297,9 @@ const exportToExcel = () => {
                     </p>
                 </div>
                 <div class="flex gap-2">
-                    <Button 
-                        v-if="canLinkUsers"
-                        label="Vinculación Masiva" 
-                        icon="pi pi-link" 
-                        severity="help"
-                        outlined
-                        @click="openBulkLinkDialog"
-                    />
-                    <Button 
-                        label="Crear con Usuario" 
-                        icon="pi pi-user-plus" 
-                        severity="success"
-                        outlined
-                        @click="openCreateWithUserDialog"
-                    />
-                    <Button 
-                        label="Exportar Excel" 
-                        icon="pi pi-file-excel" 
-                        class="export-button"
-                        :loading="isExporting"
-                        @click="exportToExcel"
-                    />
+                    <Button v-if="canLinkUsers" label="Vinculación Masiva" icon="pi pi-link" severity="help" outlined @click="openBulkLinkDialog" />
+                    <Button label="Crear con Usuario" icon="pi pi-user-plus" severity="success" outlined @click="openCreateWithUserDialog" />
+                    <Button label="Exportar Excel" icon="pi pi-file-excel" class="export-button" :loading="isExporting" @click="exportToExcel" />
                     <Button label="Nuevo Médico" icon="pi pi-plus" class="add-button" @click="openNewDoctor" />
                 </div>
             </div>
@@ -347,12 +332,12 @@ const exportToExcel = () => {
 
                     <Select v-model="paymentPayrollFilter" :options="paymentPayrollOptions" optionLabel="label" optionValue="value" placeholder="Tipo de Pago" class="w-full" @change="handlePaymentPayrollFilter($event.value)" showClear />
 
-                    <AutoComplete 
-                        v-model="selectedSpecialty" 
-                        :suggestions="filteredSpecialties" 
-                        @complete="searchSpecialty" 
-                        optionLabel="name" 
-                        placeholder="Buscar especialidad..." 
+                    <AutoComplete
+                        v-model="selectedSpecialty"
+                        :suggestions="filteredSpecialties"
+                        @complete="searchSpecialty"
+                        optionLabel="name"
+                        placeholder="Buscar especialidad..."
                         class="w-full"
                         @change="handleSpecialtyFilter($event.value)"
                         forceSelection
@@ -370,12 +355,12 @@ const exportToExcel = () => {
             </div>
 
             <!-- Tabla de Médicos -->
-            <DoctorTable 
-                :doctors="filteredDoctorsBySpecialty" 
-                :loading="isLoading" 
-                @edit-doctor="editDoctor" 
-                @delete-doctor="confirmDeleteDoctor" 
-                @manage-schedules="manageSchedules" 
+            <DoctorTable
+                :doctors="filteredDoctorsBySpecialty"
+                :loading="isLoading"
+                @edit-doctor="editDoctor"
+                @delete-doctor="confirmDeleteDoctor"
+                @manage-schedules="manageSchedules"
                 @manage-specialties="manageSpecialties"
                 @link-user="openLinkUserDialog"
             />
@@ -388,25 +373,11 @@ const exportToExcel = () => {
 
         <SpecialtyAssignmentDialog v-model:visible="specialtyDialogVisible" :doctor="selectedDoctor" @updated="handleSpecialtiesUpdated" />
 
-        <LinkUserDialog 
-            v-if="canLinkUsers"
-            v-model:visible="linkUserDialogVisible" 
-            :doctor="selectedDoctor" 
-            @linked="handleUserLinked"
-            @unlinked="handleUserUnlinked"
-        />
+        <LinkUserDialog v-if="canLinkUsers" v-model:visible="linkUserDialogVisible" :doctor="selectedDoctor" @linked="handleUserLinked" @unlinked="handleUserUnlinked" />
 
-        <BulkLinkUserDialog
-            v-if="canLinkUsers"
-            v-model:visible="bulkLinkDialogVisible"
-            :doctors="doctors"
-            @completed="handleBulkLinkCompleted"
-        />
+        <BulkLinkUserDialog v-if="canLinkUsers" v-model:visible="bulkLinkDialogVisible" :doctors="doctors" @completed="handleBulkLinkCompleted" />
 
-        <CreateDoctorWithUserDialog
-            v-model:visible="createWithUserDialogVisible"
-            @created="handleDoctorWithUserCreated"
-        />
+        <CreateDoctorWithUserDialog v-model:visible="createWithUserDialogVisible" @created="handleDoctorWithUserCreated" />
 
         <ConfirmDialog />
     </div>

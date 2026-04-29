@@ -81,7 +81,18 @@ export const PERMISSION_GROUPS = {
     ATTENTIONS_ACCESS: [POSITIONS.SISTEMAS, POSITIONS.ADMINISTRACION, POSITIONS.DIRECTOR_MEDICO, POSITIONS.MEDICOS, POSITIONS.EMERGENCIA, POSITIONS.HOSPITALIZACION, POSITIONS.COORDINADOR_HOSPITALIZACION],
 
     // Personal con acceso a la gestión de reservas de camas
-    BED_RESERVATIONS_STAFF: [POSITIONS.SISTEMAS, POSITIONS.DIRECTOR_MEDICO, POSITIONS.ADMINISTRACION, POSITIONS.GERENCIA, POSITIONS.MEDICOS, POSITIONS.EMERGENCIA, POSITIONS.HOSPITALIZACION, POSITIONS.QUIROFANO, POSITIONS.ADMISION, POSITIONS.COORDINADOR_HOSPITALIZACION],
+    BED_RESERVATIONS_STAFF: [
+        POSITIONS.SISTEMAS,
+        POSITIONS.DIRECTOR_MEDICO,
+        POSITIONS.ADMINISTRACION,
+        POSITIONS.GERENCIA,
+        POSITIONS.MEDICOS,
+        POSITIONS.EMERGENCIA,
+        POSITIONS.HOSPITALIZACION,
+        POSITIONS.QUIROFANO,
+        POSITIONS.ADMISION,
+        POSITIONS.COORDINADOR_HOSPITALIZACION
+    ],
 
     // Todos los usuarios autenticados
     ALL: ['*']
@@ -248,6 +259,16 @@ export const MODULE_PERMISSIONS = {
         positions: PERMISSION_GROUPS.ALL,
         label: 'Gestión Documentaria',
         icon: 'pi pi-fw pi-file-pdf',
+        menuSection: 'Soporte Técnico'
+    },
+
+    // Firmar y Descargar (firma temporal sin persistencia)
+    signAndDownload: {
+        name: 'sign-and-download',
+        path: '/firmar-descargar',
+        positions: PERMISSION_GROUPS.ALL,
+        label: 'Firmar y Descargar',
+        icon: 'pi pi-fw pi-download',
         menuSection: 'Soporte Técnico'
     },
 

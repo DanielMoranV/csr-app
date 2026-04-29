@@ -103,8 +103,11 @@ function getBedChange(audit) {
 function formatDate(dateString) {
     if (!dateString) return '—';
     return new Date(dateString).toLocaleString('es-PE', {
-        day: '2-digit', month: '2-digit', year: 'numeric',
-        hour: '2-digit', minute: '2-digit'
+        day: '2-digit',
+        month: '2-digit',
+        year: 'numeric',
+        hour: '2-digit',
+        minute: '2-digit'
     });
 }
 
@@ -156,14 +159,7 @@ watch(
 </script>
 
 <template>
-    <Dialog
-        v-model:visible="dialogVisible"
-        :modal="true"
-        :style="{ width: '680px', maxHeight: '90vh' }"
-        :closable="true"
-        :draggable="false"
-        class="bed-audit-dialog"
-    >
+    <Dialog v-model:visible="dialogVisible" :modal="true" :style="{ width: '680px', maxHeight: '90vh' }" :closable="true" :draggable="false" class="bed-audit-dialog">
         <!-- Header personalizado -->
         <template #header>
             <div class="audit-dialog-header">
@@ -188,11 +184,7 @@ watch(
                     </div>
                     <div class="audit-meta-row">
                         <span class="audit-meta-label">Estado actual:</span>
-                        <Tag
-                            :value="getStatusConfig(reservationInfo.currentStatus).label"
-                            :severity="getStatusConfig(reservationInfo.currentStatus).severity"
-                            class="text-xs"
-                        />
+                        <Tag :value="getStatusConfig(reservationInfo.currentStatus).label" :severity="getStatusConfig(reservationInfo.currentStatus).severity" class="text-xs" />
                     </div>
                 </div>
             </div>
@@ -227,18 +219,10 @@ watch(
 
             <!-- Línea de tiempo -->
             <div v-else class="audit-timeline">
-                <div
-                    v-for="(audit, index) in audits"
-                    :key="audit.id"
-                    class="audit-entry"
-                    :class="{ 'audit-entry--last': index === audits.length - 1 }"
-                >
+                <div v-for="(audit, index) in audits" :key="audit.id" class="audit-entry" :class="{ 'audit-entry--last': index === audits.length - 1 }">
                     <!-- Indicador lateral de la línea de tiempo -->
                     <div class="audit-timeline-line">
-                        <div
-                            class="audit-dot"
-                            :class="`audit-dot--${getAuditEventConfig(audit.event).severity}`"
-                        >
+                        <div class="audit-dot" :class="`audit-dot--${getAuditEventConfig(audit.event).severity}`">
                             <i :class="getAuditEventConfig(audit.event).icon" class="text-xs"></i>
                         </div>
                         <div v-if="index < audits.length - 1" class="audit-connector"></div>
@@ -249,18 +233,12 @@ watch(
                         <!-- Encabezado del evento -->
                         <div class="audit-event-header">
                             <div class="audit-event-left">
-                                <Tag
-                                    :value="getAuditEventConfig(audit.event).label"
-                                    :severity="getAuditEventConfig(audit.event).severity"
-                                    class="text-xs font-semibold"
-                                />
+                                <Tag :value="getAuditEventConfig(audit.event).label" :severity="getAuditEventConfig(audit.event).severity" class="text-xs font-semibold" />
                                 <span v-if="audit.patient_name || audit.admission_number" class="audit-admission">
                                     <i class="pi pi-user text-xs"></i>
                                     <span v-if="audit.patient_name">{{ audit.patient_name }}</span>
                                     <span v-if="audit.patient_name && audit.admission_number" class="opacity-50 mx-1">·</span>
-                                    <span v-if="audit.admission_number">
-                                        <i class="pi pi-hashtag text-xs"></i>{{ audit.admission_number }}
-                                    </span>
+                                    <span v-if="audit.admission_number"> <i class="pi pi-hashtag text-xs"></i>{{ audit.admission_number }} </span>
                                 </span>
                             </div>
                             <span class="audit-date">{{ formatDate(audit.created_at) }}</span>
@@ -282,11 +260,7 @@ watch(
                         </div>
 
                         <!-- Toggle del diff -->
-                        <div
-                            v-if="getDiff(audit).length > 0"
-                            class="audit-diff-toggle"
-                            @click="toggleDiff(audit.id)"
-                        >
+                        <div v-if="getDiff(audit).length > 0" class="audit-diff-toggle" @click="toggleDiff(audit.id)">
                             <i :class="isDiffExpanded(audit.id) ? 'pi pi-chevron-up' : 'pi pi-chevron-down'" class="text-xs"></i>
                             <span>{{ isDiffExpanded(audit.id) ? 'Ocultar cambios' : 'Ver cambios' }}</span>
                         </div>
@@ -294,11 +268,7 @@ watch(
                         <!-- Diff expandido -->
                         <Transition name="diff-expand">
                             <div v-if="isDiffExpanded(audit.id) && getDiff(audit).length > 0" class="audit-diff">
-                                <div
-                                    v-for="(change, i) in getDiff(audit)"
-                                    :key="i"
-                                    class="audit-diff-row"
-                                >
+                                <div v-for="(change, i) in getDiff(audit)" :key="i" class="audit-diff-row">
                                     <span class="audit-diff-field">{{ change.campo }}</span>
                                     <span class="audit-diff-before">{{ change.anterior }}</span>
                                     <i class="pi pi-arrow-right text-xs text-500"></i>
@@ -449,11 +419,21 @@ watch(
     color: white;
 }
 
-.audit-dot--info       { background: var(--blue-500); }
-.audit-dot--success    { background: var(--green-500); }
-.audit-dot--danger     { background: var(--red-500); }
-.audit-dot--warn       { background: var(--orange-500); }
-.audit-dot--secondary  { background: var(--surface-400); }
+.audit-dot--info {
+    background: var(--blue-500);
+}
+.audit-dot--success {
+    background: var(--green-500);
+}
+.audit-dot--danger {
+    background: var(--red-500);
+}
+.audit-dot--warn {
+    background: var(--orange-500);
+}
+.audit-dot--secondary {
+    background: var(--surface-400);
+}
 
 .audit-connector {
     width: 2px;

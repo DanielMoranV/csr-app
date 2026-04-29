@@ -33,7 +33,7 @@ const formData = reactive({
     phone: '',
     email: '',
     password: '',
-    
+
     // Datos del médico
     doctor_name: '',
     document_type: 'dni',
@@ -158,8 +158,8 @@ function resetForm() {
         rne: '',
         commission_percentage: null
     });
-    
-    Object.keys(touchedFields).forEach(key => delete touchedFields[key]);
+
+    Object.keys(touchedFields).forEach((key) => delete touchedFields[key]);
     validationErrors.value = {};
 }
 
@@ -179,7 +179,7 @@ async function handleSave() {
     try {
         // Preparar payload
         const payload = { ...formData };
-        
+
         // Convertir commission_percentage a número si existe
         if (payload.commission_percentage) {
             payload.commission_percentage = parseFloat(payload.commission_percentage);
@@ -206,7 +206,7 @@ async function handleSave() {
         if (errors) {
             // Mostrar errores de validación del backend
             let errorDetails = '';
-            Object.keys(errors).forEach(key => {
+            Object.keys(errors).forEach((key) => {
                 errorDetails += `${errors[key].join(', ')}\n`;
             });
 
@@ -237,22 +237,18 @@ function handleClose() {
 }
 
 // Watchers
-watch(() => props.visible, (newVal) => {
-    if (newVal) {
-        resetForm();
+watch(
+    () => props.visible,
+    (newVal) => {
+        if (newVal) {
+            resetForm();
+        }
     }
-});
+);
 </script>
 
 <template>
-    <Dialog
-        v-model:visible="dialogVisible"
-        header="Crear Médico con Usuario Vinculado"
-        :modal="true"
-        :closable="!isSaving"
-        :style="{ width: '800px', maxHeight: '90vh' }"
-        @hide="handleClose"
-    >
+    <Dialog v-model:visible="dialogVisible" header="Crear Médico con Usuario Vinculado" :modal="true" :closable="!isSaving" :style="{ width: '800px', maxHeight: '90vh' }" @hide="handleClose">
         <div class="create-doctor-user-form">
             <!-- Sección Usuario -->
             <div class="section-header">
@@ -263,31 +259,14 @@ watch(() => props.visible, (newVal) => {
             <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
                 <!-- Nombre Usuario -->
                 <div class="field col-span-2">
-                    <label for="user-name" class="font-semibold">
-                        Nombre Completo <span class="text-red-500">*</span>
-                    </label>
-                    <InputText
-                        id="user-name"
-                        v-model="formData.name"
-                        class="w-full"
-                        :disabled="isSaving"
-                        @blur="validateField('name')"
-                    />
+                    <label for="user-name" class="font-semibold"> Nombre Completo <span class="text-red-500">*</span> </label>
+                    <InputText id="user-name" v-model="formData.name" class="w-full" :disabled="isSaving" @blur="validateField('name')" />
                 </div>
 
                 <!-- DNI -->
                 <div class="field">
-                    <label for="dni" class="font-semibold">
-                        DNI <span class="text-red-500">*</span>
-                    </label>
-                    <InputText
-                        id="dni"
-                        v-model="formData.dni"
-                        maxlength="8"
-                        class="w-full"
-                        :disabled="isSaving"
-                        @blur="validateField('dni')"
-                    />
+                    <label for="dni" class="font-semibold"> DNI <span class="text-red-500">*</span> </label>
+                    <InputText id="dni" v-model="formData.dni" maxlength="8" class="w-full" :disabled="isSaving" @blur="validateField('dni')" />
                     <small v-if="touchedFields.dni && validationErrors.dni" class="p-error">
                         {{ validationErrors.dni }}
                     </small>
@@ -295,17 +274,8 @@ watch(() => props.visible, (newVal) => {
 
                 <!-- Nick -->
                 <div class="field">
-                    <label for="nick" class="font-semibold">
-                        Usuario (Nick) <span class="text-red-500">*</span>
-                    </label>
-                    <InputText
-                        id="nick"
-                        v-model="formData.nick"
-                        maxlength="20"
-                        class="w-full"
-                        :disabled="isSaving"
-                        @blur="validateField('nick')"
-                    />
+                    <label for="nick" class="font-semibold"> Usuario (Nick) <span class="text-red-500">*</span> </label>
+                    <InputText id="nick" v-model="formData.nick" maxlength="20" class="w-full" :disabled="isSaving" @blur="validateField('nick')" />
                     <small v-if="touchedFields.nick && validationErrors.nick" class="p-error">
                         {{ validationErrors.nick }}
                     </small>
@@ -313,33 +283,14 @@ watch(() => props.visible, (newVal) => {
 
                 <!-- Posición -->
                 <div class="field">
-                    <label for="position" class="font-semibold">
-                        Posición <span class="text-red-500">*</span>
-                    </label>
-                    <Select
-                        id="position"
-                        v-model="formData.position"
-                        :options="positionOptions"
-                        optionLabel="label"
-                        optionValue="value"
-                        class="w-full"
-                        :disabled="isSaving"
-                    />
+                    <label for="position" class="font-semibold"> Posición <span class="text-red-500">*</span> </label>
+                    <Select id="position" v-model="formData.position" :options="positionOptions" optionLabel="label" optionValue="value" class="w-full" :disabled="isSaving" />
                 </div>
 
                 <!-- Teléfono -->
                 <div class="field">
-                    <label for="phone" class="font-semibold">
-                        Teléfono <span class="text-red-500">*</span>
-                    </label>
-                    <InputText
-                        id="phone"
-                        v-model="formData.phone"
-                        maxlength="9"
-                        class="w-full"
-                        :disabled="isSaving"
-                        @blur="validateField('phone')"
-                    />
+                    <label for="phone" class="font-semibold"> Teléfono <span class="text-red-500">*</span> </label>
+                    <InputText id="phone" v-model="formData.phone" maxlength="9" class="w-full" :disabled="isSaving" @blur="validateField('phone')" />
                     <small v-if="touchedFields.phone && validationErrors.phone" class="p-error">
                         {{ validationErrors.phone }}
                     </small>
@@ -348,14 +299,7 @@ watch(() => props.visible, (newVal) => {
                 <!-- Email -->
                 <div class="field">
                     <label for="email" class="font-semibold">Email</label>
-                    <InputText
-                        id="email"
-                        v-model="formData.email"
-                        type="email"
-                        class="w-full"
-                        :disabled="isSaving"
-                        @blur="validateField('email')"
-                    />
+                    <InputText id="email" v-model="formData.email" type="email" class="w-full" :disabled="isSaving" @blur="validateField('email')" />
                     <small v-if="touchedFields.email && validationErrors.email" class="p-error">
                         {{ validationErrors.email }}
                     </small>
@@ -363,18 +307,8 @@ watch(() => props.visible, (newVal) => {
 
                 <!-- Contraseña -->
                 <div class="field">
-                    <label for="password" class="font-semibold">
-                        Contraseña <span class="text-red-500">*</span>
-                    </label>
-                    <Password
-                        id="password"
-                        v-model="formData.password"
-                        class="w-full"
-                        :disabled="isSaving"
-                        :feedback="false"
-                        toggleMask
-                        @blur="validateField('password')"
-                    />
+                    <label for="password" class="font-semibold"> Contraseña <span class="text-red-500">*</span> </label>
+                    <Password id="password" v-model="formData.password" class="w-full" :disabled="isSaving" :feedback="false" toggleMask @blur="validateField('password')" />
                     <small v-if="touchedFields.password && validationErrors.password" class="p-error">
                         {{ validationErrors.password }}
                     </small>
@@ -392,165 +326,70 @@ watch(() => props.visible, (newVal) => {
             <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <!-- Nombre Médico -->
                 <div class="field col-span-2">
-                    <label for="doctor-name" class="font-semibold">
-                        Nombre Profesional <span class="text-red-500">*</span>
-                    </label>
-                    <InputText
-                        id="doctor-name"
-                        v-model="formData.doctor_name"
-                        class="w-full"
-                        :disabled="isSaving"
-                    />
+                    <label for="doctor-name" class="font-semibold"> Nombre Profesional <span class="text-red-500">*</span> </label>
+                    <InputText id="doctor-name" v-model="formData.doctor_name" class="w-full" :disabled="isSaving" />
                 </div>
 
                 <!-- Tipo Documento -->
                 <div class="field">
-                    <label for="doc-type" class="font-semibold">
-                        Tipo de Documento <span class="text-red-500">*</span>
-                    </label>
-                    <Select
-                        id="doc-type"
-                        v-model="formData.document_type"
-                        :options="documentTypeOptions"
-                        optionLabel="label"
-                        optionValue="value"
-                        class="w-full"
-                        :disabled="isSaving"
-                    />
+                    <label for="doc-type" class="font-semibold"> Tipo de Documento <span class="text-red-500">*</span> </label>
+                    <Select id="doc-type" v-model="formData.document_type" :options="documentTypeOptions" optionLabel="label" optionValue="value" class="w-full" :disabled="isSaving" />
                 </div>
 
                 <!-- Número Documento -->
                 <div class="field">
-                    <label for="doc-number" class="font-semibold">
-                        Número de Documento <span class="text-red-500">*</span>
-                    </label>
-                    <InputText
-                        id="doc-number"
-                        v-model="formData.document_number"
-                        class="w-full"
-                        :disabled="isSaving"
-                    />
+                    <label for="doc-number" class="font-semibold"> Número de Documento <span class="text-red-500">*</span> </label>
+                    <InputText id="doc-number" v-model="formData.document_number" class="w-full" :disabled="isSaving" />
                 </div>
 
                 <!-- Tipo Profesional -->
                 <div class="field">
-                    <label for="type" class="font-semibold">
-                        Tipo Profesional <span class="text-red-500">*</span>
-                    </label>
-                    <Select
-                        id="type"
-                        v-model="formData.type"
-                        :options="typeOptions"
-                        optionLabel="label"
-                        optionValue="value"
-                        class="w-full"
-                        :disabled="isSaving"
-                    />
+                    <label for="type" class="font-semibold"> Tipo Profesional <span class="text-red-500">*</span> </label>
+                    <Select id="type" v-model="formData.type" :options="typeOptions" optionLabel="label" optionValue="value" class="w-full" :disabled="isSaving" />
                 </div>
 
                 <!-- Colegio -->
                 <div class="field">
-                    <label for="colegio" class="font-semibold">
-                        Colegio <span class="text-red-500">*</span>
-                    </label>
-                    <Select
-                        id="colegio"
-                        v-model="formData.colegio"
-                        :options="colegioOptions"
-                        optionLabel="label"
-                        optionValue="value"
-                        class="w-full"
-                        :disabled="isSaving"
-                    />
+                    <label for="colegio" class="font-semibold"> Colegio <span class="text-red-500">*</span> </label>
+                    <Select id="colegio" v-model="formData.colegio" :options="colegioOptions" optionLabel="label" optionValue="value" class="w-full" :disabled="isSaving" />
                 </div>
 
                 <!-- Número Colegiatura -->
                 <div class="field">
-                    <label for="numero-colegiatura" class="font-semibold">
-                        Número de Colegiatura <span class="text-red-500">*</span>
-                    </label>
-                    <InputText
-                        id="numero-colegiatura"
-                        v-model="formData.numero_colegiatura"
-                        class="w-full"
-                        :disabled="isSaving"
-                    />
+                    <label for="numero-colegiatura" class="font-semibold"> Número de Colegiatura <span class="text-red-500">*</span> </label>
+                    <InputText id="numero-colegiatura" v-model="formData.numero_colegiatura" class="w-full" :disabled="isSaving" />
                 </div>
 
                 <!-- Código -->
                 <div class="field">
-                    <label for="code" class="font-semibold">
-                        Código <span class="text-red-500">*</span>
-                    </label>
-                    <InputText
-                        id="code"
-                        v-model="formData.code"
-                        class="w-full"
-                        :disabled="isSaving"
-                    />
+                    <label for="code" class="font-semibold"> Código <span class="text-red-500">*</span> </label>
+                    <InputText id="code" v-model="formData.code" class="w-full" :disabled="isSaving" />
                 </div>
 
                 <!-- RNE -->
                 <div class="field">
                     <label for="rne" class="font-semibold">RNE</label>
-                    <InputText
-                        id="rne"
-                        v-model="formData.rne"
-                        class="w-full"
-                        :disabled="isSaving"
-                    />
+                    <InputText id="rne" v-model="formData.rne" class="w-full" :disabled="isSaving" />
                 </div>
 
                 <!-- Tipo Planilla -->
                 <div class="field">
-                    <label for="payment-payroll" class="font-semibold">
-                        Tipo de Planilla <span class="text-red-500">*</span>
-                    </label>
-                    <Select
-                        id="payment-payroll"
-                        v-model="formData.payment_payroll"
-                        :options="paymentPayrollOptions"
-                        optionLabel="label"
-                        optionValue="value"
-                        class="w-full"
-                        :disabled="isSaving"
-                    />
+                    <label for="payment-payroll" class="font-semibold"> Tipo de Planilla <span class="text-red-500">*</span> </label>
+                    <Select id="payment-payroll" v-model="formData.payment_payroll" :options="paymentPayrollOptions" optionLabel="label" optionValue="value" class="w-full" :disabled="isSaving" />
                 </div>
 
                 <!-- Comisión -->
                 <div class="field">
                     <label for="commission" class="font-semibold">Comisión (%)</label>
-                    <InputText
-                        id="commission"
-                        v-model="formData.commission_percentage"
-                        type="number"
-                        min="0"
-                        max="100"
-                        step="0.01"
-                        class="w-full"
-                        :disabled="isSaving"
-                    />
+                    <InputText id="commission" v-model="formData.commission_percentage" type="number" min="0" max="100" step="0.01" class="w-full" :disabled="isSaving" />
                 </div>
             </div>
         </div>
 
         <template #footer>
             <div class="flex justify-content-end gap-2">
-                <Button
-                    label="Cancelar"
-                    icon="pi pi-times"
-                    severity="secondary"
-                    @click="handleClose"
-                    :disabled="isSaving"
-                />
-                <Button
-                    label="Crear Médico con Usuario"
-                    icon="pi pi-check"
-                    severity="success"
-                    @click="handleSave"
-                    :loading="isSaving"
-                    :disabled="!isFormValid"
-                />
+                <Button label="Cancelar" icon="pi pi-times" severity="secondary" @click="handleClose" :disabled="isSaving" />
+                <Button label="Crear Médico con Usuario" icon="pi pi-check" severity="success" @click="handleSave" :loading="isSaving" :disabled="!isFormValid" />
             </div>
         </template>
     </Dialog>

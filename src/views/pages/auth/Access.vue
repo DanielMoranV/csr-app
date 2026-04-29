@@ -40,9 +40,9 @@ onUnmounted(() => {
                             <i class="text-cyan-500 pi pi-fw pi-lock !text-2xl"></i>
                         </div>
                         <h1 class="text-surface-900 dark:text-surface-0 font-bold text-4xl lg:text-5xl mb-2">Acceso Denegado</h1>
-                        <span class="text-muted-color mb-8 text-center">No tienes los permisos necesarios para acceder a este recurso.<br>Por favor contacta al administrador.</span>
+                        <span class="text-muted-color mb-8 text-center">No tienes los permisos necesarios para acceder a este recurso.<br />Por favor contacta al administrador.</span>
                         <img src="/demo/images/access/asset-access.svg" alt="Access denied" class="mb-8" width="80%" />
-                        
+
                         <div class="flex flex-col items-center gap-2">
                             <div class="text-cyan-600 font-medium">
                                 <i class="pi pi-spin pi-spinner mr-2"></i>

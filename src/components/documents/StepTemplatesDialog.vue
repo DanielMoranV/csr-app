@@ -272,28 +272,8 @@ const getActionColor = (tipo) => {
                 <label class="form-label">Visualizadores <span class="opt">(opcional)</span></label>
                 <p class="tpl-viewers-hint">Usuarios o cargos que pueden ver esta plantilla pero no editarla.</p>
                 <div class="tpl-viewers-selects">
-                    <MultiSelect
-                        v-model="form.viewers.users"
-                        :options="userOptions"
-                        optionLabel="label"
-                        optionValue="value"
-                        placeholder="Usuarios visualizadores..."
-                        display="chip"
-                        :filter="true"
-                        class="w-full"
-                        :maxSelectedLabels="2"
-                    />
-                    <MultiSelect
-                        v-model="form.viewers.positions"
-                        :options="positionOptions"
-                        optionLabel="label"
-                        optionValue="value"
-                        placeholder="Cargos visualizadores..."
-                        display="chip"
-                        :filter="true"
-                        class="w-full"
-                        :maxSelectedLabels="2"
-                    />
+                    <MultiSelect v-model="form.viewers.users" :options="userOptions" optionLabel="label" optionValue="value" placeholder="Usuarios visualizadores..." display="chip" :filter="true" class="w-full" :maxSelectedLabels="2" />
+                    <MultiSelect v-model="form.viewers.positions" :options="positionOptions" optionLabel="label" optionValue="value" placeholder="Cargos visualizadores..." display="chip" :filter="true" class="w-full" :maxSelectedLabels="2" />
                 </div>
             </div>
 

@@ -14,17 +14,7 @@ import { useMedicalSpecialties } from '@/composables/useMedicalSpecialties';
 import { usePermissions } from '@/composables/usePermissions';
 import { onMounted, ref, computed } from 'vue';
 
-const {
-    specialties,
-    isLoading,
-    isSaving,
-    fetchSpecialties,
-    createSpecialty,
-    updateSpecialty,
-    deleteSpecialty,
-    setGlobalFilter,
-    clearFilters
-} = useMedicalSpecialties();
+const { specialties, isLoading, isSaving, fetchSpecialties, createSpecialty, updateSpecialty, deleteSpecialty, setGlobalFilter, clearFilters } = useMedicalSpecialties();
 
 const { canPerformDangerousActions } = usePermissions();
 const confirm = useConfirm();
@@ -212,9 +202,7 @@ const dialogTitle = computed(() => {
                     </div>
                     <div class="header-info">
                         <span class="header-title-small">Registro de Especialidades</span>
-                        <span class="header-count" v-if="specialties">
-                            {{ specialties.length }} {{ specialties.length === 1 ? 'especialidad' : 'especialidades' }}
-                        </span>
+                        <span class="header-count" v-if="specialties"> {{ specialties.length }} {{ specialties.length === 1 ? 'especialidad' : 'especialidades' }} </span>
                     </div>
                 </div>
                 <div class="header-actions-modern">
@@ -274,25 +262,8 @@ const dialogTitle = computed(() => {
                 <Column header="Acciones" style="min-width: 120px">
                     <template #body="{ data }">
                         <div class="flex gap-1">
-                            <Button
-                                icon="pi pi-pencil"
-                                size="small"
-                                rounded
-                                severity="success"
-                                outlined
-                                v-tooltip.top="'Editar'"
-                                @click="editSpecialty(data)"
-                            />
-                            <Button
-                                icon="pi pi-trash"
-                                size="small"
-                                rounded
-                                severity="danger"
-                                outlined
-                                v-tooltip.top="'Eliminar'"
-                                @click="confirmDeleteSpecialty(data)"
-                                :disabled="!canPerformDangerousActions"
-                            />
+                            <Button icon="pi pi-pencil" size="small" rounded severity="success" outlined v-tooltip.top="'Editar'" @click="editSpecialty(data)" />
+                            <Button icon="pi pi-trash" size="small" rounded severity="danger" outlined v-tooltip.top="'Eliminar'" @click="confirmDeleteSpecialty(data)" :disabled="!canPerformDangerousActions" />
                         </div>
                     </template>
                 </Column>
@@ -300,15 +271,7 @@ const dialogTitle = computed(() => {
         </div>
 
         <!-- Diálogo de Especialidad -->
-        <Dialog
-            v-model:visible="specialtyDialogVisible"
-            :header="dialogTitle"
-            :modal="true"
-            :closable="!isSaving"
-            :closeOnEscape="!isSaving"
-            class="w-full md:w-[600px]"
-            @hide="handleClose"
-        >
+        <Dialog v-model:visible="specialtyDialogVisible" :header="dialogTitle" :modal="true" :closable="!isSaving" :closeOnEscape="!isSaving" class="w-full md:w-[600px]" @hide="handleClose">
             <div class="flex flex-col gap-6 py-4">
                 <!-- Nombre -->
                 <div class="field">
@@ -334,26 +297,14 @@ const dialogTitle = computed(() => {
                 <!-- Descripción -->
                 <div class="field">
                     <label for="description" class="font-semibold mb-2 block"> Descripción </label>
-                    <Textarea
-                        id="description"
-                        v-model="specialtyForm.description"
-                        rows="4"
-                        placeholder="Descripción de la especialidad (opcional)"
-                        class="w-full"
-                        :disabled="isSaving"
-                    />
+                    <Textarea id="description" v-model="specialtyForm.description" rows="4" placeholder="Descripción de la especialidad (opcional)" class="w-full" :disabled="isSaving" />
                 </div>
             </div>
 
             <template #footer>
                 <div class="flex justify-end gap-2">
                     <Button label="Cancelar" severity="secondary" @click="handleClose" :disabled="isSaving" />
-                    <Button
-                        :label="isEditingSpecialty ? 'Actualizar' : 'Guardar'"
-                        :loading="isSaving"
-                        :disabled="!isFormValid || isSaving"
-                        @click="handleSaveSpecialty"
-                    />
+                    <Button :label="isEditingSpecialty ? 'Actualizar' : 'Guardar'" :loading="isSaving" :disabled="!isFormValid || isSaving" @click="handleSaveSpecialty" />
                 </div>
             </template>
         </Dialog>

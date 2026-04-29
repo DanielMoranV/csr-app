@@ -7,7 +7,7 @@ export const useNotificationsStore = defineStore('notifications', () => {
     const state = reactive({
         notifications: [],
         unreadCount: 0,
-        unreadByModule: {},   // { tickets: 8, tasks: 4 }
+        unreadByModule: {}, // { tickets: 8, tasks: 4 }
         isLoading: false,
         isLoadingCount: false,
         // Marca que el badge fue incrementado va Echo y la lista puede estar desactualizada.

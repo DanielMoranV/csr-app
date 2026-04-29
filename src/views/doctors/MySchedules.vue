@@ -29,22 +29,8 @@ const currentUser = computed(() => authStore.getUser);
 const currentDoctor = computed(() => currentUser.value?.doctor);
 const hasDoctorProfile = computed(() => !!currentDoctor.value);
 
-const {
-    schedules,
-    isLoading,
-    isSaving,
-    medicalShifts,
-    fetchSchedules,
-    fetchMedicalShifts,
-    createSchedule,
-    updateSchedule,
-    deleteSchedule,
-    setDoctorFilter,
-    setSpecialtyFilter,
-    setStartDateFilter,
-    setEndDateFilter,
-    clearFilters
-} = useDoctorSchedules();
+const { schedules, isLoading, isSaving, medicalShifts, fetchSchedules, fetchMedicalShifts, createSchedule, updateSchedule, deleteSchedule, setDoctorFilter, setSpecialtyFilter, setStartDateFilter, setEndDateFilter, clearFilters } =
+    useDoctorSchedules();
 
 const { doctors, fetchDoctors } = useDoctors();
 const { generatePDF } = usePdfScheduleExport();
@@ -64,30 +50,30 @@ const selectedMonth = ref(new Date());
 // Computed: Doctors in my specialty (for conflict detection)
 const doctorsInMySpecialty = computed(() => {
     if (!hasDoctorProfile.value || !currentDoctor.value.specialties) return [];
-    
-    const mySpecialtyIds = currentDoctor.value.specialties.map(s => s.id);
-    
-    return doctors.value.filter(doctor => {
+
+    const mySpecialtyIds = currentDoctor.value.specialties.map((s) => s.id);
+
+    return doctors.value.filter((doctor) => {
         if (!doctor.specialties || !Array.isArray(doctor.specialties)) return false;
-        return doctor.specialties.some(specialty => mySpecialtyIds.includes(specialty.id));
+        return doctor.specialties.some((specialty) => mySpecialtyIds.includes(specialty.id));
     });
 });
 
 // Computed: My schedules vs others
 const mySchedules = computed(() => {
-    return schedules.value.filter(s => s.id_doctors === currentDoctor.value?.id);
+    return schedules.value.filter((s) => s.id_doctors === currentDoctor.value?.id);
 });
 
 const othersSchedules = computed(() => {
-    return schedules.value.filter(s => s.id_doctors !== currentDoctor.value?.id);
+    return schedules.value.filter((s) => s.id_doctors !== currentDoctor.value?.id);
 });
 
 // Statistics
 const monthStats = computed(() => {
     const total = mySchedules.value.length;
-    const pending = mySchedules.value.filter(s => s.status === 'pending').length;
-    const confirmed = mySchedules.value.filter(s => s.status === 'confirmed').length;
-    
+    const pending = mySchedules.value.filter((s) => s.status === 'pending').length;
+    const confirmed = mySchedules.value.filter((s) => s.status === 'confirmed').length;
+
     return { total, pending, confirmed };
 });
 
@@ -96,39 +82,34 @@ const loadDataForMonth = async () => {
     if (!hasDoctorProfile.value) {
         return;
     }
-    
+
     const firstDayOfMonth = new Date(selectedMonth.value.getFullYear(), selectedMonth.value.getMonth(), 1);
     const lastDayOfMonth = new Date(selectedMonth.value.getFullYear(), selectedMonth.value.getMonth() + 1, 0);
-    
-    // Get my specialty IDs for filtering
-    const mySpecialtyIds = currentDoctor.value.specialties?.map(s => s.id) || [];
-    
 
-    
+    // Get my specialty IDs for filtering
+    const mySpecialtyIds = currentDoctor.value.specialties?.map((s) => s.id) || [];
+
     try {
         // Set date filters
         setStartDateFilter(firstDayOfMonth.toISOString().split('T')[0]);
         setEndDateFilter(lastDayOfMonth.toISOString().split('T')[0]);
-        
+
         // Set specialty filter to load schedules from my specialties (for conflict detection)
         if (mySpecialtyIds.length > 0) {
-
             // Use the first specialty for filtering
             // This will load all doctors in this specialty
             setSpecialtyFilter(mySpecialtyIds[0]);
         } else {
             // No specialties - will load all schedules
         }
-        
+
         // Load schedules with filters applied
 
         await fetchSchedules();
-        
+
         // Load doctors for display
         await fetchDoctors();
-        
 
-        
         toast.add({
             severity: 'success',
             summary: 'Datos cargados',
@@ -148,7 +129,7 @@ const loadDataForMonth = async () => {
 // Schedule Handlers
 const openNewSchedule = () => {
     selectedSchedule.value = {
-        id_doctors: currentDoctor.value.id,  // Pre-set current doctor
+        id_doctors: currentDoctor.value.id, // Pre-set current doctor
         date: new Date().toISOString().split('T')[0],
         start_time: '08:00:00',
         end_time: '14:00:00'
@@ -168,7 +149,7 @@ const editSchedule = (schedule) => {
         });
         return;
     }
-    
+
     selectedSchedule.value = { ...schedule };
     isEditingSchedule.value = true;
     scheduleDialogVisible.value = true;
@@ -181,16 +162,16 @@ const handleSaveSchedule = async (scheduleData) => {
             ...scheduleData,
             id_doctors: currentDoctor.value.id
         };
-        
+
         if (selectedSchedule.value?.id) {
             await updateSchedule(selectedSchedule.value.id, payload);
         } else {
             await createSchedule(payload);
         }
-        
+
         scheduleDialogVisible.value = false;
         selectedSchedule.value = null;
-        
+
         // Reload data
         await loadDataForMonth();
     } catch (error) {
@@ -209,7 +190,7 @@ const confirmDeleteSchedule = (schedule) => {
         });
         return;
     }
-    
+
     confirm.require({
         message: `¿Está seguro que desea eliminar su horario del día ${schedule.date}?`,
         header: 'Confirmar Eliminación',
@@ -238,20 +219,20 @@ const isExportingPDF = ref(false);
 
 const handleExportPDF = async () => {
     if (!hasDoctorProfile.value) return;
-    
+
     try {
         isExportingPDF.value = true;
-        
+
         const currentDate = calendarRef.value?.getApi()?.getDate() || new Date();
         const month = currentDate.getMonth() + 1;
         const year = currentDate.getFullYear();
-        
+
         // Get first specialty for PDF header
         const specialty = currentDoctor.value.specialties?.[0];
-        
+
         // Generate PDF with only my schedules
         const fileName = generatePDF(mySchedules.value, specialty, month, year, medicalShifts.value);
-        
+
         toast.add({
             severity: 'success',
             summary: 'PDF Generado',
@@ -280,7 +261,7 @@ const calendarOptions = ref({
         center: 'title',
         right: 'dayGridMonth,timeGridWeek'
     },
-    editable: false,  // No drag & drop for doctors
+    editable: false, // No drag & drop for doctors
     selectable: true,
     weekends: true,
     locale: esLocale,
@@ -296,7 +277,7 @@ const calendarOptions = ref({
         scheduleDialogVisible.value = true;
     },
     eventClick: (arg) => {
-        const originalSchedule = schedules.value.find(s => s.id == arg.event.id);
+        const originalSchedule = schedules.value.find((s) => s.id == arg.event.id);
         if (originalSchedule) {
             editSchedule(originalSchedule);
         }
@@ -309,10 +290,7 @@ const calendarOptions = ref({
         const isMySchedule = extendedProps.id_doctors === currentDoctor.value?.id;
         const isReten = extendedProps.is_payment_payroll === false;
 
-        const statusIcon = status === 'pending' ? '⏳' :
-                         status === 'confirmed' ? '✓' :
-                         status === 'completed' ? '✓✓' :
-                         status === 'cancelled' ? '✕' : '';
+        const statusIcon = status === 'pending' ? '⏳' : status === 'confirmed' ? '✓' : status === 'completed' ? '✓✓' : status === 'cancelled' ? '✕' : '';
 
         const container = document.createElement('div');
         container.className = 'calendar-event-content';
@@ -320,7 +298,7 @@ const calendarOptions = ref({
         const nameDiv = document.createElement('div');
         nameDiv.className = 'event-doctor-name';
         nameDiv.title = doctorName;
-        
+
         if (isReten) {
             const retenBadge = document.createElement('span');
             retenBadge.className = 'reten-badge';
@@ -328,7 +306,7 @@ const calendarOptions = ref({
             retenBadge.title = 'Turno Retén';
             nameDiv.appendChild(retenBadge);
         }
-        
+
         // Add "Yo" indicator for my schedules
         if (isMySchedule) {
             const myBadge = document.createElement('span');
@@ -337,7 +315,7 @@ const calendarOptions = ref({
             myBadge.title = 'Mi horario';
             nameDiv.appendChild(myBadge);
         }
-        
+
         const nameText = document.createTextNode(doctorName);
         nameDiv.appendChild(nameText);
         container.appendChild(nameDiv);
@@ -370,11 +348,9 @@ const calendarOptions = ref({
         const isNonWorkingDay = isSunday || isHol;
 
         const holidayName = isHol ? getHolidayInfo(dateStr) : null;
-        const stripeTitle = isHol ? holidayName : (isSunday ? 'Domingo' : '');
+        const stripeTitle = isHol ? holidayName : isSunday ? 'Domingo' : '';
 
-        const nonWorkingDayStripe = isNonWorkingDay
-            ? `<div class="sunday-stripe" title="${stripeTitle}"></div>`
-            : '';
+        const nonWorkingDayStripe = isNonWorkingDay ? `<div class="sunday-stripe" title="${stripeTitle}"></div>` : '';
 
         return {
             html: `
@@ -386,7 +362,7 @@ const calendarOptions = ref({
         };
     },
     events: computed(() => {
-        return schedules.value.map(schedule => {
+        return schedules.value.map((schedule) => {
             const isMySchedule = schedule.id_doctors === currentDoctor.value?.id;
             const startDateTime = `${schedule.date}T${schedule.start_time}`;
             const endDateTime = `${schedule.date}T${schedule.end_time}`;
@@ -408,11 +384,7 @@ const calendarOptions = ref({
                 backgroundColor: 'transparent',
                 borderColor: 'transparent',
                 textColor: '#1f2937',
-                classNames: [
-                    `status-${schedule.status}`,
-                    isMySchedule ? 'my-schedule' : 'other-schedule',
-                    shiftCode ? `shift-${shiftCode}` : ''
-                ]
+                classNames: [`status-${schedule.status}`, isMySchedule ? 'my-schedule' : 'other-schedule', shiftCode ? `shift-${shiftCode}` : '']
             };
         });
     }),
@@ -436,29 +408,25 @@ onMounted(async () => {
         });
         return;
     }
-    
 
-    
     try {
         // First, fetch medical shifts
         await fetchMedicalShifts();
-        
+
         // Then, fetch all doctors to get the full doctor profile with specialties
         await fetchDoctors();
-        
-        // Find the current doctor in the fetched doctors list to get specialties
-        const fullDoctorProfile = doctors.value.find(d => d.id === currentDoctor.value.id);
-        
-        if (fullDoctorProfile && fullDoctorProfile.specialties) {
 
-            
+        // Find the current doctor in the fetched doctors list to get specialties
+        const fullDoctorProfile = doctors.value.find((d) => d.id === currentDoctor.value.id);
+
+        if (fullDoctorProfile && fullDoctorProfile.specialties) {
             // Update currentDoctor with full profile including specialties
             // We need to update the authStore user object
             currentUser.value.doctor = fullDoctorProfile;
         } else {
             // Doctor profile found but no specialties
         }
-        
+
         // Now load schedules with the updated doctor profile
         await loadDataForMonth();
     } catch (error) {
@@ -485,9 +453,7 @@ onMounted(async () => {
                     <p class="header-subtitle" v-if="hasDoctorProfile">
                         <i class="pi pi-user mr-2"></i>
                         {{ currentDoctor.name }}
-                        <span v-if="currentDoctor.specialties && currentDoctor.specialties.length > 0" class="ml-2">
-                            - {{ currentDoctor.specialties.map(s => s.name).join(', ') }}
-                        </span>
+                        <span v-if="currentDoctor.specialties && currentDoctor.specialties.length > 0" class="ml-2"> - {{ currentDoctor.specialties.map((s) => s.name).join(', ') }} </span>
                     </p>
                     <p class="header-subtitle" v-else>
                         <i class="pi pi-exclamation-triangle mr-2"></i>
@@ -498,50 +464,26 @@ onMounted(async () => {
 
             <!-- Warning if no doctor profile -->
             <Message v-if="!hasDoctorProfile" severity="warn" :closable="false" class="mb-4">
-                <p class="m-0">
-                    <strong>Perfil incompleto:</strong> Su cuenta de usuario no tiene un perfil de médico asociado. 
-                    Por favor, contacte al administrador del sistema.
-                </p>
+                <p class="m-0"><strong>Perfil incompleto:</strong> Su cuenta de usuario no tiene un perfil de médico asociado. Por favor, contacte al administrador del sistema.</p>
             </Message>
 
             <!-- Content Section -->
             <template v-if="hasDoctorProfile">
                 <!-- Control Panel -->
                 <Card class="control-panel">
-                    <template #title>
-                        <i class="pi pi-sliders-h"></i> Panel de Control
-                    </template>
+                    <template #title> <i class="pi pi-sliders-h"></i> Panel de Control </template>
                     <template #content>
                         <div class="control-grid">
                             <div class="control-item">
                                 <label>Mes</label>
-                                <DatePicker 
-                                    v-model="selectedMonth" 
-                                    view="month" 
-                                    dateFormat="MM yy"
-                                    @date-select="loadDataForMonth"
-                                    placeholder="Seleccionar mes"
-                                    class="w-full"
-                                />
+                                <DatePicker v-model="selectedMonth" view="month" dateFormat="MM yy" @date-select="loadDataForMonth" placeholder="Seleccionar mes" class="w-full" />
                             </div>
-                            
+
                             <div class="control-item">
                                 <label>&nbsp;</label>
                                 <div class="flex gap-2">
-                                    <Button 
-                                        label="Nuevo Horario"
-                                        icon="pi pi-plus" 
-                                        @click="openNewSchedule"
-                                        :disabled="isLoading"
-                                    />
-                                    <Button 
-                                        icon="pi pi-file-pdf" 
-                                        v-tooltip.top="'Exportar PDF'"
-                                        @click="handleExportPDF" 
-                                        severity="danger"
-                                        :disabled="mySchedules.length === 0 || isExportingPDF"
-                                        :loading="isExportingPDF"
-                                    />
+                                    <Button label="Nuevo Horario" icon="pi pi-plus" @click="openNewSchedule" :disabled="isLoading" />
+                                    <Button icon="pi pi-file-pdf" v-tooltip.top="'Exportar PDF'" @click="handleExportPDF" severity="danger" :disabled="mySchedules.length === 0 || isExportingPDF" :loading="isExportingPDF" />
                                 </div>
                             </div>
                         </div>
@@ -561,7 +503,7 @@ onMounted(async () => {
                             </div>
                         </template>
                     </Card>
-                    
+
                     <Card class="summary-card">
                         <template #content>
                             <div class="summary-content">
@@ -573,7 +515,7 @@ onMounted(async () => {
                             </div>
                         </template>
                     </Card>
-                    
+
                     <Card class="summary-card">
                         <template #content>
                             <div class="summary-content">
@@ -591,9 +533,7 @@ onMounted(async () => {
                 <Card class="calendar-card">
                     <template #title>
                         <div class="flex align-items-center justify-content-between">
-                            <span>
-                                <i class="pi pi-calendar"></i> Calendario de Horarios
-                            </span>
+                            <span> <i class="pi pi-calendar"></i> Calendario de Horarios </span>
                             <div class="legend">
                                 <span class="legend-item">
                                     <span class="legend-color my-schedule-color"></span>

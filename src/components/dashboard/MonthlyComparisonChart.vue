@@ -10,7 +10,7 @@ const MONTH_NAMES = ['Ene', 'Feb', 'Mar', 'Abr', 'May', 'Jun', 'Jul', 'Ago', 'Se
 const COLORS = {
     admissions: { bg: 'rgba(59, 130, 246, 0.75)', border: 'rgb(59, 130, 246)' },
     discharges: { bg: 'rgba(16, 185, 129, 0.75)', border: 'rgb(16, 185, 129)' },
-    occupancy: { bg: 'rgba(245, 158, 11, 0.12)', border: 'rgb(245, 158, 11)' },
+    occupancy: { bg: 'rgba(245, 158, 11, 0.12)', border: 'rgb(245, 158, 11)' }
 };
 
 const now = new Date();
@@ -51,23 +51,11 @@ const chartData = computed(() => {
                 type: 'bar',
                 label: 'Tasa de Ocupación (%)',
                 data: occupancyValues,
-                backgroundColor: months_data.map((m) =>
-                    m.occupancy_rate >= 85
-                        ? 'rgba(16, 185, 129, 0.75)'
-                        : m.occupancy_rate >= 60
-                          ? 'rgba(245, 158, 11, 0.75)'
-                          : 'rgba(239, 68, 68, 0.75)'
-                ),
-                borderColor: months_data.map((m) =>
-                    m.occupancy_rate >= 85
-                        ? 'rgb(16, 185, 129)'
-                        : m.occupancy_rate >= 60
-                          ? 'rgb(245, 158, 11)'
-                          : 'rgb(239, 68, 68)'
-                ),
+                backgroundColor: months_data.map((m) => (m.occupancy_rate >= 85 ? 'rgba(16, 185, 129, 0.75)' : m.occupancy_rate >= 60 ? 'rgba(245, 158, 11, 0.75)' : 'rgba(239, 68, 68, 0.75)')),
+                borderColor: months_data.map((m) => (m.occupancy_rate >= 85 ? 'rgb(16, 185, 129)' : m.occupancy_rate >= 60 ? 'rgb(245, 158, 11)' : 'rgb(239, 68, 68)')),
                 borderWidth: 1,
                 borderRadius: 6,
-                order: 2,
+                order: 2
             },
             {
                 type: 'line',
@@ -83,9 +71,9 @@ const chartData = computed(() => {
                 pointBorderWidth: 2,
                 tension: 0.4,
                 fill: false,
-                order: 1,
-            },
-        ],
+                order: 1
+            }
+        ]
     };
 });
 
@@ -105,8 +93,8 @@ const chartOptions = computed(() => {
                     pointStyle: 'circle',
                     boxWidth: 8,
                     font: { size: 12 },
-                    filter: (item) => item.text === 'Tendencia Ocupación',
-                },
+                    filter: (item) => item.text === 'Tendencia Ocupación'
+                }
             },
             tooltip: {
                 mode: 'index',
@@ -120,9 +108,9 @@ const chartOptions = computed(() => {
                     footer: ([first]) => {
                         const mes = months_data[first.dataIndex];
                         return [`Admisiones: ${mes.new_admissions}`, `Altas: ${mes.discharges}`, `Activos: ${mes.total_attentions}`];
-                    },
-                },
-            },
+                    }
+                }
+            }
         },
         scales: {
             x: { grid: { display: false } },
@@ -131,11 +119,11 @@ const chartOptions = computed(() => {
                 max: 100,
                 ticks: {
                     stepSize: 20,
-                    callback: (val) => `${val}%`,
+                    callback: (val) => `${val}%`
                 },
-                grid: { color: 'rgba(0,0,0,0.05)' },
-            },
-        },
+                grid: { color: 'rgba(0,0,0,0.05)' }
+            }
+        }
     };
 });
 
@@ -146,7 +134,7 @@ const load = async () => {
     try {
         const response = await hospitalStatistics.getMonthlyComparison({
             year: year.value,
-            months: [...selectedMonths.value].sort((a, b) => a - b),
+            months: [...selectedMonths.value].sort((a, b) => a - b)
         });
         console.log('[MonthlyComparisonChart] response:', response);
         if (response.success) {
@@ -177,28 +165,14 @@ onMounted(load);
             <div class="mc-months-group">
                 <label class="mc-label">Meses</label>
                 <div class="mc-pills">
-                    <button
-                        v-for="(name, idx) in MONTH_NAMES"
-                        :key="idx + 1"
-                        :class="['mc-pill', { 'mc-pill--active': selectedMonths.includes(idx + 1) }]"
-                        @click="toggleMonth(idx + 1)"
-                        type="button"
-                    >
+                    <button v-for="(name, idx) in MONTH_NAMES" :key="idx + 1" :class="['mc-pill', { 'mc-pill--active': selectedMonths.includes(idx + 1) }]" @click="toggleMonth(idx + 1)" type="button">
                         <span v-if="selectedMonths.includes(idx + 1)" class="mc-pill-tag">{{ selectedMonths.indexOf(idx + 1) + 1 }}</span>
                         {{ name }}
                     </button>
                 </div>
             </div>
 
-            <Button
-                label="Actualizar"
-                icon="pi pi-sync"
-                :loading="loading"
-                :disabled="loading || !selectedMonths.length"
-                @click="load"
-                severity="primary"
-                class="mc-load-button"
-            />
+            <Button label="Actualizar" icon="pi pi-sync" :loading="loading" :disabled="loading || !selectedMonths.length" @click="load" severity="primary" class="mc-load-button" />
         </div>
 
         <!-- KPI Cards -->
@@ -210,12 +184,14 @@ onMounted(load);
                     <span class="mc-kpi-unit">ocupación</span>
                 </div>
                 <div class="mc-kpi-sub-row">
-                    <span class="mc-kpi-sub">Admisiones: <strong>{{ mes.new_admissions }}</strong></span>
-                    <span class="mc-kpi-sub">Altas: <strong>{{ mes.discharges }}</strong></span>
+                    <span class="mc-kpi-sub"
+                        >Admisiones: <strong>{{ mes.new_admissions }}</strong></span
+                    >
+                    <span class="mc-kpi-sub"
+                        >Altas: <strong>{{ mes.discharges }}</strong></span
+                    >
                 </div>
-                <span class="mc-kpi-occ" style="color: var(--text-color-secondary)">
-                    {{ mes.total_attentions }} activos
-                </span>
+                <span class="mc-kpi-occ" style="color: var(--text-color-secondary)"> {{ mes.total_attentions }} activos </span>
             </div>
         </div>
 
@@ -231,9 +207,7 @@ onMounted(load);
             </div>
         </div>
 
-        <p v-if="error" class="mc-error">
-            <i class="pi pi-exclamation-triangle mr-2"></i>{{ error }}
-        </p>
+        <p v-if="error" class="mc-error"><i class="pi pi-exclamation-triangle mr-2"></i>{{ error }}</p>
     </div>
 </template>
 
@@ -395,9 +369,15 @@ onMounted(load);
     margin-top: 0.25rem;
 }
 
-.occ-high { color: #10b981; }
-.occ-mid  { color: #f59e0b; }
-.occ-low  { color: #ef4444; }
+.occ-high {
+    color: #10b981;
+}
+.occ-mid {
+    color: #f59e0b;
+}
+.occ-low {
+    color: #ef4444;
+}
 
 /* Gráfico */
 .mc-chart-wrapper {

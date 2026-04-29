@@ -87,7 +87,7 @@ export function isHoliday(dateStr) {
     const year = date.getFullYear();
     const holidays = getHolidaysForYear(year);
 
-    return holidays.some(h => h.date === dateStr);
+    return holidays.some((h) => h.date === dateStr);
 }
 
 /**
@@ -100,7 +100,7 @@ export function getHolidayInfo(dateStr) {
     const year = date.getFullYear();
     const holidays = getHolidaysForYear(year);
 
-    const holiday = holidays.find(h => h.date === dateStr);
+    const holiday = holidays.find((h) => h.date === dateStr);
     return holiday ? holiday.name : null;
 }
 
@@ -111,5 +111,5 @@ export function getHolidayInfo(dateStr) {
  */
 export function getHolidayDatesSet(year) {
     const holidays = getHolidaysForYear(year);
-    return new Set(holidays.map(h => h.date));
+    return new Set(holidays.map((h) => h.date));
 }

@@ -86,7 +86,7 @@ const handleLogout = () => {
                         <span class="api-status-text">{{ isLocalMode ? 'Local' : 'Online' }}</span>
                     </span>
                 </div>
-                
+
                 <NotificationBell />
 
                 <button type="button" class="layout-topbar-action" @click="toggleDarkMode">

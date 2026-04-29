@@ -228,13 +228,7 @@ const validateAllFields = () => {
 
 // Validación en tiempo real
 const isFormValid = computed(() => {
-    return (
-        scheduleForm.id_doctors &&
-        scheduleForm.date &&
-        scheduleForm.start_time &&
-        scheduleForm.end_time &&
-        Object.keys(validationErrors.value).length === 0
-    );
+    return scheduleForm.id_doctors && scheduleForm.date && scheduleForm.start_time && scheduleForm.end_time && Object.keys(validationErrors.value).length === 0;
 });
 
 // Guardar
@@ -279,15 +273,7 @@ const handleClose = () => {
 </script>
 
 <template>
-    <Dialog
-        v-model:visible="dialogVisible"
-        :header="dialogTitle"
-        :modal="true"
-        :closable="!saving"
-        :closeOnEscape="!saving"
-        class="w-full md:w-[700px]"
-        @hide="handleClose"
-    >
+    <Dialog v-model:visible="dialogVisible" :header="dialogTitle" :modal="true" :closable="!saving" :closeOnEscape="!saving" class="w-full md:w-[700px]" @hide="handleClose">
         <div class="flex flex-col gap-6 py-4">
             <!-- Médico y Fecha -->
             <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -333,16 +319,7 @@ const handleClose = () => {
             <!-- Turno Médico -->
             <div class="field">
                 <label for="shift" class="font-semibold mb-2 block"> Turno Médico </label>
-                <Select
-                    id="shift"
-                    v-model="scheduleForm.id_medical_shift"
-                    :options="shiftOptions"
-                    optionLabel="label"
-                    optionValue="value"
-                    placeholder="Seleccionar turno o personalizado"
-                    class="w-full"
-                    :disabled="saving || useCustomTime"
-                />
+                <Select id="shift" v-model="scheduleForm.id_medical_shift" :options="shiftOptions" optionLabel="label" optionValue="value" placeholder="Seleccionar turno o personalizado" class="w-full" :disabled="saving || useCustomTime" />
                 <div class="mt-2">
                     <Checkbox v-model="useCustomTime" inputId="customTime" binary :disabled="saving" />
                     <label for="customTime" class="ml-2 cursor-pointer">Usar horario personalizado</label>
@@ -390,30 +367,12 @@ const handleClose = () => {
             <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div class="field">
                     <label for="category" class="font-semibold mb-2 block"> Categoría <span class="text-red-500">*</span> </label>
-                    <Select
-                        id="category"
-                        v-model="scheduleForm.category"
-                        :options="categoryOptions"
-                        optionLabel="label"
-                        optionValue="value"
-                        placeholder="Seleccionar categoría"
-                        class="w-full"
-                        :disabled="saving"
-                    />
+                    <Select id="category" v-model="scheduleForm.category" :options="categoryOptions" optionLabel="label" optionValue="value" placeholder="Seleccionar categoría" class="w-full" :disabled="saving" />
                 </div>
 
                 <div class="field">
                     <label for="status" class="font-semibold mb-2 block"> Estado <span class="text-red-500">*</span> </label>
-                    <Select
-                        id="status"
-                        v-model="scheduleForm.status"
-                        :options="statusOptions"
-                        optionLabel="label"
-                        optionValue="value"
-                        placeholder="Seleccionar estado"
-                        class="w-full"
-                        :disabled="saving"
-                    />
+                    <Select id="status" v-model="scheduleForm.status" :options="statusOptions" optionLabel="label" optionValue="value" placeholder="Seleccionar estado" class="w-full" :disabled="saving" />
                 </div>
             </div>
 
@@ -434,15 +393,7 @@ const handleClose = () => {
 
         <template #footer>
             <div class="flex justify-between w-full">
-                <Button
-                    v-if="isEditing"
-                    label="Eliminar"
-                    icon="pi pi-trash"
-                    severity="danger"
-                    outlined
-                    @click="handleDelete"
-                    :disabled="saving"
-                />
+                <Button v-if="isEditing" label="Eliminar" icon="pi pi-trash" severity="danger" outlined @click="handleDelete" :disabled="saving" />
                 <div class="flex justify-end gap-2" :class="{ 'w-full': !isEditing }">
                     <Button label="Cancelar" severity="secondary" @click="handleClose" :disabled="saving" />
                     <Button :label="isEditing ? 'Actualizar' : 'Guardar'" :loading="saving" :disabled="!isFormValid || saving" @click="handleSave" />

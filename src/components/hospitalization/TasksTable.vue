@@ -134,14 +134,7 @@ const canChangeStatus = (task) => {
     }
 
     // Grupo 2: Acceso total
-    const fullAccessPositions = [
-        POSITIONS.SISTEMAS,
-        POSITIONS.ADMINISTRACION,
-        POSITIONS.DIRECTOR_MEDICO,
-        POSITIONS.HOSPITALIZACION,
-        POSITIONS.EMERGENCIA,
-        POSITIONS.MEDICOS
-    ];
+    const fullAccessPositions = [POSITIONS.SISTEMAS, POSITIONS.ADMINISTRACION, POSITIONS.DIRECTOR_MEDICO, POSITIONS.HOSPITALIZACION, POSITIONS.EMERGENCIA, POSITIONS.MEDICOS];
 
     if (fullAccessPositions.includes(userPosition)) {
         return true;

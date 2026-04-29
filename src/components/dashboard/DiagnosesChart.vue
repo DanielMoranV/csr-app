@@ -80,10 +80,7 @@ const chartOptions = {
                 label: function (context) {
                     const index = context.dataIndex;
                     const diagnosis = topDiagnosesList.value[index];
-                    return [
-                        `Casos: ${diagnosis.count}`,
-                        `Porcentaje: ${diagnosis.percentage}%`
-                    ];
+                    return [`Casos: ${diagnosis.count}`, `Porcentaje: ${diagnosis.percentage}%`];
                 },
                 title: function (context) {
                     const index = context[0].dataIndex;

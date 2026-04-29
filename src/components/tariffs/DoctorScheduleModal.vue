@@ -1,26 +1,3 @@
-<template>
-    <Dialog :visible="visible" @update:visible="emit('update:visible', $event)" modal :header="`Horarios de ${doctorName}`" :style="{ width: '90vw', maxWidth: '900px' }" :closable="true" @hide="handleClose">
-        <div class="schedule-modal-content">
-            <!-- Loading State -->
-            <div v-if="isLoading" class="loading-container">
-                <i class="pi pi-spin pi-spinner" style="font-size: 2rem"></i>
-                <p>Cargando horarios...</p>
-            </div>
-
-            <!-- No Schedules State -->
-            <div v-else-if="!isLoading && schedules.length === 0" class="empty-state">
-                <i class="pi pi-calendar-times" style="font-size: 3rem; color: var(--text-color-secondary)"></i>
-                <p class="mt-3">No hay horarios disponibles para este mes</p>
-            </div>
-
-            <!-- Calendar -->
-            <div v-else class="calendar-container">
-                <FullCalendar ref="calendarRef" :options="calendarOptions" />
-            </div>
-        </div>
-    </Dialog>
-</template>
-
 <script setup>
 import { doctorSchedules } from '@/api/doctorSchedules';
 import esLocale from '@fullcalendar/core/locales/es';
@@ -215,6 +192,29 @@ const handleClose = () => {
     schedules.value = [];
 };
 </script>
+
+<template>
+    <Dialog :visible="visible" @update:visible="emit('update:visible', $event)" modal :header="`Horarios de ${doctorName}`" :style="{ width: '90vw', maxWidth: '900px' }" :closable="true" @hide="handleClose">
+        <div class="schedule-modal-content">
+            <!-- Loading State -->
+            <div v-if="isLoading" class="loading-container">
+                <i class="pi pi-spin pi-spinner" style="font-size: 2rem"></i>
+                <p>Cargando horarios...</p>
+            </div>
+
+            <!-- No Schedules State -->
+            <div v-else-if="!isLoading && schedules.length === 0" class="empty-state">
+                <i class="pi pi-calendar-times" style="font-size: 3rem; color: var(--text-color-secondary)"></i>
+                <p class="mt-3">No hay horarios disponibles para este mes</p>
+            </div>
+
+            <!-- Calendar -->
+            <div v-else class="calendar-container">
+                <FullCalendar ref="calendarRef" :options="calendarOptions" />
+            </div>
+        </div>
+    </Dialog>
+</template>
 
 <style scoped>
 .schedule-modal-content {

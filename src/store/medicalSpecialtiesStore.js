@@ -49,7 +49,7 @@ export const useMedicalSpecialtiesStore = defineStore('medicalSpecialties', () =
     // Actions
     const fetchSpecialties = async (params = {}) => {
         state.isLoading = true;
-        
+
         // 1. Intentar cargar de caché si no hay parámetros de filtrado específicos (carga inicial limpia)
         if (Object.keys(params).length === 0 && cache.hasThis(CACHE_KEY)) {
             try {
@@ -73,12 +73,12 @@ export const useMedicalSpecialtiesStore = defineStore('medicalSpecialties', () =
                 const data = apiUtils.getData(response);
                 state.specialties = Array.isArray(data) ? data : data.data || [];
                 state.lastFetch = Date.now();
-                
+
                 // Guardar en caché solo si es una carga limpia (sin filtros extras que no sean los default)
                 if (Object.keys(params).length === 0) {
-                     cache.setItem(CACHE_KEY, state.specialties);
+                    cache.setItem(CACHE_KEY, state.specialties);
                 }
-                
+
                 return response;
             }
             throw response;

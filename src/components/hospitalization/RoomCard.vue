@@ -242,9 +242,7 @@ const formatReservationDate = (dateString) => {
 const roomStats = computed(() => {
     const totalBeds = props.room.beds.length;
     // Las camas con 'occupied' y 'discharge_scheduled' cuentan como ocupadas
-    const occupiedBeds = props.room.beds.filter(
-        (bed) => bed.status === 'occupied' || bed.status === 'discharge_scheduled'
-    ).length;
+    const occupiedBeds = props.room.beds.filter((bed) => bed.status === 'occupied' || bed.status === 'discharge_scheduled').length;
     const freeBeds = totalBeds - occupiedBeds;
     const occupancyRate = totalBeds > 0 ? Math.round((occupiedBeds / totalBeds) * 100) : 0;
 
@@ -357,11 +355,7 @@ onUnmounted(() => {
 // Acepta el nuevo status explícito 'discharge_scheduled' O el fallback por attention flags
 const isBedDischargeScheduled = (bed) => {
     if (bed.status === 'discharge_scheduled') return true;
-    return (
-        bed.status === 'occupied' &&
-        bed.attention?.is_active === true &&
-        bed.attention?.discharge_is_future === true
-    );
+    return bed.status === 'occupied' && bed.attention?.is_active === true && bed.attention?.discharge_is_future === true;
 };
 
 // Estado de carga del botón liberar cama (por bed id)
@@ -395,10 +389,7 @@ const handleEarlyRelease = (bed) => {
                 // si no llega, el store lo maneja con fallback local.
             } catch (error) {
                 const status = error?.response?.status;
-                const message =
-                    status === 422
-                        ? 'El paciente no tiene un alta futura programada.'
-                        : (error?.response?.data?.message || 'Error al liberar la cama.');
+                const message = status === 422 ? 'El paciente no tiene un alta futura programada.' : error?.response?.data?.message || 'Error al liberar la cama.';
                 toast.add({
                     severity: 'error',
                     summary: 'Error',
@@ -588,9 +579,7 @@ const handleEarlyRelease = (bed) => {
                             <i class="pi pi-clock"></i>
                             <template v-if="getCountdown(bed.attention.exit_at)">
                                 <span>Alta en</span>
-                                <strong v-if="getCountdown(bed.attention.exit_at).hours > 0">
-                                    {{ getCountdown(bed.attention.exit_at).hours }}h
-                                </strong>
+                                <strong v-if="getCountdown(bed.attention.exit_at).hours > 0"> {{ getCountdown(bed.attention.exit_at).hours }}h </strong>
                                 <strong
                                     :class="{
                                         'countdown--urgent': getCountdown(bed.attention.exit_at).totalMinutes < 15
@@ -1894,7 +1883,8 @@ const handleEarlyRelease = (bed) => {
 }
 
 @keyframes discharge-breathe {
-    0%, 100% {
+    0%,
+    100% {
         box-shadow: 0 0 0 0 rgba(59, 130, 246, 0.15);
         border-color: #60a5fa;
     }
@@ -1944,8 +1934,13 @@ const handleEarlyRelease = (bed) => {
 }
 
 @keyframes urgent-pulse {
-    0%, 100% { opacity: 1; }
-    50% { opacity: 0.6; }
+    0%,
+    100% {
+        opacity: 1;
+    }
+    50% {
+        opacity: 0.6;
+    }
 }
 
 .countdown-expired {

@@ -13,61 +13,53 @@ import { computed, onMounted, ref } from 'vue';
 import { useRouter } from 'vue-router';
 
 const router = useRouter();
-const toast  = useToast();
+const toast = useToast();
 const authStore = useAuthStore();
 const permissions = usePermissions();
 
 // ─── Estado ───────────────────────────────────────────────────────────────────
 
-const isLoading  = ref(false);
-const tickets    = ref([]);
-const filterScheduleStatus  = ref(null);
-const filterAssigneeUserId  = ref(null);
+const isLoading = ref(false);
+const tickets = ref([]);
+const filterScheduleStatus = ref(null);
+const filterAssigneeUserId = ref(null);
 const filterAssigneePosition = ref(null);
 
 // Listas para los selects de usuario y área
-const userList     = ref([]);
-const positionList = ref([]);  // [{ name, id }]
+const userList = ref([]);
+const positionList = ref([]); // [{ name, id }]
 
 // ─── Modo de vista: 'month' | 'range' ────────────────────────────────────────
 
 const viewMode = ref('month');
 
 // Estado del modo "por mes"
-const selectedYear  = ref(new Date().getFullYear());
+const selectedYear = ref(new Date().getFullYear());
 const selectedMonth = ref(new Date().getMonth()); // 0-indexed
 
 // Estado del modo "por rango"
 const rangeFromManual = ref(null);
-const rangeToManual   = ref(null);
+const rangeToManual = ref(null);
 
 // Rango efectivo — siempre computed a partir del modo activo
-const rangeFrom = computed(() =>
-    viewMode.value === 'month'
-        ? new Date(selectedYear.value, selectedMonth.value, 1)
-        : toDate(rangeFromManual.value)
-);
+const rangeFrom = computed(() => (viewMode.value === 'month' ? new Date(selectedYear.value, selectedMonth.value, 1) : toDate(rangeFromManual.value)));
 
-const rangeTo = computed(() =>
-    viewMode.value === 'month'
-        ? new Date(selectedYear.value, selectedMonth.value + 1, 0)
-        : toDate(rangeToManual.value)
-);
+const rangeTo = computed(() => (viewMode.value === 'month' ? new Date(selectedYear.value, selectedMonth.value + 1, 0) : toDate(rangeToManual.value)));
 
 // Opciones de mes y año para los selects del modo rango/mes
 const MONTHS = [
-    { label: 'Enero',      value: 0  },
-    { label: 'Febrero',    value: 1  },
-    { label: 'Marzo',      value: 2  },
-    { label: 'Abril',      value: 3  },
-    { label: 'Mayo',       value: 4  },
-    { label: 'Junio',      value: 5  },
-    { label: 'Julio',      value: 6  },
-    { label: 'Agosto',     value: 7  },
-    { label: 'Septiembre', value: 8  },
-    { label: 'Octubre',    value: 9  },
-    { label: 'Noviembre',  value: 10 },
-    { label: 'Diciembre',  value: 11 }
+    { label: 'Enero', value: 0 },
+    { label: 'Febrero', value: 1 },
+    { label: 'Marzo', value: 2 },
+    { label: 'Abril', value: 3 },
+    { label: 'Mayo', value: 4 },
+    { label: 'Junio', value: 5 },
+    { label: 'Julio', value: 6 },
+    { label: 'Agosto', value: 7 },
+    { label: 'Septiembre', value: 8 },
+    { label: 'Octubre', value: 9 },
+    { label: 'Noviembre', value: 10 },
+    { label: 'Diciembre', value: 11 }
 ];
 
 const yearOptions = computed(() => {
@@ -88,20 +80,28 @@ const isCurrentMonth = computed(() => {
 
 // Navegar meses
 const prevMonth = () => {
-    if (selectedMonth.value === 0) { selectedMonth.value = 11; selectedYear.value--; }
-    else { selectedMonth.value--; }
+    if (selectedMonth.value === 0) {
+        selectedMonth.value = 11;
+        selectedYear.value--;
+    } else {
+        selectedMonth.value--;
+    }
     fetchGantt();
 };
 
 const nextMonth = () => {
-    if (selectedMonth.value === 11) { selectedMonth.value = 0; selectedYear.value++; }
-    else { selectedMonth.value++; }
+    if (selectedMonth.value === 11) {
+        selectedMonth.value = 0;
+        selectedYear.value++;
+    } else {
+        selectedMonth.value++;
+    }
     fetchGantt();
 };
 
 const goToCurrentMonth = () => {
     const now = new Date();
-    selectedYear.value  = now.getFullYear();
+    selectedYear.value = now.getFullYear();
     selectedMonth.value = now.getMonth();
     fetchGantt();
 };
@@ -115,7 +115,7 @@ const switchToMonth = () => {
 const switchToRange = () => {
     // Pre-cargar el rango con el mes visible actualmente
     if (!rangeFromManual.value) rangeFromManual.value = new Date(rangeFrom.value);
-    if (!rangeToManual.value)   rangeToManual.value   = new Date(rangeTo.value);
+    if (!rangeToManual.value) rangeToManual.value = new Date(rangeTo.value);
     viewMode.value = 'range';
     fetchGantt();
 };
@@ -124,27 +124,27 @@ const switchToRange = () => {
 
 const SCHEDULE_STATUS = {
     unplanned: { label: 'Sin planificar', color: '#9ca3af', bgClass: 'bar-unplanned' },
-    on_track:  { label: 'En plazo',       color: '#22c55e', bgClass: 'bar-on-track'  },
-    at_risk:   { label: 'En riesgo',      color: '#eab308', bgClass: 'bar-at-risk'   },
-    delayed:   { label: 'Con desfase',    color: '#ef4444', bgClass: 'bar-delayed'   },
-    overdue:   { label: 'Vencido',        color: '#b91c1c', bgClass: 'bar-overdue'   }
+    on_track: { label: 'En plazo', color: '#22c55e', bgClass: 'bar-on-track' },
+    at_risk: { label: 'En riesgo', color: '#eab308', bgClass: 'bar-at-risk' },
+    delayed: { label: 'Con desfase', color: '#ef4444', bgClass: 'bar-delayed' },
+    overdue: { label: 'Vencido', color: '#b91c1c', bgClass: 'bar-overdue' }
 };
 
 const STATUS_SEVERITY = {
     unplanned: 'secondary',
-    on_track:  'success',
-    at_risk:   'warn',
-    delayed:   'danger',
-    overdue:   'danger'
+    on_track: 'success',
+    at_risk: 'warn',
+    delayed: 'danger',
+    overdue: 'danger'
 };
 
 const scheduleStatusOptions = [
-    { label: 'Todos',           value: null       },
-    { label: 'Sin planificar',  value: 'unplanned'},
-    { label: 'En plazo',        value: 'on_track' },
-    { label: 'En riesgo',       value: 'at_risk'  },
-    { label: 'Con desfase',     value: 'delayed'  },
-    { label: 'Vencido',         value: 'overdue'  }
+    { label: 'Todos', value: null },
+    { label: 'Sin planificar', value: 'unplanned' },
+    { label: 'En plazo', value: 'on_track' },
+    { label: 'En riesgo', value: 'at_risk' },
+    { label: 'Con desfase', value: 'delayed' },
+    { label: 'Vencido', value: 'overdue' }
 ];
 
 // ─── Rango y columnas del encabezado ──────────────────────────────────────────
@@ -208,7 +208,7 @@ const headerColumns = computed(() => {
         while (current <= toDateVal.value) {
             const monthEnd = new Date(current.getFullYear(), current.getMonth() + 1, 0);
             const start = Math.max(0, Math.round((current - fromDate.value) / 86400000));
-            const end   = Math.round((Math.min(monthEnd, toDateVal.value) - fromDate.value) / 86400000);
+            const end = Math.round((Math.min(monthEnd, toDateVal.value) - fromDate.value) / 86400000);
             cols.push({
                 label: current.toLocaleDateString('es-PE', { month: 'short', year: '2-digit' }),
                 subLabel: '',
@@ -239,8 +239,8 @@ const ganttRows = computed(() => {
 
     return tickets.value.map((t) => {
         const start = t.implementation_start ? new Date(t.implementation_start) : null;
-        const end   = t.implementation_end   ? new Date(t.implementation_end)   : null;
-        const due   = t.due_date             ? new Date(t.due_date)             : null;
+        const end = t.implementation_end ? new Date(t.implementation_end) : null;
+        const due = t.due_date ? new Date(t.due_date) : null;
 
         let barLeft = null;
         let barWidth = null;
@@ -248,11 +248,11 @@ const ganttRows = computed(() => {
 
         if (start && end) {
             const startDiff = Math.round((start - fromDate.value) / 86400000);
-            const endDiff   = Math.round((end   - fromDate.value) / 86400000);
-            const clamped   = Math.max(0, startDiff);
+            const endDiff = Math.round((end - fromDate.value) / 86400000);
+            const clamped = Math.max(0, startDiff);
             const clampedEnd = Math.min(totalDays.value - 1, endDiff);
             if (clampedEnd >= clamped) {
-                barLeft  = (clamped / totalDays.value) * 100;
+                barLeft = (clamped / totalDays.value) * 100;
                 barWidth = ((clampedEnd - clamped + 1) / totalDays.value) * 100;
             }
         }
@@ -287,12 +287,12 @@ const fetchGantt = async () => {
     try {
         const params = {
             from: toYMD(rangeFrom.value),
-            to:   toYMD(rangeTo.value)
+            to: toYMD(rangeTo.value)
         };
-        if (filterScheduleStatus.value)      params.schedule_status   = filterScheduleStatus.value;
-        if (filterAssigneeUserId.value)      params.assignee_user_id  = filterAssigneeUserId.value;
-        if (filterAssigneePosition.value)    params.assignee_position = filterAssigneePosition.value;
-        if (filterTicketStatus.value === 'active')   params.status = 'pendiente,en proceso';
+        if (filterScheduleStatus.value) params.schedule_status = filterScheduleStatus.value;
+        if (filterAssigneeUserId.value) params.assignee_user_id = filterAssigneeUserId.value;
+        if (filterAssigneePosition.value) params.assignee_position = filterAssigneePosition.value;
+        if (filterTicketStatus.value === 'active') params.status = 'pendiente,en proceso';
         if (filterTicketStatus.value === 'finished') params.status = 'concluido,anulado,rechazado';
 
         const response = await TicketService.getGantt(params);
@@ -306,10 +306,7 @@ const fetchGantt = async () => {
 
 const loadFilterLists = async () => {
     try {
-        const [usersRes, positionsRes] = await Promise.all([
-            usersApi.list(),
-            positionsApi.getAll()
-        ]);
+        const [usersRes, positionsRes] = await Promise.all([usersApi.list(), positionsApi.getAll()]);
 
         if (apiUtils.isSuccess(usersRes)) {
             userList.value = apiUtils.getData(usersRes);
@@ -324,10 +321,10 @@ const loadFilterLists = async () => {
 };
 
 const clearFilters = () => {
-    filterScheduleStatus.value   = null;
-    filterAssigneeUserId.value   = null;
+    filterScheduleStatus.value = null;
+    filterAssigneeUserId.value = null;
     filterAssigneePosition.value = null;
-    filterTicketStatus.value     = 'active';
+    filterTicketStatus.value = 'active';
     fetchGantt();
 };
 
@@ -345,9 +342,7 @@ const onPositionSelected = () => {
 const filteredUserList = ref([]);
 const onFilterUsers = (event) => {
     const q = event?.value ?? '';
-    filteredUserList.value = q.length >= 1
-        ? userList.value.filter((u) => u.name.toLowerCase().includes(q.toLowerCase()))
-        : userList.value;
+    filteredUserList.value = q.length >= 1 ? userList.value.filter((u) => u.name.toLowerCase().includes(q.toLowerCase())) : userList.value;
 };
 
 onMounted(async () => {
@@ -369,20 +364,20 @@ const formatDate = (d, includeTime = false) => {
 };
 
 const PRIORITY_COLORS = {
-    baja:    '#10b981',
-    media:   '#f59e0b',
-    alta:    '#ef4444',
+    baja: '#10b981',
+    media: '#f59e0b',
+    alta: '#ef4444',
     urgente: '#dc2626'
 };
 
 // ─── Estado del ticket ────────────────────────────────────────────────────────
 
 const TICKET_STATUS = {
-    'pendiente':   { label: 'Pendiente',  icon: 'pi pi-clock',        severity: 'secondary' },
-    'en proceso':  { label: 'En proceso', icon: 'pi pi-sync',         severity: 'info'      },
-    'concluido':   { label: 'Concluido',  icon: 'pi pi-check-circle', severity: 'success'   },
-    'rechazado':   { label: 'Rechazado',  icon: 'pi pi-times-circle', severity: 'danger'    },
-    'anulado':     { label: 'Anulado',    icon: 'pi pi-ban',          severity: 'secondary' }
+    pendiente: { label: 'Pendiente', icon: 'pi pi-clock', severity: 'secondary' },
+    'en proceso': { label: 'En proceso', icon: 'pi pi-sync', severity: 'info' },
+    concluido: { label: 'Concluido', icon: 'pi pi-check-circle', severity: 'success' },
+    rechazado: { label: 'Rechazado', icon: 'pi pi-times-circle', severity: 'danger' },
+    anulado: { label: 'Anulado', icon: 'pi pi-ban', severity: 'secondary' }
 };
 
 const FINISHED_STATUSES = new Set(['concluido', 'anulado', 'rechazado']);
@@ -430,36 +425,27 @@ const navigateToTicket = (id) => {
 
 <template>
     <div class="gantt-page">
-
         <!-- ═══ Header card ═══ -->
         <div class="gantt-header-card">
-
             <!-- Title row -->
             <div class="gantt-title-row">
                 <div class="flex items-center gap-3">
                     <Button icon="pi pi-arrow-left" text severity="secondary" @click="router.push({ name: 'tickets' })" v-tooltip.right="'Volver a Tickets'" />
-                    <i class="pi pi-sliders-h text-primary-500" style="font-size:1.3rem"></i>
+                    <i class="pi pi-sliders-h text-primary-500" style="font-size: 1.3rem"></i>
                     <h1 class="gantt-title">Diagrama de Gantt — Tickets</h1>
                 </div>
-                <span v-if="!isLoading && ganttRows.length > 0" class="gantt-count-pill">
-                    {{ ganttRows.length }} {{ ganttRows.length === 1 ? 'ticket' : 'tickets' }}
-                </span>
+                <span v-if="!isLoading && ganttRows.length > 0" class="gantt-count-pill"> {{ ganttRows.length }} {{ ganttRows.length === 1 ? 'ticket' : 'tickets' }} </span>
             </div>
 
             <!-- Controls: stacked bands -->
             <div class="gantt-controls">
-
                 <!-- Band 1 · Período -->
                 <div class="controls-band">
                     <span class="controls-band-label">Período</span>
                     <div class="period-inner">
                         <div class="mode-toggle">
-                            <button class="mode-btn" :class="{ 'mode-btn--active': viewMode === 'month' }" @click="switchToMonth">
-                                <i class="pi pi-calendar"></i> Por mes
-                            </button>
-                            <button class="mode-btn" :class="{ 'mode-btn--active': viewMode === 'range' }" @click="switchToRange">
-                                <i class="pi pi-calendar-plus"></i> Por rango
-                            </button>
+                            <button class="mode-btn" :class="{ 'mode-btn--active': viewMode === 'month' }" @click="switchToMonth"><i class="pi pi-calendar"></i> Por mes</button>
+                            <button class="mode-btn" :class="{ 'mode-btn--active': viewMode === 'range' }" @click="switchToRange"><i class="pi pi-calendar-plus"></i> Por rango</button>
                         </div>
 
                         <template v-if="viewMode === 'month'">
@@ -497,26 +483,13 @@ const navigateToTicket = (id) => {
                 <div class="controls-band">
                     <span class="controls-band-label">Filtros</span>
                     <div class="filters-inner">
-
                         <!-- Toggle estado ticket -->
                         <div class="control-group">
                             <label class="control-label"><i class="pi pi-ticket"></i> Tickets</label>
                             <div class="status-toggle">
-                                <button
-                                    class="status-btn"
-                                    :class="{ 'status-btn--all': filterTicketStatus === 'all' }"
-                                    @click="setTicketStatus('all')"
-                                >Todos</button>
-                                <button
-                                    class="status-btn"
-                                    :class="{ 'status-btn--active': filterTicketStatus === 'active' }"
-                                    @click="setTicketStatus('active')"
-                                ><i class="pi pi-play-circle"></i> Activos</button>
-                                <button
-                                    class="status-btn"
-                                    :class="{ 'status-btn--done': filterTicketStatus === 'finished' }"
-                                    @click="setTicketStatus('finished')"
-                                ><i class="pi pi-check-circle"></i> Terminados</button>
+                                <button class="status-btn" :class="{ 'status-btn--all': filterTicketStatus === 'all' }" @click="setTicketStatus('all')">Todos</button>
+                                <button class="status-btn" :class="{ 'status-btn--active': filterTicketStatus === 'active' }" @click="setTicketStatus('active')"><i class="pi pi-play-circle"></i> Activos</button>
+                                <button class="status-btn" :class="{ 'status-btn--done': filterTicketStatus === 'finished' }" @click="setTicketStatus('finished')"><i class="pi pi-check-circle"></i> Terminados</button>
                             </div>
                         </div>
 
@@ -561,28 +534,12 @@ const navigateToTicket = (id) => {
 
                         <div class="control-group">
                             <label class="control-label"><i class="pi pi-tag"></i> Estado planificación</label>
-                            <Select
-                                v-model="filterScheduleStatus"
-                                :options="scheduleStatusOptions"
-                                optionLabel="label"
-                                optionValue="value"
-                                placeholder="Todos"
-                                :showClear="true"
-                                class="control-input"
-                            />
+                            <Select v-model="filterScheduleStatus" :options="scheduleStatusOptions" optionLabel="label" optionValue="value" placeholder="Todos" :showClear="true" class="control-input" />
                         </div>
 
                         <div class="control-actions">
                             <Button label="Actualizar" icon="pi pi-refresh" size="small" @click="fetchGantt" :loading="isLoading" />
-                            <Button
-                                v-if="filterAssigneeUserId || filterAssigneePosition || filterScheduleStatus || filterTicketStatus !== 'all'"
-                                label="Limpiar"
-                                icon="pi pi-times"
-                                severity="secondary"
-                                outlined
-                                size="small"
-                                @click="clearFilters"
-                            />
+                            <Button v-if="filterAssigneeUserId || filterAssigneePosition || filterScheduleStatus || filterTicketStatus !== 'all'" label="Limpiar" icon="pi pi-times" severity="secondary" outlined size="small" @click="clearFilters" />
                         </div>
                     </div>
                 </div>
@@ -592,9 +549,39 @@ const navigateToTicket = (id) => {
             <div v-if="filterAssigneeUserId || filterAssigneePosition || filterScheduleStatus || filterTicketStatus !== 'all'" class="gantt-active-filters">
                 <span class="active-filters-label"><i class="pi pi-filter-fill mr-1"></i>Filtros activos:</span>
                 <Tag v-if="filterTicketStatus !== 'all'" :value="filterTicketStatus === 'active' ? 'Tickets: Activos' : 'Tickets: Terminados'" severity="info" class="text-xs" :removable="true" @remove="setTicketStatus('all')" />
-                <Tag v-if="filterAssigneeUserId" :value="`Usuario: ${userList.find(u => u.id === filterAssigneeUserId)?.name ?? filterAssigneeUserId}`" severity="info" class="text-xs" :removable="true" @remove="filterAssigneeUserId = null; fetchGantt()" />
-                <Tag v-if="filterAssigneePosition" :value="`Área: ${filterAssigneePosition}`" severity="info" class="text-xs" :removable="true" @remove="filterAssigneePosition = null; fetchGantt()" />
-                <Tag v-if="filterScheduleStatus" :value="`Planif.: ${scheduleStatusOptions.find(o => o.value === filterScheduleStatus)?.label}`" severity="secondary" class="text-xs" :removable="true" @remove="filterScheduleStatus = null; fetchGantt()" />
+                <Tag
+                    v-if="filterAssigneeUserId"
+                    :value="`Usuario: ${userList.find((u) => u.id === filterAssigneeUserId)?.name ?? filterAssigneeUserId}`"
+                    severity="info"
+                    class="text-xs"
+                    :removable="true"
+                    @remove="
+                        filterAssigneeUserId = null;
+                        fetchGantt();
+                    "
+                />
+                <Tag
+                    v-if="filterAssigneePosition"
+                    :value="`Área: ${filterAssigneePosition}`"
+                    severity="info"
+                    class="text-xs"
+                    :removable="true"
+                    @remove="
+                        filterAssigneePosition = null;
+                        fetchGantt();
+                    "
+                />
+                <Tag
+                    v-if="filterScheduleStatus"
+                    :value="`Planif.: ${scheduleStatusOptions.find((o) => o.value === filterScheduleStatus)?.label}`"
+                    severity="secondary"
+                    class="text-xs"
+                    :removable="true"
+                    @remove="
+                        filterScheduleStatus = null;
+                        fetchGantt();
+                    "
+                />
             </div>
 
             <!-- Legend -->
@@ -617,31 +604,28 @@ const navigateToTicket = (id) => {
 
         <!-- Loading -->
         <div v-if="isLoading" class="gantt-state-panel">
-            <i class="pi pi-spin pi-spinner" style="font-size:2.5rem; color:var(--primary-500)"></i>
+            <i class="pi pi-spin pi-spinner" style="font-size: 2.5rem; color: var(--primary-500)"></i>
             <p class="mt-3 text-color-secondary">Cargando diagrama...</p>
         </div>
 
         <!-- No range -->
         <div v-else-if="totalDays <= 0" class="gantt-state-panel">
-            <i class="pi pi-calendar" style="font-size:3rem; opacity:0.35"></i>
+            <i class="pi pi-calendar" style="font-size: 3rem; opacity: 0.35"></i>
             <p class="mt-3">Seleccione un rango de fechas válido.</p>
         </div>
 
         <!-- No data -->
         <div v-else-if="ganttRows.length === 0" class="gantt-state-panel">
-            <i class="pi pi-inbox" style="font-size:3rem; opacity:0.35"></i>
+            <i class="pi pi-inbox" style="font-size: 3rem; opacity: 0.35"></i>
             <p class="mt-3">No hay tickets en este período.</p>
             <small class="text-color-secondary">Los tickets sin planificación también aparecen cuando no se filtra por estado.</small>
         </div>
 
         <!-- ═══ Gantt body ═══ -->
         <div v-else class="gantt-container">
-
             <!-- Fixed label column -->
             <div class="gantt-col-labels">
-                <div class="gantt-col-header">
-                    <i class="pi pi-list mr-2"></i>Ticket
-                </div>
+                <div class="gantt-col-header"><i class="pi pi-list mr-2"></i>Ticket</div>
                 <div
                     v-for="row in ganttRows"
                     :key="row.id"
@@ -654,19 +638,11 @@ const navigateToTicket = (id) => {
                     <div class="gantt-label-info">
                         <span class="gantt-label-title">{{ row.title }}</span>
                         <div class="gantt-label-meta">
-                            <span
-                                class="ticket-status-badge"
-                                :data-status="row.status"
-                                v-tooltip.top="TICKET_STATUS[row.status]?.label ?? row.status"
-                            >
+                            <span class="ticket-status-badge" :data-status="row.status" v-tooltip.top="TICKET_STATUS[row.status]?.label ?? row.status">
                                 <i :class="TICKET_STATUS[row.status]?.icon ?? 'pi pi-circle'"></i>
                                 {{ TICKET_STATUS[row.status]?.label ?? row.status }}
                             </span>
-                            <Tag
-                                :value="SCHEDULE_STATUS[row.schedule_status]?.label ?? row.schedule_status"
-                                :severity="STATUS_SEVERITY[row.schedule_status] ?? 'secondary'"
-                                class="label-tag-sm"
-                            />
+                            <Tag :value="SCHEDULE_STATUS[row.schedule_status]?.label ?? row.schedule_status" :severity="STATUS_SEVERITY[row.schedule_status] ?? 'secondary'" class="label-tag-sm" />
                             <span v-if="row.priority" class="gantt-priority-badge" :data-priority="row.priority">
                                 {{ row.priority }}
                             </span>
@@ -674,7 +650,9 @@ const navigateToTicket = (id) => {
                         <div class="gantt-label-assignee-row" v-tooltip.top="'Asignado a'">
                             <template v-if="row.assignee">
                                 <i class="pi pi-user" style="font-size: 0.65rem"></i>
-                                <span style="font-size: 0.7rem">{{ row.assignee.name }} <small v-if="row.assignee.position" style="font-size: 0.62rem" class="opacity-60">({{ row.assignee.position }})</small></span>
+                                <span style="font-size: 0.7rem"
+                                    >{{ row.assignee.name }} <small v-if="row.assignee.position" style="font-size: 0.62rem" class="opacity-60">({{ row.assignee.position }})</small></span
+                                >
                             </template>
                             <template v-else-if="row.assignee_position">
                                 <i class="pi pi-briefcase" style="font-size: 0.65rem"></i>
@@ -684,7 +662,9 @@ const navigateToTicket = (id) => {
                         </div>
                         <div v-if="row.creator" class="gantt-label-assignee-row mt-0.5 opacity-60" v-tooltip.top="'Creado por'">
                             <i class="pi pi-pencil" style="font-size: 0.6rem"></i>
-                            <span style="font-size: 0.65rem">{{ row.creator.name }} <small style="font-size: 0.6rem" class="opacity-70">{{ formatDate(row.created_at) }}</small></span>
+                            <span style="font-size: 0.65rem"
+                                >{{ row.creator.name }} <small style="font-size: 0.6rem" class="opacity-70">{{ formatDate(row.created_at) }}</small></span
+                            >
                         </div>
                     </div>
                 </div>
@@ -694,13 +674,7 @@ const navigateToTicket = (id) => {
             <div class="gantt-col-bars">
                 <!-- Date header -->
                 <div class="gantt-date-header">
-                    <div
-                        v-for="col in headerColumns"
-                        :key="col.offset"
-                        class="gantt-date-col"
-                        :class="{ 'is-weekend': col.isWeekend }"
-                        :style="{ width: (col.span / totalDays * 100) + '%' }"
-                    >
+                    <div v-for="col in headerColumns" :key="col.offset" class="gantt-date-col" :class="{ 'is-weekend': col.isWeekend }" :style="{ width: (col.span / totalDays) * 100 + '%' }">
                         <span class="gantt-date-main">{{ col.label }}</span>
                         <span v-if="col.subLabel" class="gantt-date-sub">{{ col.subLabel }}</span>
                     </div>
@@ -710,20 +684,9 @@ const navigateToTicket = (id) => {
                 <div class="gantt-body-area">
                     <div v-if="todayOffset !== null" class="gantt-today-line" :style="{ left: todayOffset + '%' }"></div>
 
-                    <div
-                        v-for="row in ganttRows"
-                        :key="row.id"
-                        class="gantt-bar-row"
-                        :class="{ 'is-finished': isFinished(row.status) }"
-                    >
+                    <div v-for="row in ganttRows" :key="row.id" class="gantt-bar-row" :class="{ 'is-finished': isFinished(row.status) }">
                         <!-- Grid bg cols -->
-                        <div
-                            v-for="col in headerColumns"
-                            :key="col.offset"
-                            class="gantt-bg-col"
-                            :class="{ 'is-weekend': col.isWeekend }"
-                            :style="{ width: (col.span / totalDays * 100) + '%' }"
-                        ></div>
+                        <div v-for="col in headerColumns" :key="col.offset" class="gantt-bg-col" :class="{ 'is-weekend': col.isWeekend }" :style="{ width: (col.span / totalDays) * 100 + '%' }"></div>
 
                         <!-- Implementation bar -->
                         <div
@@ -732,34 +695,26 @@ const navigateToTicket = (id) => {
                             :class="row.cfg.bgClass"
                             :style="{ left: row.barLeft + '%', width: row.barWidth + '%' }"
                             @click="handleTicketClick(row)"
-                            v-tooltip.top="`#${row.id} · ${row.title} | ${TICKET_STATUS[row.status]?.label ?? row.status} | ${formatDate(row.implementation_start)} → ${formatDate(row.implementation_end)} | Creado por: ${row.creator?.name ?? '—'} (${row.creator?.position ?? '—'}) el ${formatDate(row.created_at, true)}`"
+                            v-tooltip.top="
+                                `#${row.id} · ${row.title} | ${TICKET_STATUS[row.status]?.label ?? row.status} | ${formatDate(row.implementation_start)} → ${formatDate(row.implementation_end)} | Creado por: ${row.creator?.name ?? '—'} (${row.creator?.position ?? '—'}) el ${formatDate(row.created_at, true)}`
+                            "
                         >
                             <i :class="TICKET_STATUS[row.status]?.icon" class="gantt-bar-status-icon"></i>
                             <span class="gantt-bar-label">{{ row.title }}</span>
                         </div>
 
                         <!-- Unplanned placeholder -->
-                        <div
-                            v-else-if="row.schedule_status === 'unplanned'"
-                            class="gantt-bar-unplanned"
-                            v-tooltip.top="`#${row.id} · ${TICKET_STATUS[row.status]?.label ?? row.status} — Sin fechas de implementación`"
-                        >
+                        <div v-else-if="row.schedule_status === 'unplanned'" class="gantt-bar-unplanned" v-tooltip.top="`#${row.id} · ${TICKET_STATUS[row.status]?.label ?? row.status} — Sin fechas de implementación`">
                             <i class="pi pi-clock"></i>
                             <span>Sin planificar</span>
                         </div>
 
                         <!-- Due date marker -->
-                        <div
-                            v-if="row.duePct !== null"
-                            class="gantt-due-marker"
-                            :style="{ left: row.duePct + '%' }"
-                            v-tooltip.top="`Fecha límite: ${formatDate(row.due_date)}`"
-                        ></div>
+                        <div v-if="row.duePct !== null" class="gantt-due-marker" :style="{ left: row.duePct + '%' }" v-tooltip.top="`Fecha límite: ${formatDate(row.due_date)}`"></div>
                     </div>
                 </div>
             </div>
         </div>
-
     </div>
 </template>
 
@@ -780,7 +735,7 @@ const navigateToTicket = (id) => {
     border: 1px solid var(--surface-border);
     border-radius: 12px;
     padding: 1.25rem 1.5rem;
-    box-shadow: 0 1px 6px rgba(0,0,0,0.05);
+    box-shadow: 0 1px 6px rgba(0, 0, 0, 0.05);
 }
 
 .gantt-title-row {
@@ -870,9 +825,13 @@ const navigateToTicket = (id) => {
     gap: 0.2rem;
 }
 
-.control-label i { font-size: 0.7rem; }
+.control-label i {
+    font-size: 0.7rem;
+}
 
-.control-input { min-width: 175px; }
+.control-input {
+    min-width: 175px;
+}
 
 .control-hint {
     font-size: 0.7rem;
@@ -909,14 +868,27 @@ const navigateToTicket = (id) => {
     cursor: pointer;
     background: transparent;
     color: var(--text-color-secondary);
-    transition: background 0.15s, color 0.15s;
+    transition:
+        background 0.15s,
+        color 0.15s;
     white-space: nowrap;
 }
 
-.mode-btn i { font-size: 0.75rem; }
-.mode-btn:hover { background: var(--surface-200); color: var(--text-color); }
-.mode-btn--active { background: var(--primary-500); color: #fff; }
-.mode-btn--active:hover { background: var(--primary-600); color: #fff; }
+.mode-btn i {
+    font-size: 0.75rem;
+}
+.mode-btn:hover {
+    background: var(--surface-200);
+    color: var(--text-color);
+}
+.mode-btn--active {
+    background: var(--primary-500);
+    color: #fff;
+}
+.mode-btn--active:hover {
+    background: var(--primary-600);
+    color: #fff;
+}
 
 /* Month navigation */
 .month-nav {
@@ -936,15 +908,30 @@ const navigateToTicket = (id) => {
     align-items: center;
     justify-content: center;
     color: var(--text-color-secondary);
-    transition: background 0.15s, color 0.15s, border-color 0.15s;
+    transition:
+        background 0.15s,
+        color 0.15s,
+        border-color 0.15s;
     flex-shrink: 0;
 }
 
-.month-nav-btn:hover { background: var(--primary-50); border-color: var(--primary-300); color: var(--primary-600); }
+.month-nav-btn:hover {
+    background: var(--primary-50);
+    border-color: var(--primary-300);
+    color: var(--primary-600);
+}
 
-.month-selects { display: flex; align-items: center; gap: 0.25rem; }
-.month-select-month { min-width: 120px; }
-.month-select-year  { min-width: 80px; }
+.month-selects {
+    display: flex;
+    align-items: center;
+    gap: 0.25rem;
+}
+.month-select-month {
+    min-width: 120px;
+}
+.month-select-year {
+    min-width: 80px;
+}
 
 .month-today-btn {
     padding: 0.28rem 0.65rem;
@@ -958,7 +945,9 @@ const navigateToTicket = (id) => {
     transition: background 0.15s;
     white-space: nowrap;
 }
-.month-today-btn:hover { background: var(--primary-100); }
+.month-today-btn:hover {
+    background: var(--primary-100);
+}
 
 .range-inputs {
     display: flex;
@@ -989,18 +978,40 @@ const navigateToTicket = (id) => {
     cursor: pointer;
     background: transparent;
     color: var(--text-color-secondary);
-    transition: background 0.15s, color 0.15s;
+    transition:
+        background 0.15s,
+        color 0.15s;
     white-space: nowrap;
 }
 
-.status-btn i { font-size: 0.72rem; }
-.status-btn:hover { background: var(--surface-200); color: var(--text-color); }
+.status-btn i {
+    font-size: 0.72rem;
+}
+.status-btn:hover {
+    background: var(--surface-200);
+    color: var(--text-color);
+}
 
-.status-btn--all    { background: var(--surface-300); color: var(--text-color); }
-.status-btn--active { background: #3b82f6; color: #fff; }
-.status-btn--active:hover { background: #2563eb; color: #fff; }
-.status-btn--done   { background: #22c55e; color: #fff; }
-.status-btn--done:hover { background: #16a34a; color: #fff; }
+.status-btn--all {
+    background: var(--surface-300);
+    color: var(--text-color);
+}
+.status-btn--active {
+    background: #3b82f6;
+    color: #fff;
+}
+.status-btn--active:hover {
+    background: #2563eb;
+    color: #fff;
+}
+.status-btn--done {
+    background: #22c55e;
+    color: #fff;
+}
+.status-btn--done:hover {
+    background: #16a34a;
+    color: #fff;
+}
 
 /* Divisor visual entre toggle y selects */
 .filter-divider {
@@ -1063,8 +1074,14 @@ const navigateToTicket = (id) => {
     flex-shrink: 0;
 }
 
-.legend-today { background: #3b82f6; }
-.legend-due   { background: #f97316; border-top: 2px dashed #f97316; height: 0; }
+.legend-today {
+    background: #3b82f6;
+}
+.legend-due {
+    background: #f97316;
+    border-top: 2px dashed #f97316;
+    height: 0;
+}
 
 .legend-sep {
     color: var(--text-color-secondary);
@@ -1079,7 +1096,7 @@ const navigateToTicket = (id) => {
     border: 1px solid var(--surface-border);
     border-radius: 12px;
     overflow: hidden;
-    box-shadow: 0 2px 8px rgba(0,0,0,0.06);
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
     display: grid;
     grid-template-columns: 300px 1fr;
 }
@@ -1122,7 +1139,9 @@ const navigateToTicket = (id) => {
     gap: 0.5rem;
     border-bottom: 1px solid var(--surface-100);
     cursor: pointer;
-    transition: background 0.15s, box-shadow 0.15s;
+    transition:
+        background 0.15s,
+        box-shadow 0.15s;
 }
 
 .gantt-label-row:hover {
@@ -1179,7 +1198,10 @@ const navigateToTicket = (id) => {
     overflow: hidden;
 }
 
-.gantt-label-assignee-row i { font-size: 0.68rem; flex-shrink: 0; }
+.gantt-label-assignee-row i {
+    font-size: 0.68rem;
+    flex-shrink: 0;
+}
 
 .gantt-label-assignee-row span {
     overflow: hidden;
@@ -1212,10 +1234,22 @@ const navigateToTicket = (id) => {
     flex-shrink: 0;
 }
 
-.gantt-priority-badge[data-priority="baja"]    { background: #d1fae5; color: #065f46; }
-.gantt-priority-badge[data-priority="media"]   { background: #fef3c7; color: #92400e; }
-.gantt-priority-badge[data-priority="alta"]    { background: #fee2e2; color: #991b1b; }
-.gantt-priority-badge[data-priority="urgente"] { background: #dc2626; color: #fff; }
+.gantt-priority-badge[data-priority='baja'] {
+    background: #d1fae5;
+    color: #065f46;
+}
+.gantt-priority-badge[data-priority='media'] {
+    background: #fef3c7;
+    color: #92400e;
+}
+.gantt-priority-badge[data-priority='alta'] {
+    background: #fee2e2;
+    color: #991b1b;
+}
+.gantt-priority-badge[data-priority='urgente'] {
+    background: #dc2626;
+    color: #fff;
+}
 
 /* Tag pequeño en labels */
 .label-tag-sm {
@@ -1237,18 +1271,35 @@ const navigateToTicket = (id) => {
     flex-shrink: 0;
 }
 
-.ticket-status-badge i { font-size: 0.58rem; }
+.ticket-status-badge i {
+    font-size: 0.58rem;
+}
 
-.ticket-status-badge[data-status="pendiente"]  { background: #e0e7ff; color: #3730a3; }
-.ticket-status-badge[data-status="en proceso"] { background: #dbeafe; color: #1d4ed8; }
-.ticket-status-badge[data-status="concluido"]  { background: #dcfce7; color: #15803d; }
-.ticket-status-badge[data-status="rechazado"]  { background: #fee2e2; color: #991b1b; }
-.ticket-status-badge[data-status="anulado"]    { background: #f3f4f6; color: #4b5563; }
+.ticket-status-badge[data-status='pendiente'] {
+    background: #e0e7ff;
+    color: #3730a3;
+}
+.ticket-status-badge[data-status='en proceso'] {
+    background: #dbeafe;
+    color: #1d4ed8;
+}
+.ticket-status-badge[data-status='concluido'] {
+    background: #dcfce7;
+    color: #15803d;
+}
+.ticket-status-badge[data-status='rechazado'] {
+    background: #fee2e2;
+    color: #991b1b;
+}
+.ticket-status-badge[data-status='anulado'] {
+    background: #f3f4f6;
+    color: #4b5563;
+}
 
 /* ── Icono en la barra ── */
 .gantt-bar-status-icon {
     font-size: 0.68rem;
-    color: rgba(255,255,255,0.85);
+    color: rgba(255, 255, 255, 0.85);
     flex-shrink: 0;
 }
 
@@ -1332,7 +1383,7 @@ const navigateToTicket = (id) => {
     background: #3b82f6;
     z-index: 3;
     pointer-events: none;
-    box-shadow: 0 0 6px rgba(59,130,246,0.4);
+    box-shadow: 0 0 6px rgba(59, 130, 246, 0.4);
 }
 
 .gantt-today-line::before {
@@ -1345,7 +1396,7 @@ const navigateToTicket = (id) => {
     height: 8px;
     background: #3b82f6;
     border-radius: 50%;
-    box-shadow: 0 0 6px rgba(59,130,246,0.6);
+    box-shadow: 0 0 6px rgba(59, 130, 246, 0.6);
 }
 
 .gantt-bar-row {
@@ -1377,16 +1428,19 @@ const navigateToTicket = (id) => {
     align-items: center;
     padding: 0 0.5rem;
     cursor: pointer;
-    transition: filter 0.15s, box-shadow 0.15s, transform 0.1s;
+    transition:
+        filter 0.15s,
+        box-shadow 0.15s,
+        transform 0.1s;
     z-index: 2;
     min-width: 6px;
     overflow: hidden;
-    box-shadow: 0 1px 3px rgba(0,0,0,0.2);
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.2);
 }
 
 .gantt-bar:hover {
     filter: brightness(1.12);
-    box-shadow: 0 3px 8px rgba(0,0,0,0.25);
+    box-shadow: 0 3px 8px rgba(0, 0, 0, 0.25);
     transform: translateY(calc(-50% - 1px));
 }
 
@@ -1397,16 +1451,26 @@ const navigateToTicket = (id) => {
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
-    text-shadow: 0 1px 2px rgba(0,0,0,0.25);
+    text-shadow: 0 1px 2px rgba(0, 0, 0, 0.25);
 }
 
 .bar-on_track,
-.bar-on-track  { background: linear-gradient(135deg, #22c55e, #16a34a); }
+.bar-on-track {
+    background: linear-gradient(135deg, #22c55e, #16a34a);
+}
 .bar-at_risk,
-.bar-at-risk   { background: linear-gradient(135deg, #eab308, #ca8a04); }
-.bar-delayed   { background: linear-gradient(135deg, #ef4444, #dc2626); }
-.bar-overdue   { background: linear-gradient(135deg, #b91c1c, #991b1b); }
-.bar-unplanned { background: linear-gradient(135deg, #9ca3af, #6b7280); }
+.bar-at-risk {
+    background: linear-gradient(135deg, #eab308, #ca8a04);
+}
+.bar-delayed {
+    background: linear-gradient(135deg, #ef4444, #dc2626);
+}
+.bar-overdue {
+    background: linear-gradient(135deg, #b91c1c, #991b1b);
+}
+.bar-unplanned {
+    background: linear-gradient(135deg, #9ca3af, #6b7280);
+}
 
 /* Placeholder para unplanned sin fechas */
 .gantt-bar-unplanned {
@@ -1506,43 +1570,108 @@ const navigateToTicket = (id) => {
     border-color: var(--surface-700);
 }
 
-.app-dark .gantt-priority-badge[data-priority="baja"]    { background: #064e3b; color: #6ee7b7; }
-.app-dark .gantt-priority-badge[data-priority="media"]   { background: #451a03; color: #fde68a; }
-.app-dark .gantt-priority-badge[data-priority="alta"]    { background: #450a0a; color: #fca5a5; }
-.app-dark .gantt-priority-badge[data-priority="urgente"] { background: #991b1b; color: #fff; }
+.app-dark .gantt-priority-badge[data-priority='baja'] {
+    background: #064e3b;
+    color: #6ee7b7;
+}
+.app-dark .gantt-priority-badge[data-priority='media'] {
+    background: #451a03;
+    color: #fde68a;
+}
+.app-dark .gantt-priority-badge[data-priority='alta'] {
+    background: #450a0a;
+    color: #fca5a5;
+}
+.app-dark .gantt-priority-badge[data-priority='urgente'] {
+    background: #991b1b;
+    color: #fff;
+}
 
-.app-dark .ticket-status-badge[data-status="pendiente"]  { background: #1e1b4b; color: #a5b4fc; }
-.app-dark .ticket-status-badge[data-status="en proceso"] { background: #1e3a5f; color: #93c5fd; }
-.app-dark .ticket-status-badge[data-status="concluido"]  { background: #14532d; color: #86efac; }
-.app-dark .ticket-status-badge[data-status="rechazado"]  { background: #450a0a; color: #fca5a5; }
-.app-dark .ticket-status-badge[data-status="anulado"]    { background: #374151; color: #9ca3af; }
+.app-dark .ticket-status-badge[data-status='pendiente'] {
+    background: #1e1b4b;
+    color: #a5b4fc;
+}
+.app-dark .ticket-status-badge[data-status='en proceso'] {
+    background: #1e3a5f;
+    color: #93c5fd;
+}
+.app-dark .ticket-status-badge[data-status='concluido'] {
+    background: #14532d;
+    color: #86efac;
+}
+.app-dark .ticket-status-badge[data-status='rechazado'] {
+    background: #450a0a;
+    color: #fca5a5;
+}
+.app-dark .ticket-status-badge[data-status='anulado'] {
+    background: #374151;
+    color: #9ca3af;
+}
 
 .app-dark .status-toggle {
     background: var(--surface-800);
     border-color: var(--surface-600);
 }
 
-.app-dark .status-btn:hover { background: var(--surface-700); }
-.app-dark .status-btn--all  { background: var(--surface-600); color: var(--text-color); }
+.app-dark .status-btn:hover {
+    background: var(--surface-700);
+}
+.app-dark .status-btn--all {
+    background: var(--surface-600);
+    color: var(--text-color);
+}
 
-.app-dark .filter-divider { background: var(--surface-600); }
+.app-dark .filter-divider {
+    background: var(--surface-600);
+}
 
 /* ─── Responsive ─── */
 @media (max-width: 768px) {
-    .gantt-page { padding: 0.75rem; }
-    .gantt-container { grid-template-columns: 200px 1fr; }
-    .gantt-label-title { max-width: 150px; }
-    .gantt-controls { flex-direction: column; align-items: stretch; }
-    .control-input { min-width: 100%; }
-    .control-divider { display: none; }
-    .control-actions { justify-content: stretch; }
-    .control-actions :deep(.p-button) { flex: 1; }
-    .period-selector { flex-direction: column; align-items: stretch; }
-    .month-nav { justify-content: space-between; }
-    .month-selects { flex: 1; }
-    .month-select-month { flex: 1; min-width: 0; }
-    .month-select-year { min-width: 80px; }
-    .range-inputs { flex-direction: column; }
+    .gantt-page {
+        padding: 0.75rem;
+    }
+    .gantt-container {
+        grid-template-columns: 200px 1fr;
+    }
+    .gantt-label-title {
+        max-width: 150px;
+    }
+    .gantt-controls {
+        flex-direction: column;
+        align-items: stretch;
+    }
+    .control-input {
+        min-width: 100%;
+    }
+    .control-divider {
+        display: none;
+    }
+    .control-actions {
+        justify-content: stretch;
+    }
+    .control-actions :deep(.p-button) {
+        flex: 1;
+    }
+    .period-selector {
+        flex-direction: column;
+        align-items: stretch;
+    }
+    .month-nav {
+        justify-content: space-between;
+    }
+    .month-selects {
+        flex: 1;
+    }
+    .month-select-month {
+        flex: 1;
+        min-width: 0;
+    }
+    .month-select-year {
+        min-width: 80px;
+    }
+    .range-inputs {
+        flex-direction: column;
+    }
 }
 
 /* ── Modo oscuro — controles de período ── */

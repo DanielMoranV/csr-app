@@ -88,10 +88,10 @@ export const useDoctorTariffsStore = defineStore('doctorTariffs', () => {
         state.isLoading = true;
         try {
             const response = await doctorTariffsApi.getAll({ ...state.filters, ...params });
-            
+
             // Manejar respuesta directa como array o formato estándar
             let tariffsData = [];
-            
+
             if (apiUtils.isSuccess(response)) {
                 // Formato estándar: { success: true, data: [...] }
                 const data = apiUtils.getData(response);
@@ -103,21 +103,21 @@ export const useDoctorTariffsStore = defineStore('doctorTariffs', () => {
                 // Respuesta es directamente un array
                 tariffsData = response;
             }
-            
+
             state.tariffs = tariffsData;
             state.lastFetch = Date.now();
-            
+
             // Guardar en cache solo campos esenciales para reducir tamaño
             try {
                 // Optimizar: guardar solo los campos necesarios para validación de comisiones
-                const optimizedTariffs = tariffsData.map(t => ({
+                const optimizedTariffs = tariffsData.map((t) => ({
                     id: t.id,
                     doctor_code: t.doctor_code,
                     tariff_code: t.tariff_code,
                     clinic_commission: t.clinic_commission,
                     doctor_commission: t.doctor_commission
                 }));
-                
+
                 cache.setItem(CACHE_KEY, optimizedTariffs);
                 cache.setItem(CACHE_TIMESTAMP_KEY, state.lastFetch);
                 console.log('[DoctorTariffs] Saved to cache (optimized):', optimizedTariffs.length, 'tariffs');
@@ -128,7 +128,7 @@ export const useDoctorTariffsStore = defineStore('doctorTariffs', () => {
                     console.warn('[DoctorTariffs] Storage quota exceeded, cache not saved');
                 }
             }
-            
+
             return response;
         } catch (error) {
             console.error('[DoctorTariffs] Error fetching tariffs:', error);
@@ -253,7 +253,7 @@ export const useDoctorTariffsStore = defineStore('doctorTariffs', () => {
             cache.removeItem(CACHE_KEY);
             cache.removeItem(CACHE_TIMESTAMP_KEY);
             console.log('[DoctorTariffs] Cache cleared');
-            
+
             if (reload) {
                 return await fetchTariffs({}, true);
             }

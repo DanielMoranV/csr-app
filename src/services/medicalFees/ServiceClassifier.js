@@ -39,7 +39,7 @@ class ServiceClassifier {
                     const startTime = this.formatTimeWithoutSeconds(schedule.start_time);
                     const endTime = this.formatTimeWithoutSeconds(schedule.end_time);
                     const baseReason = `Turno ${schedule.medical_shift?.code || 'N/A'} (${startTime}-${endTime})`;
-                    
+
                     // VALIDACIÓN ESPECIAL: Si segus dice RETÉN pero el horario es PLANILLA
                     if (segusIndicatesReten) {
                         return {
@@ -48,7 +48,7 @@ class ServiceClassifier {
                             reason: `${baseReason} ⚠️ OBSERVACIÓN: Código SEGUS indica RETÉN pero se realizó en horario PLANILLA (posible error de asignación)`
                         };
                     }
-                    
+
                     return {
                         type: 'PLANILLA',
                         schedule,
@@ -56,7 +56,7 @@ class ServiceClassifier {
                     };
                 } else {
                     const baseReason = `Turno ${schedule.medical_shift?.code || 'N/A'} - No planilla`;
-                    
+
                     // VALIDACIÓN: Si es RETÉN pero segus NO indica RETÉN
                     if (!segusIndicatesReten) {
                         return {
@@ -65,7 +65,7 @@ class ServiceClassifier {
                             reason: `${baseReason} ⚠️ Revisar atención, codigo NO RETEN`
                         };
                     }
-                    
+
                     return {
                         type: 'RETÉN',
                         schedule,
@@ -77,19 +77,21 @@ class ServiceClassifier {
 
         // No coincide con ningún horario → RETÉN
         // Construir mensaje con los horarios disponibles ese día
-        const registeredSchedules = schedules.map(s => {
-            const startTime = this.formatTimeWithoutSeconds(s.start_time);
-            const endTime = this.formatTimeWithoutSeconds(s.end_time);
-            return `${s.medical_shift?.code || 'N/A'} (${startTime}-${endTime})`;
-        }).join(', ');
-        
+        const registeredSchedules = schedules
+            .map((s) => {
+                const startTime = this.formatTimeWithoutSeconds(s.start_time);
+                const endTime = this.formatTimeWithoutSeconds(s.end_time);
+                return `${s.medical_shift?.code || 'N/A'} (${startTime}-${endTime})`;
+            })
+            .join(', ');
+
         let reason = `Fuera de horario (${serviceTime}). Horarios disponibles: ${registeredSchedules}`;
-        
+
         // VALIDACIÓN: Si es RETÉN pero segus NO indica RETÉN
         if (!segusIndicatesReten) {
             reason += ' ⚠️ Revisar atención, codigo NO RETEN';
         }
-        
+
         return {
             type: 'RETÉN',
             schedule: null,
@@ -152,8 +154,8 @@ class ServiceClassifier {
      */
     groupByType(services) {
         return {
-            planilla: services.filter(s => s.serviceType === 'PLANILLA'),
-            reten: services.filter(s => s.serviceType === 'RETÉN')
+            planilla: services.filter((s) => s.serviceType === 'PLANILLA'),
+            reten: services.filter((s) => s.serviceType === 'RETÉN')
         };
     }
 }

@@ -42,15 +42,7 @@ const filteredTasksByArea = computed(() => {
     const userPosition = currentUser.position;
 
     // Posiciones con acceso total (sin filtro por área)
-    const fullAccessPositions = [
-        POSITIONS.SISTEMAS,
-        POSITIONS.ADMINISTRACION,
-        POSITIONS.DIRECTOR_MEDICO,
-        POSITIONS.HOSPITALIZACION,
-        POSITIONS.ADMISION,
-        POSITIONS.MEDICOS,
-        POSITIONS.EMERGENCIA
-    ];
+    const fullAccessPositions = [POSITIONS.SISTEMAS, POSITIONS.ADMINISTRACION, POSITIONS.DIRECTOR_MEDICO, POSITIONS.HOSPITALIZACION, POSITIONS.ADMISION, POSITIONS.MEDICOS, POSITIONS.EMERGENCIA];
 
     // Si tiene acceso total, mostrar todas las tareas
     if (fullAccessPositions.includes(userPosition)) {

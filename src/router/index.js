@@ -100,6 +100,12 @@ const router = createRouter({
                     meta: { requiresAuth: true, positions: MODULE_PERMISSIONS.documentManagement.positions }
                 },
                 {
+                    path: MODULE_PERMISSIONS.signAndDownload.path,
+                    name: MODULE_PERMISSIONS.signAndDownload.name,
+                    component: () => import('@/views/documents/SignAndDownload.vue'),
+                    meta: { requiresAuth: true, positions: MODULE_PERMISSIONS.signAndDownload.positions }
+                },
+                {
                     path: MODULE_PERMISSIONS.hospitalTasks.path,
                     name: MODULE_PERMISSIONS.hospitalTasks.name,
                     component: () => import('@/views/hospitalization/TasksView.vue'),

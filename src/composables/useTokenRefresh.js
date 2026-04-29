@@ -1,9 +1,9 @@
 /*
  * DESHABILITADO - Los tokens ya no expiran automaticamente
- * 
+ *
  * Este composable programaba el refresh preventivo del token JWT antes de que expirara.
  * Con la nueva politica de tokens indefinidos del backend, ya no es necesario.
- * 
+ *
  * Mantenido comentado para referencia futura.
  * Fecha de deshabilitacion: 2025-12-16
  */

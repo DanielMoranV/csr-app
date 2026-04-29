@@ -10,9 +10,9 @@ const props = defineProps({
 
 const config = computed(() => {
     const map = {
-        I: { label: 'Ingreso',  severity: 'success', icon: 'pi pi-arrow-down-left' },
-        E: { label: 'Egreso',   severity: 'danger',  icon: 'pi pi-arrow-up-right'  },
-        M: { label: 'Mixto',    severity: 'info',    icon: 'pi pi-arrows-h'         }
+        I: { label: 'Ingreso', severity: 'success', icon: 'pi pi-arrow-down-left' },
+        E: { label: 'Egreso', severity: 'danger', icon: 'pi pi-arrow-up-right' },
+        M: { label: 'Mixto', severity: 'info', icon: 'pi pi-arrows-h' }
     };
     return map[props.type] ?? { label: props.type, severity: 'secondary', icon: 'pi pi-tag' };
 });

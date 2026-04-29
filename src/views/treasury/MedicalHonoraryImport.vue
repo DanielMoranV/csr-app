@@ -48,8 +48,13 @@ const onFileInputChange = (e) => handleFileSelect(e.target.files[0]);
 
 const onDropZoneClick = () => fileInputRef.value?.click();
 
-const onDragOver = (e) => { e.preventDefault(); isDragging.value = true; };
-const onDragLeave = () => { isDragging.value = false; };
+const onDragOver = (e) => {
+    e.preventDefault();
+    isDragging.value = true;
+};
+const onDragLeave = () => {
+    isDragging.value = false;
+};
 const onDrop = (e) => {
     e.preventDefault();
     isDragging.value = false;
@@ -166,19 +171,12 @@ const doImport = async () => {
                         <div class="template-banner-sub">Incluye la hoja <strong>CUENTAS</strong> con los códigos de retención y un desplegable para TIPO_DOC</div>
                     </div>
                 </div>
-                <Button
-                    label="Descargar Plantilla"
-                    icon="pi pi-download"
-                    class="template-download-btn"
-                    :loading="downloadingTemplate"
-                    @click="downloadTemplate"
-                />
+                <Button label="Descargar Plantilla" icon="pi pi-download" class="template-download-btn" :loading="downloadingTemplate" @click="downloadTemplate" />
             </div>
 
             <div class="import-layout">
                 <!-- LEFT: steps / form -->
                 <div class="import-form-col">
-
                     <!-- STEP 1: Cuenta Bancaria -->
                     <div class="step-card">
                         <div class="step-header">
@@ -189,20 +187,11 @@ const doImport = async () => {
                             </div>
                         </div>
                         <div class="step-body">
-                            <Dropdown
-                                v-model="selectedAccount"
-                                :options="accounts"
-                                optionLabel="displayName"
-                                optionValue="id"
-                                filter
-                                :loading="loadingAccounts"
-                                placeholder="Seleccione una cuenta bancaria..."
-                                class="w-full account-dropdown"
-                            >
+                            <Dropdown v-model="selectedAccount" :options="accounts" optionLabel="displayName" optionValue="id" filter :loading="loadingAccounts" placeholder="Seleccione una cuenta bancaria..." class="w-full account-dropdown">
                                 <template #value="{ value }">
                                     <div v-if="value" class="account-selected">
                                         <i class="pi pi-wallet account-sel-icon"></i>
-                                        <span>{{ accounts.find(a => a.id === value)?.displayName }}</span>
+                                        <span>{{ accounts.find((a) => a.id === value)?.displayName }}</span>
                                     </div>
                                     <span v-else class="p-dropdown-label p-placeholder">Seleccione una cuenta bancaria...</span>
                                 </template>
@@ -247,9 +236,7 @@ const doImport = async () => {
                                     {{ isDragging ? 'Suelta el archivo aquí' : 'Arrastra tu archivo aquí' }}
                                 </p>
                                 <p class="drop-zone-sub">o haz clic para seleccionar</p>
-                                <div v-if="!selectedAccount" class="drop-zone-hint">
-                                    <i class="pi pi-info-circle mr-1"></i>Selecciona primero una cuenta bancaria
-                                </div>
+                                <div v-if="!selectedAccount" class="drop-zone-hint"><i class="pi pi-info-circle mr-1"></i>Selecciona primero una cuenta bancaria</div>
                             </div>
 
                             <!-- File preview -->
@@ -261,23 +248,10 @@ const doImport = async () => {
                                     <div class="file-name">{{ selectedFile.name }}</div>
                                     <div class="file-meta">{{ fileSizeLabel }}</div>
                                 </div>
-                                <Button
-                                    icon="pi pi-times"
-                                    class="file-remove-btn"
-                                    text
-                                    rounded
-                                    v-tooltip.top="'Quitar archivo'"
-                                    @click="clearFile"
-                                />
+                                <Button icon="pi pi-times" class="file-remove-btn" text rounded v-tooltip.top="'Quitar archivo'" @click="clearFile" />
                             </div>
 
-                            <input
-                                ref="fileInputRef"
-                                type="file"
-                                accept=".xlsx,.xls"
-                                style="display: none"
-                                @change="onFileInputChange"
-                            />
+                            <input ref="fileInputRef" type="file" accept=".xlsx,.xls" style="display: none" @change="onFileInputChange" />
                         </div>
                     </div>
 
@@ -301,14 +275,7 @@ const doImport = async () => {
                                     <span>Dirección: <strong>Egreso</strong></span>
                                 </div>
                             </div>
-                            <Button
-                                label="Importar Archivo"
-                                icon="pi pi-upload"
-                                class="import-btn"
-                                :disabled="!canImport"
-                                :loading="importing"
-                                @click="doImport"
-                            />
+                            <Button label="Importar Archivo" icon="pi pi-upload" class="import-btn" :disabled="!canImport" :loading="importing" @click="doImport" />
                         </div>
                     </div>
                 </div>
@@ -326,7 +293,7 @@ const doImport = async () => {
 
                     <!-- Loading state -->
                     <div v-if="importing" class="result-loading">
-                        <ProgressSpinner style="width:60px;height:60px" strokeWidth="4" />
+                        <ProgressSpinner style="width: 60px; height: 60px" strokeWidth="4" />
                         <p class="result-loading-text">Procesando archivo...</p>
                         <p class="result-loading-sub">Esto puede tomar unos segundos</p>
                     </div>
@@ -367,7 +334,10 @@ const doImport = async () => {
                             icon="pi pi-refresh"
                             class="result-reset-btn"
                             text
-                            @click="clearFile(); importResult = null"
+                            @click="
+                                clearFile();
+                                importResult = null;
+                            "
                         />
                     </div>
                 </div>
@@ -378,59 +348,123 @@ const doImport = async () => {
 
 <style scoped>
 @keyframes shimmer {
-    0%, 100% { transform: translateX(-100%) rotate(45deg); }
-    50% { transform: translateX(100%) rotate(45deg); }
+    0%,
+    100% {
+        transform: translateX(-100%) rotate(45deg);
+    }
+    50% {
+        transform: translateX(100%) rotate(45deg);
+    }
 }
 @keyframes gradientShift {
-    0%, 100% { background-position: 0% 50%; }
-    50% { background-position: 100% 50%; }
+    0%,
+    100% {
+        background-position: 0% 50%;
+    }
+    50% {
+        background-position: 100% 50%;
+    }
 }
 @keyframes fadeIn {
-    from { opacity: 0; transform: translateY(10px); }
-    to { opacity: 1; transform: translateY(0); }
+    from {
+        opacity: 0;
+        transform: translateY(10px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
 }
 @keyframes pulse {
-    0%, 100% { transform: scale(1); }
-    50% { transform: scale(1.05); }
+    0%,
+    100% {
+        transform: scale(1);
+    }
+    50% {
+        transform: scale(1.05);
+    }
 }
 
-.treasury-view { padding: 1rem; animation: fadeIn 0.5s ease-out; }
+.treasury-view {
+    padding: 1rem;
+    animation: fadeIn 0.5s ease-out;
+}
 
 .main-card {
     background: linear-gradient(145deg, var(--surface-section), var(--surface-card));
     border: 1px solid var(--surface-border);
-    border-radius: 16px; padding: 2rem;
-    box-shadow: 0 4px 12px rgba(0,0,0,0.08);
-    position: relative; overflow: hidden;
+    border-radius: 16px;
+    padding: 2rem;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+    position: relative;
+    overflow: hidden;
 }
 .main-card::before {
-    content: ''; position: absolute; top: 0; left: 0; right: 0; height: 3px;
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 3px;
     background: linear-gradient(90deg, #10b981, #059669, #10b981, #047857);
-    background-size: 200% 100%; animation: gradientShift 3s ease infinite;
+    background-size: 200% 100%;
+    animation: gradientShift 3s ease infinite;
 }
 
 /* ─── HEADER ─────────────────────────────────────────────────────────────── */
-.header-section { display: flex; align-items: center; gap: 1.5rem; margin-bottom: 2rem; }
+.header-section {
+    display: flex;
+    align-items: center;
+    gap: 1.5rem;
+    margin-bottom: 2rem;
+}
 .header-icon-wrapper {
-    width: 64px; height: 64px; border-radius: 16px;
-    display: flex; align-items: center; justify-content: center;
+    width: 64px;
+    height: 64px;
+    border-radius: 16px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
     background: linear-gradient(135deg, #10b981, #059669, #047857);
-    box-shadow: 0 8px 20px rgba(16,185,129,0.3), 0 4px 12px rgba(5,150,105,0.4);
+    box-shadow:
+        0 8px 20px rgba(16, 185, 129, 0.3),
+        0 4px 12px rgba(5, 150, 105, 0.4);
     animation: pulse 2s ease-in-out infinite;
-    position: relative; overflow: hidden; flex-shrink: 0;
+    position: relative;
+    overflow: hidden;
+    flex-shrink: 0;
 }
 .header-icon-wrapper::before {
-    content: ''; position: absolute; top: -50%; left: -50%; width: 200%; height: 200%;
-    background: linear-gradient(135deg, transparent, rgba(255,255,255,0.2), transparent);
+    content: '';
+    position: absolute;
+    top: -50%;
+    left: -50%;
+    width: 200%;
+    height: 200%;
+    background: linear-gradient(135deg, transparent, rgba(255, 255, 255, 0.2), transparent);
     animation: shimmer 3s infinite;
 }
-.header-icon-wrapper i { font-size: 2rem; color: #fff; z-index: 1; }
-.header-title {
-    font-size: 1.75rem; font-weight: 700; margin: 0 0 0.4rem 0;
-    background: linear-gradient(135deg, #10b981, #059669);
-    -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text;
+.header-icon-wrapper i {
+    font-size: 2rem;
+    color: #fff;
+    z-index: 1;
 }
-.header-subtitle { color: var(--text-color-secondary); font-size: 1rem; display: flex; align-items: center; margin: 0; }
+.header-title {
+    font-size: 1.75rem;
+    font-weight: 700;
+    margin: 0 0 0.4rem 0;
+    background: linear-gradient(135deg, #10b981, #059669);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+}
+.header-subtitle {
+    color: var(--text-color-secondary);
+    font-size: 1rem;
+    display: flex;
+    align-items: center;
+    margin: 0;
+}
 
 /* ─── LAYOUT ──────────────────────────────────────────────────────────────── */
 .import-layout {
@@ -440,11 +474,17 @@ const doImport = async () => {
     align-items: start;
 }
 @media (max-width: 900px) {
-    .import-layout { grid-template-columns: 1fr; }
+    .import-layout {
+        grid-template-columns: 1fr;
+    }
 }
 
 /* ─── STEP CARDS ──────────────────────────────────────────────────────────── */
-.import-form-col { display: flex; flex-direction: column; gap: 1.25rem; }
+.import-form-col {
+    display: flex;
+    flex-direction: column;
+    gap: 1.25rem;
+}
 
 .step-card {
     background: var(--surface-card);
@@ -453,39 +493,81 @@ const doImport = async () => {
     overflow: hidden;
     transition: box-shadow 0.2s;
 }
-.step-card:hover { box-shadow: 0 4px 16px rgba(16,185,129,0.1); }
+.step-card:hover {
+    box-shadow: 0 4px 16px rgba(16, 185, 129, 0.1);
+}
 
 .step-header {
-    display: flex; align-items: center; gap: 1rem;
+    display: flex;
+    align-items: center;
+    gap: 1rem;
     padding: 1rem 1.25rem;
     border-bottom: 1px solid var(--surface-border);
     background: linear-gradient(135deg, var(--surface-section) 0%, var(--surface-card) 100%);
 }
 .step-number {
-    width: 32px; height: 32px; border-radius: 50%;
-    display: flex; align-items: center; justify-content: center;
-    font-size: 0.9rem; font-weight: 700;
-    background: var(--surface-border); color: var(--text-color-secondary);
-    transition: all 0.2s; flex-shrink: 0;
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 0.9rem;
+    font-weight: 700;
+    background: var(--surface-border);
+    color: var(--text-color-secondary);
+    transition: all 0.2s;
+    flex-shrink: 0;
 }
 .step-number--active {
     background: linear-gradient(135deg, #10b981, #059669) !important;
     color: white !important;
-    box-shadow: 0 3px 10px rgba(16,185,129,0.35);
+    box-shadow: 0 3px 10px rgba(16, 185, 129, 0.35);
 }
-.step-title { font-size: 0.95rem; font-weight: 700; color: var(--text-color); }
-.step-subtitle { font-size: 0.78rem; color: var(--text-color-secondary); margin-top: 0.1rem; }
-.step-body { padding: 1.25rem; }
+.step-title {
+    font-size: 0.95rem;
+    font-weight: 700;
+    color: var(--text-color);
+}
+.step-subtitle {
+    font-size: 0.78rem;
+    color: var(--text-color-secondary);
+    margin-top: 0.1rem;
+}
+.step-body {
+    padding: 1.25rem;
+}
 
 /* ─── ACCOUNT DROPDOWN ────────────────────────────────────────────────────── */
-:deep(.account-dropdown) { width: 100%; }
-.account-selected { display: flex; align-items: center; gap: 0.5rem; }
-.account-sel-icon { color: #10b981; font-size: 0.85rem; }
-.account-option { display: flex; align-items: center; gap: 0.5rem; }
-.account-opt-icon { color: #10b981; font-size: 0.8rem; flex-shrink: 0; }
+:deep(.account-dropdown) {
+    width: 100%;
+}
+.account-selected {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+.account-sel-icon {
+    color: #10b981;
+    font-size: 0.85rem;
+}
+.account-option {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+.account-opt-icon {
+    color: #10b981;
+    font-size: 0.8rem;
+    flex-shrink: 0;
+}
 .account-hint {
-    margin-top: 0.6rem; font-size: 0.8rem; color: #059669;
-    display: flex; align-items: center; gap: 0.4rem;
+    margin-top: 0.6rem;
+    font-size: 0.8rem;
+    color: #059669;
+    display: flex;
+    align-items: center;
+    gap: 0.4rem;
 }
 
 /* ─── DROP ZONE ───────────────────────────────────────────────────────────── */
@@ -507,48 +589,110 @@ const doImport = async () => {
     background: linear-gradient(135deg, #d1fae5, #ecfdf5) !important;
     transform: scale(1.01);
 }
-.drop-zone--disabled { cursor: not-allowed; opacity: 0.5; }
+.drop-zone--disabled {
+    cursor: not-allowed;
+    opacity: 0.5;
+}
 
 .drop-zone-icon {
-    width: 56px; height: 56px; border-radius: 14px; margin: 0 auto 1rem;
-    display: flex; align-items: center; justify-content: center;
+    width: 56px;
+    height: 56px;
+    border-radius: 14px;
+    margin: 0 auto 1rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
     background: linear-gradient(135deg, #d1fae5, #a7f3d0);
     border: 2px solid #6ee7b7;
 }
-.drop-zone-icon i { font-size: 1.75rem; color: #059669; }
-.drop-zone-title { font-weight: 600; color: var(--text-color); margin: 0 0 0.3rem 0; }
-.drop-zone-sub { font-size: 0.82rem; color: var(--text-color-secondary); margin: 0 0 0.6rem 0; }
-.drop-zone-hint { font-size: 0.78rem; color: #f59e0b; margin-top: 0.5rem; display: flex; align-items: center; justify-content: center; gap: 0.3rem; }
+.drop-zone-icon i {
+    font-size: 1.75rem;
+    color: #059669;
+}
+.drop-zone-title {
+    font-weight: 600;
+    color: var(--text-color);
+    margin: 0 0 0.3rem 0;
+}
+.drop-zone-sub {
+    font-size: 0.82rem;
+    color: var(--text-color-secondary);
+    margin: 0 0 0.6rem 0;
+}
+.drop-zone-hint {
+    font-size: 0.78rem;
+    color: #f59e0b;
+    margin-top: 0.5rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.3rem;
+}
 
 /* ─── FILE PREVIEW ────────────────────────────────────────────────────────── */
 .file-preview {
-    display: flex; align-items: center; gap: 1rem;
+    display: flex;
+    align-items: center;
+    gap: 1rem;
     padding: 0.9rem 1rem;
     background: linear-gradient(135deg, #ecfdf5, #f0fdf4);
     border: 1px solid #a7f3d0;
     border-radius: 10px;
 }
 .file-icon-wrapper {
-    width: 44px; height: 44px; border-radius: 10px; flex-shrink: 0;
-    display: flex; align-items: center; justify-content: center;
+    width: 44px;
+    height: 44px;
+    border-radius: 10px;
+    flex-shrink: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
     background: linear-gradient(135deg, #10b981, #059669);
-    box-shadow: 0 3px 10px rgba(16,185,129,0.3);
+    box-shadow: 0 3px 10px rgba(16, 185, 129, 0.3);
 }
-.file-icon { font-size: 1.4rem; color: white; }
-.file-info { flex: 1; min-width: 0; }
-.file-name { font-weight: 600; color: var(--text-color); font-size: 0.875rem; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.file-meta { font-size: 0.75rem; color: var(--text-color-secondary); margin-top: 0.15rem; }
-.file-remove-btn { color: #ef4444 !important; flex-shrink: 0; }
+.file-icon {
+    font-size: 1.4rem;
+    color: white;
+}
+.file-info {
+    flex: 1;
+    min-width: 0;
+}
+.file-name {
+    font-weight: 600;
+    color: var(--text-color);
+    font-size: 0.875rem;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+.file-meta {
+    font-size: 0.75rem;
+    color: var(--text-color-secondary);
+    margin-top: 0.15rem;
+}
+.file-remove-btn {
+    color: #ef4444 !important;
+    flex-shrink: 0;
+}
 
 /* ─── IMPORT INFO + BUTTON ────────────────────────────────────────────────── */
-.import-info-row { display: flex; gap: 0.75rem; flex-wrap: wrap; margin-bottom: 1rem; }
+.import-info-row {
+    display: flex;
+    gap: 0.75rem;
+    flex-wrap: wrap;
+    margin-bottom: 1rem;
+}
 .import-info-badge {
-    display: flex; align-items: center; gap: 0.4rem;
+    display: flex;
+    align-items: center;
+    gap: 0.4rem;
     padding: 0.35rem 0.75rem;
     background: color-mix(in srgb, var(--green-100) 50%, transparent);
     border: 1px solid var(--green-200);
     border-radius: 20px;
-    font-size: 0.78rem; color: #047857;
+    font-size: 0.78rem;
+    color: #047857;
 }
 .import-info-badge--egreso {
     background: color-mix(in srgb, var(--red-100) 40%, transparent);
@@ -559,117 +703,261 @@ const doImport = async () => {
 .import-btn {
     width: 100%;
     background: linear-gradient(135deg, #10b981, #059669) !important;
-    border: none !important; border-radius: 10px !important;
-    font-size: 1rem !important; font-weight: 700 !important;
+    border: none !important;
+    border-radius: 10px !important;
+    font-size: 1rem !important;
+    font-weight: 700 !important;
     padding: 0.75rem !important;
-    box-shadow: 0 4px 14px rgba(16,185,129,0.35) !important;
+    box-shadow: 0 4px 14px rgba(16, 185, 129, 0.35) !important;
     transition: all 0.25s ease !important;
 }
 .import-btn:not(:disabled):hover {
     transform: translateY(-2px) !important;
-    box-shadow: 0 6px 18px rgba(16,185,129,0.45) !important;
+    box-shadow: 0 6px 18px rgba(16, 185, 129, 0.45) !important;
     background: linear-gradient(135deg, #059669, #047857) !important;
 }
-.import-btn:disabled { opacity: 0.55 !important; cursor: not-allowed !important; }
+.import-btn:disabled {
+    opacity: 0.55 !important;
+    cursor: not-allowed !important;
+}
 
 /* ─── RESULT PANEL ────────────────────────────────────────────────────────── */
 .import-result-col {
-    position: sticky; top: 1rem;
+    position: sticky;
+    top: 1rem;
     min-height: 400px;
-    display: flex; flex-direction: column;
+    display: flex;
+    flex-direction: column;
 }
 
 /* Idle */
 .result-idle {
-    flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center;
-    padding: 3rem 2rem; text-align: center;
-    background: var(--surface-card); border: 2px dashed var(--surface-border);
-    border-radius: 16px; animation: fadeIn 0.3s ease;
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 3rem 2rem;
+    text-align: center;
+    background: var(--surface-card);
+    border: 2px dashed var(--surface-border);
+    border-radius: 16px;
+    animation: fadeIn 0.3s ease;
 }
-.result-idle-icon { width: 72px; height: 72px; border-radius: 18px; margin-bottom: 1rem;
-    display: flex; align-items: center; justify-content: center;
-    background: var(--surface-ground); border: 1px solid var(--surface-border); }
-.result-idle-icon i { font-size: 2rem; color: var(--text-color-secondary); }
-.result-idle-title { font-size: 1.05rem; font-weight: 600; color: var(--text-color); margin: 0 0 0.3rem 0; }
-.result-idle-sub { font-size: 0.82rem; color: var(--text-color-secondary); margin: 0; }
+.result-idle-icon {
+    width: 72px;
+    height: 72px;
+    border-radius: 18px;
+    margin-bottom: 1rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: var(--surface-ground);
+    border: 1px solid var(--surface-border);
+}
+.result-idle-icon i {
+    font-size: 2rem;
+    color: var(--text-color-secondary);
+}
+.result-idle-title {
+    font-size: 1.05rem;
+    font-weight: 600;
+    color: var(--text-color);
+    margin: 0 0 0.3rem 0;
+}
+.result-idle-sub {
+    font-size: 0.82rem;
+    color: var(--text-color-secondary);
+    margin: 0;
+}
 
 /* Loading */
 .result-loading {
-    flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center;
-    padding: 3rem 2rem; text-align: center;
-    background: var(--surface-card); border: 1px solid var(--surface-border);
-    border-radius: 16px; animation: fadeIn 0.3s ease; gap: 1rem;
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 3rem 2rem;
+    text-align: center;
+    background: var(--surface-card);
+    border: 1px solid var(--surface-border);
+    border-radius: 16px;
+    animation: fadeIn 0.3s ease;
+    gap: 1rem;
 }
-.result-loading-text { font-size: 1rem; font-weight: 600; color: var(--text-color); margin: 0; }
-.result-loading-sub { font-size: 0.82rem; color: var(--text-color-secondary); margin: 0; }
+.result-loading-text {
+    font-size: 1rem;
+    font-weight: 600;
+    color: var(--text-color);
+    margin: 0;
+}
+.result-loading-sub {
+    font-size: 0.82rem;
+    color: var(--text-color-secondary);
+    margin: 0;
+}
 
 /* Result panel */
 .result-panel {
-    background: var(--surface-card); border-radius: 16px; padding: 2rem;
-    display: flex; flex-direction: column; align-items: center; gap: 1rem;
-    border: 2px solid transparent; animation: fadeIn 0.4s ease;
+    background: var(--surface-card);
+    border-radius: 16px;
+    padding: 2rem;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 1rem;
+    border: 2px solid transparent;
+    animation: fadeIn 0.4s ease;
 }
-.result-panel--success { border-color: #a7f3d0; background: linear-gradient(135deg, #f0fdf4, #ecfdf5); }
-.result-panel--partial { border-color: #fcd34d; background: linear-gradient(135deg, #fffbeb, #fef9c3); }
-.result-panel--error   { border-color: #fca5a5; background: linear-gradient(135deg, #fff1f2, #fef2f2); }
+.result-panel--success {
+    border-color: #a7f3d0;
+    background: linear-gradient(135deg, #f0fdf4, #ecfdf5);
+}
+.result-panel--partial {
+    border-color: #fcd34d;
+    background: linear-gradient(135deg, #fffbeb, #fef9c3);
+}
+.result-panel--error {
+    border-color: #fca5a5;
+    background: linear-gradient(135deg, #fff1f2, #fef2f2);
+}
 
 .result-status-icon i {
     font-size: 3rem;
 }
-.result-panel--success .result-status-icon i { color: #10b981; }
-.result-panel--partial .result-status-icon i { color: #d97706; }
-.result-panel--error   .result-status-icon i { color: #ef4444; }
+.result-panel--success .result-status-icon i {
+    color: #10b981;
+}
+.result-panel--partial .result-status-icon i {
+    color: #d97706;
+}
+.result-panel--error .result-status-icon i {
+    color: #ef4444;
+}
 
-.result-message { font-size: 0.9rem; text-align: center; color: var(--text-color); margin: 0; font-weight: 500; }
+.result-message {
+    font-size: 0.9rem;
+    text-align: center;
+    color: var(--text-color);
+    margin: 0;
+    font-weight: 500;
+}
 
-.result-stat { text-align: center; }
-.result-stat-number { font-size: 2.5rem; font-weight: 800; color: #10b981; line-height: 1; }
-.result-stat-label { font-size: 0.8rem; color: var(--text-color-secondary); margin-top: 0.15rem; }
+.result-stat {
+    text-align: center;
+}
+.result-stat-number {
+    font-size: 2.5rem;
+    font-weight: 800;
+    color: #10b981;
+    line-height: 1;
+}
+.result-stat-label {
+    font-size: 0.8rem;
+    color: var(--text-color-secondary);
+    margin-top: 0.15rem;
+}
 
 /* Errors */
-.result-errors { width: 100%; }
-.result-errors-header {
-    display: flex; align-items: center; gap: 0.5rem;
-    font-size: 0.82rem; font-weight: 700; color: #b45309;
-    background: #fef3c7; border: 1px solid #fcd34d;
-    padding: 0.5rem 0.75rem; border-radius: 8px; margin-bottom: 0.6rem;
+.result-errors {
+    width: 100%;
 }
-.result-errors-list { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 0.4rem; }
+.result-errors-header {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    font-size: 0.82rem;
+    font-weight: 700;
+    color: #b45309;
+    background: #fef3c7;
+    border: 1px solid #fcd34d;
+    padding: 0.5rem 0.75rem;
+    border-radius: 8px;
+    margin-bottom: 0.6rem;
+}
+.result-errors-list {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 0.4rem;
+}
 .result-error-item {
-    display: flex; align-items: flex-start; gap: 0.5rem;
-    font-size: 0.8rem; color: var(--text-color);
+    display: flex;
+    align-items: flex-start;
+    gap: 0.5rem;
+    font-size: 0.8rem;
+    color: var(--text-color);
     padding: 0.4rem 0.7rem;
-    background: var(--surface-ground); border-radius: 6px;
+    background: var(--surface-ground);
+    border-radius: 6px;
     border-left: 3px solid #ef4444;
 }
-.result-error-dot { font-size: 0.35rem; color: #ef4444; margin-top: 0.35rem; flex-shrink: 0; }
+.result-error-dot {
+    font-size: 0.35rem;
+    color: #ef4444;
+    margin-top: 0.35rem;
+    flex-shrink: 0;
+}
 
-.result-reset-btn { color: #059669 !important; font-weight: 600 !important; margin-top: 0.5rem; }
+.result-reset-btn {
+    color: #059669 !important;
+    font-weight: 600 !important;
+    margin-top: 0.5rem;
+}
 
 /* ─── TEMPLATE BANNER ─────────────────────────────────────────────────────── */
 .template-banner {
-    display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 1rem;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    gap: 1rem;
     padding: 1rem 1.25rem;
     margin-bottom: 1.75rem;
     background: linear-gradient(135deg, #eff6ff, #dbeafe);
     border: 1px solid #bfdbfe;
     border-radius: 12px;
 }
-.template-banner-info { display: flex; align-items: flex-start; gap: 0.75rem; flex: 1; min-width: 0; }
-.template-banner-icon { font-size: 1.1rem; color: #2563eb; margin-top: 0.1rem; flex-shrink: 0; }
-.template-banner-title { font-size: 0.88rem; font-weight: 700; color: #1e40af; }
-.template-banner-sub { font-size: 0.78rem; color: #3b82f6; margin-top: 0.15rem; }
+.template-banner-info {
+    display: flex;
+    align-items: flex-start;
+    gap: 0.75rem;
+    flex: 1;
+    min-width: 0;
+}
+.template-banner-icon {
+    font-size: 1.1rem;
+    color: #2563eb;
+    margin-top: 0.1rem;
+    flex-shrink: 0;
+}
+.template-banner-title {
+    font-size: 0.88rem;
+    font-weight: 700;
+    color: #1e40af;
+}
+.template-banner-sub {
+    font-size: 0.78rem;
+    color: #3b82f6;
+    margin-top: 0.15rem;
+}
 .template-download-btn {
     background: linear-gradient(135deg, #3b82f6, #2563eb) !important;
-    border: none !important; border-radius: 8px !important;
-    font-size: 0.85rem !important; font-weight: 700 !important;
-    white-space: nowrap; flex-shrink: 0;
-    box-shadow: 0 3px 10px rgba(59,130,246,0.35) !important;
+    border: none !important;
+    border-radius: 8px !important;
+    font-size: 0.85rem !important;
+    font-weight: 700 !important;
+    white-space: nowrap;
+    flex-shrink: 0;
+    box-shadow: 0 3px 10px rgba(59, 130, 246, 0.35) !important;
     transition: all 0.2s ease !important;
 }
 .template-download-btn:hover {
     background: linear-gradient(135deg, #2563eb, #1d4ed8) !important;
     transform: translateY(-1px) !important;
-    box-shadow: 0 5px 14px rgba(59,130,246,0.45) !important;
+    box-shadow: 0 5px 14px rgba(59, 130, 246, 0.45) !important;
 }
 </style>

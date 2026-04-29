@@ -323,7 +323,7 @@ export function useDoctorSchedules() {
     const setDoctorFilter = (value) => schedulesStore.setFilter('doctor_id', value);
     const setSpecialtyFilter = (value) => schedulesStore.setFilter('id_medical_specialty', value); // Specialty filter
     const setStartDateFilter = (value) => schedulesStore.setFilter('start_date', value); // New filter
-    const setEndDateFilter = (value) => schedulesStore.setFilter('end_date', value);   // New filter
+    const setEndDateFilter = (value) => schedulesStore.setFilter('end_date', value); // New filter
     const setCategoryFilter = (value) => schedulesStore.setFilter('category', value);
 
     const clearFilters = () => {

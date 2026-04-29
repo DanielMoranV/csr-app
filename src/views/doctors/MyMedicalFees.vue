@@ -18,17 +18,7 @@ import Message from 'primevue/message';
 const toast = useToast();
 const authStore = useAuthStore();
 
-const {
-    doctors,
-    services,
-    isLoading,
-    error,
-    totals,
-    loadDoctorsAndSchedules,
-    exportToExcel,
-    loadMedicalServices,
-    updateService
-} = useMedicalFees();
+const { doctors, services, isLoading, error, totals, loadDoctorsAndSchedules, exportToExcel, loadMedicalServices, updateService } = useMedicalFees();
 
 // Obtener datos del médico autenticado
 const currentUser = computed(() => authStore.getUser);
@@ -60,19 +50,19 @@ const filters = ref({
 // Computed
 const filteredServices = computed(() => {
     let filtered = services.value;
-    
+
     if (selectedType.value) {
-        filtered = filtered.filter(s => s.serviceType === selectedType.value);
+        filtered = filtered.filter((s) => s.serviceType === selectedType.value);
     }
-    
+
     return filtered;
 });
 
 // Totales calculados basándose en servicios filtrados
 const filteredTotals = computed(() => {
-    const planillaServices = filteredServices.value.filter(s => s.serviceType === 'PLANILLA');
-    const retenServices = filteredServices.value.filter(s => s.serviceType === 'RETEN' || s.serviceType === 'RETÉN');
-    
+    const planillaServices = filteredServices.value.filter((s) => s.serviceType === 'PLANILLA');
+    const retenServices = filteredServices.value.filter((s) => s.serviceType === 'RETEN' || s.serviceType === 'RETÉN');
+
     return {
         totalGenerated: filteredServices.value.reduce((sum, s) => sum + s.amount, 0),
         totalPlanilla: planillaServices.reduce((sum, s) => sum + s.amount, 0),
@@ -87,7 +77,7 @@ const filteredTotals = computed(() => {
 // Computed para resumen del médico
 const doctorSummary = computed(() => {
     if (!hasDoctorProfile.value || filteredServices.value.length === 0) return [];
-    
+
     const summary = {
         codigo: currentDoctor.value.code,
         nombre: currentDoctor.value.name,
@@ -99,15 +89,15 @@ const doctorSummary = computed(() => {
         totalAtenciones: 0,
         totalGenerado: 0
     };
-    
-    filteredServices.value.forEach(service => {
+
+    filteredServices.value.forEach((service) => {
         const isPlanilla = service.serviceType === 'PLANILLA';
         const isReten = service.serviceType === 'RETEN' || service.serviceType === 'RETÉN';
-        
+
         summary.totalAtenciones++;
         summary.totalGenerado += service.amount;
         summary.totalComision += service.comision || 0;
-        
+
         if (isPlanilla) {
             summary.cantidadPlanilla++;
             summary.montoPlanilla += service.amount;
@@ -116,7 +106,7 @@ const doctorSummary = computed(() => {
             summary.montoReten += service.amount;
         }
     });
-    
+
     return [summary];
 });
 
@@ -144,20 +134,20 @@ async function onCellEditComplete(event) {
 
 async function loadDataForMonth() {
     if (!hasDoctorProfile.value) return;
-    
+
     const start = selectedMonth.value.toISOString().split('T')[0];
     const endDate = new Date(selectedMonth.value.getFullYear(), selectedMonth.value.getMonth() + 1, 0);
     const end = endDate.toISOString().split('T')[0];
-    
+
     try {
         await loadDoctorsAndSchedules(start, end);
-        
+
         // Filtrar por el médico autenticado y solo atenciones aprobadas
         const filters = {
             doctor_id: currentDoctor.value.id,
             status: 'aprobado'
         };
-        
+
         await loadMedicalServices(start, end, filters);
 
         toast.add({
@@ -205,7 +195,7 @@ onMounted(async () => {
         });
         return;
     }
-    
+
     await onMonthChange();
 });
 </script>
@@ -233,62 +223,37 @@ onMounted(async () => {
 
             <!-- Mensaje de advertencia si no tiene perfil de médico -->
             <Message v-if="!hasDoctorProfile" severity="warn" :closable="false" class="mb-4">
-                <p class="m-0">
-                    <strong>Perfil incompleto:</strong> Su cuenta de usuario no tiene un perfil de médico asociado. 
-                    Por favor, contacte al administrador del sistema para vincular su cuenta con su perfil médico.
-                </p>
+                <p class="m-0"><strong>Perfil incompleto:</strong> Su cuenta de usuario no tiene un perfil de médico asociado. Por favor, contacte al administrador del sistema para vincular su cuenta con su perfil médico.</p>
             </Message>
 
             <!-- Content Section -->
             <template v-if="hasDoctorProfile">
                 <!-- Panel de Control -->
                 <Card class="control-panel">
-                    <template #title>
-                        <i class="pi pi-sliders-h"></i> Panel de Control
-                    </template>
+                    <template #title> <i class="pi pi-sliders-h"></i> Panel de Control </template>
                     <template #content>
                         <div class="control-grid">
                             <div class="control-item">
                                 <label>Mes</label>
-                                <DatePicker 
-                                    v-model="selectedMonth" 
-                                    view="month" 
-                                    dateFormat="MM yy"
-                                    @date-select="onMonthChange"
-                                    placeholder="Seleccionar mes"
-                                    class="w-full"
-                                />
+                                <DatePicker v-model="selectedMonth" view="month" dateFormat="MM yy" @date-select="onMonthChange" placeholder="Seleccionar mes" class="w-full" />
                             </div>
-                            
+
                             <div class="control-item">
                                 <label>Tipo</label>
-                                <Dropdown 
-                                    v-model="selectedType" 
-                                    :options="typeOptions"
-                                    optionLabel="label"
-                                    optionValue="value"
-                                    placeholder="Seleccionar tipo"
-                                    class="w-full"
-                                />
+                                <Dropdown v-model="selectedType" :options="typeOptions" optionLabel="label" optionValue="value" placeholder="Seleccionar tipo" class="w-full" />
                             </div>
-                            
+
                             <div class="control-item">
                                 <label>&nbsp;</label>
                                 <div class="flex gap-2">
-                                    <Button 
-                                        :icon="showSummaryTable ? 'pi pi-eye-slash' : 'pi pi-chart-bar'" 
+                                    <Button
+                                        :icon="showSummaryTable ? 'pi pi-eye-slash' : 'pi pi-chart-bar'"
                                         v-tooltip.top="showSummaryTable ? 'Ocultar Resumen' : 'Ver Resumen'"
-                                        @click="showSummaryTable = !showSummaryTable" 
+                                        @click="showSummaryTable = !showSummaryTable"
                                         :severity="showSummaryTable ? 'secondary' : 'help'"
                                         :disabled="services.length === 0"
                                     />
-                                    <Button 
-                                        icon="pi pi-file-excel" 
-                                        v-tooltip.top="'Exportar Excel'"
-                                        @click="handleExport" 
-                                        class="p-button-success"
-                                        :disabled="services.length === 0"
-                                    />
+                                    <Button icon="pi pi-file-excel" v-tooltip.top="'Exportar Excel'" @click="handleExport" class="p-button-success" :disabled="services.length === 0" />
                                 </div>
                             </div>
                         </div>
@@ -308,7 +273,7 @@ onMounted(async () => {
                             </div>
                         </template>
                     </Card>
-                    
+
                     <Card class="summary-card">
                         <template #content>
                             <div class="summary-content">
@@ -321,7 +286,7 @@ onMounted(async () => {
                             </div>
                         </template>
                     </Card>
-                    
+
                     <Card class="summary-card">
                         <template #content>
                             <div class="summary-content">
@@ -334,7 +299,7 @@ onMounted(async () => {
                             </div>
                         </template>
                     </Card>
-                    
+
                     <Card class="summary-card">
                         <template #content>
                             <div class="summary-content">
@@ -353,67 +318,60 @@ onMounted(async () => {
                 <Card class="summary-table-card" v-if="services.length > 0 && showSummaryTable">
                     <template #title>
                         <div class="flex align-items-center gap-2">
-                            <i class="pi pi-chart-bar"></i> 
+                            <i class="pi pi-chart-bar"></i>
                             <span>Mi Resumen</span>
                         </div>
                     </template>
                     <template #content>
-                        <DataTable 
-                            :value="doctorSummary" 
-                            dataKey="codigo"
-                            class="p-datatable-sm"
-                            stripedRows
-                            responsiveLayout="scroll"
-                            showGridlines
-                        >
+                        <DataTable :value="doctorSummary" dataKey="codigo" class="p-datatable-sm" stripedRows responsiveLayout="scroll" showGridlines>
                             <Column field="codigo" header="Código" style="min-width: 100px">
                                 <template #body="slotProps">
                                     <span class="font-mono">{{ slotProps.data.codigo }}</span>
                                 </template>
                             </Column>
-                            
+
                             <Column field="nombre" header="Médico" style="min-width: 200px">
                                 <template #body="slotProps">
                                     <span class="font-semibold">{{ slotProps.data.nombre }}</span>
                                 </template>
                             </Column>
-                            
+
                             <Column field="cantidadPlanilla" header="Cant. Planilla" style="min-width: 120px" class="text-center">
                                 <template #body="slotProps">
                                     <Tag :value="slotProps.data.cantidadPlanilla" severity="success" />
                                 </template>
                             </Column>
-                            
+
                             <Column field="montoPlanilla" header="Monto Planilla" style="min-width: 150px">
                                 <template #body="slotProps">
                                     <span class="font-semibold text-green-600">S/ {{ slotProps.data.montoPlanilla.toFixed(2) }}</span>
                                 </template>
                             </Column>
-                            
+
                             <Column field="cantidadReten" header="Cant. Retén" style="min-width: 120px" class="text-center">
                                 <template #body="slotProps">
                                     <Tag :value="slotProps.data.cantidadReten" severity="warning" />
                                 </template>
                             </Column>
-                            
+
                             <Column field="montoReten" header="Monto Retén" style="min-width: 150px">
                                 <template #body="slotProps">
                                     <span class="font-semibold text-orange-600">S/ {{ slotProps.data.montoReten.toFixed(2) }}</span>
                                 </template>
                             </Column>
-                            
+
                             <Column field="totalComision" header="Total Comisión" style="min-width: 150px">
                                 <template #body="slotProps">
                                     <span class="font-bold text-blue-600">S/ {{ slotProps.data.totalComision.toFixed(2) }}</span>
                                 </template>
                             </Column>
-                            
+
                             <Column field="totalAtenciones" header="Total Atenciones" style="min-width: 140px" class="text-center">
                                 <template #body="slotProps">
                                     <Tag :value="slotProps.data.totalAtenciones" severity="info" />
                                 </template>
                             </Column>
-                            
+
                             <Column field="totalGenerado" header="Total Generado" style="min-width: 150px">
                                 <template #body="slotProps">
                                     <span class="font-bold text-primary">S/ {{ slotProps.data.totalGenerado.toFixed(2) }}</span>
@@ -425,13 +383,11 @@ onMounted(async () => {
 
                 <!-- Tabla de Servicios -->
                 <Card class="services-table-card" v-if="services.length > 0">
-                    <template #title>
-                        <i class="pi pi-list"></i> Detalle de Mis Servicios
-                    </template>
+                    <template #title> <i class="pi pi-list"></i> Detalle de Mis Servicios </template>
                     <template #content>
-                        <DataTable 
+                        <DataTable
                             v-model:filters="filters"
-                            :value="filteredServices" 
+                            :value="filteredServices"
                             dataKey="id"
                             paginator
                             :rows="10"
@@ -466,25 +422,21 @@ onMounted(async () => {
                                     <InputText v-model="filterModel.value" type="text" class="p-column-filter" placeholder="Buscar admisión" />
                                 </template>
                             </Column>
-                            
+
                             <Column header="Fecha y Hora" sortable field="date" style="min-width: 150px">
                                 <template #body="slotProps">
-                                    {{ slotProps.data.date }} <br>
+                                    {{ slotProps.data.date }} <br />
                                     <small class="text-gray-500">{{ slotProps.data.time }}</small>
                                 </template>
                             </Column>
 
                             <Column field="rawData.segus" header="Servicio Medico" sortable style="min-width: 200px">
                                 <template #body="slotProps">
-                                    <div style="display: flex; flex-direction: column; gap: 2px;">
-                                        <span 
-                                            class="font-semibold" 
-                                            style="font-size: 0.875rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 180px;"
-                                            v-tooltip.top="slotProps.data.generalTariff?.name"
-                                        >
+                                    <div style="display: flex; flex-direction: column; gap: 2px">
+                                        <span class="font-semibold" style="font-size: 0.875rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 180px" v-tooltip.top="slotProps.data.generalTariff?.name">
                                             {{ slotProps.data.generalTariff?.name || 'N/A' }}
                                         </span>
-                                        <span style="font-size: 0.75rem; color: #6c757d;">
+                                        <span style="font-size: 0.75rem; color: #6c757d">
                                             {{ slotProps.data.rawData?.segus || 'N/A' }}
                                         </span>
                                     </div>
@@ -511,11 +463,9 @@ onMounted(async () => {
                                     <InputText v-model="filterModel.value" type="text" class="p-column-filter" placeholder="Buscar por tipo ate" />
                                 </template>
                             </Column>
-                            
+
                             <Column field="amount" header="Monto" sortable style="min-width: 120px">
-                                <template #body="slotProps">
-                                    S/ {{ slotProps.data.amount.toFixed(2) }}
-                                </template>
+                                <template #body="slotProps"> S/ {{ slotProps.data.amount.toFixed(2) }} </template>
                                 <template #editor="{ data, field }">
                                     <InputNumber v-model="data[field]" mode="currency" currency="PEN" locale="es-PE" :min="0" class="w-full" />
                                 </template>
@@ -523,9 +473,7 @@ onMounted(async () => {
 
                             <Column field="comision" header="Comisión" sortable style="min-width: 120px">
                                 <template #body="slotProps">
-                                    <span :class="{'text-green-600 font-bold': slotProps.data.comision > 0}">
-                                        S/ {{ slotProps.data.comision.toFixed(2) }}
-                                    </span>
+                                    <span :class="{ 'text-green-600 font-bold': slotProps.data.comision > 0 }"> S/ {{ slotProps.data.comision.toFixed(2) }} </span>
                                 </template>
                                 <template #editor="{ data, field }">
                                     <InputNumber v-model="data[field]" mode="currency" currency="PEN" locale="es-PE" :min="0" class="w-full" />
@@ -537,10 +485,7 @@ onMounted(async () => {
 
                             <Column field="serviceType" header="Tipo" sortable :showFilterMatchModes="false" style="min-width: 120px">
                                 <template #body="slotProps">
-                                    <Tag 
-                                        :value="slotProps.data.serviceType" 
-                                        :severity="getTypeColor(slotProps.data.serviceType)"
-                                    />
+                                    <Tag :value="slotProps.data.serviceType" :severity="getTypeColor(slotProps.data.serviceType)" />
                                 </template>
                                 <template #editor="{ data, field }">
                                     <Dropdown v-model="data[field]" :options="['PLANILLA', 'RETEN']" class="w-full" />
@@ -566,9 +511,7 @@ onMounted(async () => {
                 <div class="empty-state" v-else>
                     <i class="pi pi-inbox empty-icon"></i>
                     <h3>No hay servicios cargados</h3>
-                    <p class="text-muted">
-                        Selecciona un mes para ver tus honorarios médicos.
-                    </p>
+                    <p class="text-muted">Selecciona un mes para ver tus honorarios médicos.</p>
                 </div>
             </template>
         </div>

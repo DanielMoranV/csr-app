@@ -131,18 +131,7 @@ const deleteBank = async () => {
                 </div>
             </div>
 
-            <DataTable
-                :value="banks"
-                :paginator="true"
-                :rows="10"
-                dataKey="id"
-                :filters="filters"
-                :loading="loading"
-                showGridlines
-                responsiveLayout="scroll"
-                :emptyMessage="undefined"
-                class="modern-datatable"
-            >
+            <DataTable :value="banks" :paginator="true" :rows="10" dataKey="id" :filters="filters" :loading="loading" showGridlines responsiveLayout="scroll" :emptyMessage="undefined" class="modern-datatable">
                 <template #empty>
                     <div class="empty-state">
                         <div class="empty-icon-wrapper">
@@ -194,16 +183,8 @@ const deleteBank = async () => {
                             <i class="pi pi-tag form-label-icon"></i>
                             Nombre del Banco <span class="required-star">*</span>
                         </label>
-                        <InputText
-                            id="name"
-                            v-model.trim="bank.name"
-                            autofocus
-                            placeholder="Ej: Banco de Crédito del Perú"
-                            :class="['form-input', { 'p-invalid': submitted && !bank.name }]"
-                        />
-                        <small class="p-error" v-if="submitted && !bank.name">
-                            <i class="pi pi-exclamation-circle mr-1"></i>El nombre es requerido.
-                        </small>
+                        <InputText id="name" v-model.trim="bank.name" autofocus placeholder="Ej: Banco de Crédito del Perú" :class="['form-input', { 'p-invalid': submitted && !bank.name }]" />
+                        <small class="p-error" v-if="submitted && !bank.name"> <i class="pi pi-exclamation-circle mr-1"></i>El nombre es requerido. </small>
                     </div>
 
                     <!-- SWIFT + Estado -->
@@ -268,7 +249,10 @@ const deleteBank = async () => {
             <Dialog v-model:visible="deleteBankDialog" :style="{ width: '450px' }" header="Confirmar eliminación" :modal="true">
                 <div class="flex align-items-center gap-3">
                     <i class="pi pi-exclamation-triangle text-orange-500" style="font-size: 2rem" />
-                    <span v-if="bank">¿Estás seguro que deseas eliminar <b>{{ bank.name }}</b>?</span>
+                    <span v-if="bank"
+                        >¿Estás seguro que deseas eliminar <b>{{ bank.name }}</b
+                        >?</span
+                    >
                 </div>
                 <template #footer>
                     <Button label="No" icon="pi pi-times" class="p-button-text" @click="deleteBankDialog = false" />
@@ -284,24 +268,56 @@ const deleteBank = async () => {
    ANIMATIONS
    ============================================================================ */
 @keyframes shimmer {
-    0%, 100% { transform: translateX(-100%) rotate(45deg); }
-    50% { transform: translateX(100%) rotate(45deg); }
+    0%,
+    100% {
+        transform: translateX(-100%) rotate(45deg);
+    }
+    50% {
+        transform: translateX(100%) rotate(45deg);
+    }
 }
 @keyframes pulse {
-    0%, 100% { transform: scale(1); }
-    50% { transform: scale(1.05); }
+    0%,
+    100% {
+        transform: scale(1);
+    }
+    50% {
+        transform: scale(1.05);
+    }
 }
 @keyframes gradientShift {
-    0%, 100% { background-position: 0% 50%; }
-    50% { background-position: 100% 50%; }
+    0%,
+    100% {
+        background-position: 0% 50%;
+    }
+    50% {
+        background-position: 100% 50%;
+    }
 }
 @keyframes fadeIn {
-    from { opacity: 0; transform: translateY(10px); }
-    to { opacity: 1; transform: translateY(0); }
+    from {
+        opacity: 0;
+        transform: translateY(10px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
 }
 @keyframes iconPulse {
-    0%, 100% { transform: scale(1); box-shadow: 0 4px 12px rgba(16,185,129,0.3), 0 2px 8px rgba(5,150,105,0.2); }
-    50% { transform: scale(1.05); box-shadow: 0 6px 16px rgba(16,185,129,0.4), 0 3px 10px rgba(5,150,105,0.3); }
+    0%,
+    100% {
+        transform: scale(1);
+        box-shadow:
+            0 4px 12px rgba(16, 185, 129, 0.3),
+            0 2px 8px rgba(5, 150, 105, 0.2);
+    }
+    50% {
+        transform: scale(1.05);
+        box-shadow:
+            0 6px 16px rgba(16, 185, 129, 0.4),
+            0 3px 10px rgba(5, 150, 105, 0.3);
+    }
 }
 
 /* ============================================================================
@@ -325,7 +341,9 @@ const deleteBank = async () => {
 .main-card::before {
     content: '';
     position: absolute;
-    top: 0; left: 0; right: 0;
+    top: 0;
+    left: 0;
+    right: 0;
     height: 3px;
     background: linear-gradient(90deg, #10b981, #059669, #10b981, #047857);
     background-size: 200% 100%;
@@ -348,27 +366,43 @@ const deleteBank = async () => {
 }
 
 .header-icon-wrapper {
-    width: 64px; height: 64px;
+    width: 64px;
+    height: 64px;
     border-radius: 16px;
-    display: flex; align-items: center; justify-content: center;
+    display: flex;
+    align-items: center;
+    justify-content: center;
     background: linear-gradient(135deg, #10b981 0%, #059669 50%, #047857 100%);
-    box-shadow: 0 8px 20px rgba(16,185,129,0.3), 0 4px 12px rgba(5,150,105,0.4);
+    box-shadow:
+        0 8px 20px rgba(16, 185, 129, 0.3),
+        0 4px 12px rgba(5, 150, 105, 0.4);
     animation: pulse 2s ease-in-out infinite;
-    position: relative; overflow: hidden;
+    position: relative;
+    overflow: hidden;
 }
 .header-icon-wrapper::before {
     content: '';
-    position: absolute; top: -50%; left: -50%;
-    width: 200%; height: 200%;
-    background: linear-gradient(135deg, transparent, rgba(255,255,255,0.2), transparent);
+    position: absolute;
+    top: -50%;
+    left: -50%;
+    width: 200%;
+    height: 200%;
+    background: linear-gradient(135deg, transparent, rgba(255, 255, 255, 0.2), transparent);
     animation: shimmer 3s infinite;
 }
-.header-icon-wrapper i { font-size: 2rem; color: #ffffff; z-index: 1; }
+.header-icon-wrapper i {
+    font-size: 2rem;
+    color: #ffffff;
+    z-index: 1;
+}
 
-.header-content { flex: 1; }
+.header-content {
+    flex: 1;
+}
 
 .header-title {
-    font-size: 1.75rem; font-weight: 700;
+    font-size: 1.75rem;
+    font-weight: 700;
     margin: 0 0 0.5rem 0;
     background: linear-gradient(135deg, #10b981 0%, #059669 100%);
     -webkit-background-clip: text;
@@ -379,7 +413,8 @@ const deleteBank = async () => {
 .header-subtitle {
     color: var(--text-color-secondary);
     font-size: 1rem;
-    display: flex; align-items: center;
+    display: flex;
+    align-items: center;
     margin: 0;
 }
 
@@ -399,47 +434,83 @@ const deleteBank = async () => {
 }
 .table-header-modern::after {
     content: '';
-    position: absolute; bottom: -2px; left: 0; right: 0;
+    position: absolute;
+    bottom: -2px;
+    left: 0;
+    right: 0;
     height: 2px;
     background: linear-gradient(90deg, #10b981, #059669, #10b981);
     background-size: 200% 100%;
     animation: gradientShift 3s ease infinite;
 }
 
-.header-left { display: flex; align-items: center; gap: 1rem; }
+.header-left {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+}
 
 .header-icon-badge {
-    width: 48px; height: 48px;
+    width: 48px;
+    height: 48px;
     border-radius: 12px;
     background: linear-gradient(135deg, #10b981 0%, #059669 50%, #047857 100%);
-    display: flex; align-items: center; justify-content: center;
-    box-shadow: 0 4px 12px rgba(16,185,129,0.3), 0 2px 8px rgba(5,150,105,0.2);
-    position: relative; overflow: hidden;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    box-shadow:
+        0 4px 12px rgba(16, 185, 129, 0.3),
+        0 2px 8px rgba(5, 150, 105, 0.2);
+    position: relative;
+    overflow: hidden;
     animation: iconPulse 2s ease-in-out infinite;
 }
 .header-icon-badge::before {
     content: '';
-    position: absolute; inset: 0;
-    background: linear-gradient(135deg, transparent 0%, rgba(255,255,255,0.15) 50%, transparent 100%);
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(135deg, transparent 0%, rgba(255, 255, 255, 0.15) 50%, transparent 100%);
     animation: shimmer 3s ease-in-out infinite;
 }
-.header-icon-badge i { font-size: 1.5rem; color: white; position: relative; z-index: 1; }
+.header-icon-badge i {
+    font-size: 1.5rem;
+    color: white;
+    position: relative;
+    z-index: 1;
+}
 
-.header-info { display: flex; flex-direction: column; gap: 0.25rem; }
-.header-title-small { font-size: 1.125rem; font-weight: 700; color: var(--text-color); }
+.header-info {
+    display: flex;
+    flex-direction: column;
+    gap: 0.25rem;
+}
+.header-title-small {
+    font-size: 1.125rem;
+    font-weight: 700;
+    color: var(--text-color);
+}
 .header-count {
-    font-size: 0.813rem; font-weight: 600;
+    font-size: 0.813rem;
+    font-weight: 600;
     color: #059669;
     background: linear-gradient(135deg, #d1fae5 0%, #ecfdf5 100%);
     padding: 0.188rem 0.625rem;
-    border-radius: 6px; display: inline-block; width: fit-content;
+    border-radius: 6px;
+    display: inline-block;
+    width: fit-content;
     border: 1px solid #6ee7b7;
-    box-shadow: 0 2px 4px rgba(16,185,129,0.1);
+    box-shadow: 0 2px 4px rgba(16, 185, 129, 0.1);
 }
 
-.header-actions-modern { display: flex; gap: 0.75rem; align-items: center; }
+.header-actions-modern {
+    display: flex;
+    gap: 0.75rem;
+    align-items: center;
+}
 
-.search-field { width: 280px; }
+.search-field {
+    width: 280px;
+}
 .search-input-modern {
     border-radius: 10px;
     border: 2px solid var(--surface-border);
@@ -449,20 +520,25 @@ const deleteBank = async () => {
     background: var(--surface-ground);
     color: var(--text-color);
 }
-.search-input-modern:hover { border-color: #a7f3d0; }
-.search-input-modern:focus { border-color: #10b981; box-shadow: 0 0 0 3px rgba(16,185,129,0.1); }
+.search-input-modern:hover {
+    border-color: #a7f3d0;
+}
+.search-input-modern:focus {
+    border-color: #10b981;
+    box-shadow: 0 0 0 3px rgba(16, 185, 129, 0.1);
+}
 
 .action-button {
     background: linear-gradient(135deg, #10b981 0%, #059669 100%) !important;
     border: none !important;
     border-radius: 10px !important;
-    box-shadow: 0 3px 10px rgba(16,185,129,0.3) !important;
+    box-shadow: 0 3px 10px rgba(16, 185, 129, 0.3) !important;
     transition: all 0.3s ease !important;
     white-space: nowrap;
 }
 .action-button:hover {
     transform: translateY(-2px) !important;
-    box-shadow: 0 5px 15px rgba(16,185,129,0.4) !important;
+    box-shadow: 0 5px 15px rgba(16, 185, 129, 0.4) !important;
     background: linear-gradient(135deg, #059669 0%, #047857 100%) !important;
 }
 
@@ -482,23 +558,33 @@ const deleteBank = async () => {
     animation: fadeIn 0.4s ease-out;
 }
 .empty-icon-wrapper {
-    width: 80px; height: 80px;
+    width: 80px;
+    height: 80px;
     border-radius: 20px;
     background: linear-gradient(135deg, #d1fae5 0%, #ecfdf5 100%);
     border: 2px solid #a7f3d0;
-    display: flex; align-items: center; justify-content: center;
+    display: flex;
+    align-items: center;
+    justify-content: center;
     margin-bottom: 1.25rem;
-    box-shadow: 0 8px 20px rgba(16,185,129,0.12);
+    box-shadow: 0 8px 20px rgba(16, 185, 129, 0.12);
 }
-.empty-icon-wrapper i { font-size: 2.25rem; color: #10b981; }
+.empty-icon-wrapper i {
+    font-size: 2.25rem;
+    color: #10b981;
+}
 .empty-title {
-    font-size: 1.2rem; font-weight: 700;
+    font-size: 1.2rem;
+    font-weight: 700;
     color: var(--text-color);
     margin: 0 0 0.5rem 0;
 }
 .empty-subtitle {
-    font-size: 0.9rem; color: var(--text-color-secondary);
-    margin: 0; max-width: 360px; line-height: 1.6;
+    font-size: 0.9rem;
+    color: var(--text-color-secondary);
+    margin: 0;
+    max-width: 360px;
+    line-height: 1.6;
 }
 :global(.dark) .empty-icon-wrapper {
     background: linear-gradient(135deg, #064e3b 0%, #065f46 100%);
@@ -548,86 +634,138 @@ const deleteBank = async () => {
     gap: 1rem;
 }
 .dialog-header-icon {
-    width: 52px; height: 52px;
+    width: 52px;
+    height: 52px;
     border-radius: 14px;
     background: linear-gradient(135deg, #10b981 0%, #059669 50%, #047857 100%);
-    display: flex; align-items: center; justify-content: center;
-    box-shadow: 0 6px 16px rgba(16,185,129,0.3);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    box-shadow: 0 6px 16px rgba(16, 185, 129, 0.3);
     flex-shrink: 0;
 }
-.dialog-header-icon i { font-size: 1.6rem; color: #fff; }
+.dialog-header-icon i {
+    font-size: 1.6rem;
+    color: #fff;
+}
 
 .dialog-title {
-    font-size: 1.2rem; font-weight: 700;
-    color: var(--text-color); margin: 0 0 0.15rem 0;
+    font-size: 1.2rem;
+    font-weight: 700;
+    color: var(--text-color);
+    margin: 0 0 0.15rem 0;
 }
 .dialog-subtitle {
-    font-size: 0.8rem; color: var(--text-color-secondary); margin: 0;
+    font-size: 0.8rem;
+    color: var(--text-color-secondary);
+    margin: 0;
 }
 
 .dialog-body {
     padding: 1.5rem;
-    display: flex; flex-direction: column; gap: 1rem;
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
 }
 
-.form-field { display: flex; flex-direction: column; gap: 0.4rem; }
+.form-field {
+    display: flex;
+    flex-direction: column;
+    gap: 0.4rem;
+}
 
 .form-label {
-    font-size: 0.8rem; font-weight: 600;
+    font-size: 0.8rem;
+    font-weight: 600;
     color: var(--text-color-secondary);
-    display: flex; align-items: center; gap: 0.35rem;
-    text-transform: uppercase; letter-spacing: 0.04em;
+    display: flex;
+    align-items: center;
+    gap: 0.35rem;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
 }
-.form-label-icon { font-size: 0.75rem; color: #10b981; }
+.form-label-icon {
+    font-size: 0.75rem;
+    color: #10b981;
+}
 
-.required-star { color: #ef4444; font-weight: 700; }
+.required-star {
+    color: #ef4444;
+    font-weight: 700;
+}
 
-.form-input { width: 100%; border-radius: 8px; transition: all 0.2s ease; }
+.form-input {
+    width: 100%;
+    border-radius: 8px;
+    transition: all 0.2s ease;
+}
 :deep(.form-input:focus) {
     border-color: #10b981 !important;
-    box-shadow: 0 0 0 3px rgba(16,185,129,0.12) !important;
+    box-shadow: 0 0 0 3px rgba(16, 185, 129, 0.12) !important;
 }
 
 .form-grid-2 {
-    display: grid; grid-template-columns: 1fr 1fr; gap: 1rem;
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 1rem;
 }
 
 .status-toggle {
-    display: flex; align-items: center; gap: 0.75rem;
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
     padding: 0.6rem 0.875rem;
     background: var(--surface-ground);
     border: 1px solid var(--surface-border);
-    border-radius: 8px; cursor: pointer;
+    border-radius: 8px;
+    cursor: pointer;
     transition: border-color 0.2s;
 }
-.status-toggle:hover { border-color: #10b981; }
-.status-label { cursor: pointer; }
+.status-toggle:hover {
+    border-color: #10b981;
+}
+.status-label {
+    cursor: pointer;
+}
 
 .section-divider {
-    display: flex; align-items: center; gap: 0.75rem;
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
     margin: 0.25rem 0;
 }
-.section-divider::before, .section-divider::after {
-    content: ''; flex: 1; height: 1px;
+.section-divider::before,
+.section-divider::after {
+    content: '';
+    flex: 1;
+    height: 1px;
     background: var(--surface-border);
 }
 .section-divider-label {
-    font-size: 0.75rem; font-weight: 600;
+    font-size: 0.75rem;
+    font-weight: 600;
     color: var(--text-color-secondary);
     white-space: nowrap;
-    display: flex; align-items: center; gap: 0.4rem;
+    display: flex;
+    align-items: center;
+    gap: 0.4rem;
 }
 .optional-tag {
     background: var(--surface-100);
     color: var(--text-color-secondary);
-    font-size: 0.68rem; padding: 0.1rem 0.4rem;
-    border-radius: 4px; font-weight: 500;
+    font-size: 0.68rem;
+    padding: 0.1rem 0.4rem;
+    border-radius: 4px;
+    font-weight: 500;
     border: 1px solid var(--surface-border);
 }
 
 .dialog-footer {
-    display: flex; justify-content: flex-end; align-items: center;
-    gap: 0.75rem; padding: 1rem 1.5rem;
+    display: flex;
+    justify-content: flex-end;
+    align-items: center;
+    gap: 0.75rem;
+    padding: 1rem 1.5rem;
 }
 .dialog-cancel-btn {
     color: var(--text-color-secondary) !important;
@@ -635,14 +773,15 @@ const deleteBank = async () => {
 }
 .dialog-save-btn {
     background: linear-gradient(135deg, #10b981 0%, #059669 100%) !important;
-    border: none !important; border-radius: 8px !important;
-    box-shadow: 0 3px 10px rgba(16,185,129,0.3) !important;
+    border: none !important;
+    border-radius: 8px !important;
+    box-shadow: 0 3px 10px rgba(16, 185, 129, 0.3) !important;
     transition: all 0.2s ease !important;
     font-weight: 600 !important;
 }
 .dialog-save-btn:hover {
     transform: translateY(-1px) !important;
-    box-shadow: 0 5px 14px rgba(16,185,129,0.4) !important;
+    box-shadow: 0 5px 14px rgba(16, 185, 129, 0.4) !important;
     background: linear-gradient(135deg, #059669 0%, #047857 100%) !important;
 }
 

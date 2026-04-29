@@ -162,21 +162,29 @@ const getSexLabel = (sex) => {
 // Obtener severidad del estado de la cama
 const getBedStatusSeverity = (status) => {
     switch (status) {
-        case 'occupied': return 'danger';
-        case 'discharge_scheduled': return 'warn';
+        case 'occupied':
+            return 'danger';
+        case 'discharge_scheduled':
+            return 'warn';
         case 'reserved':
-        case 'reservada': return 'warning';
-        default: return 'success';
+        case 'reservada':
+            return 'warning';
+        default:
+            return 'success';
     }
 };
 
 const getBedStatusLabel = (status) => {
     switch (status) {
-        case 'occupied': return 'OCUPADA';
-        case 'discharge_scheduled': return 'ALTA PROG.';
+        case 'occupied':
+            return 'OCUPADA';
+        case 'discharge_scheduled':
+            return 'ALTA PROG.';
         case 'reserved':
-        case 'reservada': return 'RESERVADA';
-        default: return 'LIBRE';
+        case 'reservada':
+            return 'RESERVADA';
+        default:
+            return 'LIBRE';
     }
 };
 

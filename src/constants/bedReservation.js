@@ -4,30 +4,30 @@
  */
 
 export const RESERVATION_STATUS = {
-    activa:     { label: 'Activa',      severity: 'info',    icon: 'pi pi-calendar' },
-    confirmada: { label: 'Confirmada',  severity: 'success', icon: 'pi pi-check' },
-    completada: { label: 'Completada',  severity: 'success', icon: 'pi pi-check-circle' },
-    cancelada:  { label: 'Cancelada',   severity: 'danger',  icon: 'pi pi-times-circle' },
-    expirada:   { label: 'Expirada',    severity: 'secondary', icon: 'pi pi-clock' }
+    activa: { label: 'Activa', severity: 'info', icon: 'pi pi-calendar' },
+    confirmada: { label: 'Confirmada', severity: 'success', icon: 'pi pi-check' },
+    completada: { label: 'Completada', severity: 'success', icon: 'pi pi-check-circle' },
+    cancelada: { label: 'Cancelada', severity: 'danger', icon: 'pi pi-times-circle' },
+    expirada: { label: 'Expirada', severity: 'secondary', icon: 'pi pi-clock' }
 };
 
 export const AUDIT_EVENTS = {
-    created:     { label: 'Creada',          severity: 'info',    icon: 'pi pi-plus-circle' },
-    completed:   { label: 'Completada',      severity: 'success', icon: 'pi pi-check-circle' },
-    cancelled:   { label: 'Cancelada',       severity: 'danger',  icon: 'pi pi-times-circle' },
-    expired:     { label: 'Expirada (auto)', severity: 'secondary', icon: 'pi pi-clock' },
-    bed_changed: { label: 'Cambio de cama',  severity: 'warn',    icon: 'pi pi-arrows-h' }
+    created: { label: 'Creada', severity: 'info', icon: 'pi pi-plus-circle' },
+    completed: { label: 'Completada', severity: 'success', icon: 'pi pi-check-circle' },
+    cancelled: { label: 'Cancelada', severity: 'danger', icon: 'pi pi-times-circle' },
+    expired: { label: 'Expirada (auto)', severity: 'secondary', icon: 'pi pi-clock' },
+    bed_changed: { label: 'Cambio de cama', severity: 'warn', icon: 'pi pi-arrows-h' }
 };
 
 /** Etiquetas legibles para los campos que aparecen en los diffs de auditoría */
 export const FIELD_LABELS = {
-    status:            'Estado',
-    id_beds:           'Cama',
-    notes:             'Notas',
-    admission_number:  'N° Admisión',
-    patient_name:      'Paciente',
+    status: 'Estado',
+    id_beds: 'Cama',
+    notes: 'Notas',
+    admission_number: 'N° Admisión',
+    patient_name: 'Paciente',
     completed_by_nick: 'Usuario Sisclin',
-    completed_at:      'Completado en'
+    completed_at: 'Completado en'
 };
 
 /**
@@ -35,15 +35,7 @@ export const FIELD_LABELS = {
  * Deben coincidir con los roles que el backend autoriza en el endpoint:
  * GET /bed-reservations/audits
  */
-export const AUDIT_ALLOWED_POSITIONS = [
-    'ADMINISTRACION',
-    'GERENCIA',
-    'ADMISION',
-    'HOSPITALIZACION',
-    'SISTEMAS',
-    'COORDINADOR HOSPITALIZACION',
-    'DIRECTOR MEDICO'
-];
+export const AUDIT_ALLOWED_POSITIONS = ['ADMINISTRACION', 'GERENCIA', 'ADMISION', 'HOSPITALIZACION', 'SISTEMAS', 'COORDINADOR HOSPITALIZACION', 'DIRECTOR MEDICO'];
 
 /**
  * Retorna el descriptor de un estado de reserva, con fallback seguro.

@@ -34,8 +34,11 @@ function openAuditDialog(reservation) {
 function formatDateTime(dateString) {
     if (!dateString) return '—';
     return new Date(dateString).toLocaleString('es-PE', {
-        day: '2-digit', month: '2-digit', year: 'numeric',
-        hour: '2-digit', minute: '2-digit'
+        day: '2-digit',
+        month: '2-digit',
+        year: 'numeric',
+        hour: '2-digit',
+        minute: '2-digit'
     });
 }
 </script>
@@ -52,9 +55,7 @@ function formatDateTime(dateString) {
                     <template v-if="data.status === 'completada'">
                         <div v-if="data.patient_name || data.admission_number" class="flex flex-col gap-0.5">
                             <span class="font-medium text-sm">{{ data.patient_name ?? 'No registrado' }}</span>
-                            <span v-if="data.admission_number" class="text-xs text-color-secondary">
-                                <i class="pi pi-hashtag text-xs"></i> {{ data.admission_number }}
-                            </span>
+                            <span v-if="data.admission_number" class="text-xs text-color-secondary"> <i class="pi pi-hashtag text-xs"></i> {{ data.admission_number }} </span>
                             <span v-if="data.completed_by_nick" class="text-xs text-color-secondary">
                                 <i class="pi pi-user text-xs"></i> {{ data.completed_by_nick }}
                                 <template v-if="data.completed_at"> · {{ formatDateTime(data.completed_at) }}</template>
@@ -72,10 +73,7 @@ function formatDateTime(dateString) {
             </Column>
             <Column field="status" header="Estado" :sortable="true">
                 <template #body="{ data }">
-                    <Tag
-                        :value="getStatusConfig(data.status).label"
-                        :severity="getStatusConfig(data.status).severity"
-                    >
+                    <Tag :value="getStatusConfig(data.status).label" :severity="getStatusConfig(data.status).severity">
                         <template #icon>
                             <i :class="getStatusConfig(data.status).icon" class="mr-1 text-xs"></i>
                         </template>
@@ -85,41 +83,15 @@ function formatDateTime(dateString) {
             <Column headerStyle="width: 10rem; text-align: center" bodyStyle="text-align: center; overflow: visible">
                 <template #body="{ data }">
                     <div class="flex items-center justify-center gap-1">
-                        <Button
-                            v-if="data.status === 'activa'"
-                            type="button"
-                            icon="pi pi-pencil"
-                            class="p-button-rounded p-button-success p-button-sm"
-                            v-tooltip.top="'Editar'"
-                            @click="$emit('edit-reservation', data)"
-                        />
-                        <Button
-                            v-if="data.status === 'activa'"
-                            type="button"
-                            icon="pi pi-trash"
-                            class="p-button-rounded p-button-warning p-button-sm"
-                            v-tooltip.top="'Cancelar reserva'"
-                            @click="$emit('delete-reservation', data)"
-                        />
-                        <Button
-                            v-if="canViewAudit"
-                            type="button"
-                            icon="pi pi-history"
-                            severity="info"
-                            class="p-button-rounded p-button-sm"
-                            v-tooltip.top="'Ver historial'"
-                            outlined
-                            @click="openAuditDialog(data)"
-                        />
+                        <Button v-if="data.status === 'activa'" type="button" icon="pi pi-pencil" class="p-button-rounded p-button-success p-button-sm" v-tooltip.top="'Editar'" @click="$emit('edit-reservation', data)" />
+                        <Button v-if="data.status === 'activa'" type="button" icon="pi pi-trash" class="p-button-rounded p-button-warning p-button-sm" v-tooltip.top="'Cancelar reserva'" @click="$emit('delete-reservation', data)" />
+                        <Button v-if="canViewAudit" type="button" icon="pi pi-history" severity="info" class="p-button-rounded p-button-sm" v-tooltip.top="'Ver historial'" outlined @click="openAuditDialog(data)" />
                     </div>
                 </template>
             </Column>
         </DataTable>
 
         <!-- Modal de historial de auditoría -->
-        <BedReservationAuditDialog
-            v-model:visible="auditDialogVisible"
-            :reservation="selectedReservation"
-        />
+        <BedReservationAuditDialog v-model:visible="auditDialogVisible" :reservation="selectedReservation" />
     </div>
 </template>

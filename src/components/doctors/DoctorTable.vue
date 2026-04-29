@@ -162,11 +162,7 @@ const handleLinkUser = (doctor) => {
                     <div class="flex flex-col flex-1">
                         <div class="flex items-center gap-2">
                             <span class="font-semibold">{{ data.name }}</span>
-                            <i 
-                                v-if="data.user_id" 
-                                class="pi pi-verified text-green-500" 
-                                v-tooltip.top="'Usuario vinculado'"
-                            ></i>
+                            <i v-if="data.user_id" class="pi pi-verified text-green-500" v-tooltip.top="'Usuario vinculado'"></i>
                         </div>
                         <span class="text-sm text-muted">{{ getTypeLabel(data.type) }}</span>
                         <span class="text-xs text-muted">Código: {{ data.code }}</span>
@@ -191,15 +187,7 @@ const handleLinkUser = (doctor) => {
                 <div class="flex flex-col">
                     <div class="flex items-center gap-2">
                         <span class="font-medium">{{ data.numero_colegiatura }}</span>
-                        <Button
-                            icon="pi pi-copy"
-                            size="small"
-                            text
-                            rounded
-                            class="p-button-sm"
-                            @click="copyToClipboard(data.numero_colegiatura)"
-                            v-tooltip.top="'Copiar número'"
-                        />
+                        <Button icon="pi pi-copy" size="small" text rounded class="p-button-sm" @click="copyToClipboard(data.numero_colegiatura)" v-tooltip.top="'Copiar número'" />
                     </div>
                     <span class="text-xs text-muted">{{ getColegioLabel(data.colegio) }}</span>
                 </div>
@@ -215,7 +203,7 @@ const handleLinkUser = (doctor) => {
         </Column>
 
         <!-- Tipo de Pago -->
-       <!--  <Column field="payment_payroll" header="Pago" :sortable="true" style="min-width: 130px">
+        <!--  <Column field="payment_payroll" header="Pago" :sortable="true" style="min-width: 130px">
             <template #body="{ data }">
                 <Tag :value="getPaymentPayrollLabel(data.payment_payroll)" :severity="getPaymentPayrollSeverity(data.payment_payroll)" />
             </template>
@@ -225,9 +213,7 @@ const handleLinkUser = (doctor) => {
         <Column field="commission_percentage" header="Comisión" :sortable="true" style="min-width: 120px">
             <template #body="{ data }">
                 <div class="flex items-center gap-2">
-                    <span v-if="data.commission_percentage !== null && data.commission_percentage !== undefined" class="font-semibold text-primary">
-                        {{ data.commission_percentage }}%
-                    </span>
+                    <span v-if="data.commission_percentage !== null && data.commission_percentage !== undefined" class="font-semibold text-primary"> {{ data.commission_percentage }}% </span>
                     <span v-else class="text-muted">-</span>
                 </div>
             </template>
@@ -253,38 +239,13 @@ const handleLinkUser = (doctor) => {
             </template>
         </Column>
 
-
         <!-- Acciones -->
         <Column header="Acciones" style="min-width: 200px">
             <template #body="{ data, index }">
                 <div class="flex gap-1">
-                    <Button
-                        icon="pi pi-link"
-                        size="small"
-                        rounded
-                        :severity="data.user_id ? 'success' : 'help'"
-                        outlined
-                        v-tooltip.top="data.user_id ? 'Usuario Vinculado' : 'Vincular Usuario'"
-                        @click="handleLinkUser(data)"
-                    />
-                    <Button
-                        icon="pi pi-calendar"
-                        size="small"
-                        rounded
-                        severity="info"
-                        outlined
-                        v-tooltip.top="'Gestionar Horarios'"
-                        @click="handleManageSchedules(data)"
-                    />
-                    <Button
-                        icon="pi pi-heart"
-                        size="small"
-                        rounded
-                        severity="secondary"
-                        outlined
-                        v-tooltip.top="'Gestionar Especialidades'"
-                        @click="handleManageSpecialties(data)"
-                    />
+                    <Button icon="pi pi-link" size="small" rounded :severity="data.user_id ? 'success' : 'help'" outlined v-tooltip.top="data.user_id ? 'Usuario Vinculado' : 'Vincular Usuario'" @click="handleLinkUser(data)" />
+                    <Button icon="pi pi-calendar" size="small" rounded severity="info" outlined v-tooltip.top="'Gestionar Horarios'" @click="handleManageSchedules(data)" />
+                    <Button icon="pi pi-heart" size="small" rounded severity="secondary" outlined v-tooltip.top="'Gestionar Especialidades'" @click="handleManageSpecialties(data)" />
                     <Button icon="pi pi-pencil" size="small" rounded severity="success" outlined v-tooltip.top="'Editar'" @click="handleEditDoctor(data)" />
                     <Button icon="pi pi-trash" size="small" rounded severity="danger" outlined v-tooltip.top="'Eliminar'" @click="handleDeleteDoctor(data)" />
                 </div>
