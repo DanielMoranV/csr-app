@@ -704,9 +704,18 @@ const calendarOptions = ref({
             `;
         }
 
-        // Absence indicators for this date
+        // Absence indicators for this date — only visible when specialty or doctor filter is active
         let absenceHtml = '';
-        const dateAbsences = absences.value.filter((a) => a.date === dateStr);
+        const dateAbsences = (() => {
+            if (!specialtyFilter.value && !doctorFilter.value) return [];
+            return absences.value.filter((a) => {
+                if (a.date !== dateStr) return false;
+                // If doctor filter is applied to backend, show only that doctor's absences
+                if (enableDoctorFilter.value && doctorFilter.value) return a.id_doctor === doctorFilter.value;
+                // With specialty filter only, the API already returns absences scoped to that specialty
+                return true;
+            });
+        })();
         if (dateAbsences.length > 0) {
             const absenceItems = dateAbsences
                 .map((absence) => {
