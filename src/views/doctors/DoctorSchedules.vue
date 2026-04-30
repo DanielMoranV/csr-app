@@ -704,23 +704,16 @@ const calendarOptions = ref({
             `;
         }
 
-        // Absence indicators for this date — only visible when specialty or doctor filter is active
+        // Absence indicators for this date — only visible when a specific doctor is selected
         let absenceHtml = '';
         const dateAbsences = (() => {
-            if (!specialtyFilter.value && !doctorFilter.value) return [];
+            if (!doctorFilter.value) return []; // Solo mostrar ausencias si hay un médico seleccionado
+            
             return absences.value.filter((a) => {
                 if (a.date !== dateStr) return false;
                 
-                // If doctor filter is active, only show that doctor's absences
-                if (doctorFilter.value && a.id_doctor !== doctorFilter.value) return false;
-                
-                // If specialty filter is active, check if the doctor belongs to that specialty
-                if (specialtyFilter.value) {
-                    const doctorHasSpecialty = a.doctor?.specialties?.some((specialty) => specialty.id === specialtyFilter.value);
-                    if (!doctorHasSpecialty) return false;
-                }
-                
-                return true;
+                // Only show the selected doctor's absences
+                return String(a.id_doctor) === String(doctorFilter.value);
             });
         })();
         if (dateAbsences.length > 0) {
