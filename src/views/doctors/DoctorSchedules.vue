@@ -710,9 +710,16 @@ const calendarOptions = ref({
             if (!specialtyFilter.value && !doctorFilter.value) return [];
             return absences.value.filter((a) => {
                 if (a.date !== dateStr) return false;
-                // If doctor filter is applied to backend, show only that doctor's absences
-                if (enableDoctorFilter.value && doctorFilter.value) return a.id_doctor === doctorFilter.value;
-                // With specialty filter only, the API already returns absences scoped to that specialty
+                
+                // If doctor filter is active, only show that doctor's absences
+                if (doctorFilter.value && a.id_doctor !== doctorFilter.value) return false;
+                
+                // If specialty filter is active, check if the doctor belongs to that specialty
+                if (specialtyFilter.value) {
+                    const doctorHasSpecialty = a.doctor?.specialties?.some((specialty) => specialty.id === specialtyFilter.value);
+                    if (!doctorHasSpecialty) return false;
+                }
+                
                 return true;
             });
         })();
