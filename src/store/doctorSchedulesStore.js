@@ -134,9 +134,18 @@ export const useDoctorSchedulesStore = defineStore('doctorSchedules', () => {
                     state.schedules = [];
                 }
 
+                // Extract absences from the same data object as schedules.
+                // Backend returns: { success: true, data: { data: [...schedules], absences: [...] } }
+                // apiUtils.getData returns response.data, so absences are at data.absences
+                if (Array.isArray(data?.absences)) {
+                    state.absences = data.absences;
+                } else if (Array.isArray(data?.data?.absences)) {
+                    state.absences = data.data.absences;
+                }
+
                 console.log('✅ [fetchSchedules] Horarios recibidos del backend:', {
                     total: state.schedules.length,
-                    schedules: state.schedules,
+                    absences: state.absences.length,
                     filters: state.filters
                 });
 

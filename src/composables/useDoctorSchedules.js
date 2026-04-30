@@ -337,35 +337,49 @@ export function useDoctorSchedules() {
 
     // Error handler
     const handleError = (error, defaultMessage) => {
-        // Verificar si hay errores de validación específicos (422)
-        if (error?.response?.status === 422 && error?.response?.data?.errors) {
-            const errors = error.response.data.errors;
+        // El interceptor de axios procesa los errores y devuelve el body del backend directamente.
+        // Los errores 422 vienen como: { success: false, message, errors: { field: [...] }, status: 422 }
+        const status = error?.response?.status || error?.status;
+        const errorsObj = error?.response?.data?.errors || error?.errors;
+        const message = error?.message || apiUtils.getMessage(error) || defaultMessage;
 
-            // Mostrar cada error de validación
-            Object.keys(errors).forEach((field) => {
-                const fieldErrors = errors[field];
-                if (Array.isArray(fieldErrors)) {
-                    fieldErrors.forEach((errorMsg) => {
-                        toast.add({
-                            severity: 'warn',
-                            summary: 'Error de validación',
-                            detail: errorMsg,
-                            life: 5000
+        if (status === 422) {
+            // Conflicto de ausencia — clave específica del backend
+            if (errorsObj?.absence_conflict) {
+                toast.add({
+                    severity: 'warn',
+                    summary: 'Conflicto de Ausencia',
+                    detail: Array.isArray(errorsObj.absence_conflict)
+                        ? errorsObj.absence_conflict[0]
+                        : errorsObj.absence_conflict,
+                    life: 7000
+                });
+                return;
+            }
+
+            // Errores de validación por campo (arrays de mensajes)
+            if (errorsObj && typeof errorsObj === 'object') {
+                const fieldEntries = Object.entries(errorsObj).filter(([, v]) => Array.isArray(v));
+                if (fieldEntries.length > 0) {
+                    fieldEntries.forEach(([, fieldErrors]) => {
+                        fieldErrors.forEach((errorMsg) => {
+                            toast.add({
+                                severity: 'warn',
+                                summary: 'Error de validación',
+                                detail: errorMsg,
+                                life: 5000
+                            });
                         });
                     });
+                    return;
                 }
-            });
-            return;
-        }
+            }
 
-        // Verificar conflictos de horarios o ausencias
-        if (error?.response?.status === 422) {
-            const message = error?.response?.data?.message;
-
-            if (message && (message.includes('conflicto') || message.includes('superpone'))) {
+            // Mensaje con palabras clave de conflicto
+            if (message && (message.includes('conflicto') || message.includes('superpone') || message.includes('ausencia'))) {
                 toast.add({
                     severity: 'error',
-                    summary: 'Conflicto de horario',
+                    summary: 'Conflicto',
                     detail: message,
                     life: 7000
                 });
@@ -373,8 +387,7 @@ export function useDoctorSchedules() {
             }
         }
 
-        // Manejo de errores genéricos
-        const message = apiUtils.getMessage(error) || defaultMessage;
+        // Error genérico
         toast.add({
             severity: 'error',
             summary: 'Error',

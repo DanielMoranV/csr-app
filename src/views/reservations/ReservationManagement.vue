@@ -65,6 +65,7 @@ const CATEGORY_OPTIONS = [
 // ============================================================================
 const calendarRef = ref(null);
 const schedules = ref([]);
+const absences = ref([]);
 const loadingSchedules = ref(false);
 
 const dailyAvailabilityModalRef = ref(null);
@@ -124,17 +125,57 @@ const calendarEvents = computed(() =>
     }))
 );
 
-const calendarOptions = computed(() => ({
-    plugins: [dayGridPlugin, interactionPlugin],
-    initialView: 'dayGridMonth',
-    headerToolbar: { left: 'prev,next today', center: 'title', right: 'dayGridMonth' },
-    locale: esLocale,
-    events: calendarEvents.value,
-    eventClick: handleEventClick,
-    dateClick: handleDateClick,
-    height: 'auto',
-    selectable: true
-}));
+const calendarOptions = computed(() => {
+    // Reference absences so the computed re-runs (and FullCalendar re-renders) when they change
+    const currentAbsences = absences.value;
+
+    return {
+        plugins: [dayGridPlugin, interactionPlugin],
+        initialView: 'dayGridMonth',
+        headerToolbar: { left: 'prev,next today', center: 'title', right: 'dayGridMonth' },
+        locale: esLocale,
+        events: calendarEvents.value,
+        eventClick: handleEventClick,
+        dateClick: handleDateClick,
+        height: 'auto',
+        selectable: true,
+        dayCellContent: (arg) => {
+            const dateStr = arg.date.toISOString().split('T')[0];
+            const dateAbsences = currentAbsences.filter((a) => a.date === dateStr);
+
+            let absenceHtml = '';
+            if (dateAbsences.length > 0) {
+                const badges = dateAbsences
+                    .map((a) => {
+                        const doctorName = a.doctor?.name || '';
+                        // Show last two name parts: "García Lo." style
+                        const parts = doctorName.trim().split(/\s+/);
+                        const displayName =
+                            parts.length >= 2
+                                ? `${parts[parts.length - 2]} ${parts[parts.length - 1].charAt(0)}.`
+                                : doctorName.substring(0, 12);
+                        const typeClass = a.is_full_day ? 'rm-abs-full' : 'rm-abs-partial';
+                        const timeStr =
+                            !a.is_full_day && a.start_time && a.end_time
+                                ? ` ${a.start_time.substring(0, 5)}-${a.end_time.substring(0, 5)}`
+                                : '';
+                        return `<div class="rm-absence-badge ${typeClass}" title="${doctorName}: ${a.reason}"><span class="pi pi-ban rm-abs-icon"></span><span>${displayName}${timeStr}</span></div>`;
+                    })
+                    .join('');
+                absenceHtml = `<div class="rm-absences-container">${badges}</div>`;
+            }
+
+            return {
+                html: `
+                    <div class="fc-daygrid-day-top">
+                        <a class="fc-daygrid-day-number">${arg.dayNumberText}</a>
+                    </div>
+                    ${absenceHtml}
+                `
+            };
+        }
+    };
+});
 
 const isLocked = computed(() => currentReservationList.value?.status === 'registered');
 
@@ -181,6 +222,7 @@ const clearFilters = () => {
     selectedDoctor.value = null;
     categoryFilter.value = 'ambulatory';
     schedules.value = [];
+    absences.value = [];
     clearDetailPanel();
 };
 
@@ -191,6 +233,7 @@ const clearFilters = () => {
 watch(selectedSpecialty, async (newVal) => {
     clearDetailPanel();
     schedules.value = [];
+    absences.value = [];
     const isValidSpecialty = newVal && newVal.id;
     const isValidDoctor = selectedDoctor.value && selectedDoctor.value.id;
     if (isValidSpecialty || isValidDoctor) await fetchSchedulesForView();
@@ -199,6 +242,7 @@ watch(selectedSpecialty, async (newVal) => {
 watch(selectedDoctor, async (newVal) => {
     clearDetailPanel();
     schedules.value = [];
+    absences.value = [];
     const isValidSpecialty = selectedSpecialty.value && selectedSpecialty.value.id;
     const isValidDoctor = newVal && newVal.id;
     if (isValidSpecialty || isValidDoctor) await fetchSchedulesForView();
@@ -241,9 +285,10 @@ const fetchSchedulesForView = async () => {
                 end_date: endDate,
                 category: categoryFilter.value
             });
+            // Backend: { success, data: { data: [...schedules], absences: [...] } }
             const data = Array.isArray(response.data) ? response.data : response.data?.data || [];
-            console.log('[DEBUG] Single doctor schedule sample:', data[0]); // Verify doctor_id field
             schedules.value = data.map((s) => ({ ...s, doctor_id: s.doctor_id ?? selectedDoctor.value.id }));
+            absences.value = Array.isArray(response.data?.absences) ? response.data.absences : [];
         } else {
             // Multi-doctor mode: parallel requests for each doctor in the specialty
             const doctorIds = doctorsInSpecialty.value.map((d) => d.id);
@@ -252,16 +297,19 @@ const fetchSchedulesForView = async () => {
             const results = await Promise.allSettled(doctorIds.map((id) => doctorSchedules.getAll({ doctor_id: id, start_date: startDate, end_date: endDate, category: categoryFilter.value })));
 
             const merged = [];
+            const mergedAbsences = [];
             results.forEach((result, i) => {
                 if (result.status === 'fulfilled') {
                     const res = result.value;
                     const data = Array.isArray(res.data) ? res.data : res.data?.data || [];
                     data.forEach((s) => merged.push({ ...s, doctor_id: s.doctor_id ?? doctorIds[i] }));
+                    const absData = Array.isArray(res.data?.absences) ? res.data.absences : [];
+                    mergedAbsences.push(...absData);
                 }
             });
 
-            console.log('[DEBUG] Multi-doctor schedule sample:', merged[0]); // Verify structure
             schedules.value = merged;
+            absences.value = mergedAbsences;
         }
     } catch (error) {
         console.error('Error fetching schedules:', error);
@@ -317,10 +365,23 @@ const getEventTitle = (schedule) => {
 
 const handleEventClick = async (info) => {
     const schedule = info.event.extendedProps;
-    console.log('[DEBUG] handleEventClick — schedule extendedProps:', schedule); // Verify doctor_id
 
     selectedSchedule.value = schedule;
     selectedScheduleDoctor.value = allDoctors.value.find((d) => d.id === schedule.doctor_id) || selectedDoctor.value;
+
+    // Non-blocking absence warning
+    const doctorId = selectedScheduleDoctor.value?.id;
+    if (doctorId && schedule.date) {
+        const dateAbsences = absences.value.filter((a) => a.date === schedule.date && a.id_doctor === doctorId);
+        const fullDay = dateAbsences.find((a) => a.is_full_day);
+        const partial = dateAbsences.find((a) => !a.is_full_day);
+        if (fullDay) {
+            toast.add({ severity: 'warn', summary: 'Médico con Ausencia', detail: `${fullDay.doctor?.name || 'El médico'} tiene ausencia de día completo: "${fullDay.reason}"`, life: 6000 });
+        } else if (partial) {
+            const t = partial.start_time && partial.end_time ? ` (${partial.start_time.substring(0, 5)}-${partial.end_time.substring(0, 5)})` : '';
+            toast.add({ severity: 'info', summary: 'Ausencia Parcial', detail: `${partial.doctor?.name || 'El médico'} tiene ausencia parcial${t}: "${partial.reason}"`, life: 5000 });
+        }
+    }
 
     clearDetailPanel();
 
@@ -340,6 +401,20 @@ const handleDateClick = async (info) => {
     }
 
     const existingSchedule = schedules.value.find((s) => s.date === dateStr);
+
+    // Non-blocking absence warning — check the relevant doctor for this date
+    const doctorIdForDate = existingSchedule?.doctor_id ?? selectedDoctor.value?.id;
+    if (doctorIdForDate) {
+        const dateAbsences = absences.value.filter((a) => a.date === dateStr && a.id_doctor === doctorIdForDate);
+        const fullDay = dateAbsences.find((a) => a.is_full_day);
+        const partial = dateAbsences.find((a) => !a.is_full_day);
+        if (fullDay) {
+            toast.add({ severity: 'warn', summary: 'Médico con Ausencia', detail: `${fullDay.doctor?.name || 'El médico'} tiene ausencia de día completo: "${fullDay.reason}"`, life: 6000 });
+        } else if (partial) {
+            const t = partial.start_time && partial.end_time ? ` (${partial.start_time.substring(0, 5)}-${partial.end_time.substring(0, 5)})` : '';
+            toast.add({ severity: 'info', summary: 'Ausencia Parcial', detail: `${partial.doctor?.name || 'El médico'} tiene ausencia parcial${t}: "${partial.reason}"`, life: 5000 });
+        }
+    }
 
     if (existingSchedule) {
         selectedSchedule.value = existingSchedule;
@@ -1478,5 +1553,47 @@ const openDailyModal = () => {
 }
 :deep(.sisclin-table .out-of-schedule-row td) {
     color: var(--text-color-secondary) !important;
+}
+
+/* ============================================================================
+   ABSENCE INDICATORS — Calendar cells
+   ============================================================================ */
+:deep(.rm-absences-container) {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    padding: 2px 4px 3px;
+}
+
+:deep(.rm-absence-badge) {
+    display: flex;
+    align-items: center;
+    gap: 3px;
+    border-radius: 4px;
+    padding: 1px 5px;
+    font-size: 0.62rem;
+    font-weight: 600;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    border: 1px solid transparent;
+    cursor: default;
+}
+
+:deep(.rm-absence-badge.rm-abs-full) {
+    background: #fee2e2;
+    border-color: #ef4444;
+    color: #b91c1c;
+}
+
+:deep(.rm-absence-badge.rm-abs-partial) {
+    background: #fef3c7;
+    border-color: #f59e0b;
+    color: #92400e;
+}
+
+:deep(.rm-abs-icon) {
+    font-size: 0.55rem;
+    flex-shrink: 0;
 }
 </style>

@@ -1,4 +1,5 @@
 <script setup>
+import AbsenceDialog from '@/components/doctors/AbsenceDialog.vue';
 import BatchProgressDialog from '@/components/doctors/BatchProgressDialog.vue';
 import QuickFillPanel from '@/components/doctors/QuickFillPanel.vue';
 import ScheduleDialog from '@/components/doctors/ScheduleDialog.vue';
@@ -28,6 +29,7 @@ const {
     isLoading,
     isSaving,
     medicalShifts,
+    absences,
     fetchSchedules,
     fetchMedicalShifts,
     createSchedule,
@@ -37,6 +39,9 @@ const {
     confirmSchedule,
     cancelSchedule,
     completeSchedule,
+    createAbsence,
+    updateAbsence,
+    deleteAbsence,
     setDoctorFilter,
     setSpecialtyFilter,
     setStartDateFilter,
@@ -60,6 +65,13 @@ const scheduleDialogVisible = ref(false);
 const selectedSchedule = ref(null);
 const isEditingSchedule = ref(false);
 const isDeleting = ref(false);
+
+// Estado diálogo de ausencias
+const absenceDialogVisible = ref(false);
+const selectedAbsence = ref(null);
+const absencePreselectedDoctorId = ref(null);
+const absencePreselectedDate = ref(null);
+const isSavingAbsence = ref(false);
 
 // Filters
 const specialtyFilter = ref(null);
@@ -228,6 +240,61 @@ const handleCancelSchedule = (schedule) => {
                 await cancelSchedule(schedule.id, 'Cancelado manualmente');
             } catch (error) {
                 // El error ya se maneja en el composable
+            }
+        }
+    });
+};
+
+// Absence Handlers
+const openNewAbsence = (doctorId = null, dateStr = null) => {
+    selectedAbsence.value = null;
+    absencePreselectedDoctorId.value = doctorId || doctorFilter.value;
+    absencePreselectedDate.value = dateStr;
+    absenceDialogVisible.value = true;
+};
+
+const editAbsence = (absence) => {
+    selectedAbsence.value = { ...absence };
+    absencePreselectedDoctorId.value = null;
+    absencePreselectedDate.value = null;
+    absenceDialogVisible.value = true;
+};
+
+const handleSaveAbsence = async (absenceData) => {
+    try {
+        isSavingAbsence.value = true;
+        const { id, ...data } = absenceData;
+        if (id) {
+            await updateAbsence(id, data);
+        } else {
+            await createAbsence(data);
+        }
+        absenceDialogVisible.value = false;
+        selectedAbsence.value = null;
+        refreshCalendar();
+    } catch (error) {
+        // handled in composable
+    } finally {
+        isSavingAbsence.value = false;
+    }
+};
+
+const confirmDeleteAbsence = (absence) => {
+    confirm.require({
+        message: `¿Está seguro que desea eliminar esta ausencia?`,
+        header: 'Confirmar Eliminación',
+        icon: 'pi pi-exclamation-triangle',
+        acceptLabel: 'Sí, eliminar',
+        rejectLabel: 'Cancelar',
+        acceptClass: 'p-button-danger',
+        accept: async () => {
+            try {
+                await deleteAbsence(absence.id);
+                absenceDialogVisible.value = false;
+                selectedAbsence.value = null;
+                refreshCalendar();
+            } catch (error) {
+                // handled in composable
             }
         }
     });
@@ -450,9 +517,27 @@ const calendarOptions = ref({
             // Quick fill mode: Add day to queue
             handleQuickDateSelect(arg);
         } else {
+            const dateStr = arg.startStr.split('T')[0];
+
+            // Warn if selected doctor has a full-day absence on this date
+            if (doctorFilter.value) {
+                const fullDayAbsence = absences.value.find(
+                    (a) => a.date === dateStr && a.id_doctor === doctorFilter.value && a.is_full_day
+                );
+                if (fullDayAbsence) {
+                    toast.add({
+                        severity: 'warn',
+                        summary: 'Médico con Ausencia',
+                        detail: `${fullDayAbsence.doctor?.name || 'El médico'} tiene ausencia de día completo: "${fullDayAbsence.reason}"`,
+                        life: 6000
+                    });
+                    return;
+                }
+            }
+
             // Normal mode: Open dialog
             selectedSchedule.value = {
-                date: arg.startStr,
+                date: dateStr,
                 start_time: '08:00:00',
                 end_time: '09:00:00',
                 doctor_id: doctorFilter.value
@@ -619,6 +704,32 @@ const calendarOptions = ref({
             `;
         }
 
+        // Absence indicators for this date
+        let absenceHtml = '';
+        const dateAbsences = absences.value.filter((a) => a.date === dateStr);
+        if (dateAbsences.length > 0) {
+            const absenceItems = dateAbsences
+                .map((absence) => {
+                    const doctorName = absence.doctor?.name || 'Médico';
+                    const truncated = truncateDoctorName(doctorName, 10);
+                    const isFullDay = absence.is_full_day;
+                    const timeStr =
+                        !isFullDay && absence.start_time && absence.end_time
+                            ? ` ${absence.start_time.substring(0, 5)}-${absence.end_time.substring(0, 5)}`
+                            : '';
+                    return `
+                        <div class="absence-indicator ${isFullDay ? 'full-day' : 'partial'}"
+                             data-absence-id="${absence.id}"
+                             title="${doctorName}: ${absence.reason}">
+                            <span class="pi pi-ban absence-icon"></span>
+                            <span class="absence-name">${truncated}${timeStr}</span>
+                        </div>
+                    `;
+                })
+                .join('');
+            absenceHtml = `<div class="absences-container">${absenceItems}</div>`;
+        }
+
         // Always return HTML structure with day number and non-working day stripe if applicable
         return {
             html: `
@@ -627,8 +738,23 @@ const calendarOptions = ref({
                     <span class="fc-daygrid-day-number">${arg.dayNumberText}</span>
                 </div>
                 ${indicatorsHtml}
+                ${absenceHtml}
             `
         };
+    },
+    dayCellDidMount: (info) => {
+        // Attach click handlers to absence indicators rendered in dayCellContent
+        const absenceEls = info.el.querySelectorAll('.absence-indicator[data-absence-id]');
+        absenceEls.forEach((el) => {
+            el.addEventListener('click', (e) => {
+                e.stopPropagation();
+                const absenceId = parseInt(el.dataset.absenceId, 10);
+                const absence = absences.value.find((a) => a.id === absenceId);
+                if (absence) {
+                    editAbsence(absence);
+                }
+            });
+        });
     },
     events: computed(() => {
         // Create a consistent color mapping for all doctors currently visible
@@ -1081,6 +1207,11 @@ const handleCloseBatchProgress = () => {
     refreshCalendar();
 };
 
+// Refresh calendar when absences change so dayCellContent reflects new data
+watch(absences, () => {
+    refreshCalendar();
+});
+
 // Watch for quick fill mode changes
 watch(quickFillMode, (newValue) => {
     if (!newValue) {
@@ -1119,7 +1250,10 @@ onMounted(() => {
                         Gestión de horarios y turnos del personal médico
                     </p>
                 </div>
-                <Button label="Nuevo Horario" icon="pi pi-plus" class="add-button" @click="openNewSchedule" />
+                <div class="header-actions">
+                    <Button label="Registrar Ausencia" icon="pi pi-ban" severity="danger" outlined class="absence-button" @click="openNewAbsence()" />
+                    <Button label="Nuevo Horario" icon="pi pi-plus" class="add-button" @click="openNewSchedule" />
+                </div>
             </div>
 
             <!-- Filtros -->
@@ -1187,6 +1321,17 @@ onMounted(() => {
         <ScheduleDialog v-model:visible="scheduleDialogVisible" :schedule="selectedSchedule" :doctors="doctors" :medical-shifts="medicalShifts" :saving="isSaving" @save-schedule="handleSaveSchedule" @delete-schedule="confirmDeleteSchedule" />
 
         <BatchProgressDialog v-model:visible="batchProgressVisible" :results="batchResults" :loading="isSendingBatch" @close="handleCloseBatchProgress" />
+
+        <AbsenceDialog
+            v-model:visible="absenceDialogVisible"
+            :absence="selectedAbsence"
+            :doctors="filteredDoctors"
+            :preselectedDoctorId="absencePreselectedDoctorId"
+            :preselectedDate="absencePreselectedDate"
+            :saving="isSavingAbsence"
+            @save-absence="handleSaveAbsence"
+            @delete-absence="confirmDeleteAbsence"
+        />
     </div>
 </template>
 
@@ -2462,5 +2607,86 @@ onMounted(() => {
 :global(.dark) :deep(.fc-event.doctor-color-5 .doctor-name) {
     color: #d8b4fe;
     background: rgba(192, 132, 252, 0.2);
+}
+
+/* ============================================================================
+   ABSENCE INDICATORS — Calendar Cell
+   ============================================================================ */
+:deep(.absences-container) {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    padding: 2px 4px;
+}
+
+:deep(.absence-indicator) {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    border-radius: 4px;
+    padding: 2px 6px;
+    font-size: 0.65rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.15s ease;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    border: 1px solid transparent;
+}
+
+:deep(.absence-indicator:hover) {
+    transform: translateY(-1px);
+    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.15);
+}
+
+:deep(.absence-indicator.full-day) {
+    background: linear-gradient(135deg, #fee2e2 0%, #fecaca 100%);
+    border-color: #ef4444;
+    color: #b91c1c;
+}
+
+:deep(.absence-indicator.partial) {
+    background: linear-gradient(135deg, #fef3c7 0%, #fde68a 100%);
+    border-color: #f59e0b;
+    color: #92400e;
+}
+
+:deep(.absence-icon) {
+    font-size: 0.6rem;
+    flex-shrink: 0;
+}
+
+:deep(.absence-name) {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    flex: 1;
+}
+
+/* Dark mode */
+:global(.dark) :deep(.absence-indicator.full-day) {
+    background: linear-gradient(135deg, rgba(239, 68, 68, 0.25) 0%, rgba(220, 38, 38, 0.35) 100%);
+    border-color: #f87171;
+    color: #fca5a5;
+}
+
+:global(.dark) :deep(.absence-indicator.partial) {
+    background: linear-gradient(135deg, rgba(245, 158, 11, 0.25) 0%, rgba(217, 119, 6, 0.35) 100%);
+    border-color: #fbbf24;
+    color: #fde68a;
+}
+
+/* Header actions layout */
+.header-actions {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    flex-shrink: 0;
+}
+
+.absence-button {
+    font-weight: 600;
+    padding: 0.75rem 1.25rem !important;
+    border-radius: 10px !important;
 }
 </style>
