@@ -1,0 +1,256 @@
+@import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap');
+
+/* ─── Base ─────────────────────────────────────────────── */
+body { font-family: 'Plus Jakarta Sans', sans-serif; background: #f0f6ff; }
+
+/* ─── Cards ─────────────────────────────────────────────── */
+.soft-card { @apply bg-white rounded-[2.5rem] border border-slate-100/50 shadow-xl shadow-slate-200/40 transition-all duration-300; }
+.soft-card:hover { @apply shadow-2xl shadow-sky-100/50 -translate-y-1; }
+
+/* ─── KPI icon ───────────────────────────────────────────── */
+.kpi-icon { @apply p-3.5 rounded-2xl flex items-center justify-center transition-colors duration-300; }
+
+/* ─── Segmented control (toolbar gráfico) ───────────────── */
+
+/* Contenedor tipo cápsula del toolbar */
+.chart-toolbar {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 10px;
+    background: rgba(248, 250, 252, 0.7);
+    backdrop-filter: blur(8px);
+    padding: 8px 12px;
+    border-radius: 9999px;
+    border: 1px solid #e2e8f0;
+    box-shadow: 0 2px 8px rgba(3, 105, 161, 0.06);
+}
+
+/* Grupo segmentado (MONTO / CANTIDAD) */
+.seg-group {
+    display: flex;
+    align-items: center;
+    background: #f1f5f9;
+    border-radius: 9999px;
+    padding: 3px;
+    gap: 2px;
+    border: 1px solid #e2e8f0;
+}
+
+.seg-btn {
+    position: relative;
+    padding: 6px 16px;
+    border-radius: 9999px;
+    font-size: 10px;
+    font-weight: 800;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    cursor: pointer;
+    border: none;
+    background: transparent;
+    color: #94a3b8;
+    transition: all 0.22s cubic-bezier(0.4, 0, 0.2, 1);
+    white-space: nowrap;
+    outline: none;
+}
+.seg-btn:hover:not(.seg-btn-active) {
+    color: #0369a1;
+    background: rgba(3, 105, 161, 0.06);
+}
+.seg-btn-active {
+    background: #ffffff;
+    color: #0369a1;
+    box-shadow: 0 1px 6px rgba(3, 105, 161, 0.18), 0 0 0 1px rgba(3, 105, 161, 0.12);
+    font-weight: 900;
+}
+
+/* Separador vertical entre grupos */
+.toolbar-divider {
+    width: 1px;
+    height: 22px;
+    background: #e2e8f0;
+    flex-shrink: 0;
+}
+
+/* Botón toggle etiquetas */
+.btn-labels {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    padding: 6px 14px;
+    border-radius: 9999px;
+    font-size: 10px;
+    font-weight: 800;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    cursor: pointer;
+    border: 1px dashed #cbd5e1;
+    background: transparent;
+    color: #94a3b8;
+    transition: all 0.22s cubic-bezier(0.4, 0, 0.2, 1);
+    outline: none;
+}
+.btn-labels:hover {
+    border-color: #0369a1;
+    color: #0369a1;
+    background: rgba(3, 105, 161, 0.05);
+}
+.btn-labels.btn-labels-active {
+    border-style: solid;
+    border-color: #0369a1;
+    background: #eff6ff;
+    color: #0369a1;
+    box-shadow: 0 0 0 3px rgba(3, 105, 161, 0.1);
+}
+
+/* Botón vista MATRIZ / GRÁFICO */
+.btn-view {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 7px 18px;
+    border-radius: 9999px;
+    font-size: 10px;
+    font-weight: 900;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    cursor: pointer;
+    border: none;
+    background: linear-gradient(135deg, #0369a1 0%, #0ea5e9 100%);
+    color: #ffffff;
+    box-shadow: 0 4px 14px rgba(3, 105, 161, 0.35);
+    transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+    outline: none;
+}
+.btn-view:hover {
+    background: linear-gradient(135deg, #075985 0%, #0284c7 100%);
+    box-shadow: 0 6px 20px rgba(3, 105, 161, 0.45);
+    transform: translateY(-1px);
+}
+.btn-view:active {
+    transform: translateY(0);
+    box-shadow: 0 2px 8px rgba(3, 105, 161, 0.3);
+}
+.btn-view .view-icon {
+    font-size: 13px;
+    line-height: 1;
+}
+
+/* ─── Pills (compatibilidad pie chart) ──────────────────── */
+.btn-pill { @apply px-5 py-2 text-[10px] font-extrabold rounded-full transition-all duration-300 uppercase tracking-wider border; }
+.btn-pill-active  { @apply bg-sky-700 text-white border-sky-600 shadow-lg shadow-sky-200; }
+.btn-pill-inactive { @apply bg-slate-50 text-slate-400 border-slate-100 hover:bg-white hover:text-sky-700; }
+
+/* ─── Scrollbar ──────────────────────────────────────────── */
+::-webkit-scrollbar { width: 6px; height: 6px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: #bae6fd; border-radius: 10px; }
+
+/* ─── Glass header ───────────────────────────────────────── */
+.glass-header {
+    background: rgba(255, 255, 255, 0.85);
+    backdrop-filter: blur(14px);
+    border-bottom: 1px solid rgba(186, 230, 253, 0.4);
+}
+
+/* ─── Section divider ────────────────────────────────────── */
+.section-divider {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    margin-bottom: 1.5rem;
+}
+.section-divider span {
+    font-size: 10px;
+    font-weight: 800;
+    letter-spacing: 0.2em;
+    text-transform: uppercase;
+    color: #94a3b8;
+    white-space: nowrap;
+}
+.section-divider::before,
+.section-divider::after {
+    content: '';
+    flex: 1;
+    height: 1px;
+    background: #e2e8f0;
+}
+
+/* ─── Spark bar (tabla de auditoría) ─────────────────────── */
+.spark-bar-track {
+    width: 100%;
+    height: 4px;
+    background: #e2e8f0;
+    border-radius: 99px;
+    margin-top: 4px;
+    overflow: hidden;
+}
+.spark-bar-fill {
+    height: 100%;
+    background: linear-gradient(90deg, #0369a1, #38bdf8);
+    border-radius: 99px;
+    transition: width 0.6s cubic-bezier(0.4,0,0.2,1);
+}
+
+/* ─── Empty state ────────────────────────────────────────── */
+.empty-state {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 4rem 2rem;
+    color: #94a3b8;
+    gap: 1rem;
+}
+.empty-state svg { opacity: 0.3; }
+.empty-state p { font-size: 12px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.15em; }
+
+/* ─── Donut center label ─────────────────────────────────── */
+.donut-wrapper {
+    position: relative;
+}
+.donut-center {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    text-align: center;
+    pointer-events: none;
+}
+.donut-center .donut-total {
+    font-size: 22px;
+    font-weight: 800;
+    color: #0f172a;
+    line-height: 1;
+}
+.donut-center .donut-label {
+    font-size: 9px;
+    font-weight: 700;
+    letter-spacing: 0.15em;
+    text-transform: uppercase;
+    color: #94a3b8;
+    margin-top: 4px;
+}
+
+/* ─── Mobile scroll hint ─────────────────────────────────── */
+.scroll-hint {
+    display: none;
+    font-size: 9px;
+    font-weight: 700;
+    color: #94a3b8;
+    text-transform: uppercase;
+    letter-spacing: 0.15em;
+    padding: 0.5rem 1rem;
+    text-align: right;
+}
+@media (max-width: 640px) {
+    .scroll-hint { display: block; }
+}
+
+
+/* ─── Count-up animation ─────────────────────────────────── */
+@keyframes fadeSlideUp {
+    from { opacity: 0; transform: translateY(8px); }
+    to   { opacity: 1; transform: translateY(0); }
+}
+.kpi-animate { animation: fadeSlideUp 0.5s ease forwards; }

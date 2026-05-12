@@ -211,6 +211,13 @@ const router = createRouter({
             ]
         },
         {
+            path: '/emergencia',
+            name: 'emergenciaRedirect',
+            beforeEnter(to, from, next) {
+                window.location.href = '/dashboardEmergencia/index.html';
+            }
+        },
+        {
             path: '/',
             name: 'auth',
             component: () => import('@/views/auth/Login.vue'),

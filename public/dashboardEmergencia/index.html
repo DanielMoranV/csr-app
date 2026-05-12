@@ -1,0 +1,682 @@
+<!doctype html>
+<html lang="es">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Clínica Santa Rosa - Analytics Profesional</title>
+    <meta
+      name="description"
+      content="Dashboard de analítica clínica para Clínica Santa Rosa. Visualiza ingresos, atenciones y mix de financiadores por periodo."
+    />
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- SheetJS CDN -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+    <!-- Chart.js CDN -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <!-- Plugin para etiquetas de datos -->
+    <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels@2.0.0"></script>
+    <link rel="stylesheet" href="style.css" />
+  </head>
+  <body class="min-h-screen text-slate-800 antialiased">
+    <!-- Header -->
+    <header class="glass-header py-5 sticky top-0 z-50">
+      <div
+        class="container mx-auto px-6 flex flex-col md:flex-row justify-between items-center gap-6"
+      >
+        <div class="flex items-center space-x-5">
+          <!-- Logo oficial de la clínica -->
+          <img
+            src="logocsr.png"
+            alt="Clínica Santa Rosa"
+            class="h-14 w-auto object-contain drop-shadow-md"
+          />
+          <div>
+            <h1 class="text-2xl font-[800] text-slate-900 tracking-tight">
+              Santa Rosa <span class="text-sky-700">Analytics</span>
+            </h1>
+            <div class="flex items-center gap-2 mt-0.5">
+              <span
+                class="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"
+              ></span>
+              <p
+                class="text-[10px] text-slate-400 font-bold uppercase tracking-[0.2em]"
+              >
+                Clinical Intelligence Unit
+              </p>
+            </div>
+          </div>
+        </div>
+
+        <div
+          class="flex items-center gap-4 bg-slate-50/80 p-1.5 rounded-[1.8rem] border border-slate-100"
+        >
+          <div
+            id="fileName"
+            class="text-[10px] font-bold text-slate-500 px-4 py-2 truncate max-w-[150px]"
+          >
+            SIN ARCHIVO
+          </div>
+          <label
+            for="excelInput"
+            class="bg-sky-700 hover:bg-sky-600 text-white text-[10px] font-black py-3 px-8 rounded-[1.4rem] cursor-pointer transition-all duration-300 shadow-xl shadow-sky-200/50 active:scale-95 uppercase tracking-widest"
+          >
+            Importar Data
+          </label>
+          <input
+            type="file"
+            id="excelInput"
+            class="hidden"
+            accept=".xlsx, .xls"
+          />
+        </div>
+      </div>
+    </header>
+
+    <main class="container mx-auto px-6 py-10">
+      <!-- Status Message -->
+      <div
+        id="statusMessage"
+        class="hidden mb-10 p-5 rounded-[2rem] text-center font-bold text-xs tracking-wider shadow-sm border transition-all duration-500"
+      ></div>
+
+      <!-- FILTROS (Flotante) -->
+      <section
+        id="filterPanel"
+        class="hidden soft-card p-6 mb-8 sticky top-[90px] z-40 bg-white/95 backdrop-blur-md shadow-[0_10px_40px_-15px_rgba(0,0,0,0.1)] border-slate-200"
+      >
+        <div class="grid grid-cols-1 lg:grid-cols-4 gap-8">
+          <div>
+            <h4
+              class="text-[9px] font-black text-slate-300 uppercase tracking-[0.2em] mb-4 flex items-center gap-2"
+            >
+              <span class="w-3 h-[1px] bg-slate-200"></span> Periodo Anual
+            </h4>
+            <div id="yearFilters" class="flex flex-wrap gap-2"></div>
+          </div>
+          <div class="lg:col-span-2">
+            <div class="flex justify-between items-center mb-4">
+              <h4
+                class="text-[9px] font-black text-slate-300 uppercase tracking-[0.2em] flex items-center gap-2"
+              >
+                <span class="w-3 h-[1px] bg-slate-200"></span> Desglose Mensual
+              </h4>
+              <button
+                onclick="toggleAllMonths()"
+                class="text-[9px] font-bold text-sky-600 hover:text-sky-800 transition-colors"
+              >
+                Marcar / Desmarcar Todos
+              </button>
+            </div>
+            <!-- M8: tooltips de mes via title -->
+            <div
+              id="monthFilters"
+              class="grid grid-cols-4 sm:grid-cols-6 gap-2"
+            ></div>
+          </div>
+          <div>
+            <h4
+              class="text-[9px] font-black text-slate-300 uppercase tracking-[0.2em] mb-4 flex items-center gap-2"
+            >
+              <span class="w-3 h-[1px] bg-slate-200"></span> Área Clínica
+            </h4>
+            <select
+              id="areaSelect"
+              class="w-full bg-slate-50 border border-slate-100 rounded-xl p-3 text-[11px] font-bold text-slate-600 focus:ring-4 focus:ring-sky-50 outline-none transition-all cursor-pointer"
+            >
+              <option value="all">TODAS LAS UNIDADES</option>
+            </select>
+          </div>
+        </div>
+      </section>
+
+      <!-- M10: separador KPIs -->
+      <div id="kpiDivider" class="hidden section-divider mt-8">
+        <span>Indicadores Clave</span>
+      </div>
+
+      <!-- Bug 2 Fix: usar div + clase kpi-grid controlada por JS en lugar de section con hidden+grid -->
+      <div id="kpiSection" class="hidden mb-12">
+        <!-- KPI 1 — Ingresos Brutos -->
+        <div class="soft-card p-5 flex items-center gap-4">
+          <div class="kpi-icon bg-sky-50 text-sky-700 shrink-0">
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              class="h-6 w-6"
+              fill="none"
+              viewBox="0 0 24 24"
+              stroke="currentColor"
+            >
+              <path
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                stroke-width="2"
+                d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
+              />
+            </svg>
+          </div>
+          <div>
+            <p
+              class="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-0.5"
+            >
+              Ingresos Brutos
+            </p>
+            <h3
+              id="kpiTotal"
+              class="text-2xl font-[800] text-slate-900 tracking-tight"
+            >
+              S/ 0.00
+            </h3>
+          </div>
+        </div>
+        <!-- KPI 2 — Atenciones -->
+        <div class="soft-card p-5 flex items-center gap-4">
+          <div class="kpi-icon bg-teal-50 text-teal-600 shrink-0">
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              class="h-6 w-6"
+              fill="none"
+              viewBox="0 0 24 24"
+              stroke="currentColor"
+            >
+              <path
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                stroke-width="2"
+                d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z"
+              />
+            </svg>
+          </div>
+          <div>
+            <p
+              class="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-0.5"
+            >
+              Atenciones Totales
+            </p>
+            <h3
+              id="kpiCount"
+              class="text-2xl font-[800] text-slate-900 tracking-tight"
+            >
+              0
+            </h3>
+          </div>
+        </div>
+        <!-- KPI 3 — Ticket Promedio -->
+        <div class="soft-card p-5 flex items-center gap-4">
+          <div class="kpi-icon bg-indigo-50 text-indigo-500 shrink-0">
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              class="h-6 w-6"
+              fill="none"
+              viewBox="0 0 24 24"
+              stroke="currentColor"
+            >
+              <path
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                stroke-width="2"
+                d="M9 7h6m0 10v-3m-3 3h.01M9 17h.01M9 14h.01M12 14h.01M15 11h.01M12 11h.01M9 11h.01M7 21h10a2 2 0 002-2V5a2 2 0 00-2-2H7a2 2 0 00-2 2v14a2 2 0 002 2z"
+              />
+            </svg>
+          </div>
+          <div>
+            <p
+              class="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-0.5"
+            >
+              Ticket Promedio
+            </p>
+            <h3
+              id="kpiAvg"
+              class="text-2xl font-[800] text-slate-900 tracking-tight"
+            >
+              S/ 0.00
+            </h3>
+          </div>
+        </div>
+        <!-- KPI 4 — Unidades Activas -->
+        <div class="soft-card p-5 flex items-center gap-4">
+          <div class="kpi-icon bg-rose-50 text-rose-400 shrink-0">
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              class="h-6 w-6"
+              fill="none"
+              viewBox="0 0 24 24"
+              stroke="currentColor"
+            >
+              <path
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                stroke-width="2"
+                d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"
+              />
+            </svg>
+          </div>
+          <div>
+            <p
+              class="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-0.5"
+            >
+              Unidades Activas
+            </p>
+            <h3
+              id="kpiAreas"
+              class="text-2xl font-[800] text-slate-900 tracking-tight"
+            >
+              0
+            </h3>
+          </div>
+        </div>
+      </div>
+
+      <!-- M10: separador Análisis Financiero -->
+      <div id="chartDivider" class="hidden section-divider mt-2">
+        <span>Análisis Financiero</span>
+      </div>
+
+      <!-- GRÁFICOS -->
+      <div class="grid grid-cols-1 lg:grid-cols-3 gap-10 mb-12">
+        <!-- Tendencia -->
+        <div
+          id="chartMainContainer"
+          class="hidden lg:col-span-2 soft-card p-10"
+        >
+          <div
+            class="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-10 gap-6"
+          >
+            <div>
+              <h2 class="text-xl font-[800] text-slate-900 tracking-tight">
+                Evolución Mensual
+              </h2>
+              <p class="text-xs text-slate-400 font-semibold mt-1 italic">
+                Tendencia mensual por año seleccionado
+              </p>
+            </div>
+            <!-- Toolbar premium: segmented control + botón etiquetas + botón vista -->
+            <div class="chart-toolbar">
+              <!-- Segmented: MONTO / CANTIDAD -->
+              <div class="seg-group">
+                <button
+                  onclick="setMetric('monto')"
+                  id="btnMonto"
+                  class="seg-btn seg-btn-active"
+                >
+                  <svg
+                    xmlns="http://www.w3.org/2000/svg"
+                    class="inline h-3 w-3 mr-1 -mt-0.5"
+                    fill="none"
+                    viewBox="0 0 24 24"
+                    stroke="currentColor"
+                  >
+                    <path
+                      stroke-linecap="round"
+                      stroke-linejoin="round"
+                      stroke-width="2.5"
+                      d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8V7m0 1v8m0 0v1"
+                    />
+                  </svg>
+                  Monto
+                </button>
+                <button
+                  onclick="setMetric('cantidad')"
+                  id="btnCant"
+                  class="seg-btn"
+                >
+                  <svg
+                    xmlns="http://www.w3.org/2000/svg"
+                    class="inline h-3 w-3 mr-1 -mt-0.5"
+                    fill="none"
+                    viewBox="0 0 24 24"
+                    stroke="currentColor"
+                  >
+                    <path
+                      stroke-linecap="round"
+                      stroke-linejoin="round"
+                      stroke-width="2.5"
+                      d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z"
+                    />
+                  </svg>
+                  Cantidad
+                </button>
+              </div>
+
+              <div class="toolbar-divider"></div>
+
+              <!-- Toggle etiquetas de datos -->
+              <button
+                onclick="toggleDataLabels()"
+                id="btnLabels"
+                class="btn-labels"
+              >
+                <svg
+                  xmlns="http://www.w3.org/2000/svg"
+                  class="h-3 w-3"
+                  fill="none"
+                  viewBox="0 0 24 24"
+                  stroke="currentColor"
+                >
+                  <path
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                    stroke-width="2.5"
+                    d="M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A1.994 1.994 0 013 12V7a4 4 0 014-4z"
+                  />
+                </svg>
+                Etiquetas
+              </button>
+
+              <div class="toolbar-divider"></div>
+
+              <!-- Botón vista Matriz / Gráfico -->
+              <button
+                onclick="toggleView()"
+                id="btnToggleView"
+                class="btn-view"
+              >
+                <span id="viewIcon" class="view-icon">📋</span>
+                <span id="viewText">Matriz</span>
+              </button>
+            </div>
+          </div>
+
+          <div id="mainChartWrapper" class="h-[400px]">
+            <canvas id="mainChart"></canvas>
+          </div>
+
+          <div
+            id="matrixTableWrapper"
+            class="hidden overflow-x-auto rounded-[1.8rem] border border-slate-100 mt-6 shadow-inner"
+          >
+            <table class="w-full text-xs text-left">
+              <thead
+                id="matrixHead"
+                class="bg-slate-50 text-slate-400 font-[800] uppercase border-b border-slate-100"
+              ></thead>
+              <tbody
+                id="matrixBody"
+                class="divide-y divide-slate-50 font-bold text-slate-600"
+              ></tbody>
+            </table>
+          </div>
+        </div>
+
+        <!-- Mix de Financiadores -->
+        <!-- M10: separador -->
+        <div id="chartPieContainer" class="hidden soft-card p-10">
+          <div class="flex justify-between items-start mb-8">
+            <div>
+              <h2 class="text-xl font-[800] text-slate-900 tracking-tight">
+                Financiadores
+              </h2>
+              <p class="text-xs text-slate-400 font-semibold mt-1">
+                Distribución por tipo de atención
+              </p>
+            </div>
+            <!-- Mismo segmented control que Evolución Clínica (Bug 7 fix: # activo por defecto) -->
+            <div class="seg-group">
+              <button
+                onclick="setPieMetric('monto')"
+                id="btnPieMonto"
+                class="seg-btn"
+              >
+                <svg
+                  xmlns="http://www.w3.org/2000/svg"
+                  class="inline h-3 w-3 mr-1 -mt-0.5"
+                  fill="none"
+                  viewBox="0 0 24 24"
+                  stroke="currentColor"
+                >
+                  <path
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                    stroke-width="2.5"
+                    d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8V7m0 1v8m0 0v1"
+                  />
+                </svg>
+                Monto
+              </button>
+              <button
+                onclick="setPieMetric('cantidad')"
+                id="btnPieCant"
+                class="seg-btn seg-btn-active"
+              >
+                <svg
+                  xmlns="http://www.w3.org/2000/svg"
+                  class="inline h-3 w-3 mr-1 -mt-0.5"
+                  fill="none"
+                  viewBox="0 0 24 24"
+                  stroke="currentColor"
+                >
+                  <path
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                    stroke-width="2.5"
+                    d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z"
+                  />
+                </svg>
+                Cantidad
+              </button>
+            </div>
+          </div>
+          <!-- M4: wrapper con centro de texto -->
+          <div
+            class="h-[300px] flex items-center justify-center relative donut-wrapper"
+          >
+            <canvas id="pieChart"></canvas>
+            <!-- Centro del donut -->
+            <div class="donut-center">
+              <div id="donutTotal" class="donut-total">0</div>
+              <div id="donutLabel" class="donut-label">Total</div>
+            </div>
+          </div>
+          <div id="pieLegend" class="mt-8 space-y-4"></div>
+        </div>
+      </div>
+
+      <!-- M10: separador tabla -->
+      <div id="tableDivider" class="hidden section-divider">
+        <span>Detalle por Unidad Clínica</span>
+      </div>
+
+      <!-- TABLA DESGLOSE -->
+      <section id="tableSection" class="hidden">
+        <div class="soft-card overflow-hidden">
+          <div
+            class="p-10 border-b border-slate-50 flex justify-between items-center bg-white"
+          >
+            <div>
+              <h3 class="text-xl font-[800] text-slate-900 tracking-tight">
+                Auditoría por Unidad
+              </h3>
+              <p class="text-xs text-slate-400 font-semibold mt-1">
+                Detalle pormenorizado por área de atención
+              </p>
+            </div>
+            <span
+              class="text-[9px] bg-emerald-50 text-emerald-600 px-4 py-1.5 rounded-full font-black uppercase tracking-[0.2em] ring-1 ring-emerald-100"
+              >LIVE DATA</span
+            >
+          </div>
+          <!-- M11: indicador scroll móvil -->
+          <div class="scroll-hint">← desliza para ver más →</div>
+          <div class="overflow-x-auto">
+            <table class="w-full text-left text-[11px] font-bold">
+              <thead>
+                <tr
+                  class="bg-slate-50/50 text-slate-400 uppercase tracking-widest border-b border-slate-100"
+                >
+                  <th class="px-10 py-6">Unidad Clínica</th>
+                  <!-- M7: columna Facturación con barra -->
+                  <th class="px-10 py-6 text-right">Facturación</th>
+                  <th class="px-10 py-6 text-center">ATENCIONES</th>
+                  <th class="px-10 py-6 text-right">Particular (S/)</th>
+                  <th class="px-10 py-6 text-right">Seguros (S/)</th>
+                  <th class="px-10 py-6 text-center italic">Ticket Prom.</th>
+                </tr>
+              </thead>
+              <tbody
+                id="areaTableBody"
+                class="divide-y divide-slate-50 text-slate-600"
+              ></tbody>
+            </table>
+            <!-- M9: empty state -->
+            <div id="tableEmptyState" class="hidden empty-state">
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                class="h-12 w-12"
+                fill="none"
+                viewBox="0 0 24 24"
+                stroke="currentColor"
+              >
+                <path
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                  stroke-width="1.5"
+                  d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"
+                />
+              </svg>
+              <p>Sin registros para los filtros seleccionados</p>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- RANKINGS MÉDICOS -->
+      <div id="rankingDivider" class="hidden section-divider mt-12">
+        <span>Análisis de Productividad Médica</span>
+      </div>
+      <section id="rankingSection" class="hidden">
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
+          <!-- RANKING 1: Guardia -->
+          <div class="soft-card overflow-hidden p-8 flex flex-col h-full">
+            <div
+              class="mb-6 flex justify-between items-start gap-4 border-b border-slate-50 pb-6 shrink-0"
+            >
+              <div>
+                <h3
+                  class="text-lg font-[800] text-slate-900 tracking-tight flex items-center gap-2"
+                >
+                  <span class="text-xl">🏥</span> Consultas Médico de Guardia
+                </h3>
+                <p
+                  class="text-[10px] text-slate-400 font-semibold mt-1 uppercase tracking-wider"
+                >
+                  TOP 10 • Códigos 50.00.01 / 50.02.03 / 50.00.00
+                </p>
+              </div>
+              <div class="seg-group shrink-0">
+                <button
+                  onclick="setRankingMetric('monto')"
+                  id="btnRankMonto"
+                  class="seg-btn seg-btn-active !text-[10px] !px-3 !py-1.5"
+                >
+                  Monto
+                </button>
+                <button
+                  onclick="setRankingMetric('cantidad')"
+                  id="btnRankCant"
+                  class="seg-btn !text-[10px] !px-3 !py-1.5"
+                >
+                  Cant.
+                </button>
+              </div>
+            </div>
+            <div class="flex flex-col gap-4 grow" id="rankingGrid"></div>
+          </div>
+
+          <!-- RANKING 2: Especialistas -->
+          <div class="soft-card overflow-hidden p-8 flex flex-col h-full">
+            <div
+              class="mb-6 flex justify-between items-start gap-4 border-b border-slate-50 pb-6 shrink-0"
+            >
+              <div>
+                <h3
+                  class="text-lg font-[800] text-slate-900 tracking-tight flex items-center gap-2"
+                >
+                  <span class="text-xl">🩺</span> Consultas Médicos
+                  Especialistas
+                </h3>
+                <p
+                  class="text-[10px] text-slate-400 font-semibold mt-1 uppercase tracking-wider"
+                >
+                  TOP 10 • Códigos 50.* y 00.* exclusivos • Excluye Guardia
+                </p>
+              </div>
+              <div class="seg-group shrink-0">
+                <button
+                  onclick="setRankingMetricEspec('monto')"
+                  id="btnRankMontoEspec"
+                  class="seg-btn seg-btn-active !text-[10px] !px-3 !py-1.5"
+                >
+                  Monto
+                </button>
+                <button
+                  onclick="setRankingMetricEspec('cantidad')"
+                  id="btnRankCantEspec"
+                  class="seg-btn !text-[10px] !px-3 !py-1.5"
+                >
+                  Cant.
+                </button>
+              </div>
+            </div>
+            <div class="flex flex-col gap-4 grow" id="rankingGridEspec"></div>
+          </div>
+        </div>
+      </section>
+
+      <!-- RANKINGS ASEGURADORAS -->
+      <div id="ciaDivider" class="hidden section-divider mt-12">
+        <span>Análisis de Aseguradoras y Convenios</span>
+      </div>
+      <section id="ciaSection" class="hidden">
+        <div class="soft-card overflow-hidden p-8 flex flex-col h-full mt-8">
+          <div
+            class="mb-6 flex justify-between items-start gap-4 border-b border-slate-50 pb-6 shrink-0"
+          >
+            <div>
+              <h3
+                class="text-lg font-[800] text-slate-900 tracking-tight flex items-center gap-2"
+              >
+                <span class="text-xl">🏢</span> Top Seguros y Convenios
+              </h3>
+              <p
+                class="text-[10px] text-slate-400 font-semibold mt-1 uppercase tracking-wider"
+              >
+                TOP 10 • Excluye Atenciones Particulares
+              </p>
+            </div>
+            <div class="seg-group shrink-0">
+              <button
+                onclick="setRankingMetricCia('monto')"
+                id="btnRankMontoCia"
+                class="seg-btn seg-btn-active !text-[10px] !px-3 !py-1.5"
+              >
+                Monto
+              </button>
+              <button
+                onclick="setRankingMetricCia('cantidad')"
+                id="btnRankCantCia"
+                class="seg-btn !text-[10px] !px-3 !py-1.5"
+              >
+                Cant.
+              </button>
+            </div>
+          </div>
+          <!-- Grid interno de columnas para que el Top 10 se muestre en 2 columnas en pantallas grandes -->
+          <div
+            class="grid grid-cols-1 lg:grid-cols-2 gap-4"
+            id="rankingGridCia"
+          ></div>
+        </div>
+      </section>
+
+      <!-- M6: Footer metadatos -->
+      <footer
+        id="dataFooter"
+        class="hidden mt-10 mb-4 text-center text-[10px] text-slate-400 font-bold uppercase tracking-widest space-y-1"
+      >
+        <div id="footerMeta"></div>
+      </footer>
+    </main>
+    <script src="medicosGuardiaEmergencia.js"></script>
+    <script src="fuctions.js"></script>
+  </body>
+</html>
