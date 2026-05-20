@@ -207,15 +207,26 @@ const router = createRouter({
                     name: MODULE_PERMISSIONS.treasuryMovementCategories.name,
                     component: () => import('@/views/treasury/MovementCategories.vue'),
                     meta: { requiresAuth: true, positions: MODULE_PERMISSIONS.treasuryMovementCategories.positions }
+                },
+                {
+                    path: MODULE_PERMISSIONS.dashboardEmergencia.path,
+                    name: MODULE_PERMISSIONS.dashboardEmergencia.name,
+                    component: () => import('@/views/DashboardEmergencia.vue'),
+                    meta: { requiresAuth: true, positions: MODULE_PERMISSIONS.dashboardEmergencia.positions }
+                },
+                {
+                    path: MODULE_PERMISSIONS.dashboardRayosX.path,
+                    name: MODULE_PERMISSIONS.dashboardRayosX.name,
+                    component: () => import('@/views/DashboardRayosX.vue'),
+                    meta: { requiresAuth: true, positions: MODULE_PERMISSIONS.dashboardRayosX.positions }
+                },
+                {
+                    path: MODULE_PERMISSIONS.dashboardErrores.path,
+                    name: MODULE_PERMISSIONS.dashboardErrores.name,
+                    component: () => import('@/views/DashboardErrores.vue'),
+                    meta: { requiresAuth: true, positions: MODULE_PERMISSIONS.dashboardErrores.positions }
                 }
             ]
-        },
-        {
-            path: '/emergencia',
-            name: 'emergenciaRedirect',
-            beforeEnter(to, from, next) {
-                window.location.href = '/dashboardEmergencia/index.html';
-            }
         },
         {
             path: '/',

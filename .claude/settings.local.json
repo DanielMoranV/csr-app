@@ -1,7 +1,9 @@
 {
   "permissions": {
     "allow": [
-      "Bash(grep -E \"\"\"chart\\\\.js\"\"|\"\"primevue\"\"\" package.json)"
+      "Bash(grep -E \"\"\"chart\\\\.js\"\"|\"\"primevue\"\"\" package.json)",
+      "Bash(Get-ChildItem -Path \"C:\\\\DesarrolloWeb\\\\csr-app\" -Force)",
+      "Bash(Select-Object -First 20)"
     ]
   }
 }

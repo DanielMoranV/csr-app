@@ -94,6 +94,9 @@ export const PERMISSION_GROUPS = {
         POSITIONS.COORDINADOR_HOSPITALIZACION
     ],
 
+    // Dashboards analíticos (restringido a gerencia y sistemas)
+    DASHBOARDS: [POSITIONS.SISTEMAS, POSITIONS.GERENCIA],
+
     // Todos los usuarios autenticados
     ALL: ['*']
 };
@@ -116,6 +119,36 @@ export const MODULE_PERMISSIONS = {
         positions: PERMISSION_GROUPS.HIGH_MANAGEMENT,
         label: 'Dashboard',
         icon: 'pi pi-fw pi-home',
+        menuSection: 'Principal'
+    },
+
+    // Dashboard Emergencia / Tópico
+    dashboardEmergencia: {
+        name: 'dashboard-emergencia',
+        path: '/emergencia',
+        positions: PERMISSION_GROUPS.DASHBOARDS,
+        label: 'Dashboard Emergencia',
+        icon: 'pi pi-fw pi-bolt',
+        menuSection: 'Principal'
+    },
+
+    // Dashboard Rayos X
+    dashboardRayosX: {
+        name: 'dashboard-rayosx',
+        path: '/rayos-x',
+        positions: PERMISSION_GROUPS.DASHBOARDS,
+        label: 'Dashboard Rayos X',
+        icon: 'pi pi-fw pi-image',
+        menuSection: 'Principal'
+    },
+
+    // Dashboard Errores de Admisión
+    dashboardErrores: {
+        name: 'dashboard-errores',
+        path: '/errores-admision',
+        positions: PERMISSION_GROUPS.DASHBOARDS,
+        label: 'Errores de Admisión',
+        icon: 'pi pi-fw pi-exclamation-circle',
         menuSection: 'Principal'
     },
 

@@ -788,6 +788,90 @@ watch(showAdvancedStats, (newValue) => {
     box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
 }
 
+/* Dashboard especializados */
+.specialized-dashboards {
+    display: flex;
+    gap: 1rem;
+    flex-wrap: wrap;
+}
+
+.specialized-card {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    padding: 1rem 1.25rem;
+    background: var(--surface-card);
+    border-radius: 12px;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+    border: 1px solid var(--surface-border);
+    text-decoration: none;
+    color: inherit;
+    flex: 1;
+    min-width: 280px;
+    max-width: 480px;
+    transition:
+        box-shadow 0.2s,
+        border-color 0.2s,
+        transform 0.15s;
+}
+
+.specialized-card:hover {
+    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.12);
+    border-color: var(--primary-300);
+    transform: translateY(-2px);
+}
+
+.specialized-icon {
+    width: 44px;
+    height: 44px;
+    border-radius: 10px;
+    background: linear-gradient(135deg, var(--primary-500) 0%, var(--primary-600) 100%);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+}
+
+.specialized-icon--cyan {
+    background: linear-gradient(135deg, #0891b2 0%, #0e7490 100%);
+}
+
+.specialized-icon .pi {
+    color: white;
+    font-size: 1.25rem;
+}
+
+.specialized-info {
+    flex: 1;
+    min-width: 0;
+}
+
+.specialized-title {
+    font-size: 0.9375rem;
+    font-weight: 700;
+    color: var(--text-color);
+    margin: 0 0 0.25rem 0;
+}
+
+.specialized-desc {
+    font-size: 0.8125rem;
+    color: var(--text-color-secondary);
+    margin: 0;
+    line-height: 1.4;
+}
+
+.specialized-arrow {
+    color: var(--text-color-secondary);
+    font-size: 1rem;
+    flex-shrink: 0;
+    transition: transform 0.2s;
+}
+
+.specialized-card:hover .specialized-arrow {
+    transform: translateX(3px);
+    color: var(--primary-500);
+}
+
 /* Vista General - KPIs Básicos */
 .basic-kpi-grid {
     display: grid;
