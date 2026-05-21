@@ -27,6 +27,7 @@ const {
     isAudioEnabled,
     isSpeaking,
     latestCall,
+    latestReturn,
     surgeryCalls,
     toggleAudio
 } = useSurgeryCallAlerts({
@@ -34,29 +35,37 @@ const {
     enableNotifications: true
 });
 
-// Auto-ocultar alerta después de 15 segundos
+// Auto-ocultar alerta de llamado a quirófano (15 s)
 let alertTimeout = null;
 const dismissAlert = () => {
-    if (alertTimeout) {
-        clearTimeout(alertTimeout);
-        alertTimeout = null;
-    }
+    if (alertTimeout) { clearTimeout(alertTimeout); alertTimeout = null; }
     latestCall.value = null;
 };
 
-// Observar cambios en latestCall para auto-ocultar
 watch(
     () => latestCall.value,
     (newCall) => {
         if (newCall) {
-            // Limpiar timeout anterior si existe
-            if (alertTimeout) {
-                clearTimeout(alertTimeout);
-            }
-            // Auto-ocultar después de 15 segundos
-            alertTimeout = setTimeout(() => {
-                dismissAlert();
-            }, 15000);
+            if (alertTimeout) clearTimeout(alertTimeout);
+            alertTimeout = setTimeout(() => dismissAlert(), 15000);
+        }
+    },
+    { deep: true }
+);
+
+// Auto-ocultar alerta de retorno desde quirófano (20 s)
+let returnAlertTimeout = null;
+const dismissReturnAlert = () => {
+    if (returnAlertTimeout) { clearTimeout(returnAlertTimeout); returnAlertTimeout = null; }
+    latestReturn.value = null;
+};
+
+watch(
+    () => latestReturn.value,
+    (newReturn) => {
+        if (newReturn) {
+            if (returnAlertTimeout) clearTimeout(returnAlertTimeout);
+            returnAlertTimeout = setTimeout(() => dismissReturnAlert(), 20000);
         }
     },
     { deep: true }
@@ -419,10 +428,8 @@ onUnmounted(() => {
         clearInterval(refreshInterval.value);
     }
 
-    // Clear alert timeout
-    if (alertTimeout) {
-        clearTimeout(alertTimeout);
-    }
+    if (alertTimeout) clearTimeout(alertTimeout);
+    if (returnAlertTimeout) clearTimeout(returnAlertTimeout);
 
     // Asegurarse de restaurar el layout si se desmonta el componente
     if (isFullscreen.value) {
@@ -490,9 +497,9 @@ onUnmounted(() => {
             </div>
         </div>
 
-        <!-- Alerta de Llamado a Quirófano -->
+        <!-- Alerta: Llamado a Quirófano (direction: in) -->
         <transition name="surgery-alert">
-            <div v-if="latestCall" class="surgery-call-alert">
+            <div v-if="latestCall" class="surgery-call-alert surgery-call-alert--in">
                 <div class="alert-content">
                     <div class="alert-icon">
                         <i class="pi pi-exclamation-triangle"></i>
@@ -518,6 +525,38 @@ onUnmounted(() => {
                         </div>
                     </div>
                     <Button icon="pi pi-times" @click="dismissAlert" severity="secondary" text rounded class="alert-close" />
+                </div>
+            </div>
+        </transition>
+
+        <!-- Alerta: Paciente sale de Quirófano (direction: out) -->
+        <transition name="surgery-alert">
+            <div v-if="latestReturn" class="surgery-call-alert surgery-call-alert--out">
+                <div class="alert-content">
+                    <div class="alert-icon">
+                        <i class="pi pi-arrow-circle-down"></i>
+                    </div>
+                    <div class="alert-info">
+                        <h2 class="alert-title">✅ PACIENTE SALE DE QUIRÓFANO</h2>
+                        <div class="alert-details">
+                            <p class="patient-name">{{ latestReturn.patient?.name || 'N/A' }}</p>
+                            <div class="alert-meta">
+                                <span class="meta-item">
+                                    <i class="pi pi-hashtag"></i>
+                                    Admisión: {{ latestReturn.admission_number || 'N/A' }}
+                                </span>
+                                <span class="meta-item">
+                                    <i class="pi pi-home"></i>
+                                    Cama: {{ latestReturn.hospital_attention?.bed?.name || 'N/A' }}
+                                </span>
+                                <span class="meta-item">
+                                    <i class="pi pi-clock"></i>
+                                    {{ formatTime(latestReturn.receivedAt) }}
+                                </span>
+                            </div>
+                        </div>
+                    </div>
+                    <Button icon="pi pi-times" @click="dismissReturnAlert" severity="secondary" text rounded class="alert-close" />
                 </div>
             </div>
         </transition>
@@ -891,7 +930,7 @@ onUnmounted(() => {
     }
 }
 
-/* Alerta de Llamado a Quirófano */
+/* Alerta de Quirófano — base compartida */
 .surgery-call-alert {
     position: fixed;
     top: 80px;
@@ -900,14 +939,7 @@ onUnmounted(() => {
     z-index: 10000;
     width: 90%;
     max-width: 700px;
-    background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%);
     border-radius: 12px;
-    box-shadow:
-        0 20px 60px rgba(239, 68, 68, 0.5),
-        0 0 0 4px rgba(255, 255, 255, 0.2);
-    animation:
-        surgery-alert-shake 0.5s ease-in-out,
-        surgery-alert-glow 1.5s ease-in-out infinite;
     border: 3px solid #ffffff;
 }
 
@@ -1054,20 +1086,6 @@ onUnmounted(() => {
     }
 }
 
-@keyframes surgery-alert-glow {
-    0%,
-    100% {
-        box-shadow:
-            0 20px 60px rgba(239, 68, 68, 0.5),
-            0 0 0 4px rgba(255, 255, 255, 0.2);
-    }
-    50% {
-        box-shadow:
-            0 20px 60px rgba(239, 68, 68, 0.8),
-            0 0 0 6px rgba(255, 255, 255, 0.4),
-            0 0 40px rgba(239, 68, 68, 0.6);
-    }
-}
 
 /* States */
 .display-loading,
@@ -2110,5 +2128,56 @@ onUnmounted(() => {
 .app-dark .bed-card-horizontal--discharge {
     border-left-color: #60a5fa !important;
     outline-color: rgba(96, 165, 250, 0.3);
+}
+
+/* ─── Variantes de color de alerta ──────────────────────────────────────────── */
+.surgery-call-alert--in {
+    background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%);
+    box-shadow:
+        0 20px 60px rgba(239, 68, 68, 0.5),
+        0 0 0 4px rgba(255, 255, 255, 0.2);
+    animation:
+        surgery-alert-shake 0.5s ease-in-out,
+        surgery-alert-glow-red 1.5s ease-in-out infinite;
+}
+
+.surgery-call-alert--out {
+    background: linear-gradient(135deg, #059669 0%, #047857 100%);
+    box-shadow:
+        0 20px 60px rgba(5, 150, 105, 0.5),
+        0 0 0 4px rgba(255, 255, 255, 0.2);
+    animation:
+        surgery-alert-shake 0.5s ease-in-out,
+        surgery-alert-glow-green 1.5s ease-in-out infinite;
+    top: auto;
+    bottom: 80px;
+}
+
+@keyframes surgery-alert-glow-red {
+    0%, 100% {
+        box-shadow:
+            0 20px 60px rgba(239, 68, 68, 0.5),
+            0 0 0 4px rgba(255, 255, 255, 0.2);
+    }
+    50% {
+        box-shadow:
+            0 20px 60px rgba(239, 68, 68, 0.8),
+            0 0 0 6px rgba(255, 255, 255, 0.4),
+            0 0 40px rgba(239, 68, 68, 0.6);
+    }
+}
+
+@keyframes surgery-alert-glow-green {
+    0%, 100% {
+        box-shadow:
+            0 20px 60px rgba(5, 150, 105, 0.5),
+            0 0 0 4px rgba(255, 255, 255, 0.2);
+    }
+    50% {
+        box-shadow:
+            0 20px 60px rgba(5, 150, 105, 0.8),
+            0 0 0 6px rgba(255, 255, 255, 0.4),
+            0 0 40px rgba(5, 150, 105, 0.6);
+    }
 }
 </style>

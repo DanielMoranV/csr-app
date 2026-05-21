@@ -491,7 +491,9 @@ const trendChartData = computed(() => {
 
     // Lookup por clave de fecha para rellenar huecos con 0
     const lookup = {};
-    trendData.value.forEach((r) => { lookup[r.fecha] = r; });
+    trendData.value.forEach((r) => {
+        lookup[r.fecha] = r;
+    });
 
     const color = '#0369a1';
     return {
