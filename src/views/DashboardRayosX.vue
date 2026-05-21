@@ -434,31 +434,75 @@ const fetchTendencia = async () => {
     }
 };
 
-const trendChartData = computed(() => {
-    const rows = trendData.value;
-    if (!rows.length) return { labels: [], datasets: [] };
+// Genera todos los bucket-keys entre dos fechas según granularidad
+const generateBuckets = (start, end, granularity) => {
+    const buckets = [];
+    const cur = new Date(start);
+    cur.setHours(0, 0, 0, 0);
+    const endDate = new Date(end);
+    endDate.setHours(23, 59, 59, 999);
 
-    const labels = rows.map((r) => {
-        const k = r.fecha;
-        if (trendGranularity.value === 'day') {
-            const [, m, d] = k.split('-');
-            return `${d}/${m}`;
+    if (granularity === 'day') {
+        while (cur <= endDate) {
+            buckets.push(toISO(cur));
+            cur.setDate(cur.getDate() + 1);
         }
-        if (trendGranularity.value === 'week') {
-            const [y, w] = k.split('-');
-            return `Sem ${parseInt(w)} ${y}`;
+    } else if (granularity === 'week') {
+        // Retroceder al lunes de la semana que contiene `start`
+        const dow = cur.getDay() || 7;
+        cur.setDate(cur.getDate() - (dow - 1));
+        while (cur <= endDate) {
+            const thu = new Date(cur);
+            thu.setDate(cur.getDate() + 3);
+            const yearStart = new Date(thu.getFullYear(), 0, 1);
+            const week = Math.ceil(((thu - yearStart) / 86400000 + 1) / 7);
+            const key = `${thu.getFullYear()}-${String(week).padStart(2, '0')}`;
+            if (!buckets.includes(key)) buckets.push(key);
+            cur.setDate(cur.getDate() + 7);
         }
-        const [y, m] = k.split('-');
-        return `${MONTH_NAMES[parseInt(m) - 1]} ${y}`;
-    });
+    } else {
+        cur.setDate(1);
+        while (cur <= endDate) {
+            buckets.push(`${cur.getFullYear()}-${String(cur.getMonth() + 1).padStart(2, '0')}`);
+            cur.setMonth(cur.getMonth() + 1);
+        }
+    }
+    return buckets;
+};
+
+const bucketLabel = (k, granularity) => {
+    if (granularity === 'day') {
+        const [, m, d] = k.split('-');
+        return `${d}/${m}`;
+    }
+    if (granularity === 'week') {
+        const [y, w] = k.split('-');
+        return `Sem ${parseInt(w)} ${y}`;
+    }
+    const [y, m] = k.split('-');
+    return `${MONTH_NAMES[parseInt(m) - 1]} ${y}`;
+};
+
+const trendChartData = computed(() => {
+    if (!desde.value || !hasta.value) return { labels: [], datasets: [] };
+
+    const buckets = generateBuckets(desde.value, hasta.value, trendGranularity.value);
+    if (!buckets.length) return { labels: [], datasets: [] };
+
+    // Lookup por clave de fecha para rellenar huecos con 0
+    const lookup = {};
+    trendData.value.forEach((r) => { lookup[r.fecha] = r; });
 
     const color = '#0369a1';
     return {
-        labels,
+        labels: buckets.map((k) => bucketLabel(k, trendGranularity.value)),
         datasets: [
             {
                 label: trendMetric.value === 'monto' ? 'Facturación' : 'Atenciones',
-                data: rows.map((r) => (trendMetric.value === 'monto' ? r.monto : r.atenciones)),
+                data: buckets.map((k) => {
+                    const row = lookup[k];
+                    return row ? (trendMetric.value === 'monto' ? row.monto : row.atenciones) : 0;
+                }),
                 borderColor: color,
                 backgroundColor: color + '18',
                 borderWidth: 2.5,
