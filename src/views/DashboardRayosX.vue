@@ -629,104 +629,99 @@ onUnmounted(() => {
                 </template>
             </Card>
 
-            <!-- Tendencia Temporal -->
-            <Card class="rx-card">
-                <template #title>
-                    <div class="rx-card-title-row">
-                        <span><i class="pi pi-chart-line mr-2" style="color: #0369a1"></i>Tendencia Temporal</span>
-                        <div class="rx-chart-toolbar">
-                            <SelectButton v-model="trendGranularity" :options="trendGranularityOptions" optionLabel="label" optionValue="value" class="rx-metric-toggle" />
-                            <SelectButton v-model="trendMetric" :options="metricOptions" optionLabel="label" optionValue="value" class="rx-metric-toggle" />
-                        </div>
-                    </div>
-                </template>
-                <template #content>
-                    <div class="rx-chart-wrapper">
-                        <div v-if="isTrendLoading" class="rx-trend-loading">
-                            <ProgressSpinner style="width: 32px; height: 32px" />
-                        </div>
-                        <Chart v-else type="line" :data="trendChartData" :options="trendChartOptions" class="rx-chart" />
-                    </div>
-                </template>
-            </Card>
-
-            <!-- Mix Particular / Aseguradora -->
-            <div class="rx-mix-grid">
-                <!-- Card Particular -->
-                <div class="rx-mix-card rx-mix-dark">
-                    <div class="rx-mix-header">
-                        <div class="rx-mix-icon-wrap"><i class="pi pi-user"></i></div>
-                        <span class="rx-mix-title">Particular</span>
-                    </div>
-                    <div class="rx-mix-stats">
-                        <div class="rx-mix-stat">
-                            <div class="rx-mix-stat-top">
-                                <span class="rx-mix-stat-value">{{ fNum(summary.mix.particular.atenciones) }}</span>
-                                <span class="rx-mix-stat-pct">{{ fPct(summary.mix.particular.pct_atenciones) }}</span>
-                            </div>
-                            <span class="rx-mix-stat-label">Atenciones</span>
-                        </div>
-                        <div class="rx-mix-divider"></div>
-                        <div class="rx-mix-stat">
-                            <div class="rx-mix-stat-top">
-                                <span class="rx-mix-stat-value rx-mix-stat-value--sm">{{ fMoney(summary.mix.particular.monto) }}</span>
-                                <span class="rx-mix-stat-pct">{{ fPct(summary.mix.particular.pct_monto) }}</span>
-                            </div>
-                            <span class="rx-mix-stat-label">Facturación</span>
-                        </div>
-                        <div class="rx-mix-divider"></div>
-                        <div class="rx-mix-stat">
-                            <span class="rx-mix-stat-value rx-mix-stat-value--sm">{{ fMoney(summary.mix.particular.ticket_medio) }}</span>
-                            <span class="rx-mix-stat-label">Ticket Medio</span>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- Donut -->
+            <!-- Mix Particular/Seguros + Top Seguros -->
+            <div class="rx-two-col">
                 <Card class="rx-card">
                     <template #title>
                         <span><i class="pi pi-chart-pie mr-2 text-primary"></i>Particular vs Seguros</span>
                     </template>
                     <template #content>
-                        <div class="rx-donut-wrapper" v-if="mixDonutData">
-                            <Chart type="doughnut" :data="mixDonutData" :options="donutOptions" class="rx-donut-chart" />
-                            <div class="rx-donut-center">
-                                <div class="rx-donut-total">{{ fNum(summary.totales.atenciones) }}</div>
-                                <div class="rx-donut-label">Atenciones</div>
+                        <div class="rx-mix-content" v-if="mixDonutData">
+                            <div class="rx-donut-wrapper">
+                                <Chart type="doughnut" :data="mixDonutData" :options="donutOptions" class="rx-donut-chart" />
+                                <div class="rx-donut-center">
+                                    <div class="rx-donut-total">{{ fNum(summary.totales.atenciones) }}</div>
+                                    <div class="rx-donut-label">Atenciones</div>
+                                </div>
+                            </div>
+                            <div class="rx-mix-stats-grid">
+                                <div class="rx-mix-col">
+                                    <div class="rx-mix-col-header">
+                                        <span class="rx-mix-col-dot" style="background: #0369a1"></span>
+                                        <span class="rx-mix-col-title">Particular</span>
+                                    </div>
+                                    <div class="rx-mix-row">
+                                        <span class="rx-mix-row-label">Atenciones</span>
+                                        <div class="rx-mix-row-right">
+                                            <span class="rx-mix-row-val">{{ fNum(summary.mix.particular.atenciones) }}</span>
+                                            <span class="rx-mix-row-pct">{{ fPct(summary.mix.particular.pct_atenciones) }}</span>
+                                        </div>
+                                    </div>
+                                    <div class="rx-mix-row">
+                                        <span class="rx-mix-row-label">Facturación</span>
+                                        <div class="rx-mix-row-right">
+                                            <span class="rx-mix-row-val">{{ fMoney(summary.mix.particular.monto) }}</span>
+                                            <span class="rx-mix-row-pct">{{ fPct(summary.mix.particular.pct_monto) }}</span>
+                                        </div>
+                                    </div>
+                                    <div class="rx-mix-row">
+                                        <span class="rx-mix-row-label">Ticket Medio</span>
+                                        <span class="rx-mix-row-val">{{ fMoney(summary.mix.particular.ticket_medio) }}</span>
+                                    </div>
+                                </div>
+                                <div class="rx-mix-stats-divider"></div>
+                                <div class="rx-mix-col">
+                                    <div class="rx-mix-col-header">
+                                        <span class="rx-mix-col-dot" style="background: #bae6fd; border: 1px solid #7dd3fc"></span>
+                                        <span class="rx-mix-col-title">Seguros</span>
+                                    </div>
+                                    <div class="rx-mix-row">
+                                        <span class="rx-mix-row-label">Atenciones</span>
+                                        <div class="rx-mix-row-right">
+                                            <span class="rx-mix-row-val">{{ fNum(summary.mix.aseguradora.atenciones) }}</span>
+                                            <span class="rx-mix-row-pct">{{ fPct(summary.mix.aseguradora.pct_atenciones) }}</span>
+                                        </div>
+                                    </div>
+                                    <div class="rx-mix-row">
+                                        <span class="rx-mix-row-label">Facturación</span>
+                                        <div class="rx-mix-row-right">
+                                            <span class="rx-mix-row-val">{{ fMoney(summary.mix.aseguradora.monto) }}</span>
+                                            <span class="rx-mix-row-pct">{{ fPct(summary.mix.aseguradora.pct_monto) }}</span>
+                                        </div>
+                                    </div>
+                                    <div class="rx-mix-row">
+                                        <span class="rx-mix-row-label">Ticket Medio</span>
+                                        <span class="rx-mix-row-val">{{ fMoney(summary.mix.aseguradora.ticket_medio) }}</span>
+                                    </div>
+                                </div>
                             </div>
                         </div>
                     </template>
                 </Card>
 
-                <!-- Card Aseguradora -->
-                <div class="rx-mix-card rx-mix-light">
-                    <div class="rx-mix-header">
-                        <div class="rx-mix-icon-wrap rx-mix-icon-wrap--light"><i class="pi pi-shield"></i></div>
-                        <span class="rx-mix-title rx-mix-title--light">Seguros</span>
-                    </div>
-                    <div class="rx-mix-stats">
-                        <div class="rx-mix-stat">
-                            <div class="rx-mix-stat-top">
-                                <span class="rx-mix-stat-value rx-mix-stat-value--light">{{ fNum(summary.mix.aseguradora.atenciones) }}</span>
-                                <span class="rx-mix-stat-pct rx-mix-stat-pct--light">{{ fPct(summary.mix.aseguradora.pct_atenciones) }}</span>
-                            </div>
-                            <span class="rx-mix-stat-label rx-mix-stat-label--light">Atenciones</span>
-                        </div>
-                        <div class="rx-mix-divider rx-mix-divider--light"></div>
-                        <div class="rx-mix-stat">
-                            <div class="rx-mix-stat-top">
-                                <span class="rx-mix-stat-value rx-mix-stat-value--sm rx-mix-stat-value--light">{{ fMoney(summary.mix.aseguradora.monto) }}</span>
-                                <span class="rx-mix-stat-pct rx-mix-stat-pct--light">{{ fPct(summary.mix.aseguradora.pct_monto) }}</span>
-                            </div>
-                            <span class="rx-mix-stat-label rx-mix-stat-label--light">Facturación</span>
-                        </div>
-                        <div class="rx-mix-divider rx-mix-divider--light"></div>
-                        <div class="rx-mix-stat">
-                            <span class="rx-mix-stat-value rx-mix-stat-value--sm rx-mix-stat-value--light">{{ fMoney(summary.mix.aseguradora.ticket_medio) }}</span>
-                            <span class="rx-mix-stat-label rx-mix-stat-label--light">Ticket Medio</span>
-                        </div>
-                    </div>
-                </div>
+                <Card class="rx-card">
+                    <template #title>
+                        <span><i class="pi pi-shield mr-2" style="color: #0369a1"></i>Top Seguros</span>
+                    </template>
+                    <template #content>
+                        <DataTable :value="summary.top_aseguradoras.filter((r) => r.cia !== 'PARTICULAR')" size="small" class="rx-table" sortField="atenciones" :sortOrder="-1" stripedRows>
+                            <Column field="cia" header="Seguro / Convenio" sortable>
+                                <template #body="{ data: row }">
+                                    <span class="rx-tag-cia">{{ row.cia }}</span>
+                                </template>
+                            </Column>
+                            <Column field="atenciones" header="Atenc." sortable style="width: 80px; text-align: right">
+                                <template #body="{ data: row }">{{ fNum(row.atenciones) }}</template>
+                            </Column>
+                            <Column field="monto" header="Monto S/" sortable style="width: 130px; text-align: right">
+                                <template #body="{ data: row }">{{ fMoney(row.monto) }}</template>
+                            </Column>
+                            <Column field="ticket_medio" header="Ticket" sortable style="width: 110px; text-align: right">
+                                <template #body="{ data: row }">{{ fMoney(row.ticket_medio) }}</template>
+                            </Column>
+                        </DataTable>
+                    </template>
+                </Card>
             </div>
 
             <!-- Regiones + Procedencia -->
@@ -823,8 +818,28 @@ onUnmounted(() => {
                 </template>
             </Card>
 
-            <!-- Estacionalidad + Top Aseguradoras -->
+            <!-- Tendencia Temporal + Estacionalidad Semanal -->
             <div class="rx-two-col">
+                <Card class="rx-card">
+                    <template #title>
+                        <div class="rx-card-title-row">
+                            <span><i class="pi pi-chart-line mr-2" style="color: #0369a1"></i>Tendencia Temporal</span>
+                            <div class="rx-chart-toolbar">
+                                <SelectButton v-model="trendGranularity" :options="trendGranularityOptions" optionLabel="label" optionValue="value" class="rx-metric-toggle" />
+                                <SelectButton v-model="trendMetric" :options="metricOptions" optionLabel="label" optionValue="value" class="rx-metric-toggle" />
+                            </div>
+                        </div>
+                    </template>
+                    <template #content>
+                        <div class="rx-chart-wrapper">
+                            <div v-if="isTrendLoading" class="rx-trend-loading">
+                                <ProgressSpinner style="width: 32px; height: 32px" />
+                            </div>
+                            <Chart v-else type="line" :data="trendChartData" :options="trendChartOptions" class="rx-chart" />
+                        </div>
+                    </template>
+                </Card>
+
                 <Card class="rx-card">
                     <template #title>
                         <span><i class="pi pi-calendar mr-2" style="color: #14b8a6"></i>Estacionalidad Semanal</span>
@@ -836,30 +851,6 @@ onUnmounted(() => {
                         <div class="rx-chart-wrapper rx-chart-wrapper--sm">
                             <Chart type="bar" :data="estacionalidadChartData" :options="estacionalidadOptions" class="rx-chart" />
                         </div>
-                    </template>
-                </Card>
-
-                <Card class="rx-card">
-                    <template #title>
-                        <span><i class="pi pi-shield mr-2" style="color: #0369a1"></i>Top Seguros</span>
-                    </template>
-                    <template #content>
-                        <DataTable :value="summary.top_aseguradoras.filter((r) => r.cia !== 'PARTICULAR')" size="small" class="rx-table" sortField="atenciones" :sortOrder="-1" stripedRows>
-                            <Column field="cia" header="Seguro / Convenio" sortable>
-                                <template #body="{ data: row }">
-                                    <span :class="row.cia === 'PARTICULAR' ? 'rx-tag-particular' : 'rx-tag-cia'">{{ row.cia }}</span>
-                                </template>
-                            </Column>
-                            <Column field="atenciones" header="Atenc." sortable style="width: 80px; text-align: right">
-                                <template #body="{ data: row }">{{ fNum(row.atenciones) }}</template>
-                            </Column>
-                            <Column field="monto" header="Monto S/" sortable style="width: 130px; text-align: right">
-                                <template #body="{ data: row }">{{ fMoney(row.monto) }}</template>
-                            </Column>
-                            <Column field="ticket_medio" header="Ticket" sortable style="width: 110px; text-align: right">
-                                <template #body="{ data: row }">{{ fMoney(row.ticket_medio) }}</template>
-                            </Column>
-                        </DataTable>
                     </template>
                 </Card>
             </div>
@@ -1214,124 +1205,96 @@ onUnmounted(() => {
     margin-top: 0.2rem;
 }
 
-/* ─── MIX GRID ────────────────────────────────────────────────────────────── */
-.rx-mix-grid {
-    display: grid;
-    grid-template-columns: 1fr 1.2fr 1fr;
-    gap: 1rem;
-    align-items: stretch;
-}
-
-.rx-mix-card {
-    border-radius: 12px;
-    padding: 1.5rem;
-    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
-    display: flex;
-    flex-direction: column;
-    gap: 1rem;
-}
-
-.rx-mix-dark {
-    background: linear-gradient(145deg, #1e40af 0%, #1d4ed8 100%);
-}
-.rx-mix-light {
-    background: linear-gradient(145deg, var(--primary-50) 0%, var(--primary-100) 100%);
-}
-
-.rx-mix-header {
+/* ─── MIX CARD ────────────────────────────────────────────────────────────── */
+.rx-mix-content {
     display: flex;
     align-items: center;
-    gap: 0.75rem;
+    gap: 1.5rem;
+    flex-wrap: wrap;
 }
 
-.rx-mix-icon-wrap {
-    width: 36px;
-    height: 36px;
-    border-radius: 8px;
-    background: rgba(255, 255, 255, 0.2);
+.rx-mix-stats-grid {
     display: flex;
-    align-items: center;
-    justify-content: center;
-    color: white;
-    font-size: 1.1rem;
+    gap: 1rem;
+    flex: 1;
+    min-width: 0;
+}
+
+.rx-mix-stats-divider {
+    width: 1px;
+    align-self: stretch;
+    background: var(--surface-border);
     flex-shrink: 0;
 }
 
-.rx-mix-icon-wrap--light {
-    background: rgba(59, 130, 246, 0.15);
-    color: var(--primary-600);
+.rx-mix-col {
+    display: flex;
+    flex-direction: column;
+    gap: 0.625rem;
+    flex: 1;
+    min-width: 0;
 }
 
-.rx-mix-title {
-    font-size: 1.0625rem;
+.rx-mix-col-header {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    margin-bottom: 0.25rem;
+}
+
+.rx-mix-col-dot {
+    width: 12px;
+    height: 12px;
+    border-radius: 50%;
+    flex-shrink: 0;
+}
+
+.rx-mix-col-title {
+    font-size: 0.875rem;
     font-weight: 700;
-    color: white;
-}
-.rx-mix-title--light {
-    color: var(--primary-700);
+    color: var(--text-color);
+    text-transform: uppercase;
+    letter-spacing: 0.4px;
 }
 
-.rx-mix-stats {
+.rx-mix-row {
     display: flex;
-    flex-direction: column;
-    gap: 0.75rem;
-}
-
-.rx-mix-divider {
-    height: 1px;
-    background: rgba(255, 255, 255, 0.15);
-}
-.rx-mix-divider--light {
-    background: var(--surface-border);
-}
-
-.rx-mix-stat {
-    display: flex;
-    flex-direction: column;
-    gap: 0.15rem;
-}
-
-.rx-mix-stat-top {
-    display: flex;
-    align-items: baseline;
+    justify-content: space-between;
+    align-items: center;
+    padding: 0.5rem 0.75rem;
+    background: var(--surface-50);
+    border-radius: 8px;
+    border: 1px solid var(--surface-border);
     gap: 0.5rem;
 }
 
-.rx-mix-stat-value {
-    font-size: 1.375rem;
-    font-weight: 800;
-    color: white;
-    line-height: 1;
-}
-.rx-mix-stat-value--sm {
-    font-size: 1.0625rem;
-}
-.rx-mix-stat-value--light {
-    color: var(--primary-900);
-}
-
-.rx-mix-stat-pct {
-    font-size: 0.8rem;
-    font-weight: 700;
-    padding: 0.1rem 0.45rem;
-    border-radius: 99px;
-    background: rgba(255, 255, 255, 0.2);
-    color: white;
-}
-.rx-mix-stat-pct--light {
-    background: var(--primary-100);
-    color: var(--primary-700);
-}
-
-.rx-mix-stat-label {
-    font-size: 0.75rem;
+.rx-mix-row-label {
+    font-size: 0.8125rem;
+    color: var(--text-color-secondary);
     font-weight: 500;
-    color: rgba(255, 255, 255, 0.65);
-    text-transform: uppercase;
-    letter-spacing: 0.3px;
+    flex-shrink: 0;
 }
-.rx-mix-stat-label--light {
-    color: var(--primary-500);
+
+.rx-mix-row-right {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.rx-mix-row-val {
+    font-size: 0.875rem;
+    font-weight: 700;
+    color: var(--text-color);
+}
+
+.rx-mix-row-pct {
+    font-size: 0.75rem;
+    font-weight: 700;
+    padding: 0.1rem 0.4rem;
+    border-radius: 99px;
+    background: var(--primary-50);
+    color: var(--primary-700);
+    flex-shrink: 0;
 }
 
 /* ─── TWO-COL GRID ────────────────────────────────────────────────────────── */
@@ -1447,15 +1410,6 @@ onUnmounted(() => {
 }
 
 /* ─── RESPONSIVE ──────────────────────────────────────────────────────────── */
-@media (max-width: 1400px) {
-    .rx-mix-grid {
-        grid-template-columns: 1fr 1fr;
-    }
-    .rx-mix-grid > .rx-card {
-        grid-column: 1 / -1;
-    }
-}
-
 @media (max-width: 1100px) {
     .rx-two-col,
     .rx-two-col--6040 {
