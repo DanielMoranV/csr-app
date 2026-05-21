@@ -108,7 +108,7 @@ const fetchData = async () => {
     if (!desde.value || !hasta.value) return;
     isLoading.value = true;
     try {
-        const res = await rxApi.getSummary({ desde: toISO(desde.value), hasta: toISO(hasta.value), top: topN.value });
+        const [res] = await Promise.all([rxApi.getSummary({ desde: toISO(desde.value), hasta: toISO(hasta.value), top: topN.value }), fetchTendencia()]);
         summary.value = res?.data || null;
     } catch {
         toast.add({ severity: 'error', summary: 'Error', detail: 'No se pudieron cargar los datos', life: 5000 });
@@ -400,6 +400,110 @@ const estacionalidadOptions = computed(() => ({
     }
 }));
 
+// ─── Tendencia Temporal ───────────────────────────────────────────────────────
+const trendMetric = ref('monto');
+const trendGranularity = ref('month');
+const trendData = ref([]);
+const isTrendLoading = ref(false);
+
+const trendGranularityOptions = [
+    { label: 'Día', value: 'day' },
+    { label: 'Semana', value: 'week' },
+    { label: 'Mes', value: 'month' }
+];
+
+// const getWeekKey = (d) => {
+//     const day = d.getDay() || 7;
+//     const thu = new Date(d);
+//     thu.setDate(d.getDate() + 4 - day);
+//     const yearStart = new Date(thu.getFullYear(), 0, 1);
+//     const week = Math.ceil(((thu - yearStart) / 86400000 + 1) / 7);
+//     return `${thu.getFullYear()}-${String(week).padStart(2, '0')}`;
+// };
+
+const fetchTendencia = async () => {
+    if (!desde.value || !hasta.value) return;
+    isTrendLoading.value = true;
+    try {
+        const res = await rxApi.getTendencia({ desde: toISO(desde.value), hasta: toISO(hasta.value), granularity: trendGranularity.value });
+        trendData.value = res?.data || [];
+    } catch {
+        trendData.value = [];
+    } finally {
+        isTrendLoading.value = false;
+    }
+};
+
+const trendChartData = computed(() => {
+    const rows = trendData.value;
+    if (!rows.length) return { labels: [], datasets: [] };
+
+    const labels = rows.map((r) => {
+        const k = r.fecha;
+        if (trendGranularity.value === 'day') {
+            const [, m, d] = k.split('-');
+            return `${d}/${m}`;
+        }
+        if (trendGranularity.value === 'week') {
+            const [y, w] = k.split('-');
+            return `Sem ${parseInt(w)} ${y}`;
+        }
+        const [y, m] = k.split('-');
+        return `${MONTH_NAMES[parseInt(m) - 1]} ${y}`;
+    });
+
+    const color = '#0369a1';
+    return {
+        labels,
+        datasets: [
+            {
+                label: trendMetric.value === 'monto' ? 'Facturación' : 'Atenciones',
+                data: rows.map((r) => (trendMetric.value === 'monto' ? r.monto : r.atenciones)),
+                borderColor: color,
+                backgroundColor: color + '18',
+                borderWidth: 2.5,
+                tension: 0.4,
+                fill: true,
+                pointRadius: trendGranularity.value === 'day' ? 2 : 4,
+                pointHoverRadius: 6,
+                pointBackgroundColor: '#fff',
+                pointBorderWidth: 2,
+                pointBorderColor: color
+            }
+        ]
+    };
+});
+
+const trendChartOptions = computed(() => {
+    void themeKey.value;
+    const textMuted = getCssVar('--text-color-secondary') || '#6b7280';
+    const borderColor = getCssVar('--surface-border') || '#e5e7eb';
+
+    return {
+        responsive: true,
+        maintainAspectRatio: false,
+        plugins: {
+            legend: { display: false },
+            datalabels: { display: false },
+            tooltip: {
+                callbacks: {
+                    label: (ctx) => (trendMetric.value === 'monto' ? ` ${fCurrency(ctx.parsed.y)}` : ` ${fNum(ctx.parsed.y)} atenciones`)
+                }
+            }
+        },
+        scales: {
+            y: {
+                beginAtZero: true,
+                grid: { color: borderColor },
+                ticks: { font: { size: 10, weight: '600' }, color: textMuted, callback: (v) => (trendMetric.value === 'monto' ? fCurrencyK(v) : v) }
+            },
+            x: { grid: { display: false }, ticks: { font: { size: 10 }, color: textMuted, maxRotation: 45 } }
+        }
+    };
+});
+
+watch(trendGranularity, fetchTendencia);
+
 // ─── Sorted region table ───────────────────────────────────────────────────────
 const regionesSorted = computed(() => [...(summary.value?.regiones || [])].sort((a, b) => b.atenciones - a.atenciones));
 
@@ -521,6 +625,27 @@ onUnmounted(() => {
                 <template #content>
                     <div class="rx-chart-wrapper">
                         <Chart type="line" :data="monthlyChartData" :options="lineChartOptions" class="rx-chart" />
+                    </div>
+                </template>
+            </Card>
+
+            <!-- Tendencia Temporal -->
+            <Card class="rx-card">
+                <template #title>
+                    <div class="rx-card-title-row">
+                        <span><i class="pi pi-chart-line mr-2" style="color: #0369a1"></i>Tendencia Temporal</span>
+                        <div class="rx-chart-toolbar">
+                            <SelectButton v-model="trendGranularity" :options="trendGranularityOptions" optionLabel="label" optionValue="value" class="rx-metric-toggle" />
+                            <SelectButton v-model="trendMetric" :options="metricOptions" optionLabel="label" optionValue="value" class="rx-metric-toggle" />
+                        </div>
+                    </div>
+                </template>
+                <template #content>
+                    <div class="rx-chart-wrapper">
+                        <div v-if="isTrendLoading" class="rx-trend-loading">
+                            <ProgressSpinner style="width: 32px; height: 32px" />
+                        </div>
+                        <Chart v-else type="line" :data="trendChartData" :options="trendChartOptions" class="rx-chart" />
                     </div>
                 </template>
             </Card>
@@ -1311,6 +1436,14 @@ onUnmounted(() => {
     color: var(--text-color-secondary);
     min-width: 40px;
     text-align: right;
+}
+
+/* ─── TREND LOADING ───────────────────────────────────────────────────────── */
+.rx-trend-loading {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    height: 100%;
 }
 
 /* ─── RESPONSIVE ──────────────────────────────────────────────────────────── */
