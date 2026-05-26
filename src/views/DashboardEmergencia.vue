@@ -1139,21 +1139,6 @@ onMounted(() => {
                                     <span class="em-cont-kpi-lbl">Días internado</span>
                                     <span class="em-cont-kpi-sub">mediana {{ continuidadData.resumen.mediana_dias_internado }}d · máx {{ continuidadData.resumen.max_dias_internado }}d</span>
                                 </div>
-                                <div class="em-cont-kpi">
-                                    <span class="em-cont-kpi-val">{{ fCurrency(continuidadData.resumen.avg_ticket_combinado) }}</span>
-                                    <span class="em-cont-kpi-lbl">Ticket combinado</span>
-                                    <span class="em-cont-kpi-sub">emerg. + hosp.</span>
-                                </div>
-                                <div class="em-cont-kpi">
-                                    <span class="em-cont-kpi-val">{{ fCurrencyK(continuidadData.resumen.total_facturado_emergencia) }}</span>
-                                    <span class="em-cont-kpi-lbl">Total emergencia</span>
-                                    <span class="em-cont-kpi-sub">período</span>
-                                </div>
-                                <div class="em-cont-kpi">
-                                    <span class="em-cont-kpi-val">{{ fCurrencyK(continuidadData.resumen.total_facturado_hospitalizacion) }}</span>
-                                    <span class="em-cont-kpi-lbl">Total hospitalización</span>
-                                    <span class="em-cont-kpi-sub">período</span>
-                                </div>
                             </div>
 
                             <!-- Tendencia mensual -->
@@ -2205,7 +2190,7 @@ onMounted(() => {
 /* ─── CONTINUIDAD ────────────────────────────────────────────────────────── */
 .em-cont-kpis {
     display: grid;
-    grid-template-columns: repeat(6, 1fr);
+    grid-template-columns: repeat(3, 1fr);
     gap: 0.75rem;
     margin-bottom: 1.5rem;
 }
@@ -2281,15 +2266,9 @@ onMounted(() => {
     color: #0369a1;
 }
 
-@media (max-width: 1400px) {
-    .em-cont-kpis {
-        grid-template-columns: repeat(3, 1fr);
-    }
-}
-
 @media (max-width: 600px) {
     .em-cont-kpis {
-        grid-template-columns: repeat(2, 1fr);
+        grid-template-columns: 1fr;
     }
 }
 </style>
