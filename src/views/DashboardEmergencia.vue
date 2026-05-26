@@ -415,13 +415,13 @@ const handleExportAuditoria = async () => {
         if (auditSoloCorregidos.value) params.solo_corregidos = 1;
 
         const response = await emergenciaApi.exportAuditoria(params);
-        const blob = new Blob([response.data], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
+        const blob = new Blob([response.data], { type: 'application/zip' });
         const url = URL.createObjectURL(blob);
         const a = document.createElement('a');
         a.href = url;
 
         const cd = response.headers?.['content-disposition'];
-        let filename = auditSoloCorregidos.value ? `auditoria_pipeline_${params.desde}_${params.hasta}_solo_corregidos.xlsx` : `auditoria_pipeline_${params.desde}_${params.hasta}.xlsx`;
+        let filename = auditSoloCorregidos.value ? `auditoria_pipeline_${params.desde}_${params.hasta}_solo_corregidos.zip` : `auditoria_pipeline_${params.desde}_${params.hasta}.zip`;
         if (cd) {
             const match = cd.match(/filename[^;=\n]*=((['"]).*?\2|[^;\n]*)/);
             if (match) filename = match[1].replace(/['"]/g, '');
@@ -989,9 +989,19 @@ onMounted(() => {
                     <template #content>
                         <div class="em-audit-content">
                             <p class="em-audit-desc">
-                                Descarga el reporte Excel del pipeline de limpieza automática para el período <strong>{{ formatPeriod }}</strong
-                                >. El archivo incluye tres hojas: detalle de atenciones (26 columnas), resumen de correcciones agrupadas por área y regla aplicada, y registros que el pipeline dejó sin cambiar.
+                                Descarga el reporte del pipeline de limpieza automática para el período <strong>{{ formatPeriod }}</strong
+                                >.
                             </p>
+                            <div class="em-audit-zip-note">
+                                <i class="pi pi-info-circle"></i>
+                                <span>
+                                    El archivo descargado es un <strong>.zip</strong> que contiene:
+                                    <span class="em-audit-zip-files">
+                                        <span><i class="pi pi-file mr-1"></i>detalle.csv — todos los registros (abrir en Excel con separador ";")</span>
+                                        <span><i class="pi pi-file-excel mr-1"></i>resumen.xlsx — resumen de correcciones por regla</span>
+                                    </span>
+                                </span>
+                            </div>
                             <div class="em-audit-filters">
                                 <div class="em-audit-filter-item">
                                     <label class="em-filter-label">Área dashboard</label>
@@ -1867,7 +1877,33 @@ onMounted(() => {
     color: var(--text-color-secondary);
     margin: 0;
     line-height: 1.6;
-    max-width: 72ch;
+}
+
+.em-audit-zip-note {
+    display: flex;
+    align-items: flex-start;
+    gap: 0.625rem;
+    padding: 0.75rem 1rem;
+    background: #eff6ff;
+    border: 1px solid #bfdbfe;
+    border-radius: 8px;
+    font-size: 0.8125rem;
+    color: #1e40af;
+    max-width: 56ch;
+}
+
+.em-audit-zip-note .pi-info-circle {
+    font-size: 0.9rem;
+    margin-top: 0.1rem;
+    flex-shrink: 0;
+}
+
+.em-audit-zip-files {
+    display: flex;
+    flex-direction: column;
+    gap: 0.25rem;
+    margin-top: 0.375rem;
+    padding-left: 0.25rem;
 }
 
 .em-audit-filters {
