@@ -73,7 +73,7 @@ const fetchData = async () => {
     errorMsg.value = '';
     try {
         const params = { desde: formatDate(desde.value), hasta: formatDate(hasta.value) };
-        const [response] = await Promise.all([emergenciaApi.getData(params), fetchDiagnosticos(), fetchSinDiagnostico()]);
+        const [response] = await Promise.all([emergenciaApi.getData(params), fetchDiagnosticos(), fetchSinDiagnostico(), fetchContinuidad()]);
         rawData.value = response?.data || [];
     } catch (err) {
         errorMsg.value = err?.message || 'Error al cargar los datos';
@@ -621,6 +621,128 @@ const seasonalChartOptions = computed(() => ({
     }
 }));
 
+// ─── CONTINUIDAD DE ATENCIÓN ─────────────────────────────────────────────────
+const continuidadData = ref(null);
+const continuidadLoading = ref(false);
+const ventanaDias = ref(3);
+
+const VENTANA_OPTIONS = [
+    { label: '1 día', value: 1 },
+    { label: '3 días', value: 3 },
+    { label: '7 días', value: 7 },
+    { label: '14 días', value: 14 },
+    { label: '30 días', value: 30 }
+];
+
+const fetchContinuidad = async () => {
+    if (!desde.value || !hasta.value) return;
+    continuidadLoading.value = true;
+    try {
+        const params = { desde: formatDate(desde.value), hasta: formatDate(hasta.value), ventana_dias: ventanaDias.value };
+        const response = await emergenciaApi.getContinuidad(params);
+        continuidadData.value = response?.data || null;
+    } catch {
+        // suplementario — fallo silencioso
+    } finally {
+        continuidadLoading.value = false;
+    }
+};
+
+watch(ventanaDias, fetchContinuidad);
+
+const continuidadTendenciaData = computed(() => {
+    const trend = continuidadData.value?.tendencia_mensual || [];
+    if (!trend.length) return { labels: [], datasets: [] };
+
+    const labels = trend.map((t) => {
+        const [y, m] = t.mes.split('-');
+        return `${MONTH_NAMES[parseInt(m) - 1]} ${y}`;
+    });
+
+    return {
+        labels,
+        datasets: [
+            {
+                type: 'bar',
+                label: 'Emergencias',
+                data: trend.map((t) => t.emergencias),
+                backgroundColor: '#0369a130',
+                borderColor: '#0369a1',
+                borderWidth: 1.5,
+                borderRadius: 4,
+                borderSkipped: false,
+                stack: 'atenciones',
+                yAxisID: 'y'
+            },
+            {
+                type: 'bar',
+                label: 'Hospitalizaciones',
+                data: trend.map((t) => t.hospitalizaciones),
+                backgroundColor: '#059669CC',
+                borderColor: '#059669',
+                borderWidth: 1.5,
+                borderRadius: 4,
+                borderSkipped: false,
+                stack: 'atenciones',
+                yAxisID: 'y'
+            },
+            {
+                type: 'line',
+                label: '% Conversión',
+                data: trend.map((t) => t.tasa_pct),
+                borderColor: '#d97706',
+                backgroundColor: '#d9770615',
+                borderWidth: 2.5,
+                tension: 0.4,
+                fill: false,
+                pointRadius: 4,
+                pointHoverRadius: 6,
+                pointBackgroundColor: '#fff',
+                pointBorderWidth: 2,
+                pointBorderColor: '#d97706',
+                yAxisID: 'yPct'
+            }
+        ]
+    };
+});
+
+const continuidadTendenciaOptions = {
+    responsive: true,
+    maintainAspectRatio: false,
+    plugins: {
+        legend: { position: 'bottom', labels: { usePointStyle: true, padding: 16, font: { size: 11 } } },
+        datalabels: { display: false },
+        tooltip: {
+            callbacks: {
+                label: (ctx) =>
+                    ctx.dataset.label === '% Conversión'
+                        ? ` ${ctx.parsed.y.toFixed(1)}%`
+                        : ` ${fNumber(ctx.parsed.y)} atenciones`
+            }
+        }
+    },
+    scales: {
+        x: { stacked: true, grid: { display: false }, ticks: { font: { size: 11 }, color: '#64748b' } },
+        y: {
+            stacked: true,
+            beginAtZero: true,
+            position: 'left',
+            grid: { color: '#f0f6ff' },
+            ticks: { font: { size: 10, weight: '600' }, color: '#94a3b8', callback: (v) => fNumber(v) }
+        },
+        yPct: {
+            beginAtZero: true,
+            max: 100,
+            position: 'right',
+            grid: { display: false },
+            ticks: { font: { size: 10, weight: '600' }, color: '#d97706', callback: (v) => `${v}%` }
+        }
+    }
+};
+
+const reingresoColor = (pct) => (pct > 5 ? '#e11d48' : pct > 2 ? '#d97706' : '#059669');
+const reingresoBg = (pct) => (pct > 5 ? '#fff1f2' : pct > 2 ? '#fffbeb' : '#f0fdf4');
+
 onMounted(() => {
     const now = new Date();
     desde.value = new Date(now.getFullYear() - 1, 0, 1);
@@ -982,6 +1104,169 @@ onMounted(() => {
                         </div>
                     </template>
                 </Card>
+                <!-- Continuidad de Atención -->
+                <Card class="em-card">
+                    <template #title>
+                        <div class="em-card-title">
+                            <span><i class="pi pi-arrow-right-arrow-left mr-2" style="color: #6366f1"></i>Continuidad de Atención — Emergencia → Hospitalización</span>
+                            <div class="em-chart-toolbar">
+                                <span class="em-filter-label">Ventana</span>
+                                <SelectButton v-model="ventanaDias" :options="VENTANA_OPTIONS" optionLabel="label" optionValue="value" class="em-metric-toggle" />
+                            </div>
+                        </div>
+                    </template>
+                    <template #content>
+                        <div v-if="continuidadLoading" class="em-diag-loading">
+                            <ProgressSpinner style="width: 32px; height: 32px" />
+                        </div>
+                        <div v-else-if="!continuidadData" class="em-rank-empty">Sin datos de continuidad para el período</div>
+                        <template v-else>
+
+                            <!-- KPIs -->
+                            <div class="em-cont-kpis">
+                                <div class="em-cont-kpi em-cont-kpi--highlight">
+                                    <span class="em-cont-kpi-val">{{ continuidadData.resumen.tasa_conversion_pct.toFixed(1) }}%</span>
+                                    <span class="em-cont-kpi-lbl">Tasa conversión</span>
+                                    <span class="em-cont-kpi-sub">{{ fNumber(continuidadData.resumen.con_hospitalizacion) }} de {{ fNumber(continuidadData.resumen.total_emergencias) }}</span>
+                                </div>
+                                <div class="em-cont-kpi">
+                                    <span class="em-cont-kpi-val">{{ continuidadData.resumen.avg_dias_gap.toFixed(1) }}d</span>
+                                    <span class="em-cont-kpi-lbl">Días hasta internación</span>
+                                    <span class="em-cont-kpi-sub">promedio</span>
+                                </div>
+                                <div class="em-cont-kpi">
+                                    <span class="em-cont-kpi-val">{{ continuidadData.resumen.avg_dias_internado.toFixed(1) }}d</span>
+                                    <span class="em-cont-kpi-lbl">Días internado</span>
+                                    <span class="em-cont-kpi-sub">mediana {{ continuidadData.resumen.mediana_dias_internado }}d · máx {{ continuidadData.resumen.max_dias_internado }}d</span>
+                                </div>
+                                <div class="em-cont-kpi">
+                                    <span class="em-cont-kpi-val">{{ fCurrency(continuidadData.resumen.avg_ticket_combinado) }}</span>
+                                    <span class="em-cont-kpi-lbl">Ticket combinado</span>
+                                    <span class="em-cont-kpi-sub">emerg. + hosp.</span>
+                                </div>
+                                <div class="em-cont-kpi">
+                                    <span class="em-cont-kpi-val">{{ fCurrencyK(continuidadData.resumen.total_facturado_emergencia) }}</span>
+                                    <span class="em-cont-kpi-lbl">Total emergencia</span>
+                                    <span class="em-cont-kpi-sub">período</span>
+                                </div>
+                                <div class="em-cont-kpi">
+                                    <span class="em-cont-kpi-val">{{ fCurrencyK(continuidadData.resumen.total_facturado_hospitalizacion) }}</span>
+                                    <span class="em-cont-kpi-lbl">Total hospitalización</span>
+                                    <span class="em-cont-kpi-sub">período</span>
+                                </div>
+                            </div>
+
+                            <!-- Tendencia mensual -->
+                            <div class="em-cont-chart-wrapper">
+                                <Chart type="bar" :data="continuidadTendenciaData" :options="continuidadTendenciaOptions" class="em-chart" />
+                            </div>
+
+                            <!-- Top Médicos + Top Diagnósticos -->
+                            <div class="em-rankings-grid">
+                                <Card class="em-card">
+                                    <template #title>
+                                        <span><i class="pi pi-user mr-2" style="color: #6366f1"></i>Top Médicos por Conversión</span>
+                                    </template>
+                                    <template #content>
+                                        <div class="em-rank-list">
+                                            <div v-for="(doc, idx) in continuidadData.top_medicos" :key="doc.cod_medico" class="em-rank-item">
+                                                <div class="em-rank-left">
+                                                    <span class="em-rank-badge" :class="{ 'em-rank-1': idx === 0, 'em-rank-2': idx === 1, 'em-rank-3': idx === 2 }">#{{ idx + 1 }}</span>
+                                                    <div class="em-rank-info">
+                                                        <div class="em-rank-name">{{ doc.medico }}</div>
+                                                        <div class="em-rank-sub">{{ fNumber(doc.emergencias) }} emerg. · {{ fNumber(doc.hospitalizaciones) }} hosp.</div>
+                                                    </div>
+                                                </div>
+                                                <div class="em-rank-right">
+                                                    <div class="em-rank-value" style="color: #6366f1">{{ doc.tasa_pct.toFixed(1) }}%</div>
+                                                    <div class="em-rank-meta">conversión</div>
+                                                </div>
+                                            </div>
+                                            <div v-if="!continuidadData.top_medicos.length" class="em-rank-empty">Sin datos</div>
+                                        </div>
+                                    </template>
+                                </Card>
+
+                                <Card class="em-card">
+                                    <template #title>
+                                        <span><i class="pi pi-heart-fill mr-2" style="color: #e11d48"></i>Diagnósticos en Hospitalizados</span>
+                                    </template>
+                                    <template #content>
+                                        <div class="em-diag-grid">
+                                            <div v-for="(item, idx) in continuidadData.top_diagnosticos" :key="item.codigo_cie" class="em-diag-item">
+                                                <div class="em-diag-top">
+                                                    <div class="em-diag-left">
+                                                        <span class="em-rank-badge" :class="{ 'em-rank-1': idx === 0, 'em-rank-2': idx === 1, 'em-rank-3': idx === 2 }">#{{ idx + 1 }}</span>
+                                                        <div class="em-diag-label">
+                                                            <span class="em-diag-code">{{ item.codigo_cie }}</span>
+                                                            <span class="em-diag-name">{{ item.nombre_cie }}</span>
+                                                        </div>
+                                                    </div>
+                                                    <span class="em-diag-count">{{ fNumber(item.atenciones) }}</span>
+                                                </div>
+                                                <div class="em-diag-bar-track">
+                                                    <div class="em-diag-bar-fill" :style="{ width: ((item.atenciones / (continuidadData.top_diagnosticos[0]?.atenciones || 1)) * 100).toFixed(1) + '%' }"></div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                        <div v-if="!continuidadData.top_diagnosticos.length" class="em-rank-empty">Sin datos</div>
+                                    </template>
+                                </Card>
+                            </div>
+
+                            <!-- Por Aseguradora -->
+                            <Card class="em-card" style="margin-top: 1rem">
+                                <template #title>
+                                    <span><i class="pi pi-building mr-2" style="color: #0369a1"></i>Conversión por Aseguradora</span>
+                                </template>
+                                <template #content>
+                                    <DataTable :value="continuidadData.por_aseguradora" stripedRows size="small" class="em-table">
+                                        <Column field="aseguradora" header="Aseguradora" sortable />
+                                        <Column field="emergencias" header="Emergencias" sortable style="width: 130px">
+                                            <template #body="{ data }">{{ fNumber(data.emergencias) }}</template>
+                                        </Column>
+                                        <Column field="hospitalizaciones" header="Hospitalizaciones" sortable style="width: 150px">
+                                            <template #body="{ data }">
+                                                <span style="color: #059669; font-weight: 700">{{ fNumber(data.hospitalizaciones) }}</span>
+                                            </template>
+                                        </Column>
+                                        <Column field="tasa_pct" header="% Conversión" sortable style="width: 130px">
+                                            <template #body="{ data }">
+                                                <span class="em-cont-pct-badge">{{ data.tasa_pct.toFixed(1) }}%</span>
+                                            </template>
+                                        </Column>
+                                    </DataTable>
+                                </template>
+                            </Card>
+
+                            <!-- Reingresos 30d -->
+                            <div class="em-cont-reingresos">
+                                <div class="em-cont-reingreso-label">
+                                    <i class="pi pi-refresh" style="color: #d97706"></i>
+                                    <span>Reingresos a Emergencia ≤ 30 días tras el alta (independiente de la ventana)</span>
+                                </div>
+                                <div class="em-sindiag-kpis" style="grid-template-columns: repeat(3, 1fr)">
+                                    <div class="em-sindiag-kpi">
+                                        <span class="em-sindiag-kpi-val">{{ fNumber(continuidadData.reingresos_30d.total_altas) }}</span>
+                                        <span class="em-sindiag-kpi-lbl">Altas hospitalarias</span>
+                                    </div>
+                                    <div class="em-sindiag-kpi em-sindiag-kpi--danger">
+                                        <span class="em-sindiag-kpi-val">{{ fNumber(continuidadData.reingresos_30d.reingresos_30d) }}</span>
+                                        <span class="em-sindiag-kpi-lbl">Reingresos 30d</span>
+                                    </div>
+                                    <div class="em-sindiag-kpi" :style="{ background: reingresoBg(continuidadData.reingresos_30d.tasa_reingreso_pct), borderColor: 'transparent' }">
+                                        <span class="em-sindiag-kpi-val" :style="{ color: reingresoColor(continuidadData.reingresos_30d.tasa_reingreso_pct) }">
+                                            {{ continuidadData.reingresos_30d.tasa_reingreso_pct.toFixed(1) }}%
+                                        </span>
+                                        <span class="em-sindiag-kpi-lbl">Tasa reingreso</span>
+                                    </div>
+                                </div>
+                            </div>
+
+                        </template>
+                    </template>
+                </Card>
+
                 <!-- Auditoría Sin Diagnóstico -->
                 <Card class="em-card">
                     <template #title>
@@ -1915,5 +2200,96 @@ onMounted(() => {
 
 .em-audit-select {
     width: 100%;
+}
+
+/* ─── CONTINUIDAD ────────────────────────────────────────────────────────── */
+.em-cont-kpis {
+    display: grid;
+    grid-template-columns: repeat(6, 1fr);
+    gap: 0.75rem;
+    margin-bottom: 1.5rem;
+}
+
+.em-cont-kpi {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0.2rem;
+    padding: 0.875rem 0.5rem;
+    background: var(--surface-50);
+    border-radius: 10px;
+    border: 1px solid var(--surface-border);
+    text-align: center;
+}
+
+.em-cont-kpi--highlight {
+    background: #eff6ff;
+    border-color: #bfdbfe;
+}
+
+.em-cont-kpi-val {
+    font-size: 1.125rem;
+    font-weight: 800;
+    color: var(--text-color);
+    line-height: 1;
+}
+
+.em-cont-kpi--highlight .em-cont-kpi-val {
+    color: #0369a1;
+}
+
+.em-cont-kpi-lbl {
+    font-size: 0.6875rem;
+    font-weight: 600;
+    color: var(--text-color-secondary);
+    text-transform: uppercase;
+    letter-spacing: 0.3px;
+}
+
+.em-cont-kpi-sub {
+    font-size: 0.6rem;
+    color: var(--text-color-secondary);
+    font-weight: 500;
+}
+
+.em-cont-chart-wrapper {
+    width: 100%;
+    height: 300px;
+    position: relative;
+    margin-bottom: 1.5rem;
+}
+
+.em-cont-reingresos {
+    display: flex;
+    flex-direction: column;
+    gap: 0.625rem;
+    margin-top: 1.25rem;
+}
+
+.em-cont-reingreso-label {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    font-size: 0.8125rem;
+    font-weight: 600;
+    color: var(--text-color);
+}
+
+.em-cont-pct-badge {
+    font-size: 0.8125rem;
+    font-weight: 700;
+    color: #0369a1;
+}
+
+@media (max-width: 1400px) {
+    .em-cont-kpis {
+        grid-template-columns: repeat(3, 1fr);
+    }
+}
+
+@media (max-width: 600px) {
+    .em-cont-kpis {
+        grid-template-columns: repeat(2, 1fr);
+    }
 }
 </style>
