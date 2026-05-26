@@ -11,7 +11,9 @@ import Column from 'primevue/column';
 import DataTable from 'primevue/datatable';
 import Message from 'primevue/message';
 import ProgressSpinner from 'primevue/progressspinner';
+import Select from 'primevue/select';
 import SelectButton from 'primevue/selectbutton';
+import ToggleButton from 'primevue/togglebutton';
 import { useToast } from 'primevue/usetoast';
 import { computed, onMounted, ref, watch } from 'vue';
 
@@ -385,6 +387,60 @@ const handleExportSinDiag = async () => {
 
 const pctColor = (pct) => (pct >= 75 ? '#059669' : pct >= 50 ? '#d97706' : '#e11d48');
 const pctBg = (pct) => (pct >= 75 ? '#f0fdf4' : pct >= 50 ? '#fffbeb' : '#fff1f2');
+
+// ─── AUDITORÍA PIPELINE ───────────────────────────────────────────────────────
+const isExportingAuditoria = ref(false);
+const auditArea = ref('');
+const auditSoloCorregidos = ref(false);
+
+const AUDIT_AREAS = [
+    { label: 'Todas las áreas', value: '' },
+    { label: '02.Emergencia', value: '02.Emergencia' },
+    { label: '03.Tópico', value: '03.Tópico' },
+    { label: '05.RX', value: '05.RX' },
+    { label: '06.Lab', value: '06.Lab' },
+    { label: '07.Farm', value: '07.Farm' },
+    { label: '10.Ecografía', value: '10.Ecografia' },
+    { label: '14.Oxígeno', value: '14.Oxígeno' },
+    { label: '17.Ambulancia', value: '17.Ambulancia' },
+    { label: '08.Consultorio Ext.', value: '08.Consultorio Ext.' }
+];
+
+const handleExportAuditoria = async () => {
+    if (!desde.value || !hasta.value) return;
+    isExportingAuditoria.value = true;
+    try {
+        const params = { desde: formatDate(desde.value), hasta: formatDate(hasta.value) };
+        if (auditArea.value) params.area_dashboard = auditArea.value;
+        if (auditSoloCorregidos.value) params.solo_corregidos = 1;
+
+        const response = await emergenciaApi.exportAuditoria(params);
+        const blob = new Blob([response.data], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+
+        const cd = response.headers?.['content-disposition'];
+        let filename = auditSoloCorregidos.value
+            ? `auditoria_pipeline_${params.desde}_${params.hasta}_solo_corregidos.xlsx`
+            : `auditoria_pipeline_${params.desde}_${params.hasta}.xlsx`;
+        if (cd) {
+            const match = cd.match(/filename[^;=\n]*=((['"]).*?\2|[^;\n]*)/);
+            if (match) filename = match[1].replace(/['"]/g, '');
+        }
+
+        a.download = filename;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        URL.revokeObjectURL(url);
+        toast.add({ severity: 'success', summary: 'Exportado', detail: 'Auditoría descargada correctamente', life: 3000 });
+    } catch {
+        toast.add({ severity: 'error', summary: 'Error', detail: 'No se pudo exportar la auditoría del pipeline', life: 4000 });
+    } finally {
+        isExportingAuditoria.value = false;
+    }
+};
 
 // ─── DIAGNÓSTICOS CIE-10 ─────────────────────────────────────────────────────
 const diagData = ref(null);
@@ -925,6 +981,42 @@ onMounted(() => {
                         </div>
                     </template>
                 </Card>
+                <!-- Auditoría Pipeline -->
+                <Card class="em-card">
+                    <template #title>
+                        <div class="em-card-title">
+                            <span><i class="pi pi-file-excel mr-2" style="color: #059669"></i>Auditoría Pipeline</span>
+                        </div>
+                    </template>
+                    <template #content>
+                        <div class="em-audit-content">
+                            <p class="em-audit-desc">
+                                Descarga el reporte Excel del pipeline de limpieza automática para el período <strong>{{ formatPeriod }}</strong>.
+                                El archivo incluye tres hojas: detalle de atenciones (26 columnas), resumen de correcciones agrupadas por área y regla aplicada,
+                                y registros que el pipeline dejó sin cambiar.
+                            </p>
+                            <div class="em-audit-filters">
+                                <div class="em-audit-filter-item">
+                                    <label class="em-filter-label">Área dashboard</label>
+                                    <Select v-model="auditArea" :options="AUDIT_AREAS" optionLabel="label" optionValue="value" placeholder="Todas las áreas" class="em-audit-select" />
+                                </div>
+                                <div class="em-audit-filter-item">
+                                    <label class="em-filter-label">Filtro registros</label>
+                                    <ToggleButton v-model="auditSoloCorregidos" onLabel="Solo corregidos" offLabel="Todos los registros" onIcon="pi pi-filter" offIcon="pi pi-filter-slash" class="em-audit-toggle" />
+                                </div>
+                                <Button
+                                    icon="pi pi-download"
+                                    label="Descargar auditoría"
+                                    severity="success"
+                                    :loading="isExportingAuditoria"
+                                    @click="handleExportAuditoria"
+                                    class="em-audit-btn"
+                                />
+                            </div>
+                        </div>
+                    </template>
+                </Card>
+
                 <!-- Auditoría Sin Diagnóstico -->
                 <Card class="em-card">
                     <template #title>
@@ -1770,6 +1862,63 @@ onMounted(() => {
     .em-calendar {
         min-width: unset;
         width: 100%;
+    }
+}
+
+/* ─── AUDITORÍA PIPELINE ─────────────────────────────────────────────────── */
+.em-audit-content {
+    display: flex;
+    flex-direction: column;
+    gap: 1.25rem;
+}
+
+.em-audit-desc {
+    font-size: 0.875rem;
+    color: var(--text-color-secondary);
+    margin: 0;
+    line-height: 1.6;
+    max-width: 72ch;
+}
+
+.em-audit-filters {
+    display: flex;
+    align-items: flex-end;
+    gap: 1rem;
+    flex-wrap: wrap;
+}
+
+.em-audit-filter-item {
+    display: flex;
+    flex-direction: column;
+    gap: 0.375rem;
+}
+
+.em-audit-select {
+    min-width: 210px;
+}
+
+.em-audit-toggle {
+    font-size: 0.8125rem;
+}
+
+.em-audit-btn {
+    align-self: flex-end;
+}
+
+@media (max-width: 600px) {
+    .em-audit-filters {
+        flex-direction: column;
+        align-items: stretch;
+    }
+
+    .em-audit-select {
+        min-width: unset;
+        width: 100%;
+    }
+
+    .em-audit-btn {
+        width: 100%;
+        justify-content: center;
     }
 }
 </style>
