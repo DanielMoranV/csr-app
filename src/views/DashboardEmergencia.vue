@@ -9,6 +9,7 @@ import Card from 'primevue/card';
 import Chart from 'primevue/chart';
 import Column from 'primevue/column';
 import DataTable from 'primevue/datatable';
+import Dialog from 'primevue/dialog';
 import Message from 'primevue/message';
 import ProgressSpinner from 'primevue/progressspinner';
 import Select from 'primevue/select';
@@ -389,6 +390,7 @@ const pctColor = (pct) => (pct >= 75 ? '#059669' : pct >= 50 ? '#d97706' : '#e11
 const pctBg = (pct) => (pct >= 75 ? '#f0fdf4' : pct >= 50 ? '#fffbeb' : '#fff1f2');
 
 // ─── AUDITORÍA PIPELINE ───────────────────────────────────────────────────────
+const auditModalVisible = ref(false);
 const isExportingAuditoria = ref(false);
 const auditArea = ref('');
 const auditSoloCorregidos = ref(false);
@@ -657,6 +659,7 @@ onMounted(() => {
                     </div>
                     <Button icon="pi pi-search" label="Aplicar" @click="fetchData" :loading="isLoading" class="em-apply-btn" />
                     <Button icon="pi pi-download" label="Excel" @click="handleExport" :loading="isExporting" severity="success" outlined class="em-export-btn" />
+                    <Button icon="pi pi-shield" label="Auditoría" @click="auditModalVisible = true" :disabled="!desde || !hasta" severity="secondary" outlined class="em-export-btn" />
                 </div>
             </div>
         </div>
@@ -979,44 +982,6 @@ onMounted(() => {
                         </div>
                     </template>
                 </Card>
-                <!-- Auditoría Pipeline -->
-                <Card class="em-card">
-                    <template #title>
-                        <div class="em-card-title">
-                            <span><i class="pi pi-file-excel mr-2" style="color: #059669"></i>Auditoría Pipeline</span>
-                        </div>
-                    </template>
-                    <template #content>
-                        <div class="em-audit-content">
-                            <p class="em-audit-desc">
-                                Descarga el reporte del pipeline de limpieza automática para el período <strong>{{ formatPeriod }}</strong
-                                >.
-                            </p>
-                            <div class="em-audit-zip-note">
-                                <i class="pi pi-info-circle"></i>
-                                <span>
-                                    El archivo descargado es un <strong>.zip</strong> que contiene:
-                                    <span class="em-audit-zip-files">
-                                        <span><i class="pi pi-file mr-1"></i>detalle.csv — todos los registros (abrir en Excel con separador ";")</span>
-                                        <span><i class="pi pi-file-excel mr-1"></i>resumen.xlsx — resumen de correcciones por regla</span>
-                                    </span>
-                                </span>
-                            </div>
-                            <div class="em-audit-filters">
-                                <div class="em-audit-filter-item">
-                                    <label class="em-filter-label">Área dashboard</label>
-                                    <Select v-model="auditArea" :options="AUDIT_AREAS" optionLabel="label" optionValue="value" placeholder="Todas las áreas" class="em-audit-select" />
-                                </div>
-                                <div class="em-audit-filter-item">
-                                    <label class="em-filter-label">Filtro registros</label>
-                                    <ToggleButton v-model="auditSoloCorregidos" onLabel="Solo corregidos" offLabel="Todos los registros" onIcon="pi pi-filter" offIcon="pi pi-filter-slash" class="em-audit-toggle" />
-                                </div>
-                                <Button icon="pi pi-download" label="Descargar auditoría" severity="success" :loading="isExportingAuditoria" @click="handleExportAuditoria" class="em-audit-btn" />
-                            </div>
-                        </div>
-                    </template>
-                </Card>
-
                 <!-- Auditoría Sin Diagnóstico -->
                 <Card class="em-card">
                     <template #title>
@@ -1097,6 +1062,42 @@ onMounted(() => {
                 </Card>
             </template>
         </div>
+
+        <!-- ── Modal Auditoría Pipeline ──────────────────────────────────── -->
+        <Dialog v-model:visible="auditModalVisible" modal header="Auditoría Pipeline" :style="{ width: '500px' }" :breakpoints="{ '640px': '95vw' }" :draggable="false">
+            <div class="em-audit-content">
+                <p class="em-audit-desc">
+                    Reporte del pipeline de limpieza automática para el período <strong>{{ formatPeriod }}</strong
+                    >.
+                </p>
+
+                <div class="em-audit-zip-note">
+                    <i class="pi pi-info-circle"></i>
+                    <span>
+                        El archivo descargado es un <strong>.zip</strong> que contiene:
+                        <span class="em-audit-zip-files">
+                            <span><i class="pi pi-file mr-1"></i>detalle.csv — todos los registros (abrir en Excel con separador ";")</span>
+                            <span><i class="pi pi-file-excel mr-1"></i>resumen.xlsx — resumen de correcciones por regla</span>
+                        </span>
+                    </span>
+                </div>
+
+                <div class="em-audit-filter-item">
+                    <label class="em-filter-label">Área dashboard</label>
+                    <Select v-model="auditArea" :options="AUDIT_AREAS" optionLabel="label" optionValue="value" placeholder="Todas las áreas" class="em-audit-select" />
+                </div>
+
+                <div class="em-audit-filter-item">
+                    <label class="em-filter-label">Filtro registros</label>
+                    <ToggleButton v-model="auditSoloCorregidos" onLabel="Solo corregidos" offLabel="Todos los registros" onIcon="pi pi-filter" offIcon="pi pi-filter-slash" />
+                </div>
+            </div>
+
+            <template #footer>
+                <Button label="Cancelar" severity="secondary" text @click="auditModalVisible = false" />
+                <Button icon="pi pi-download" label="Descargar auditoría" severity="success" :loading="isExportingAuditoria" @click="handleExportAuditoria" />
+            </template>
+        </Dialog>
     </div>
 </template>
 
@@ -1906,13 +1907,6 @@ onMounted(() => {
     padding-left: 0.25rem;
 }
 
-.em-audit-filters {
-    display: flex;
-    align-items: flex-end;
-    gap: 1rem;
-    flex-wrap: wrap;
-}
-
 .em-audit-filter-item {
     display: flex;
     flex-direction: column;
@@ -1920,31 +1914,6 @@ onMounted(() => {
 }
 
 .em-audit-select {
-    min-width: 210px;
-}
-
-.em-audit-toggle {
-    font-size: 0.8125rem;
-}
-
-.em-audit-btn {
-    align-self: flex-end;
-}
-
-@media (max-width: 600px) {
-    .em-audit-filters {
-        flex-direction: column;
-        align-items: stretch;
-    }
-
-    .em-audit-select {
-        min-width: unset;
-        width: 100%;
-    }
-
-    .em-audit-btn {
-        width: 100%;
-        justify-content: center;
-    }
+    width: 100%;
 }
 </style>
