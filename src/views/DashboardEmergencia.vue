@@ -421,9 +421,7 @@ const handleExportAuditoria = async () => {
         a.href = url;
 
         const cd = response.headers?.['content-disposition'];
-        let filename = auditSoloCorregidos.value
-            ? `auditoria_pipeline_${params.desde}_${params.hasta}_solo_corregidos.xlsx`
-            : `auditoria_pipeline_${params.desde}_${params.hasta}.xlsx`;
+        let filename = auditSoloCorregidos.value ? `auditoria_pipeline_${params.desde}_${params.hasta}_solo_corregidos.xlsx` : `auditoria_pipeline_${params.desde}_${params.hasta}.xlsx`;
         if (cd) {
             const match = cd.match(/filename[^;=\n]*=((['"]).*?\2|[^;\n]*)/);
             if (match) filename = match[1].replace(/['"]/g, '');
@@ -991,9 +989,8 @@ onMounted(() => {
                     <template #content>
                         <div class="em-audit-content">
                             <p class="em-audit-desc">
-                                Descarga el reporte Excel del pipeline de limpieza automática para el período <strong>{{ formatPeriod }}</strong>.
-                                El archivo incluye tres hojas: detalle de atenciones (26 columnas), resumen de correcciones agrupadas por área y regla aplicada,
-                                y registros que el pipeline dejó sin cambiar.
+                                Descarga el reporte Excel del pipeline de limpieza automática para el período <strong>{{ formatPeriod }}</strong
+                                >. El archivo incluye tres hojas: detalle de atenciones (26 columnas), resumen de correcciones agrupadas por área y regla aplicada, y registros que el pipeline dejó sin cambiar.
                             </p>
                             <div class="em-audit-filters">
                                 <div class="em-audit-filter-item">
@@ -1004,14 +1001,7 @@ onMounted(() => {
                                     <label class="em-filter-label">Filtro registros</label>
                                     <ToggleButton v-model="auditSoloCorregidos" onLabel="Solo corregidos" offLabel="Todos los registros" onIcon="pi pi-filter" offIcon="pi pi-filter-slash" class="em-audit-toggle" />
                                 </div>
-                                <Button
-                                    icon="pi pi-download"
-                                    label="Descargar auditoría"
-                                    severity="success"
-                                    :loading="isExportingAuditoria"
-                                    @click="handleExportAuditoria"
-                                    class="em-audit-btn"
-                                />
+                                <Button icon="pi pi-download" label="Descargar auditoría" severity="success" :loading="isExportingAuditoria" @click="handleExportAuditoria" class="em-audit-btn" />
                             </div>
                         </div>
                     </template>
