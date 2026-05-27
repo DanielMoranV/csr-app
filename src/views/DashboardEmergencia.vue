@@ -743,6 +743,57 @@ const continuidadTendenciaOptions = {
 const reingresoColor = (pct) => (pct > 5 ? '#e11d48' : pct > 2 ? '#d97706' : '#059669');
 const reingresoBg = (pct) => (pct > 5 ? '#fff1f2' : pct > 2 ? '#fffbeb' : '#f0fdf4');
 
+// ─── CONVERSIÓN POR ASEGURADORA ───────────────────────────────────────────────
+const isPart = (r) => /particular/i.test(r.aseguradora);
+
+const continuidadCiaMeta = computed(() => {
+    if (!continuidadData.value?.por_aseguradora) return null;
+    const rows = continuidadData.value.por_aseguradora;
+    const part = rows.filter(isPart);
+    const seg = rows.filter((r) => !isPart(r));
+    const pE = part.reduce((s, r) => s + r.emergencias, 0);
+    const pH = part.reduce((s, r) => s + r.hospitalizaciones, 0);
+    const sE = seg.reduce((s, r) => s + r.emergencias, 0);
+    const sH = seg.reduce((s, r) => s + r.hospitalizaciones, 0);
+    return [
+        { label: 'Particular', color: '#0369a1', emergencias: pE, hospitalizaciones: pH, tasa: pE > 0 ? (pH / pE) * 100 : 0 },
+        { label: 'Seguros', color: '#7dd3fc', emergencias: sE, hospitalizaciones: sH, tasa: sE > 0 ? (sH / sE) * 100 : 0 }
+    ];
+});
+
+const continuidadCiaDonutData = computed(() => {
+    if (!continuidadCiaMeta.value) return { labels: [], datasets: [] };
+    const [p, s] = continuidadCiaMeta.value;
+    return {
+        labels: ['Particular', 'Seguros'],
+        datasets: [{ data: [p.emergencias, s.emergencias], backgroundColor: ['#0369a1', '#7dd3fc'], borderWidth: 0, hoverOffset: 12 }]
+    };
+});
+
+const continuidadCiaCenter = computed(() => {
+    if (!continuidadCiaMeta.value) return { tasa: '0.0%', label: 'conversión total' };
+    const [p, s] = continuidadCiaMeta.value;
+    const totalE = p.emergencias + s.emergencias;
+    const totalH = p.hospitalizaciones + s.hospitalizaciones;
+    return { tasa: totalE > 0 ? ((totalH / totalE) * 100).toFixed(1) + '%' : '0.0%', label: 'conversión total' };
+});
+
+const continuidadCiaDonutOptions = {
+    cutout: '78%',
+    responsive: true,
+    maintainAspectRatio: false,
+    plugins: {
+        legend: { display: false },
+        tooltip: { callbacks: { label: (ctx) => ` ${fNumber(ctx.parsed)} emergencias` } },
+        datalabels: { display: false }
+    }
+};
+
+const top10Seguros = computed(() => {
+    if (!continuidadData.value?.por_aseguradora) return [];
+    return continuidadData.value.por_aseguradora.filter((r) => !isPart(r)).slice(0, 10);
+});
+
 onMounted(() => {
     const now = new Date();
     desde.value = new Date(now.getFullYear() - 1, 0, 1);
@@ -1177,8 +1228,8 @@ onMounted(() => {
                                         <span><i class="pi pi-heart-fill mr-2" style="color: #e11d48"></i>Diagnósticos en Hospitalizados</span>
                                     </template>
                                     <template #content>
-                                        <div class="em-diag-grid">
-                                            <div v-for="(item, idx) in continuidadData.top_diagnosticos" :key="item.codigo_cie" class="em-diag-item">
+                                        <div class="em-diag-grid em-diag-grid--single">
+                                            <div v-for="(item, idx) in continuidadData.top_diagnosticos.slice(0, 10)" :key="item.codigo_cie" class="em-diag-item">
                                                 <div class="em-diag-top">
                                                     <div class="em-diag-left">
                                                         <span class="em-rank-badge" :class="{ 'em-rank-1': idx === 0, 'em-rank-2': idx === 1, 'em-rank-3': idx === 2 }">#{{ idx + 1 }}</span>
@@ -1205,7 +1256,31 @@ onMounted(() => {
                                     <span><i class="pi pi-building mr-2" style="color: #0369a1"></i>Conversión por Aseguradora</span>
                                 </template>
                                 <template #content>
-                                    <DataTable :value="continuidadData.por_aseguradora" stripedRows size="small" class="em-table">
+                                    <!-- Donut Particular vs Seguros -->
+                                    <div v-if="continuidadCiaMeta" class="em-cont-cia-chart-row">
+                                        <div class="em-donut-wrapper" style="width: 180px; height: 180px; flex-shrink: 0">
+                                            <Chart type="doughnut" :data="continuidadCiaDonutData" :options="continuidadCiaDonutOptions" class="em-donut-chart" />
+                                            <div class="em-donut-center">
+                                                <div class="em-donut-total" style="font-size: 1.05rem">{{ continuidadCiaCenter.tasa }}</div>
+                                                <div class="em-donut-label">{{ continuidadCiaCenter.label }}</div>
+                                            </div>
+                                        </div>
+                                        <div class="em-cont-cia-legend">
+                                            <div v-for="item in continuidadCiaMeta" :key="item.label" class="em-cont-cia-legend-item">
+                                                <div class="em-legend-left">
+                                                    <span class="em-legend-dot" :style="{ background: item.color }"></span>
+                                                    <span class="em-legend-name">{{ item.label }}</span>
+                                                </div>
+                                                <div class="em-cont-cia-legend-stats">
+                                                    <span class="em-cont-cia-tasa">{{ item.tasa.toFixed(1) }}% conv.</span>
+                                                    <span class="em-cont-cia-detail">{{ fNumber(item.hospitalizaciones) }} hosp. / {{ fNumber(item.emergencias) }} emerg.</span>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    <!-- Tabla solo seguros top 10 -->
+                                    <DataTable :value="top10Seguros" stripedRows size="small" class="em-table" style="margin-top: 1.25rem">
                                         <Column field="aseguradora" header="Aseguradora" sortable />
                                         <Column field="emergencias" header="Emergencias" sortable style="width: 130px">
                                             <template #body="{ data }">{{ fNumber(data.emergencias) }}</template>
@@ -1886,6 +1961,10 @@ onMounted(() => {
     gap: 0.625rem;
 }
 
+.em-diag-grid--single {
+    grid-template-columns: 1fr;
+}
+
 .em-diag-item {
     display: flex;
     flex-direction: column;
@@ -2078,6 +2157,53 @@ onMounted(() => {
     background: var(--surface-50);
     border-radius: 10px;
     border: 1px dashed var(--surface-border);
+}
+
+/* ─── CONVERSIÓN CIA DONUT ───────────────────────────────────────────────── */
+.em-cont-cia-chart-row {
+    display: flex;
+    align-items: center;
+    gap: 2rem;
+    padding: 0.25rem 0 0.5rem;
+    flex-wrap: wrap;
+}
+
+.em-cont-cia-legend {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+    min-width: 220px;
+}
+
+.em-cont-cia-legend-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 0.75rem 1rem;
+    background: var(--surface-50);
+    border-radius: 10px;
+    border: 1px solid var(--surface-border);
+    gap: 1rem;
+}
+
+.em-cont-cia-legend-stats {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-end;
+    gap: 0.15rem;
+}
+
+.em-cont-cia-tasa {
+    font-size: 1rem;
+    font-weight: 800;
+    color: var(--text-color);
+}
+
+.em-cont-cia-detail {
+    font-size: 0.6875rem;
+    color: var(--text-color-secondary);
+    font-weight: 500;
 }
 
 /* ─── RESPONSIVE ─────────────────────────────────────────────────────────── */
