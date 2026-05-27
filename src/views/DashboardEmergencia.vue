@@ -755,9 +755,10 @@ const continuidadCiaMeta = computed(() => {
     const pH = part.reduce((s, r) => s + r.hospitalizaciones, 0);
     const sE = seg.reduce((s, r) => s + r.emergencias, 0);
     const sH = seg.reduce((s, r) => s + r.hospitalizaciones, 0);
+    const totalE = pE + sE;
     return [
-        { label: 'Particular', color: '#0369a1', emergencias: pE, hospitalizaciones: pH, tasa: pE > 0 ? (pH / pE) * 100 : 0 },
-        { label: 'Seguros', color: '#7dd3fc', emergencias: sE, hospitalizaciones: sH, tasa: sE > 0 ? (sH / sE) * 100 : 0 }
+        { label: 'Particular', color: '#0369a1', emergencias: pE, hospitalizaciones: pH, tasa: totalE > 0 ? (pH / totalE) * 100 : 0 },
+        { label: 'Seguros', color: '#7dd3fc', emergencias: sE, hospitalizaciones: sH, tasa: totalE > 0 ? (sH / totalE) * 100 : 0 }
     ];
 });
 
@@ -1272,7 +1273,7 @@ onMounted(() => {
                                                     <span class="em-legend-name">{{ item.label }}</span>
                                                 </div>
                                                 <div class="em-cont-cia-legend-stats">
-                                                    <span class="em-cont-cia-tasa">{{ item.tasa.toFixed(1) }}% conv.</span>
+                                                    <span class="em-cont-cia-tasa">{{ item.tasa.toFixed(1) }}%</span>
                                                     <span class="em-cont-cia-detail">{{ fNumber(item.hospitalizaciones) }} hosp. / {{ fNumber(item.emergencias) }} emerg.</span>
                                                 </div>
                                             </div>
