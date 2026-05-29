@@ -553,6 +553,13 @@ watch(trendGranularity, fetchTendencia);
 // ─── Sorted region table ───────────────────────────────────────────────────────
 const regionesSorted = computed(() => [...(summary.value?.regiones || [])].sort((a, b) => b.atenciones - a.atenciones));
 
+// ─── Médicos row class ─────────────────────────────────────────────────────────
+const medicoRowClass = (row) => {
+    if (row.cod_medico === 'SIN MÉDICO') return 'rx-row-sin-medico';
+    if (row.cod_medico === '0042') return 'rx-row-area';
+    return null;
+};
+
 let themeObserver = null;
 
 onMounted(() => {
@@ -828,41 +835,70 @@ onUnmounted(() => {
                 </Card>
             </div>
 
-            <!-- Top Procedimientos -->
-            <Card class="rx-card">
-                <template #title>
-                    <div class="rx-card-title-row">
-                        <span><i class="pi pi-list mr-2" style="color: #f59e0b"></i>Top Procedimientos</span>
-                        <SelectButton v-model="topN" :options="topOptions" optionLabel="label" optionValue="value" class="rx-metric-toggle" />
-                    </div>
-                </template>
-                <template #content>
-                    <DataTable :value="summary.top_procedimientos" size="small" class="rx-table" sortField="atenciones" :sortOrder="-1" stripedRows paginator :rows="10">
-                        <Column field="cod_seg" header="Cód. SEGUS" sortable style="width: 130px">
-                            <template #body="{ data: row }"
-                                ><span class="rx-code">{{ row.cod_seg }}</span></template
-                            >
-                        </Column>
-                        <Column field="nombre" header="Procedimiento" sortable />
-                        <Column field="region" header="Región" sortable style="width: 160px">
-                            <template #body="{ data: row }">
-                                <span class="rx-region-badge" :style="{ background: regionColor(row.region) + '22', color: regionColor(row.region), borderColor: regionColor(row.region) + '66' }">
-                                    {{ row.region }}
-                                </span>
-                            </template>
-                        </Column>
-                        <Column field="atenciones" header="Atenc." sortable style="width: 80px; text-align: right">
-                            <template #body="{ data: row }">{{ fNum(row.atenciones) }}</template>
-                        </Column>
-                        <Column field="monto" header="Monto S/" sortable style="width: 130px; text-align: right">
-                            <template #body="{ data: row }">{{ fMoney(row.monto) }}</template>
-                        </Column>
-                        <Column field="ticket_medio" header="Ticket" sortable style="width: 110px; text-align: right">
-                            <template #body="{ data: row }">{{ fMoney(row.ticket_medio) }}</template>
-                        </Column>
-                    </DataTable>
-                </template>
-            </Card>
+            <!-- Top Procedimientos + Top Médicos que Indican -->
+            <div class="rx-two-col">
+                <Card class="rx-card">
+                    <template #title>
+                        <div class="rx-card-title-row">
+                            <span><i class="pi pi-list mr-2" style="color: #f59e0b"></i>Top Procedimientos</span>
+                            <SelectButton v-model="topN" :options="topOptions" optionLabel="label" optionValue="value" class="rx-metric-toggle" />
+                        </div>
+                    </template>
+                    <template #content>
+                        <DataTable :value="summary.top_procedimientos" size="small" class="rx-table" sortField="atenciones" :sortOrder="-1" stripedRows paginator :rows="10">
+                            <Column field="cod_seg" header="Cód. SEGUS" sortable style="width: 120px">
+                                <template #body="{ data: row }"
+                                    ><span class="rx-code">{{ row.cod_seg }}</span></template
+                                >
+                            </Column>
+                            <Column field="nombre" header="Procedimiento" sortable />
+                            <Column field="region" header="Región" sortable style="width: 140px">
+                                <template #body="{ data: row }">
+                                    <span class="rx-region-badge" :style="{ background: regionColor(row.region) + '22', color: regionColor(row.region), borderColor: regionColor(row.region) + '66' }">
+                                        {{ row.region }}
+                                    </span>
+                                </template>
+                            </Column>
+                            <Column field="atenciones" header="Atenc." sortable style="width: 75px; text-align: right">
+                                <template #body="{ data: row }">{{ fNum(row.atenciones) }}</template>
+                            </Column>
+                            <Column field="monto" header="Monto S/" sortable style="width: 120px; text-align: right">
+                                <template #body="{ data: row }">{{ fMoney(row.monto) }}</template>
+                            </Column>
+                            <Column field="ticket_medio" header="Ticket" sortable style="width: 100px; text-align: right">
+                                <template #body="{ data: row }">{{ fMoney(row.ticket_medio) }}</template>
+                            </Column>
+                        </DataTable>
+                    </template>
+                </Card>
+
+                <Card v-if="summary.top_medicos_indica?.length" class="rx-card">
+                    <template #title>
+                        <div class="rx-card-title-row">
+                            <span><i class="pi pi-user mr-2" style="color: #0369a1"></i>Top Médicos que Indican</span>
+                        </div>
+                    </template>
+                    <template #content>
+                        <DataTable :value="summary.top_medicos_indica" size="small" class="rx-table" sortField="placas" :sortOrder="-1" stripedRows :rowClass="medicoRowClass">
+                            <Column field="cod_medico" header="Cód." sortable style="width: 80px">
+                                <template #body="{ data: row }">
+                                    <span class="rx-code">{{ row.cod_medico }}</span>
+                                </template>
+                            </Column>
+                            <Column field="medico" header="Médico que Indica" sortable />
+                            <Column field="placas" header="Placas" sortable style="width: 75px; text-align: right">
+                                <template #body="{ data: row }">{{ fNum(row.placas) }}</template>
+                            </Column>
+                            <Column field="monto" header="Monto S/" sortable style="width: 120px; text-align: right">
+                                <template #body="{ data: row }">{{ fMoney(row.monto) }}</template>
+                            </Column>
+                            <Column field="ticket_medio" header="Ticket" sortable style="width: 100px; text-align: right">
+                                <template #body="{ data: row }">{{ fMoney(row.ticket_medio) }}</template>
+                            </Column>
+                        </DataTable>
+                    </template>
+                </Card>
+            </div>
 
             <!-- Tendencia Temporal + Estacionalidad Semanal -->
             <div class="rx-two-col">
@@ -1445,6 +1481,17 @@ onUnmounted(() => {
     color: var(--text-color-secondary);
     min-width: 40px;
     text-align: right;
+}
+
+/* ─── MÉDICOS TABLE ROWS ──────────────────────────────────────────────────── */
+:deep(.rx-row-sin-medico) td {
+    color: var(--text-color-secondary) !important;
+    font-style: italic;
+    opacity: 0.75;
+}
+
+:deep(.rx-row-area) td {
+    color: var(--text-color-secondary) !important;
 }
 
 /* ─── TREND LOADING ───────────────────────────────────────────────────────── */

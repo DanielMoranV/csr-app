@@ -714,10 +714,7 @@ const continuidadTendenciaOptions = {
         datalabels: { display: false },
         tooltip: {
             callbacks: {
-                label: (ctx) =>
-                    ctx.dataset.label === '% Conversión'
-                        ? ` ${ctx.parsed.y.toFixed(1)}%`
-                        : ` ${fNumber(ctx.parsed.y)} atenciones`
+                label: (ctx) => (ctx.dataset.label === '% Conversión' ? ` ${ctx.parsed.y.toFixed(1)}%` : ` ${fNumber(ctx.parsed.y)} atenciones`)
             }
         }
     },
@@ -1173,7 +1170,6 @@ onMounted(() => {
                         </div>
                         <div v-else-if="!continuidadData" class="em-rank-empty">Sin datos de continuidad para el período</div>
                         <template v-else>
-
                             <!-- KPIs -->
                             <div class="em-cont-kpis">
                                 <div class="em-cont-kpi em-cont-kpi--highlight">
@@ -1316,14 +1312,11 @@ onMounted(() => {
                                         <span class="em-sindiag-kpi-lbl">Reingresos 30d</span>
                                     </div>
                                     <div class="em-sindiag-kpi" :style="{ background: reingresoBg(continuidadData.reingresos_30d.tasa_reingreso_pct), borderColor: 'transparent' }">
-                                        <span class="em-sindiag-kpi-val" :style="{ color: reingresoColor(continuidadData.reingresos_30d.tasa_reingreso_pct) }">
-                                            {{ continuidadData.reingresos_30d.tasa_reingreso_pct.toFixed(1) }}%
-                                        </span>
+                                        <span class="em-sindiag-kpi-val" :style="{ color: reingresoColor(continuidadData.reingresos_30d.tasa_reingreso_pct) }"> {{ continuidadData.reingresos_30d.tasa_reingreso_pct.toFixed(1) }}% </span>
                                         <span class="em-sindiag-kpi-lbl">Tasa reingreso</span>
                                     </div>
                                 </div>
                             </div>
-
                         </template>
                     </template>
                 </Card>
