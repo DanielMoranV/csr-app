@@ -117,7 +117,7 @@ export const MODULE_PERMISSIONS = {
         name: 'dashboard',
         path: '/dashboard',
         positions: PERMISSION_GROUPS.HIGH_MANAGEMENT,
-        label: 'Dashboard',
+        label: 'Dashboard Hospitalización',
         icon: 'pi pi-fw pi-home',
         menuSection: 'Principal'
     },
