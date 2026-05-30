@@ -142,6 +142,16 @@ export const MODULE_PERMISSIONS = {
         menuSection: 'Principal'
     },
 
+    // Dashboard Ecografía
+    dashboardEcografia: {
+        name: 'dashboard-ecografia',
+        path: '/ecografia',
+        positions: PERMISSION_GROUPS.DASHBOARDS,
+        label: 'Dashboard Ecografía',
+        icon: 'pi pi-fw pi-circle',
+        menuSection: 'Principal'
+    },
+
     // Dashboard Errores de Admisión
     dashboardErrores: {
         name: 'dashboard-errores',

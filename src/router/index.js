@@ -221,6 +221,12 @@ const router = createRouter({
                     meta: { requiresAuth: true, positions: MODULE_PERMISSIONS.dashboardRayosX.positions }
                 },
                 {
+                    path: MODULE_PERMISSIONS.dashboardEcografia.path,
+                    name: MODULE_PERMISSIONS.dashboardEcografia.name,
+                    component: () => import('@/views/DashboardEcografia.vue'),
+                    meta: { requiresAuth: true, positions: MODULE_PERMISSIONS.dashboardEcografia.positions }
+                },
+                {
                     path: MODULE_PERMISSIONS.dashboardErrores.path,
                     name: MODULE_PERMISSIONS.dashboardErrores.name,
                     component: () => import('@/views/DashboardErrores.vue'),
