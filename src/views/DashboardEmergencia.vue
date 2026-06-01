@@ -281,10 +281,12 @@ const donutOptions = {
 
 // Area/subtipo breakdown table
 const areaBreakdown = computed(() => {
+    const grandTotal = filteredData.value.reduce((s, r) => s + r.importe, 0);
     const areas = [...new Set(filteredData.value.map((r) => r.area))].sort();
     const rows = [];
     areas.forEach((area) => {
         const areaRows = filteredData.value.filter((r) => r.area === area);
+        const areaTotal = areaRows.reduce((s, r) => s + r.importe, 0);
         const subtipos = [...new Set(areaRows.map((r) => r.subtipo || 'General'))].sort();
         subtipos.forEach((subtipo) => {
             const sub = areaRows.filter((r) => (r.subtipo || 'General') === subtipo);
@@ -296,11 +298,32 @@ const areaBreakdown = computed(() => {
                 total,
                 atenciones: sub.length,
                 particular: part,
-                seguros: total - part
+                seguros: total - part,
+                pctTotal: grandTotal > 0 ? (total / grandTotal) * 100 : 0,
+                pctParticular: total > 0 ? (part / total) * 100 : 0,
+                pctArea: areaTotal > 0 ? (total / areaTotal) * 100 : 0
             });
         });
     });
     return rows;
+});
+
+const areaBreakdownTotals = computed(() => {
+    const grandTotal = filteredData.value.reduce((s, r) => s + r.importe, 0);
+    const areas = [...new Set(areaBreakdown.value.map((r) => r.area))];
+    const result = {};
+    areas.forEach((area) => {
+        const rows = areaBreakdown.value.filter((r) => r.area === area);
+        const total = rows.reduce((s, r) => s + r.total, 0);
+        const part = rows.reduce((s, r) => s + r.particular, 0);
+        result[area] = {
+            total,
+            atenciones: rows.reduce((s, r) => s + r.atenciones, 0),
+            pctTotal: grandTotal > 0 ? (total / grandTotal) * 100 : 0,
+            pctParticular: total > 0 ? (part / total) * 100 : 0
+        };
+    });
+    return result;
 });
 
 // Rankings
@@ -961,12 +984,42 @@ onMounted(() => {
                     <template #content>
                         <DataTable :value="areaBreakdown" stripedRows :rowGroupMode="'subheader'" :groupRowsBy="'area'" sortField="area" :sortOrder="1" class="em-table" size="small">
                             <template #groupheader="{ data }">
-                                <span class="em-group-header"> <i class="pi pi-building mr-2"></i>{{ data.area }} </span>
+                                <div class="em-group-header-row">
+                                    <span class="em-group-header">
+                                        <i class="pi pi-building mr-2"></i>{{ data.area }}
+                                    </span>
+                                    <div class="em-group-header-stats" v-if="areaBreakdownTotals[data.area]">
+                                        <span class="em-group-stat">
+                                            <span class="em-group-stat-val">{{ fCurrency(areaBreakdownTotals[data.area].total) }}</span>
+                                        </span>
+                                        <span class="em-breakdown-pct-badge em-breakdown-pct-global">
+                                            {{ areaBreakdownTotals[data.area].pctTotal.toFixed(1) }}% del total
+                                        </span>
+                                        <span class="em-breakdown-pct-badge em-breakdown-pct-part">
+                                            {{ areaBreakdownTotals[data.area].pctParticular.toFixed(1) }}% particular
+                                        </span>
+                                        <span class="em-group-stat-atenc">
+                                            {{ fNumber(areaBreakdownTotals[data.area].atenciones) }} atenc.
+                                        </span>
+                                    </div>
+                                </div>
                             </template>
                             <Column field="subtipo" header="Subtipo" sortable />
                             <Column field="total" header="Facturación" sortable>
                                 <template #body="{ data }">
-                                    <span class="em-amount-primary">{{ fCurrency(data.total) }}</span>
+                                    <div class="em-breakdown-cell">
+                                        <span class="em-amount-primary">{{ fCurrency(data.total) }}</span>
+                                        <div class="em-breakdown-bar-track">
+                                            <div class="em-breakdown-bar-fill" :style="{ width: data.pctArea.toFixed(1) + '%' }"></div>
+                                        </div>
+                                    </div>
+                                </template>
+                            </Column>
+                            <Column field="pctTotal" header="% Total" sortable style="width: 100px">
+                                <template #body="{ data }">
+                                    <span class="em-breakdown-pct-badge em-breakdown-pct-global">
+                                        {{ data.pctTotal.toFixed(1) }}%
+                                    </span>
                                 </template>
                             </Column>
                             <Column field="atenciones" header="Atenciones" sortable>
@@ -974,12 +1027,18 @@ onMounted(() => {
                             </Column>
                             <Column field="particular" header="Particular" sortable>
                                 <template #body="{ data }">
-                                    <span class="em-amount-particular">{{ fCurrency(data.particular) }}</span>
+                                    <div class="em-breakdown-cell">
+                                        <span class="em-amount-particular">{{ fCurrency(data.particular) }}</span>
+                                        <span class="em-breakdown-pct-badge em-breakdown-pct-part">{{ data.pctParticular.toFixed(1) }}%</span>
+                                    </div>
                                 </template>
                             </Column>
                             <Column field="seguros" header="Seguros" sortable>
                                 <template #body="{ data }">
-                                    <span class="em-amount-seguros">{{ fCurrency(data.seguros) }}</span>
+                                    <div class="em-breakdown-cell">
+                                        <span class="em-amount-seguros">{{ fCurrency(data.seguros) }}</span>
+                                        <span class="em-breakdown-pct-badge em-breakdown-pct-seg">{{ (100 - data.pctParticular).toFixed(1) }}%</span>
+                                    </div>
                                 </template>
                             </Column>
                         </DataTable>
@@ -1821,6 +1880,83 @@ onMounted(() => {
     color: var(--primary-700);
     display: flex;
     align-items: center;
+}
+
+.em-group-header-row {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    flex-wrap: wrap;
+    width: 100%;
+}
+
+.em-group-header-stats {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    flex-wrap: wrap;
+}
+
+.em-group-stat-val {
+    font-size: 0.8125rem;
+    font-weight: 700;
+    color: var(--primary-600);
+}
+
+.em-group-stat-atenc {
+    font-size: 0.75rem;
+    color: var(--text-color-secondary);
+    font-weight: 600;
+}
+
+.em-breakdown-pct-badge {
+    display: inline-flex;
+    align-items: center;
+    padding: 0.15rem 0.5rem;
+    border-radius: 999px;
+    font-size: 0.6875rem;
+    font-weight: 700;
+    white-space: nowrap;
+}
+
+.em-breakdown-pct-global {
+    background: #eff6ff;
+    color: #1d4ed8;
+    border: 1px solid #bfdbfe;
+}
+
+.em-breakdown-pct-part {
+    background: #f0fdf4;
+    color: #059669;
+    border: 1px solid #bbf7d0;
+}
+
+.em-breakdown-pct-seg {
+    background: #f8fafc;
+    color: #475569;
+    border: 1px solid #e2e8f0;
+}
+
+.em-breakdown-cell {
+    display: flex;
+    flex-direction: column;
+    gap: 0.2rem;
+}
+
+.em-breakdown-bar-track {
+    height: 3px;
+    background: #e2e8f0;
+    border-radius: 2px;
+    overflow: hidden;
+    width: 100%;
+    min-width: 60px;
+}
+
+.em-breakdown-bar-fill {
+    height: 100%;
+    background: linear-gradient(90deg, #0369a1, #38bdf8);
+    border-radius: 2px;
+    transition: width 0.4s ease;
 }
 
 .em-amount-primary {
