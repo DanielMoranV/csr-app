@@ -682,31 +682,37 @@ const continuidadTendenciaData = computed(() => {
         return `${MONTH_NAMES[parseInt(m) - 1]} ${y}`;
     });
 
+    // Ratios Guardia/Especialista del período completo para aproximar el split mensual
+    const subtipos = continuidadData.value?.por_subtipo || [];
+    const guardiaH = subtipos.find((s) => s.subtipo === 'Guardia')?.hospitalizaciones || 0;
+    const espH = subtipos.find((s) => s.subtipo === 'Especialista')?.hospitalizaciones || 0;
+    const totalSplit = guardiaH + espH;
+    const rGuardia = totalSplit > 0 ? guardiaH / totalSplit : 0.5;
+
     return {
         labels,
         datasets: [
             {
                 type: 'bar',
-                label: 'Emergencias',
-                data: trend.map((t) => t.emergencias),
-                backgroundColor: '#0369a130',
+                label: 'Guardia',
+                data: trend.map((t) => Math.round(t.hospitalizaciones * rGuardia)),
+                backgroundColor: '#0369a1CC',
                 borderColor: '#0369a1',
                 borderWidth: 1.5,
-                borderRadius: 4,
                 borderSkipped: false,
-                stack: 'atenciones',
+                stack: 'hosp',
                 yAxisID: 'y'
             },
             {
                 type: 'bar',
-                label: 'Hospitalizaciones',
-                data: trend.map((t) => t.hospitalizaciones),
+                label: 'Especialista',
+                data: trend.map((t) => t.hospitalizaciones - Math.round(t.hospitalizaciones * rGuardia)),
                 backgroundColor: '#059669CC',
                 borderColor: '#059669',
                 borderWidth: 1.5,
-                borderRadius: 4,
+                borderRadius: { topLeft: 5, topRight: 5, bottomLeft: 0, bottomRight: 0 },
                 borderSkipped: false,
-                stack: 'atenciones',
+                stack: 'hosp',
                 yAxisID: 'y'
             },
             {
@@ -732,12 +738,28 @@ const continuidadTendenciaData = computed(() => {
 const continuidadTendenciaOptions = {
     responsive: true,
     maintainAspectRatio: false,
+    layout: { padding: { top: 24 } },
     plugins: {
         legend: { position: 'bottom', labels: { usePointStyle: true, padding: 16, font: { size: 11 } } },
-        datalabels: { display: false },
+        datalabels: {
+            // Solo activo en el dataset superior (Especialista, índice 1)
+            display: (ctx) => ctx.datasetIndex === 1,
+            anchor: 'end',
+            align: 'top',
+            offset: 2,
+            formatter: (val, ctx) => {
+                const total = ctx.chart.data.datasets.filter((ds) => ds.yAxisID === 'y').reduce((s, ds) => s + (Number(ds.data[ctx.dataIndex]) || 0), 0);
+                return fNumber(total);
+            },
+            font: { size: 10, weight: '700' },
+            color: '#1e293b'
+        },
         tooltip: {
             callbacks: {
-                label: (ctx) => (ctx.dataset.label === '% Conversión' ? ` ${ctx.parsed.y.toFixed(1)}%` : ` ${fNumber(ctx.parsed.y)} atenciones`)
+                label: (ctx) => {
+                    if (ctx.dataset.label === '% Conversión') return ` ${ctx.parsed.y.toFixed(1)}%`;
+                    return ` ${fNumber(ctx.parsed.y)} hosp. ${ctx.dataset.label.toLowerCase()}`;
+                }
             }
         }
     },
@@ -759,9 +781,6 @@ const continuidadTendenciaOptions = {
         }
     }
 };
-
-const reingresoColor = (pct) => (pct > 5 ? '#e11d48' : pct > 2 ? '#d97706' : '#059669');
-const reingresoBg = (pct) => (pct > 5 ? '#fff1f2' : pct > 2 ? '#fffbeb' : '#f0fdf4');
 
 // ─── CONVERSIÓN POR ASEGURADORA ───────────────────────────────────────────────
 const isPart = (r) => /particular/i.test(r.aseguradora);
@@ -813,6 +832,112 @@ const continuidadCiaDonutOptions = {
 const top10Seguros = computed(() => {
     if (!continuidadData.value?.por_aseguradora) return [];
     return continuidadData.value.por_aseguradora.filter((r) => !isPart(r)).slice(0, 10);
+});
+
+// ─── POR SUBTIPO ──────────────────────────────────────────────────────────────
+const SUBTIPO_COLORS = { Guardia: '#0369a1', Especialista: '#059669', 'Sin clasificar': '#94a3b8' };
+const SUBTIPO_COLORS_BG = { Guardia: '#0369a1CC', Especialista: '#059669CC', 'Sin clasificar': '#94a3b8CC' };
+
+const subtipoDonutData = computed(() => {
+    const list = continuidadData.value?.por_subtipo || [];
+    if (!list.length) return { labels: [], datasets: [] };
+    return {
+        labels: list.map((s) => s.subtipo),
+        datasets: [{ data: list.map((s) => s.emergencias), backgroundColor: list.map((s) => SUBTIPO_COLORS[s.subtipo] || '#94a3b8'), borderWidth: 0, hoverOffset: 12 }]
+    };
+});
+
+const subtipoDonutCenter = computed(() => {
+    const total = continuidadData.value?.resumen?.total_emergencias || 0;
+    return { total: fNumber(total), label: 'emergencias' };
+});
+
+const subtipoDonutLegend = computed(() => {
+    const list = continuidadData.value?.por_subtipo || [];
+    return list.map((s) => ({
+        label: s.subtipo,
+        color: SUBTIPO_COLORS[s.subtipo] || '#94a3b8',
+        pct: s.pct_del_total.toFixed(1),
+        hosp: s.hospitalizaciones,
+        tasa: s.tasa_pct.toFixed(1)
+    }));
+});
+
+const subtipoDonutOptions = {
+    cutout: '74%',
+    responsive: true,
+    maintainAspectRatio: false,
+    plugins: {
+        legend: { display: false },
+        tooltip: { callbacks: { label: (ctx) => ` ${fNumber(ctx.parsed)} emergencias (${ctx.label})` } },
+        datalabels: { display: false }
+    }
+};
+
+const subtipoBarData = computed(() => {
+    const list = continuidadData.value?.por_subtipo || [];
+    if (!list.length) return { labels: [], datasets: [] };
+    return {
+        labels: list.map((s) => s.subtipo),
+        datasets: [
+            {
+                label: 'Hospitalizaciones derivadas',
+                data: list.map((s) => s.hospitalizaciones),
+                backgroundColor: list.map((s) => SUBTIPO_COLORS_BG[s.subtipo] || '#94a3b8CC'),
+                borderColor: list.map((s) => SUBTIPO_COLORS[s.subtipo] || '#94a3b8'),
+                borderWidth: 2,
+                borderRadius: 10,
+                borderSkipped: false
+            }
+        ]
+    };
+});
+
+const subtipoBarOptions = computed(() => {
+    const list = continuidadData.value?.por_subtipo || [];
+    return {
+        responsive: true,
+        maintainAspectRatio: false,
+        plugins: {
+            legend: { display: false },
+            tooltip: {
+                callbacks: {
+                    label: (ctx) => ` ${fNumber(ctx.parsed.y)} hospitalizaciones`,
+                    afterLabel: (ctx) => {
+                        const s = list[ctx.dataIndex];
+                        return s ? `Tasa conversión: ${s.tasa_pct.toFixed(1)}%` : '';
+                    }
+                }
+            },
+            datalabels: {
+                display: true,
+                anchor: 'end',
+                align: 'top',
+                offset: 4,
+                formatter: (val, ctx) => {
+                    const s = list[ctx.dataIndex];
+                    return s ? [fNumber(val), `${s.tasa_pct.toFixed(1)}%`] : fNumber(val);
+                },
+                font: [
+                    { size: 13, weight: '800' },
+                    { size: 11, weight: '700' }
+                ],
+                color: (ctx) => {
+                    if (ctx.dataIndex === undefined) return '#1e293b';
+                    return ctx.dataIndex === 0 ? ['#0369a1', '#64748b'] : ctx.dataIndex === 1 ? ['#059669', '#64748b'] : ['#64748b', '#64748b'];
+                }
+            }
+        },
+        scales: {
+            y: {
+                beginAtZero: true,
+                grid: { color: '#f0f6ff' },
+                ticks: { font: { size: 10, weight: '600' }, color: '#94a3b8', callback: (v) => fNumber(v) }
+            },
+            x: { grid: { display: false }, ticks: { font: { size: 12, weight: '700' }, color: '#475569' } }
+        },
+        layout: { padding: { top: 32 } }
+    };
 });
 
 onMounted(() => {
@@ -985,22 +1110,14 @@ onMounted(() => {
                         <DataTable :value="areaBreakdown" stripedRows :rowGroupMode="'subheader'" :groupRowsBy="'area'" sortField="area" :sortOrder="1" class="em-table" size="small">
                             <template #groupheader="{ data }">
                                 <div class="em-group-header-row">
-                                    <span class="em-group-header">
-                                        <i class="pi pi-building mr-2"></i>{{ data.area }}
-                                    </span>
+                                    <span class="em-group-header"> <i class="pi pi-building mr-2"></i>{{ data.area }} </span>
                                     <div class="em-group-header-stats" v-if="areaBreakdownTotals[data.area]">
                                         <span class="em-group-stat">
                                             <span class="em-group-stat-val">{{ fCurrency(areaBreakdownTotals[data.area].total) }}</span>
                                         </span>
-                                        <span class="em-breakdown-pct-badge em-breakdown-pct-global">
-                                            {{ areaBreakdownTotals[data.area].pctTotal.toFixed(1) }}% del total
-                                        </span>
-                                        <span class="em-breakdown-pct-badge em-breakdown-pct-part">
-                                            {{ areaBreakdownTotals[data.area].pctParticular.toFixed(1) }}% particular
-                                        </span>
-                                        <span class="em-group-stat-atenc">
-                                            {{ fNumber(areaBreakdownTotals[data.area].atenciones) }} atenc.
-                                        </span>
+                                        <span class="em-breakdown-pct-badge em-breakdown-pct-global"> {{ areaBreakdownTotals[data.area].pctTotal.toFixed(1) }}% del total </span>
+                                        <span class="em-breakdown-pct-badge em-breakdown-pct-part"> {{ areaBreakdownTotals[data.area].pctParticular.toFixed(1) }}% particular </span>
+                                        <span class="em-group-stat-atenc"> {{ fNumber(areaBreakdownTotals[data.area].atenciones) }} atenc. </span>
                                     </div>
                                 </div>
                             </template>
@@ -1017,9 +1134,7 @@ onMounted(() => {
                             </Column>
                             <Column field="pctTotal" header="% Total" sortable style="width: 100px">
                                 <template #body="{ data }">
-                                    <span class="em-breakdown-pct-badge em-breakdown-pct-global">
-                                        {{ data.pctTotal.toFixed(1) }}%
-                                    </span>
+                                    <span class="em-breakdown-pct-badge em-breakdown-pct-global"> {{ data.pctTotal.toFixed(1) }}% </span>
                                 </template>
                             </Column>
                             <Column field="atenciones" header="Atenciones" sortable>
@@ -1216,7 +1331,7 @@ onMounted(() => {
                 <Card class="em-card">
                     <template #title>
                         <div class="em-card-title">
-                            <span><i class="pi pi-arrow-right-arrow-left mr-2" style="color: #6366f1"></i>Continuidad de Atención — Emergencia → Hospitalización</span>
+                            <span><i class="pi pi-arrow-right-arrow-left mr-2" style="color: #6366f1"></i>Derivación a Hospitalización</span>
                             <div class="em-chart-toolbar">
                                 <span class="em-filter-label">Ventana</span>
                                 <SelectButton v-model="ventanaDias" :options="VENTANA_OPTIONS" optionLabel="label" optionValue="value" class="em-metric-toggle" />
@@ -1239,12 +1354,47 @@ onMounted(() => {
                                 <div class="em-cont-kpi">
                                     <span class="em-cont-kpi-val">{{ continuidadData.resumen.avg_dias_gap.toFixed(1) }}d</span>
                                     <span class="em-cont-kpi-lbl">Días hasta internación</span>
-                                    <span class="em-cont-kpi-sub">promedio</span>
+                                    <span class="em-cont-kpi-sub">promedio desde emergencia</span>
                                 </div>
                                 <div class="em-cont-kpi">
                                     <span class="em-cont-kpi-val">{{ continuidadData.resumen.avg_dias_internado.toFixed(1) }}d</span>
                                     <span class="em-cont-kpi-lbl">Días internado</span>
                                     <span class="em-cont-kpi-sub">mediana {{ continuidadData.resumen.mediana_dias_internado }}d · máx {{ continuidadData.resumen.max_dias_internado }}d</span>
+                                </div>
+                            </div>
+
+                            <!-- Por Subtipo: Donut + Barras hospitalizaciones -->
+                            <div v-if="continuidadData.por_subtipo?.length" class="em-cont-subtipo-row">
+                                <!-- Donut distribución emergencias -->
+                                <div class="em-cont-subtipo-donut">
+                                    <div class="em-cont-subtipo-title">Emergencias por subtipo</div>
+                                    <div class="em-donut-wrapper" style="width: 190px; height: 190px">
+                                        <Chart type="doughnut" :data="subtipoDonutData" :options="subtipoDonutOptions" class="em-donut-chart" />
+                                        <div class="em-donut-center">
+                                            <div class="em-donut-total" style="font-size: 1.1rem">{{ subtipoDonutCenter.total }}</div>
+                                            <div class="em-donut-label">{{ subtipoDonutCenter.label }}</div>
+                                        </div>
+                                    </div>
+                                    <div class="em-cont-subtipo-legend">
+                                        <div v-for="item in subtipoDonutLegend" :key="item.label" class="em-cont-subtipo-legend-item">
+                                            <div class="em-legend-left">
+                                                <span class="em-legend-dot" :style="{ background: item.color }"></span>
+                                                <span class="em-legend-name">{{ item.label }}</span>
+                                            </div>
+                                            <div class="em-cont-subtipo-legend-right">
+                                                <span class="em-cont-subtipo-pct" :style="{ color: item.color }">{{ item.pct }}%</span>
+                                                <span class="em-cont-subtipo-conv">conv. {{ item.tasa }}%</span>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <!-- Barras hospitalizaciones por subtipo -->
+                                <div class="em-cont-subtipo-bars">
+                                    <div class="em-cont-subtipo-title">Hospitalizaciones derivadas por subtipo</div>
+                                    <div style="height: 240px; position: relative">
+                                        <Chart type="bar" :data="subtipoBarData" :options="subtipoBarOptions" class="em-chart" />
+                                    </div>
                                 </div>
                             </div>
 
@@ -1260,22 +1410,28 @@ onMounted(() => {
                                         <span><i class="pi pi-user mr-2" style="color: #6366f1"></i>Top Médicos por Conversión</span>
                                     </template>
                                     <template #content>
-                                        <div class="em-rank-list">
-                                            <div v-for="(doc, idx) in continuidadData.top_medicos" :key="doc.cod_medico" class="em-rank-item">
-                                                <div class="em-rank-left">
-                                                    <span class="em-rank-badge" :class="{ 'em-rank-1': idx === 0, 'em-rank-2': idx === 1, 'em-rank-3': idx === 2 }">#{{ idx + 1 }}</span>
-                                                    <div class="em-rank-info">
-                                                        <div class="em-rank-name">{{ doc.medico }}</div>
-                                                        <div class="em-rank-sub">{{ fNumber(doc.emergencias) }} emerg. · {{ fNumber(doc.hospitalizaciones) }} hosp.</div>
-                                                    </div>
-                                                </div>
-                                                <div class="em-rank-right">
-                                                    <div class="em-rank-value" style="color: #6366f1">{{ doc.tasa_pct.toFixed(1) }}%</div>
-                                                    <div class="em-rank-meta">conversión</div>
-                                                </div>
-                                            </div>
-                                            <div v-if="!continuidadData.top_medicos.length" class="em-rank-empty">Sin datos</div>
-                                        </div>
+                                        <div v-if="!continuidadData.top_medicos.length" class="em-rank-empty">Sin datos</div>
+                                        <DataTable v-else :value="continuidadData.top_medicos" size="small" stripedRows :sortField="'hospitalizaciones'" :sortOrder="-1" class="em-table em-medicos-table">
+                                            <Column field="medico" header="Médico" sortable>
+                                                <template #body="{ data }">
+                                                    <span class="em-medico-name">{{ data.medico }}</span>
+                                                    <span class="em-medico-cod">{{ data.cod_medico }}</span>
+                                                </template>
+                                            </Column>
+                                            <Column field="emergencias" header="Emerg." sortable style="width: 70px; text-align: right">
+                                                <template #body="{ data }">{{ fNumber(data.emergencias) }}</template>
+                                            </Column>
+                                            <Column field="hospitalizaciones" header="Hosp." sortable style="width: 70px; text-align: right">
+                                                <template #body="{ data }">
+                                                    <span style="color: #059669; font-weight: 700">{{ fNumber(data.hospitalizaciones) }}</span>
+                                                </template>
+                                            </Column>
+                                            <Column field="tasa_pct" header="Tasa %" sortable style="width: 90px; text-align: center">
+                                                <template #body="{ data }">
+                                                    <span class="em-cont-tasa-badge" :class="{ 'em-cont-tasa-high': data.tasa_pct > 20, 'em-cont-tasa-mid': data.tasa_pct > 10 && data.tasa_pct <= 20 }"> {{ data.tasa_pct.toFixed(1) }}% </span>
+                                                </template>
+                                            </Column>
+                                        </DataTable>
                                     </template>
                                 </Card>
 
@@ -1354,28 +1510,6 @@ onMounted(() => {
                                     </DataTable>
                                 </template>
                             </Card>
-
-                            <!-- Reingresos 30d -->
-                            <div class="em-cont-reingresos">
-                                <div class="em-cont-reingreso-label">
-                                    <i class="pi pi-refresh" style="color: #d97706"></i>
-                                    <span>Reingresos a Emergencia ≤ 30 días tras el alta (independiente de la ventana)</span>
-                                </div>
-                                <div class="em-sindiag-kpis" style="grid-template-columns: repeat(3, 1fr)">
-                                    <div class="em-sindiag-kpi">
-                                        <span class="em-sindiag-kpi-val">{{ fNumber(continuidadData.reingresos_30d.total_altas) }}</span>
-                                        <span class="em-sindiag-kpi-lbl">Altas hospitalarias</span>
-                                    </div>
-                                    <div class="em-sindiag-kpi em-sindiag-kpi--danger">
-                                        <span class="em-sindiag-kpi-val">{{ fNumber(continuidadData.reingresos_30d.reingresos_30d) }}</span>
-                                        <span class="em-sindiag-kpi-lbl">Reingresos 30d</span>
-                                    </div>
-                                    <div class="em-sindiag-kpi" :style="{ background: reingresoBg(continuidadData.reingresos_30d.tasa_reingreso_pct), borderColor: 'transparent' }">
-                                        <span class="em-sindiag-kpi-val" :style="{ color: reingresoColor(continuidadData.reingresos_30d.tasa_reingreso_pct) }"> {{ continuidadData.reingresos_30d.tasa_reingreso_pct.toFixed(1) }}% </span>
-                                        <span class="em-sindiag-kpi-lbl">Tasa reingreso</span>
-                                    </div>
-                                </div>
-                            </div>
                         </template>
                     </template>
                 </Card>
@@ -2500,29 +2634,135 @@ onMounted(() => {
     margin-bottom: 1.5rem;
 }
 
-.em-cont-reingresos {
-    display: flex;
-    flex-direction: column;
-    gap: 0.625rem;
-    margin-top: 1.25rem;
-}
-
-.em-cont-reingreso-label {
-    display: flex;
-    align-items: center;
-    gap: 0.5rem;
-    font-size: 0.8125rem;
-    font-weight: 600;
-    color: var(--text-color);
-}
-
 .em-cont-pct-badge {
     font-size: 0.8125rem;
     font-weight: 700;
     color: #0369a1;
 }
 
-@media (max-width: 600px) {
+/* ─── SUBTIPO ─────────────────────────────────────────────────────────────── */
+.em-cont-subtipo-row {
+    display: grid;
+    grid-template-columns: 280px 1fr;
+    gap: 1.5rem;
+    align-items: start;
+    margin-bottom: 1.5rem;
+    padding: 1.25rem;
+    background: var(--surface-50);
+    border: 1px solid var(--surface-border);
+    border-radius: 12px;
+}
+
+.em-cont-subtipo-title {
+    font-size: 0.75rem;
+    font-weight: 700;
+    color: var(--text-color-secondary);
+    text-transform: uppercase;
+    letter-spacing: 0.4px;
+    margin-bottom: 0.75rem;
+}
+
+.em-cont-subtipo-donut {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0.75rem;
+}
+
+.em-cont-subtipo-legend {
+    width: 100%;
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+}
+
+.em-cont-subtipo-legend-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 0.4rem 0.625rem;
+    background: var(--surface-card);
+    border-radius: 8px;
+    border: 1px solid var(--surface-border);
+}
+
+.em-cont-subtipo-legend-right {
+    display: flex;
+    align-items: center;
+    gap: 0.625rem;
+}
+
+.em-cont-subtipo-pct {
+    font-size: 0.8125rem;
+    font-weight: 800;
+}
+
+.em-cont-subtipo-conv {
+    font-size: 0.6875rem;
+    font-weight: 600;
+    color: var(--text-color-secondary);
+}
+
+.em-cont-subtipo-bars {
+    display: flex;
+    flex-direction: column;
+}
+
+/* ─── TOP MÉDICOS TABLE ───────────────────────────────────────────────────── */
+.em-medicos-table {
+    font-size: 0.8125rem;
+}
+
+.em-medico-name {
+    display: block;
+    font-weight: 600;
+    color: var(--text-color);
+    font-size: 0.8125rem;
+}
+
+.em-medico-cod {
+    display: block;
+    font-size: 0.6875rem;
+    color: var(--text-color-secondary);
+    font-weight: 500;
+}
+
+.em-cont-tasa-badge {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0.2rem 0.55rem;
+    border-radius: 999px;
+    font-size: 0.75rem;
+    font-weight: 700;
+    background: #f1f5f9;
+    color: #475569;
+    border: 1px solid #e2e8f0;
+}
+
+.em-cont-tasa-mid {
+    background: #fffbeb;
+    color: #d97706;
+    border-color: #fde68a;
+}
+
+.em-cont-tasa-high {
+    background: #fff1f2;
+    color: #e11d48;
+    border-color: #fecdd3;
+}
+
+@media (max-width: 768px) {
+    .em-cont-kpis {
+        grid-template-columns: repeat(2, 1fr);
+    }
+
+    .em-cont-subtipo-row {
+        grid-template-columns: 1fr;
+    }
+}
+
+@media (max-width: 480px) {
     .em-cont-kpis {
         grid-template-columns: 1fr;
     }
