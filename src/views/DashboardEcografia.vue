@@ -112,6 +112,11 @@ const toggleAllMonths = () => {
     selectedMonths.value = selectedMonths.value.length === 12 ? [] : [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12];
 };
 
+watch([selectedYears, selectedMonths, selectedArea], () => {
+    if (!yearOptionsInitialized) { yearOptionsInitialized = true; return; }
+    detailPage.value = 1;
+}, { deep: true });
+
 // ─── API ──────────────────────────────────────────────────────────────────────
 const fetchData = async () => {
     if (!desde.value || !hasta.value) return;
@@ -160,9 +165,19 @@ const yearOptions = computed(() => {
     return years.map((y) => ({ label: String(y), value: y }));
 });
 
-watch(yearOptions, (opts) => {
-    selectedYears.value = opts.map((o) => o.value);
+let yearOptionsInitialized = false;
+
+watch(yearOptions, (opts, oldOpts) => {
+    const newYears = opts.map((o) => o.value);
+    if (newYears.join(',') !== (oldOpts ?? []).map((o) => o.value).join(',')) {
+        yearOptionsInitialized = false;
+        selectedYears.value = newYears;
+    }
 });
+
+const isFilterEmpty = () =>
+    (yearOptions.value.length > 0 && selectedYears.value.length === 0) ||
+    selectedMonths.value.length === 0;
 
 const areaOptions = computed(() => {
     const areas = [...new Set(allData.value.map((r) => r.area))].sort();
@@ -172,7 +187,7 @@ const areaOptions = computed(() => {
 const filteredData = computed(() => {
     let data = allData.value;
     if (selectedArea.value !== 'all') data = data.filter((r) => r.area === selectedArea.value);
-    if (selectedYears.value.length && selectedYears.value.length < yearOptions.value.length) {
+    if (selectedYears.value.length < yearOptions.value.length) {
         data = data.filter((r) => {
             const y = new Date(r.fecha + 'T00:00:00').getFullYear();
             return selectedYears.value.includes(y);
@@ -631,6 +646,10 @@ onMounted(() => {
             <div v-if="!allData.length && !errorMsg" class="eco-empty-state">
                 <i class="pi pi-inbox" style="font-size:3rem;opacity:.35"></i>
                 <p>Selecciona un período y presiona Aplicar</p>
+            </div>
+            <div v-else-if="allData.length && !filteredData.length && !errorMsg" class="eco-empty-state">
+                <i class="pi pi-filter-slash" style="font-size:3rem;opacity:.35"></i>
+                <p>Sin datos para los filtros seleccionados</p>
             </div>
 
             <template v-if="filteredData.length">

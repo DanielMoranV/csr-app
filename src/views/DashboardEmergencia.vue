@@ -126,7 +126,7 @@ watch(yearOptions, (opts) => {
 const filteredData = computed(() => {
     let data = rawData.value;
     if (selectedArea.value !== 'all') data = data.filter((r) => r.area === selectedArea.value);
-    if (selectedYears.value.length && selectedYears.value.length < yearOptions.value.length) {
+    if (selectedYears.value.length < yearOptions.value.length) {
         data = data.filter((r) => {
             const y = new Date(r.fecha + 'T00:00:00').getFullYear();
             return selectedYears.value.includes(y);
@@ -368,6 +368,18 @@ const topAseguradoras = computed(() => {
         .slice(0, 10);
 });
 
+// ─── HELPERS DE FILTRO PARA ENDPOINTS AUXILIARES ─────────────────────────────
+const buildFilterParams = () => {
+    const p = {};
+    if (selectedArea.value !== 'all') p.area = selectedArea.value;
+    if (selectedYears.value.length > 0 && selectedYears.value.length < yearOptions.value.length) p.years = selectedYears.value;
+    if (selectedMonths.value.length > 0 && selectedMonths.value.length < 12) p.months = selectedMonths.value;
+    return p;
+};
+
+// Devuelve true cuando la combinación de filtros garantiza resultado vacío
+const isFilterEmpty = () => (yearOptions.value.length > 0 && selectedYears.value.length === 0) || selectedMonths.value.length === 0;
+
 // ─── SIN DIAGNÓSTICO ─────────────────────────────────────────────────────────
 const sinDiagData = ref(null);
 const sinDiagLoading = ref(false);
@@ -375,9 +387,13 @@ const isExportingSinDiag = ref(false);
 
 const fetchSinDiagnostico = async () => {
     if (!desde.value || !hasta.value) return;
+    if (isFilterEmpty()) {
+        sinDiagData.value = null;
+        return;
+    }
     sinDiagLoading.value = true;
     try {
-        const params = { desde: formatDate(desde.value), hasta: formatDate(hasta.value) };
+        const params = { desde: formatDate(desde.value), hasta: formatDate(hasta.value), ...buildFilterParams() };
         const response = await emergenciaApi.getSinDiagnostico(params);
         sinDiagData.value = response?.data || null;
     } catch {
@@ -472,9 +488,13 @@ const selectedDiagArea = ref('global');
 
 const fetchDiagnosticos = async () => {
     if (!desde.value || !hasta.value) return;
+    if (isFilterEmpty()) {
+        diagData.value = null;
+        return;
+    }
     diagLoading.value = true;
     try {
-        const params = { desde: formatDate(desde.value), hasta: formatDate(hasta.value), limit: 20 };
+        const params = { desde: formatDate(desde.value), hasta: formatDate(hasta.value), limit: 20, ...buildFilterParams() };
         const response = await emergenciaApi.getDiagnosticos(params);
         diagData.value = response?.data || null;
         selectedDiagArea.value = 'global';
@@ -659,9 +679,13 @@ const VENTANA_OPTIONS = [
 
 const fetchContinuidad = async () => {
     if (!desde.value || !hasta.value) return;
+    if (isFilterEmpty()) {
+        continuidadData.value = null;
+        return;
+    }
     continuidadLoading.value = true;
     try {
-        const params = { desde: formatDate(desde.value), hasta: formatDate(hasta.value), ventana_dias: ventanaDias.value };
+        const params = { desde: formatDate(desde.value), hasta: formatDate(hasta.value), ventana_dias: ventanaDias.value, ...buildFilterParams() };
         const response = await emergenciaApi.getContinuidad(params);
         continuidadData.value = response?.data || null;
     } catch {
@@ -672,6 +696,17 @@ const fetchContinuidad = async () => {
 };
 
 watch(ventanaDias, fetchContinuidad);
+
+watch(
+    [selectedArea, selectedYears, selectedMonths],
+    () => {
+        if (!desde.value || !hasta.value || !rawData.value.length) return;
+        fetchDiagnosticos();
+        fetchSinDiagnostico();
+        fetchContinuidad();
+    },
+    { deep: true }
+);
 
 const continuidadTendenciaData = computed(() => {
     const trend = continuidadData.value?.tendencia_mensual || [];

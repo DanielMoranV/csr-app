@@ -108,7 +108,7 @@ const fetchData = async () => {
     if (!desde.value || !hasta.value) return;
     isLoading.value = true;
     try {
-        const [res] = await Promise.all([rxApi.getSummary({ desde: toISO(desde.value), hasta: toISO(hasta.value), top: topN.value }), fetchTendencia()]);
+        const [res] = await Promise.all([rxApi.getSummary({ desde: toISO(desde.value), hasta: toISO(hasta.value), top: topN.value, ...buildFilterParams() }), fetchTendencia()]);
         summary.value = res?.data || null;
     } catch {
         toast.add({ severity: 'error', summary: 'Error', detail: 'No se pudieron cargar los datos', life: 5000 });
@@ -148,9 +148,28 @@ const yearOptions = computed(() => {
     return years.map((y) => ({ label: String(y), value: y }));
 });
 
-watch(yearOptions, (opts) => {
-    selectedYears.value = opts.map((o) => o.value);
+let yearOptionsInitialized = false;
+
+watch(yearOptions, (opts, oldOpts) => {
+    const newYears = opts.map((o) => o.value);
+    if (newYears.join(',') !== (oldOpts ?? []).map((o) => o.value).join(',')) {
+        yearOptionsInitialized = false;
+        selectedYears.value = newYears;
+    }
 });
+
+const buildFilterParams = () => {
+    const p = {};
+    if (selectedYears.value.length > 0 && selectedYears.value.length < yearOptions.value.length)
+        p.years = selectedYears.value;
+    if (selectedMonths.value.length > 0 && selectedMonths.value.length < 12)
+        p.months = selectedMonths.value;
+    return p;
+};
+
+const isFilterEmpty = () =>
+    (yearOptions.value.length > 0 && selectedYears.value.length === 0) ||
+    selectedMonths.value.length === 0;
 
 const toggleAllMonths = () => {
     selectedMonths.value = selectedMonths.value.length === 12 ? [] : [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12];
@@ -423,9 +442,10 @@ const trendGranularityOptions = [
 
 const fetchTendencia = async () => {
     if (!desde.value || !hasta.value) return;
+    if (isFilterEmpty()) { trendData.value = []; return; }
     isTrendLoading.value = true;
     try {
-        const res = await rxApi.getTendencia({ desde: toISO(desde.value), hasta: toISO(hasta.value), granularity: trendGranularity.value });
+        const res = await rxApi.getTendencia({ desde: toISO(desde.value), hasta: toISO(hasta.value), granularity: trendGranularity.value, ...buildFilterParams() });
         trendData.value = res?.data || [];
     } catch {
         trendData.value = [];
@@ -549,6 +569,21 @@ const trendChartOptions = computed(() => {
 });
 
 watch(trendGranularity, fetchTendencia);
+
+watch([selectedYears, selectedMonths], async () => {
+    if (!yearOptionsInitialized) { yearOptionsInitialized = true; return; }
+    if (!desde.value || !hasta.value || !summary.value) return;
+    if (isFilterEmpty()) { summary.value = null; trendData.value = []; return; }
+    try {
+        const [res] = await Promise.all([
+            rxApi.getSummary({ desde: toISO(desde.value), hasta: toISO(hasta.value), top: topN.value, ...buildFilterParams() }),
+            fetchTendencia()
+        ]);
+        summary.value = res?.data || null;
+    } catch {
+        // silent — filter-change errors handled gracefully
+    }
+}, { deep: true });
 
 // ─── Sorted region table ───────────────────────────────────────────────────────
 const regionesSorted = computed(() => [...(summary.value?.regiones || [])].sort((a, b) => b.atenciones - a.atenciones));
