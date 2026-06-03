@@ -21,6 +21,8 @@ const toast = useToast();
 const summary = ref(null);
 const isLoading = ref(false);
 const isExporting = ref(false);
+const isExportingEvolucion = ref(false);
+const filtersEmpty = ref(false);
 
 const desde = ref(null);
 const hasta = ref(null);
@@ -107,6 +109,7 @@ const quickAnio = () => {
 const fetchData = async () => {
     if (!desde.value || !hasta.value) return;
     isLoading.value = true;
+    filtersEmpty.value = false;
     try {
         const [res] = await Promise.all([rxApi.getSummary({ desde: toISO(desde.value), hasta: toISO(hasta.value), top: topN.value, ...buildFilterParams() }), fetchTendencia()]);
         summary.value = res?.data || null;
@@ -136,6 +139,81 @@ const handleExport = async () => {
         toast.add({ severity: 'error', summary: 'Error', detail: 'No se pudo exportar el archivo', life: 4000 });
     } finally {
         isExporting.value = false;
+    }
+};
+
+const handleExportEvolucionMensual = async () => {
+    if (!summary.value?.tendencia_mensual?.length) return;
+    isExportingEvolucion.value = true;
+    try {
+        const XLSX = await import('xlsx');
+
+        const rows = summary.value.tendencia_mensual;
+
+        // Aplicar los mismos filtros activos que el gráfico
+        const byYear = {};
+        rows.forEach((r) => {
+            const [y, m] = r.mes.split('-');
+            const year = parseInt(y);
+            const month = parseInt(m);
+            if (!selectedYears.value.includes(year)) return;
+            if (!selectedMonths.value.includes(month)) return;
+            if (!byYear[year]) byYear[year] = {};
+            byYear[year][month] = r;
+        });
+
+        const years = Object.keys(byYear).map(Number).sort();
+        const months = [
+            ...new Set(
+                rows
+                    .filter((r) => {
+                        const [y, m] = r.mes.split('-');
+                        return selectedYears.value.includes(parseInt(y)) && selectedMonths.value.includes(parseInt(m));
+                    })
+                    .map((r) => parseInt(r.mes.split('-')[1]))
+            )
+        ].sort((a, b) => a - b);
+
+        if (!years.length || !months.length) {
+            toast.add({ severity: 'warn', summary: 'Sin datos', detail: 'No hay datos con los filtros actuales', life: 3000 });
+            return;
+        }
+
+        // Encabezado: Mes | AÑO — Atenciones | AÑO — Monto (S/) | ...
+        const header = ['Mes'];
+        years.forEach((y) => {
+            header.push(`${y} — Atenciones`);
+            header.push(`${y} — Monto (S/)`);
+        });
+
+        // Filas de datos
+        const dataRows = months.map((m) => {
+            const row = [MONTH_NAMES[m - 1]];
+            years.forEach((y) => {
+                const d = byYear[y]?.[m];
+                row.push(d ? d.atenciones : 0);
+                row.push(d ? d.monto : 0);
+            });
+            return row;
+        });
+
+        // Fila de totales
+        const totalsRow = ['Total'];
+        years.forEach((y) => {
+            const yData = Object.values(byYear[y] || {});
+            totalsRow.push(yData.reduce((s, r) => s + r.atenciones, 0));
+            totalsRow.push(yData.reduce((s, r) => s + r.monto, 0));
+        });
+
+        const ws = XLSX.utils.aoa_to_sheet([header, ...dataRows, totalsRow]);
+        const wb = XLSX.utils.book_new();
+        XLSX.utils.book_append_sheet(wb, ws, 'Evolución Mensual');
+        XLSX.writeFile(wb, `rayosx-evolucion-${toISO(desde.value)}-${toISO(hasta.value)}.xlsx`);
+        toast.add({ severity: 'success', summary: 'Exportado', detail: 'Archivo descargado', life: 3000 });
+    } catch {
+        toast.add({ severity: 'error', summary: 'Error', detail: 'No se pudo exportar el archivo', life: 4000 });
+    } finally {
+        isExportingEvolucion.value = false;
     }
 };
 
@@ -573,7 +651,8 @@ watch(trendGranularity, fetchTendencia);
 watch([selectedYears, selectedMonths], async () => {
     if (!yearOptionsInitialized) { yearOptionsInitialized = true; return; }
     if (!desde.value || !hasta.value || !summary.value) return;
-    if (isFilterEmpty()) { summary.value = null; trendData.value = []; return; }
+    if (isFilterEmpty()) { filtersEmpty.value = true; trendData.value = []; return; }
+    filtersEmpty.value = false;
     try {
         const [res] = await Promise.all([
             rxApi.getSummary({ desde: toISO(desde.value), hasta: toISO(hasta.value), top: topN.value, ...buildFilterParams() }),
@@ -699,6 +778,12 @@ onUnmounted(() => {
                 </div>
             </div>
 
+            <div v-if="filtersEmpty" class="rx-empty" style="min-height: 200px;">
+                <i class="pi pi-filter-slash" style="font-size: 2.5rem; opacity: 0.4"></i>
+                <p>Selecciona al menos un mes para ver los datos</p>
+            </div>
+
+            <template v-else>
             <!-- Evolución Mensual por Año -->
             <Card class="rx-card">
                 <template #title>
@@ -707,6 +792,7 @@ onUnmounted(() => {
                         <div class="rx-chart-toolbar">
                             <SelectButton v-model="chartMetric" :options="metricOptions" optionLabel="label" optionValue="value" class="rx-metric-toggle" />
                             <Button icon="pi pi-tag" :label="showLabels ? 'Ocultar valores' : 'Ver valores'" :outlined="!showLabels" size="small" severity="secondary" @click="showLabels = !showLabels" />
+                            <Button icon="pi pi-file-excel" label="Excel" size="small" severity="success" outlined :loading="isExportingEvolucion" @click="handleExportEvolucionMensual" />
                         </div>
                     </div>
                 </template>
@@ -971,6 +1057,7 @@ onUnmounted(() => {
                     </template>
                 </Card>
             </div>
+            </template><!-- /v-else (filtersEmpty) -->
         </template>
 
         <div v-else-if="!isLoading" class="rx-empty">
