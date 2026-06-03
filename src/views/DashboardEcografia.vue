@@ -34,6 +34,7 @@ const activeView = ref('resumen');
 const allData = ref([]);
 const isLoading = ref(false);
 const isExporting = ref(false);
+const isExportingEvolucion = ref(false);
 const errorMsg = ref('');
 
 // Filtros locales (igual que emergencia)
@@ -156,6 +157,72 @@ const handleExport = async () => {
         toast.add({ severity: 'error', summary: 'Error', detail: 'No se pudo exportar el archivo', life: 4000 });
     } finally {
         isExporting.value = false;
+    }
+};
+
+const handleExportEvolucionMensual = async () => {
+    if (!filteredData.value.length) return;
+    isExportingEvolucion.value = true;
+    try {
+        const XLSX = await import('xlsx');
+
+        // Agregar desde registros crudos (igual que monthlyChartData)
+        const byYear = {};
+        filteredData.value.forEach((r) => {
+            const d = new Date(r.fecha + 'T00:00:00');
+            const year = d.getFullYear();
+            const month = d.getMonth() + 1;
+            if (!byYear[year]) byYear[year] = {};
+            if (!byYear[year][month]) byYear[year][month] = { atenciones: 0, monto: 0 };
+            byYear[year][month].atenciones++;
+            byYear[year][month].monto += r.importe;
+        });
+
+        const years = Object.keys(byYear).map(Number).sort();
+        const monthsSet = new Set();
+        Object.values(byYear).forEach((yData) => Object.keys(yData).forEach((m) => monthsSet.add(parseInt(m))));
+        const months = [...monthsSet].sort((a, b) => a - b);
+
+        if (!years.length || !months.length) {
+            toast.add({ severity: 'warn', summary: 'Sin datos', detail: 'No hay datos con los filtros actuales', life: 3000 });
+            return;
+        }
+
+        // Encabezado: Mes | AÑO — Atenciones | AÑO — Monto (S/) | ...
+        const header = ['Mes'];
+        years.forEach((y) => {
+            header.push(`${y} — Atenciones`);
+            header.push(`${y} — Monto (S/)`);
+        });
+
+        // Filas de datos
+        const dataRows = months.map((m) => {
+            const row = [MONTH_NAMES[m - 1]];
+            years.forEach((y) => {
+                const d = byYear[y]?.[m];
+                row.push(d ? d.atenciones : 0);
+                row.push(d ? d.monto : 0);
+            });
+            return row;
+        });
+
+        // Fila de totales
+        const totalsRow = ['Total'];
+        years.forEach((y) => {
+            const yData = Object.values(byYear[y] || {});
+            totalsRow.push(yData.reduce((s, r) => s + r.atenciones, 0));
+            totalsRow.push(yData.reduce((s, r) => s + r.monto, 0));
+        });
+
+        const ws = XLSX.utils.aoa_to_sheet([header, ...dataRows, totalsRow]);
+        const wb = XLSX.utils.book_new();
+        XLSX.utils.book_append_sheet(wb, ws, 'Evolución Mensual');
+        XLSX.writeFile(wb, `ecografia-evolucion-${toISO(desde.value)}-${toISO(hasta.value)}.xlsx`);
+        toast.add({ severity: 'success', summary: 'Exportado', detail: 'Archivo descargado correctamente', life: 3000 });
+    } catch {
+        toast.add({ severity: 'error', summary: 'Error', detail: 'No se pudo exportar el archivo', life: 4000 });
+    } finally {
+        isExportingEvolucion.value = false;
     }
 };
 
@@ -745,6 +812,7 @@ onMounted(() => {
                                             severity="secondary"
                                             @click="showLabels = !showLabels"
                                         />
+                                        <Button icon="pi pi-file-excel" label="Excel" size="small" severity="success" outlined :loading="isExportingEvolucion" @click="handleExportEvolucionMensual" />
                                     </div>
                                 </div>
                             </template>
