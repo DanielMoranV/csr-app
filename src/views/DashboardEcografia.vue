@@ -518,6 +518,102 @@ const estacionalidadOptions = computed(() => ({
     }
 }));
 
+// ─── Tendencia Temporal ───────────────────────────────────────────────────────
+const trendMetric = ref('monto');
+const trendGranularity = ref('month');
+
+const trendGranularityOptions = [
+    { label: 'Día', value: 'day' },
+    { label: 'Semana', value: 'week' },
+    { label: 'Mes', value: 'month' }
+];
+
+const getWeekKey = (d) => {
+    const day = d.getDay() || 7;
+    const thu = new Date(d);
+    thu.setDate(d.getDate() + 4 - day);
+    const yearStart = new Date(thu.getFullYear(), 0, 1);
+    const week = Math.ceil(((thu - yearStart) / 86400000 + 1) / 7);
+    return `${thu.getFullYear()}-${String(week).padStart(2, '0')}`;
+};
+
+const trendChartData = computed(() => {
+    if (!filteredData.value.length) return { labels: [], datasets: [] };
+
+    const buckets = {};
+    filteredData.value.forEach((r) => {
+        const d = new Date(r.fecha + 'T00:00:00');
+        let key;
+        if (trendGranularity.value === 'day') {
+            key = r.fecha;
+        } else if (trendGranularity.value === 'week') {
+            key = getWeekKey(d);
+        } else {
+            key = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
+        }
+        if (!buckets[key]) buckets[key] = { monto: 0, cantidad: 0 };
+        buckets[key].monto += r.importe;
+        buckets[key].cantidad++;
+    });
+
+    const sorted = Object.keys(buckets).sort();
+    const labels = sorted.map((k) => {
+        if (trendGranularity.value === 'day') {
+            const [, m, d] = k.split('-');
+            return `${d}/${m}`;
+        }
+        if (trendGranularity.value === 'week') {
+            const [y, w] = k.split('-');
+            return `Sem ${parseInt(w)} ${y}`;
+        }
+        const [y, m] = k.split('-');
+        return `${MONTH_NAMES[parseInt(m) - 1]} ${y}`;
+    });
+
+    const color = '#0F766E';
+    return {
+        labels,
+        datasets: [
+            {
+                label: trendMetric.value === 'monto' ? 'Facturación' : 'Atenciones',
+                data: sorted.map((k) => (trendMetric.value === 'monto' ? buckets[k].monto : buckets[k].cantidad)),
+                borderColor: color,
+                backgroundColor: color + '18',
+                borderWidth: 2.5,
+                tension: 0.4,
+                fill: true,
+                pointRadius: trendGranularity.value === 'day' ? 2 : 4,
+                pointHoverRadius: 6,
+                pointBackgroundColor: '#fff',
+                pointBorderWidth: 2,
+                pointBorderColor: color
+            }
+        ]
+    };
+});
+
+const trendChartOptions = computed(() => ({
+    responsive: true,
+    maintainAspectRatio: false,
+    plugins: {
+        legend: { display: false },
+        datalabels: { display: false },
+        tooltip: {
+            callbacks: {
+                label: (ctx) => (trendMetric.value === 'monto' ? ` ${fCurrency(ctx.parsed.y)}` : ` ${fNum(ctx.parsed.y)} atenciones`)
+            }
+        }
+    },
+    scales: {
+        y: {
+            beginAtZero: true,
+            grid: { color: '#f0fdf4' },
+            ticks: { font: { size: 10, weight: '600' }, color: '#94a3b8', callback: (v) => (trendMetric.value === 'monto' ? fMoneyK(v) : v) }
+        },
+        x: { grid: { display: false }, ticks: { font: { size: 10 }, color: '#64748b', maxRotation: 45 } }
+    }
+}));
+
 // ─── Top rankings (derivados de filteredData) ─────────────────────────────────
 const topProcedimientos = computed(() => {
     const stats = {};
@@ -889,7 +985,25 @@ onMounted(() => {
                         </Card>
                     </div>
 
-                    <!-- Fila 5 — Top Procedimientos SEGUS -->
+                    <!-- Fila 5 — Tendencia Temporal -->
+                    <Card class="eco-card">
+                        <template #title>
+                            <div class="eco-card-title">
+                                <span><i class="pi pi-chart-line mr-2" style="color:#0F766E"></i>Tendencia Temporal</span>
+                                <div class="eco-chart-toolbar">
+                                    <SelectButton v-model="trendGranularity" :options="trendGranularityOptions" optionLabel="label" optionValue="value" class="eco-metric-toggle" />
+                                    <SelectButton v-model="trendMetric" :options="metricOptions" optionLabel="label" optionValue="value" class="eco-metric-toggle" />
+                                </div>
+                            </div>
+                        </template>
+                        <template #content>
+                            <div class="eco-chart-wrapper">
+                                <Chart type="line" :data="trendChartData" :options="trendChartOptions" class="eco-chart" />
+                            </div>
+                        </template>
+                    </Card>
+
+                    <!-- Fila 6 — Top Procedimientos SEGUS -->
                     <Card class="eco-card">
                         <template #title>
                             <span><i class="pi pi-sort-amount-down mr-2" style="color:#0F766E"></i>Top Procedimientos SEGUS</span>
