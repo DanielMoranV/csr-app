@@ -147,7 +147,7 @@ const areaOptions = computed(() => {
 });
 
 const totalFacturacion = computed(() => filteredData.value.reduce((s, r) => s + r.importe, 0));
-const totalAtenciones = computed(() => filteredData.value.length);
+const totalAtenciones = computed(() => new Set(filteredData.value.map((r) => r.admision)).size);
 const totalParticular = computed(() => filteredData.value.filter((r) => r.particular).reduce((s, r) => s + r.importe, 0));
 const pctParticular = computed(() => (totalFacturacion.value > 0 ? ((totalParticular.value / totalFacturacion.value) * 100).toFixed(1) + '%' : '0.0%'));
 
@@ -203,7 +203,7 @@ const lineChartOptions = computed(() => ({
         legend: { position: 'bottom', labels: { usePointStyle: true, padding: 20, font: { size: 12 } } },
         tooltip: {
             callbacks: {
-                label: (ctx) => (chartMetric.value === 'monto' ? ` ${fCurrency(ctx.parsed.y)}` : ` ${fNumber(ctx.parsed.y)} atenciones`)
+                label: (ctx) => (chartMetric.value === 'monto' ? ` ${fCurrency(ctx.parsed.y)}` : ` ${fNumber(ctx.parsed.y)} servicios`)
             }
         },
         datalabels: {
@@ -250,7 +250,7 @@ const donutCenterLabel = computed(() => {
     const total = pVal + sVal;
     return {
         total: pieMetric.value === 'monto' ? fCurrency(total) : fNumber(total),
-        label: pieMetric.value === 'monto' ? 'Facturación' : 'Atenciones'
+        label: pieMetric.value === 'monto' ? 'Facturación' : 'Servicios'
     };
 });
 
@@ -272,7 +272,7 @@ const donutOptions = {
         legend: { display: false },
         tooltip: {
             callbacks: {
-                label: (ctx) => (pieMetric.value === 'monto' ? ` ${fCurrency(ctx.parsed)}` : ` ${fNumber(ctx.parsed)} atenciones`)
+                label: (ctx) => (pieMetric.value === 'monto' ? ` ${fCurrency(ctx.parsed)}` : ` ${fNumber(ctx.parsed)} servicios`)
             }
         },
         datalabels: { display: false }
@@ -752,7 +752,7 @@ const continuidadTendenciaData = computed(() => {
             },
             {
                 type: 'line',
-                label: '% Conversión',
+                label: '% Derivación',
                 data: trend.map((t) => t.tasa_pct),
                 borderColor: '#d97706',
                 backgroundColor: '#d9770615',
@@ -792,7 +792,7 @@ const continuidadTendenciaOptions = {
         tooltip: {
             callbacks: {
                 label: (ctx) => {
-                    if (ctx.dataset.label === '% Conversión') return ` ${ctx.parsed.y.toFixed(1)}%`;
+                    if (ctx.dataset.label === '% Derivación') return ` ${ctx.parsed.y.toFixed(1)}%`;
                     return ` ${fNumber(ctx.parsed.y)} hosp. ${ctx.dataset.label.toLowerCase()}`;
                 }
             }
@@ -846,11 +846,11 @@ const continuidadCiaDonutData = computed(() => {
 });
 
 const continuidadCiaCenter = computed(() => {
-    if (!continuidadCiaMeta.value) return { tasa: '0.0%', label: 'conversión total' };
+    if (!continuidadCiaMeta.value) return { tasa: '0.0%', label: 'derivación total' };
     const [p, s] = continuidadCiaMeta.value;
     const totalE = p.emergencias + s.emergencias;
     const totalH = p.hospitalizaciones + s.hospitalizaciones;
-    return { tasa: totalE > 0 ? ((totalH / totalE) * 100).toFixed(1) + '%' : '0.0%', label: 'conversión total' };
+    return { tasa: totalE > 0 ? ((totalH / totalE) * 100).toFixed(1) + '%' : '0.0%', label: 'derivación total' };
 });
 
 const continuidadCiaDonutOptions = {
@@ -871,109 +871,20 @@ const top10Seguros = computed(() => {
 
 // ─── POR SUBTIPO ──────────────────────────────────────────────────────────────
 const SUBTIPO_COLORS = { Guardia: '#0369a1', Especialista: '#059669', 'Sin clasificar': '#94a3b8' };
-const SUBTIPO_COLORS_BG = { Guardia: '#0369a1CC', Especialista: '#059669CC', 'Sin clasificar': '#94a3b8CC' };
 
-const subtipoDonutData = computed(() => {
+const derivadasPorSubtipo = computed(() => {
     const list = continuidadData.value?.por_subtipo || [];
-    if (!list.length) return { labels: [], datasets: [] };
-    return {
-        labels: list.map((s) => s.subtipo),
-        datasets: [{ data: list.map((s) => s.emergencias), backgroundColor: list.map((s) => SUBTIPO_COLORS[s.subtipo] || '#94a3b8'), borderWidth: 0, hoverOffset: 12 }]
-    };
+    const totalDeriv = continuidadData.value?.resumen?.con_hospitalizacion || 0;
+    return list
+        .filter((s) => s.hospitalizaciones > 0)
+        .map((s) => ({
+            subtipo: s.subtipo,
+            hospitalizaciones: s.hospitalizaciones,
+            pct_del_derivado: totalDeriv > 0 ? (s.hospitalizaciones / totalDeriv) * 100 : 0,
+            color: SUBTIPO_COLORS[s.subtipo] || '#94a3b8'
+        }));
 });
 
-const subtipoDonutCenter = computed(() => {
-    const total = continuidadData.value?.resumen?.total_emergencias || 0;
-    return { total: fNumber(total), label: 'emergencias' };
-});
-
-const subtipoDonutLegend = computed(() => {
-    const list = continuidadData.value?.por_subtipo || [];
-    return list.map((s) => ({
-        label: s.subtipo,
-        color: SUBTIPO_COLORS[s.subtipo] || '#94a3b8',
-        pct: s.pct_del_total.toFixed(1),
-        hosp: s.hospitalizaciones,
-        tasa: s.tasa_pct.toFixed(1)
-    }));
-});
-
-const subtipoDonutOptions = {
-    cutout: '74%',
-    responsive: true,
-    maintainAspectRatio: false,
-    plugins: {
-        legend: { display: false },
-        tooltip: { callbacks: { label: (ctx) => ` ${fNumber(ctx.parsed)} emergencias (${ctx.label})` } },
-        datalabels: { display: false }
-    }
-};
-
-const subtipoBarData = computed(() => {
-    const list = continuidadData.value?.por_subtipo || [];
-    if (!list.length) return { labels: [], datasets: [] };
-    return {
-        labels: list.map((s) => s.subtipo),
-        datasets: [
-            {
-                label: 'Hospitalizaciones derivadas',
-                data: list.map((s) => s.hospitalizaciones),
-                backgroundColor: list.map((s) => SUBTIPO_COLORS_BG[s.subtipo] || '#94a3b8CC'),
-                borderColor: list.map((s) => SUBTIPO_COLORS[s.subtipo] || '#94a3b8'),
-                borderWidth: 2,
-                borderRadius: 10,
-                borderSkipped: false
-            }
-        ]
-    };
-});
-
-const subtipoBarOptions = computed(() => {
-    const list = continuidadData.value?.por_subtipo || [];
-    return {
-        responsive: true,
-        maintainAspectRatio: false,
-        plugins: {
-            legend: { display: false },
-            tooltip: {
-                callbacks: {
-                    label: (ctx) => ` ${fNumber(ctx.parsed.y)} hospitalizaciones`,
-                    afterLabel: (ctx) => {
-                        const s = list[ctx.dataIndex];
-                        return s ? `Tasa conversión: ${s.tasa_pct.toFixed(1)}%` : '';
-                    }
-                }
-            },
-            datalabels: {
-                display: true,
-                anchor: 'end',
-                align: 'top',
-                offset: 4,
-                formatter: (val, ctx) => {
-                    const s = list[ctx.dataIndex];
-                    return s ? [fNumber(val), `${s.tasa_pct.toFixed(1)}%`] : fNumber(val);
-                },
-                font: [
-                    { size: 13, weight: '800' },
-                    { size: 11, weight: '700' }
-                ],
-                color: (ctx) => {
-                    if (ctx.dataIndex === undefined) return '#1e293b';
-                    return ctx.dataIndex === 0 ? ['#0369a1', '#64748b'] : ctx.dataIndex === 1 ? ['#059669', '#64748b'] : ['#64748b', '#64748b'];
-                }
-            }
-        },
-        scales: {
-            y: {
-                beginAtZero: true,
-                grid: { color: '#f0f6ff' },
-                ticks: { font: { size: 10, weight: '600' }, color: '#94a3b8', callback: (v) => fNumber(v) }
-            },
-            x: { grid: { display: false }, ticks: { font: { size: 12, weight: '700' }, color: '#475569' } }
-        },
-        layout: { padding: { top: 32 } }
-    };
-});
 
 onMounted(() => {
     const now = new Date();
@@ -1069,7 +980,7 @@ onMounted(() => {
                 <div class="em-kpi-grid">
                     <KPICard title="Facturación Total" :value="fCurrency(totalFacturacion)" subtitle="Importe bruto del período" icon="pi-dollar" color="blue" />
                     <KPICard title="Total Atenciones" :value="fNumber(totalAtenciones)" subtitle="Consultas registradas" icon="pi-users" color="green" />
-                    <KPICard title="% Particular" :value="pctParticular" :subtitle="`${fCurrency(totalParticular)} pago directo`" icon="pi-wallet" color="purple" />
+                    <KPICard title="Total Servicios" :value="fNumber(filteredData.length)" subtitle="Líneas de facturación del período" icon="pi-list" color="purple" />
                     <KPICard title="Áreas Activas" :value="String(new Set(filteredData.map((r) => r.area)).size)" subtitle="Unidades con atenciones" icon="pi-building" color="orange" />
                 </div>
 
@@ -1152,7 +1063,7 @@ onMounted(() => {
                                         </span>
                                         <span class="em-breakdown-pct-badge em-breakdown-pct-global"> {{ areaBreakdownTotals[data.area].pctTotal.toFixed(1) }}% del total </span>
                                         <span class="em-breakdown-pct-badge em-breakdown-pct-part"> {{ areaBreakdownTotals[data.area].pctParticular.toFixed(1) }}% particular </span>
-                                        <span class="em-group-stat-atenc"> {{ fNumber(areaBreakdownTotals[data.area].atenciones) }} atenc. </span>
+                                        <span class="em-group-stat-atenc"> {{ fNumber(areaBreakdownTotals[data.area].atenciones) }} serv. </span>
                                     </div>
                                 </div>
                             </template>
@@ -1172,7 +1083,7 @@ onMounted(() => {
                                     <span class="em-breakdown-pct-badge em-breakdown-pct-global"> {{ data.pctTotal.toFixed(1) }}% </span>
                                 </template>
                             </Column>
-                            <Column field="atenciones" header="Atenciones" sortable>
+                            <Column field="atenciones" header="Servicios" sortable>
                                 <template #body="{ data }">{{ fNumber(data.atenciones) }}</template>
                             </Column>
                             <Column field="particular" header="Particular" sortable>
@@ -1220,7 +1131,7 @@ onMounted(() => {
                                             {{ rankMetricGuardia === 'monto' ? fCurrency(doc.monto) : fNumber(doc.cantidad) }}
                                         </div>
                                         <div class="em-rank-meta">
-                                            {{ rankMetricGuardia === 'monto' ? `${fNumber(doc.cantidad)} atenc.` : fCurrency(doc.monto) }}
+                                            {{ rankMetricGuardia === 'monto' ? `${fNumber(doc.cantidad)} serv.` : fCurrency(doc.monto) }}
                                         </div>
                                     </div>
                                 </div>
@@ -1252,7 +1163,7 @@ onMounted(() => {
                                             {{ rankMetricEspecialista === 'monto' ? fCurrency(doc.monto) : fNumber(doc.cantidad) }}
                                         </div>
                                         <div class="em-rank-meta">
-                                            {{ rankMetricEspecialista === 'monto' ? `${fNumber(doc.cantidad)} atenc.` : fCurrency(doc.monto) }}
+                                            {{ rankMetricEspecialista === 'monto' ? `${fNumber(doc.cantidad)} serv.` : fCurrency(doc.monto) }}
                                         </div>
                                     </div>
                                 </div>
@@ -1355,7 +1266,7 @@ onMounted(() => {
                                         {{ rankMetricCia === 'monto' ? fCurrency(cia.monto) : fNumber(cia.cantidad) }}
                                     </div>
                                     <div class="em-rank-meta">
-                                        {{ rankMetricCia === 'monto' ? `${fNumber(cia.cantidad)} atenc.` : fCurrency(cia.monto) }}
+                                        {{ rankMetricCia === 'monto' ? `${fNumber(cia.cantidad)} serv.` : fCurrency(cia.monto) }}
                                     </div>
                                 </div>
                             </div>
@@ -1382,9 +1293,12 @@ onMounted(() => {
                             <!-- KPIs -->
                             <div class="em-cont-kpis">
                                 <div class="em-cont-kpi em-cont-kpi--highlight">
-                                    <span class="em-cont-kpi-val">{{ continuidadData.resumen.tasa_conversion_pct.toFixed(1) }}%</span>
-                                    <span class="em-cont-kpi-lbl">Tasa conversión</span>
-                                    <span class="em-cont-kpi-sub">{{ fNumber(continuidadData.resumen.con_hospitalizacion) }} de {{ fNumber(continuidadData.resumen.total_emergencias) }}</span>
+                                    <div class="em-cont-kpi-val-row">
+                                        <span class="em-cont-kpi-val">{{ fNumber(continuidadData.resumen.con_hospitalizacion) }}</span>
+                                        <span class="em-cont-kpi-rate">{{ continuidadData.resumen.tasa_conversion_pct.toFixed(1) }}%</span>
+                                    </div>
+                                    <span class="em-cont-kpi-lbl">Derivadas a hospitalización</span>
+                                    <span class="em-cont-kpi-sub">de {{ fNumber(continuidadData.resumen.total_emergencias) }} emergencias</span>
                                 </div>
                                 <div class="em-cont-kpi">
                                     <span class="em-cont-kpi-val">{{ continuidadData.resumen.avg_dias_gap.toFixed(1) }}d</span>
@@ -1398,37 +1312,25 @@ onMounted(() => {
                                 </div>
                             </div>
 
-                            <!-- Por Subtipo: Donut + Barras hospitalizaciones -->
-                            <div v-if="continuidadData.por_subtipo?.length" class="em-cont-subtipo-row">
-                                <!-- Donut distribución emergencias -->
-                                <div class="em-cont-subtipo-donut">
-                                    <div class="em-cont-subtipo-title">Emergencias por subtipo</div>
-                                    <div class="em-donut-wrapper" style="width: 190px; height: 190px">
-                                        <Chart type="doughnut" :data="subtipoDonutData" :options="subtipoDonutOptions" class="em-donut-chart" />
-                                        <div class="em-donut-center">
-                                            <div class="em-donut-total" style="font-size: 1.1rem">{{ subtipoDonutCenter.total }}</div>
-                                            <div class="em-donut-label">{{ subtipoDonutCenter.label }}</div>
-                                        </div>
-                                    </div>
-                                    <div class="em-cont-subtipo-legend">
-                                        <div v-for="item in subtipoDonutLegend" :key="item.label" class="em-cont-subtipo-legend-item">
-                                            <div class="em-legend-left">
-                                                <span class="em-legend-dot" :style="{ background: item.color }"></span>
-                                                <span class="em-legend-name">{{ item.label }}</span>
-                                            </div>
-                                            <div class="em-cont-subtipo-legend-right">
-                                                <span class="em-cont-subtipo-pct" :style="{ color: item.color }">{{ item.pct }}%</span>
-                                                <span class="em-cont-subtipo-conv">conv. {{ item.tasa }}%</span>
-                                            </div>
-                                        </div>
-                                    </div>
+                            <!-- Derivadas por subtipo -->
+                            <div v-if="derivadasPorSubtipo.length" class="em-cont-deriv-subtipo">
+                                <div class="em-cont-deriv-header">
+                                    <span class="em-cont-deriv-title">Desglose de derivadas por subtipo</span>
+                                    <span class="em-cont-deriv-total">
+                                        {{ fNumber(continuidadData.resumen.con_hospitalizacion) }} de {{ fNumber(continuidadData.resumen.total_emergencias) }} emergencias
+                                    </span>
                                 </div>
-
-                                <!-- Barras hospitalizaciones por subtipo -->
-                                <div class="em-cont-subtipo-bars">
-                                    <div class="em-cont-subtipo-title">Hospitalizaciones derivadas por subtipo</div>
-                                    <div style="height: 240px; position: relative">
-                                        <Chart type="bar" :data="subtipoBarData" :options="subtipoBarOptions" class="em-chart" />
+                                <div v-for="item in derivadasPorSubtipo" :key="item.subtipo" class="em-cont-deriv-row">
+                                    <div class="em-cont-deriv-label">
+                                        <span class="em-legend-dot" :style="{ background: item.color }"></span>
+                                        <span class="em-cont-deriv-name">{{ item.subtipo }}</span>
+                                    </div>
+                                    <div class="em-cont-deriv-bar-track">
+                                        <div class="em-cont-deriv-bar-fill" :style="{ width: item.pct_del_derivado.toFixed(1) + '%', background: item.color }"></div>
+                                    </div>
+                                    <div class="em-cont-deriv-stats">
+                                        <span class="em-cont-deriv-count" :style="{ color: item.color }">{{ fNumber(item.hospitalizaciones) }}</span>
+                                        <span class="em-cont-deriv-pct">{{ item.pct_del_derivado.toFixed(1) }}%</span>
                                     </div>
                                 </div>
                             </div>
@@ -1442,7 +1344,7 @@ onMounted(() => {
                             <div class="em-rankings-grid">
                                 <Card class="em-card">
                                     <template #title>
-                                        <span><i class="pi pi-user mr-2" style="color: #6366f1"></i>Top Médicos por Conversión</span>
+                                        <span><i class="pi pi-user mr-2" style="color: #6366f1"></i>Top Médicos por Derivación</span>
                                     </template>
                                     <template #content>
                                         <div v-if="!continuidadData.top_medicos.length" class="em-rank-empty">Sin datos</div>
@@ -1500,7 +1402,7 @@ onMounted(() => {
                             <!-- Por Aseguradora -->
                             <Card class="em-card" style="margin-top: 1rem">
                                 <template #title>
-                                    <span><i class="pi pi-building mr-2" style="color: #0369a1"></i>Conversión por Aseguradora</span>
+                                    <span><i class="pi pi-building mr-2" style="color: #0369a1"></i>Derivación por Aseguradora</span>
                                 </template>
                                 <template #content>
                                     <!-- Donut Particular vs Seguros -->
@@ -1537,7 +1439,7 @@ onMounted(() => {
                                                 <span style="color: #059669; font-weight: 700">{{ fNumber(data.hospitalizaciones) }}</span>
                                             </template>
                                         </Column>
-                                        <Column field="tasa_pct" header="% Conversión" sortable style="width: 130px">
+                                        <Column field="tasa_pct" header="% Derivación" sortable style="width: 130px">
                                             <template #body="{ data }">
                                                 <span class="em-cont-pct-badge">{{ data.tasa_pct.toFixed(1) }}%</span>
                                             </template>
@@ -2657,9 +2559,26 @@ onMounted(() => {
 }
 
 .em-cont-kpi-sub {
-    font-size: 0.6rem;
+    font-size: 0.75rem;
     color: var(--text-color-secondary);
     font-weight: 500;
+}
+
+.em-cont-kpi-val-row {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.em-cont-kpi-rate {
+    padding: 0.2rem 0.55rem;
+    background: #0369a1;
+    color: #fff;
+    font-size: 0.8125rem;
+    font-weight: 800;
+    border-radius: 99px;
+    letter-spacing: 0.3px;
+    white-space: nowrap;
 }
 
 .em-cont-chart-wrapper {
@@ -2675,72 +2594,91 @@ onMounted(() => {
     color: #0369a1;
 }
 
-/* ─── SUBTIPO ─────────────────────────────────────────────────────────────── */
-.em-cont-subtipo-row {
-    display: grid;
-    grid-template-columns: 280px 1fr;
-    gap: 1.5rem;
-    align-items: start;
-    margin-bottom: 1.5rem;
-    padding: 1.25rem;
+/* ─── DERIVADAS POR SUBTIPO ───────────────────────────────────────────────── */
+.em-cont-deriv-subtipo {
+    display: flex;
+    flex-direction: column;
+    gap: 0.875rem;
+    padding: 1.125rem 1.25rem;
     background: var(--surface-50);
     border: 1px solid var(--surface-border);
     border-radius: 12px;
+    margin-bottom: 1.5rem;
 }
 
-.em-cont-subtipo-title {
+.em-cont-deriv-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding-bottom: 0.625rem;
+    border-bottom: 1px solid var(--surface-border);
+}
+
+.em-cont-deriv-title {
     font-size: 0.75rem;
     font-weight: 700;
     color: var(--text-color-secondary);
     text-transform: uppercase;
     letter-spacing: 0.4px;
-    margin-bottom: 0.75rem;
 }
 
-.em-cont-subtipo-donut {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    gap: 0.75rem;
-}
-
-.em-cont-subtipo-legend {
-    width: 100%;
-    display: flex;
-    flex-direction: column;
-    gap: 0.5rem;
-}
-
-.em-cont-subtipo-legend-item {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    padding: 0.4rem 0.625rem;
-    background: var(--surface-card);
-    border-radius: 8px;
-    border: 1px solid var(--surface-border);
-}
-
-.em-cont-subtipo-legend-right {
-    display: flex;
-    align-items: center;
-    gap: 0.625rem;
-}
-
-.em-cont-subtipo-pct {
+.em-cont-deriv-total {
     font-size: 0.8125rem;
-    font-weight: 800;
-}
-
-.em-cont-subtipo-conv {
-    font-size: 0.6875rem;
     font-weight: 600;
     color: var(--text-color-secondary);
 }
 
-.em-cont-subtipo-bars {
+.em-cont-deriv-row {
+    display: grid;
+    grid-template-columns: 140px 1fr 110px;
+    align-items: center;
+    gap: 0.875rem;
+}
+
+.em-cont-deriv-label {
     display: flex;
-    flex-direction: column;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.em-cont-deriv-name {
+    font-size: 0.875rem;
+    font-weight: 600;
+    color: var(--text-color);
+}
+
+.em-cont-deriv-bar-track {
+    height: 10px;
+    background: var(--surface-200);
+    border-radius: 99px;
+    overflow: hidden;
+}
+
+.em-cont-deriv-bar-fill {
+    height: 100%;
+    border-radius: 99px;
+    transition: width 0.4s ease;
+}
+
+.em-cont-deriv-stats {
+    display: flex;
+    align-items: center;
+    justify-content: flex-end;
+    gap: 0.5rem;
+}
+
+.em-cont-deriv-count {
+    font-size: 1rem;
+    font-weight: 800;
+    line-height: 1;
+}
+
+.em-cont-deriv-pct {
+    font-size: 0.75rem;
+    font-weight: 600;
+    color: var(--text-color-secondary);
+    min-width: 38px;
+    text-align: right;
 }
 
 /* ─── TOP MÉDICOS TABLE ───────────────────────────────────────────────────── */
@@ -2792,8 +2730,8 @@ onMounted(() => {
         grid-template-columns: repeat(2, 1fr);
     }
 
-    .em-cont-subtipo-row {
-        grid-template-columns: 1fr;
+    .em-cont-deriv-row {
+        grid-template-columns: 120px 1fr 90px;
     }
 }
 
