@@ -113,6 +113,21 @@ export const useDocumentManagementStore = defineStore('documentManagement', {
             }
         },
 
+        async revertStep(stepId) {
+            this.isSaving = true;
+            try {
+                // POST sin body — revierte un paso firmado/rechazado a Pendiente.
+                const response = await apiClient.post(`/documents/steps/${stepId}/revert`);
+                this.lastFetch = null;
+                return response;
+            } catch (error) {
+                console.error(`Error reverting step ${stepId}:`, error);
+                throw error;
+            } finally {
+                this.isSaving = false;
+            }
+        },
+
         async updateDocumentViewers(id, payload) {
             this.isSaving = true;
             try {

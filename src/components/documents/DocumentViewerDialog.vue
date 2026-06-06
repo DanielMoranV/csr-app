@@ -20,7 +20,7 @@ const props = defineProps({
 });
 const emit = defineEmits(['update:visible', 'document-action']);
 
-const { fetchDocumentDetails, currentDocument, isLoading, rejectDocumentStep, signDocumentStep, addDocumentComment, updateDocumentViewers, deleteCommentAttachment, getSeverity } = useDocumentManagement();
+const { fetchDocumentDetails, currentDocument, isLoading, rejectDocumentStep, signDocumentStep, revertDocumentStep, addDocumentComment, updateDocumentViewers, deleteCommentAttachment, getSeverity } = useDocumentManagement();
 const authStore = useAuthStore();
 const { allUsers, initializePublicUsers, initializePositions, positionOptions: apiPositionOptions } = useUsers();
 
@@ -94,6 +94,11 @@ const insertionFileInput = ref(null);
 // ─── Reject state ─────────────────────────────────────────────────
 const showRejectDialog = ref(false);
 const rejectComment = ref('');
+
+// ─── Revert state ─────────────────────────────────────────────────
+const showRevertDialog = ref(false);
+const revertTarget = ref(null);
+const isReverting = ref(false);
 
 // ─── Comments state ───────────────────────────────────────────────
 const newComment = ref('');
@@ -847,6 +852,44 @@ const submitReject = async () => {
     }
 };
 
+// ─── Revert (deshacer firma/rechazo) ──────────────────────────────
+// El botón se muestra solo si: (1) el paso está Completado o Rechazado,
+// (2) el usuario actual fue quien ejecutó la acción, y (3) no hay pasos
+// posteriores ya procesados (solo el último paso resuelto es reversible).
+// El backend revalida todo esto; ocultarlo aquí es por UX.
+const canRevertStep = (step) => {
+    if (!step || !currentUser.value) return false;
+    if (!['Completado', 'Rechazado'].includes(step.estado_paso)) return false;
+    if (String(step.user_id_signed) !== String(currentUser.value.id)) return false;
+    const steps = currentDocument.value?.steps || [];
+    const hasLaterProcessed = steps.some((s) => s.orden > step.orden && s.estado_paso !== 'Pendiente');
+    return !hasLaterProcessed;
+};
+
+const confirmRevertStep = (step) => {
+    revertTarget.value = step;
+    showRevertDialog.value = true;
+};
+
+const submitRevert = async () => {
+    if (!revertTarget.value) return;
+    isReverting.value = true;
+    try {
+        await revertDocumentStep(revertTarget.value.id);
+        showRevertDialog.value = false;
+        revertTarget.value = null;
+        // Recargar el documento completo: la reversión borra versiones/PDF y
+        // recalcula el estado, así que el step devuelto no basta.
+        await loadDocument();
+        emit('document-action');
+    } catch (e) {
+        // El toast de error ya lo muestra el composable
+        console.error(e);
+    } finally {
+        isReverting.value = false;
+    }
+};
+
 // ─── Comments ─────────────────────────────────────────────────────
 const handleCommentAttachmentSelect = (e) => {
     const files = Array.from(e.target.files ?? []);
@@ -1234,6 +1277,17 @@ const formatPermittedUsers = (step) => {
                                     <button v-if="step.sustento_version_id" class="sustento-download-btn" @click="downloadSustento(step.sustento_version_id)" title="Ver/descargar el documento de sustento adjunto">
                                         <i class="pi pi-paperclip"></i>
                                         Descargar sustento
+                                    </button>
+                                    <!-- Revertir a pendiente: deshace la firma/rechazo del último paso resuelto -->
+                                    <button
+                                        v-if="canRevertStep(step)"
+                                        class="step-revert-btn"
+                                        :disabled="isReverting"
+                                        @click="confirmRevertStep(step)"
+                                        title="Deshacer la firma/rechazo y devolver este paso a Pendiente"
+                                    >
+                                        <i class="pi pi-undo"></i>
+                                        Revertir a pendiente
                                     </button>
                                 </div>
                             </div>
@@ -1626,6 +1680,22 @@ const formatPermittedUsers = (step) => {
         </template>
     </Dialog>
 
+    <!-- ═══════════════════ DIÁLOGO REVERTIR ═══════════════════ -->
+    <Dialog v-model:visible="showRevertDialog" header="Revertir paso a pendiente" :style="{ width: '440px' }" modal class="reject-dialog">
+        <div class="reject-body">
+            <div class="reject-warning-icon">
+                <i class="pi pi-undo"></i>
+            </div>
+            <p class="reject-hint">¿Revertir este paso a pendiente? <strong>Se eliminará la versión generada</strong> y deberá volver a realizarse.</p>
+        </div>
+        <template #footer>
+            <div class="dialog-footer">
+                <Button label="Cancelar" text severity="secondary" @click="showRevertDialog = false" :disabled="isReverting" />
+                <Button label="Sí, revertir" icon="pi pi-undo" severity="warning" @click="submitRevert" :loading="isReverting" />
+            </div>
+        </template>
+    </Dialog>
+
     <!-- ═══════════════════ DIÁLOGO VIEWERS ═══════════════════ -->
     <Dialog v-model:visible="showViewersDialog" header="Editar visualizadores" :style="{ width: '520px' }" modal class="viewers-dialog">
         <div class="viewers-dialog-body">
@@ -1764,6 +1834,30 @@ const formatPermittedUsers = (step) => {
 }
 .sustento-download-btn:hover {
     background: #bae6fd;
+}
+
+.step-revert-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.35rem;
+    margin-top: 0.35rem;
+    margin-left: 0.4rem;
+    padding: 0.25rem 0.6rem;
+    font-size: 0.72rem;
+    font-weight: 600;
+    color: #b45309;
+    background: #fef3c7;
+    border: 1px solid #fde68a;
+    border-radius: 6px;
+    cursor: pointer;
+    transition: background 0.15s;
+}
+.step-revert-btn:hover:not(:disabled) {
+    background: #fde68a;
+}
+.step-revert-btn:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
 }
 .doc-status-correction {
     background: #fee2e2;

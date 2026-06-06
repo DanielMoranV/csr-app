@@ -86,6 +86,19 @@ export function useDocumentManagement() {
         }
     };
 
+    const revertDocumentStep = async (stepId) => {
+        try {
+            const response = await store.revertStep(stepId);
+            const message = apiUtils.getMessage(response) || 'Paso revertido a pendiente';
+
+            toast.add({ severity: 'success', summary: 'Revertido', detail: message, life: 4000 });
+            return response;
+        } catch (error) {
+            handleError(error, 'Error al revertir el paso', true);
+            throw error;
+        }
+    };
+
     const deleteDocument = async (id) => {
         try {
             const response = await store.deleteDocument(id);
@@ -188,6 +201,7 @@ export function useDocumentManagement() {
         fetchDocumentDetails,
         signDocumentStep,
         rejectDocumentStep,
+        revertDocumentStep,
         addDocumentComment,
         updateDocumentViewers,
         deleteCommentAttachment,
