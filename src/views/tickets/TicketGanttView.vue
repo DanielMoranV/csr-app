@@ -4,6 +4,7 @@ import { apiUtils } from '@/api/axios';
 import { TicketService } from '@/api/tickets';
 import { useAuthStore } from '@/store/authStore';
 import { usePermissions } from '@/composables/usePermissions';
+import { getHolidayInfo } from '@/data/holidays-pe';
 import Button from 'primevue/button';
 import Calendar from 'primevue/calendar';
 import Select from 'primevue/select';
@@ -163,6 +164,16 @@ const totalDays = computed(() => {
     return Math.round((toDateVal.value - fromDate.value) / 86400000) + 1;
 });
 
+// Ancho en px por día — define el ancho total del lienzo de barras.
+// Encabezado y cuerpo comparten este mismo ancho, por eso quedan alineados.
+const dayWidth = computed(() => {
+    if (totalDays.value <= 31) return 40; // vista por días
+    if (totalDays.value <= 84) return 22; // vista por semanas
+    return 6; // vista por meses
+});
+
+const ganttWidth = computed(() => totalDays.value * dayWidth.value);
+
 // Build header columns: days if ≤31, weeks if ≤84, months otherwise
 const headerColumns = computed(() => {
     if (!fromDate.value || totalDays.value <= 0) return [];
@@ -174,12 +185,19 @@ const headerColumns = computed(() => {
         for (let i = 0; i < totalDays.value; i++) {
             const d = new Date(fromDate.value);
             d.setDate(d.getDate() + i);
+            const ymd = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+            const holidayName = getHolidayInfo(ymd);
+            const isSunday = d.getDay() === 0;
             cols.push({
                 label: String(d.getDate()),
                 subLabel: d.toLocaleDateString('es-PE', { weekday: 'short' }).slice(0, 2),
                 offset: i,
                 span: 1,
-                isWeekend: [0, 6].includes(d.getDay())
+                isWeekend: [0, 6].includes(d.getDay()),
+                isWeekStart: d.getDay() === 1, // lunes → línea de semana más marcada
+                isSunday,
+                isHoliday: !!holidayName,
+                holidayName // null si no es feriado
             });
         }
     } else if (totalDays.value <= 84) {
@@ -222,51 +240,73 @@ const headerColumns = computed(() => {
     return cols;
 });
 
-// Position of today's line
+// Parsea una fecha a medianoche LOCAL. Las cadenas "YYYY-MM-DD" se interpretan
+// como UTC por el constructor de Date y se corren un día según la zona horaria;
+// aquí las forzamos a local para que coincidan con fromDate (también local).
+const parseLocalDate = (value) => {
+    if (!value) return null;
+    if (typeof value === 'string') {
+        const m = value.match(/^(\d{4})-(\d{2})-(\d{2})/);
+        if (m) return new Date(Number(m[1]), Number(m[2]) - 1, Number(m[3]));
+    }
+    const d = new Date(value);
+    if (isNaN(d.getTime())) return null;
+    return new Date(d.getFullYear(), d.getMonth(), d.getDate());
+};
+
+// Índice de día (0-based) de una fecha dentro del rango visible.
+const dayIndexOf = (date) => Math.round((date - fromDate.value) / 86400000);
+
+// Position of today's line — en px sobre la misma rejilla que las columnas.
 const todayOffset = computed(() => {
     if (!fromDate.value || totalDays.value <= 0) return null;
     const today = new Date();
-    today.setHours(0, 0, 0, 0);
-    const diff = Math.round((today - fromDate.value) / 86400000);
+    const diff = dayIndexOf(new Date(today.getFullYear(), today.getMonth(), today.getDate()));
     if (diff < 0 || diff >= totalDays.value) return null;
-    return (diff / totalDays.value) * 100;
+    return diff * dayWidth.value;
 });
 
 // ─── Cálculo de barras ────────────────────────────────────────────────────────
+// Todas las posiciones se calculan en px como múltiplos de dayWidth, idénticos
+// a los anchos de columna (col.span * dayWidth), para que barras, marcadores y
+// rejilla de días queden perfectamente alineados sin deriva por redondeo de %.
 
 const ganttRows = computed(() => {
     if (!fromDate.value || totalDays.value <= 0) return [];
 
+    const dw = dayWidth.value;
+
     return tickets.value.map((t) => {
-        const start = t.implementation_start ? new Date(t.implementation_start) : null;
-        const end = t.implementation_end ? new Date(t.implementation_end) : null;
-        const due = t.due_date ? new Date(t.due_date) : null;
+        const start = parseLocalDate(t.implementation_start);
+        const end = parseLocalDate(t.implementation_end);
+        const due = parseLocalDate(t.due_date);
 
         let barLeft = null;
         let barWidth = null;
-        let duePct = null;
+        let duePos = null;
 
         if (start && end) {
-            const startDiff = Math.round((start - fromDate.value) / 86400000);
-            const endDiff = Math.round((end - fromDate.value) / 86400000);
+            const startDiff = dayIndexOf(start);
+            const endDiff = dayIndexOf(end);
             const clamped = Math.max(0, startDiff);
             const clampedEnd = Math.min(totalDays.value - 1, endDiff);
             if (clampedEnd >= clamped) {
-                barLeft = (clamped / totalDays.value) * 100;
-                barWidth = ((clampedEnd - clamped + 1) / totalDays.value) * 100;
+                barLeft = clamped * dw;
+                barWidth = (clampedEnd - clamped + 1) * dw;
             }
         }
 
         if (due) {
-            const dueDiff = Math.round((due - fromDate.value) / 86400000);
+            const dueDiff = dayIndexOf(due);
             if (dueDiff >= 0 && dueDiff < totalDays.value) {
-                duePct = (dueDiff / totalDays.value) * 100;
+                // Centrado en su día para marcar la fecha límite con claridad.
+                duePos = dueDiff * dw + dw / 2;
             }
         }
 
         const cfg = SCHEDULE_STATUS[t.schedule_status] ?? SCHEDULE_STATUS.unplanned;
 
-        return { ...t, barLeft, barWidth, duePct, cfg };
+        return { ...t, barLeft, barWidth, duePos, cfg };
     });
 });
 
@@ -353,14 +393,22 @@ onMounted(async () => {
 
 // ─── Helpers de display ───────────────────────────────────────────────────────
 
+// Formatea siempre como dd/mm/yyyy (y HH:mm si includeTime), sin depender de la
+// configuración regional del entorno (que puede caer a en-US → mm/dd/yyyy).
 const formatDate = (d, includeTime = false) => {
     if (!d) return '—';
-    const options = { day: '2-digit', month: '2-digit', year: 'numeric' };
-    if (includeTime) {
-        options.hour = '2-digit';
-        options.minute = '2-digit';
+    const pad = (n) => String(n).padStart(2, '0');
+    let v;
+    // Cadenas solo-fecha ("YYYY-MM-DD") se parsean como local para no correrse un día.
+    if (typeof d === 'string') {
+        const m = d.match(/^(\d{4})-(\d{2})-(\d{2})$/);
+        v = m ? new Date(Number(m[1]), Number(m[2]) - 1, Number(m[3])) : new Date(d);
+    } else {
+        v = new Date(d);
     }
-    return new Date(d).toLocaleDateString('es-PE', options);
+    if (isNaN(v.getTime())) return '—';
+    const date = `${pad(v.getDate())}/${pad(v.getMonth() + 1)}/${v.getFullYear()}`;
+    return includeTime ? `${date} ${pad(v.getHours())}:${pad(v.getMinutes())}` : date;
 };
 
 const PRIORITY_COLORS = {
@@ -599,6 +647,10 @@ const navigateToTicket = (id) => {
                     <span class="legend-line legend-due"></span>
                     Fecha límite
                 </span>
+                <span class="legend-item">
+                    <span class="legend-dot legend-holiday"></span>
+                    Domingo / Feriado
+                </span>
             </div>
         </div>
 
@@ -623,77 +675,89 @@ const navigateToTicket = (id) => {
 
         <!-- ═══ Gantt body ═══ -->
         <div v-else class="gantt-container">
-            <!-- Fixed label column -->
-            <div class="gantt-col-labels">
+            <div class="gantt-grid" :style="{ gridTemplateColumns: `var(--gantt-label-w, 300px) ${ganttWidth}px` }">
+                <!-- Header row -->
                 <div class="gantt-col-header"><i class="pi pi-list mr-2"></i>Ticket</div>
-                <div
-                    v-for="row in ganttRows"
-                    :key="row.id"
-                    class="gantt-label-row"
-                    :class="{ 'is-finished': isFinished(row.status) }"
-                    @click="handleTicketClick(row)"
-                    v-tooltip.right="`#${row.id} · ${row.title} | Creado por: ${row.creator?.name ?? '—'} (${row.creator?.position ?? '—'}) el ${formatDate(row.created_at, true)}`"
-                >
-                    <span class="gantt-label-id">#{{ row.id }}</span>
-                    <div class="gantt-label-info">
-                        <span class="gantt-label-title">{{ row.title }}</span>
-                        <div class="gantt-label-meta">
-                            <span class="ticket-status-badge" :data-status="row.status" v-tooltip.top="TICKET_STATUS[row.status]?.label ?? row.status">
-                                <i :class="TICKET_STATUS[row.status]?.icon ?? 'pi pi-circle'"></i>
-                                {{ TICKET_STATUS[row.status]?.label ?? row.status }}
-                            </span>
-                            <Tag :value="SCHEDULE_STATUS[row.schedule_status]?.label ?? row.schedule_status" :severity="STATUS_SEVERITY[row.schedule_status] ?? 'secondary'" class="label-tag-sm" />
-                            <span v-if="row.priority" class="gantt-priority-badge" :data-priority="row.priority">
-                                {{ row.priority }}
-                            </span>
-                        </div>
-                        <div class="gantt-label-assignee-row" v-tooltip.top="'Asignado a'">
-                            <template v-if="row.assignee">
-                                <i class="pi pi-user" style="font-size: 0.65rem"></i>
-                                <span style="font-size: 0.7rem"
-                                    >{{ row.assignee.name }} <small v-if="row.assignee.position" style="font-size: 0.62rem" class="opacity-60">({{ row.assignee.position }})</small></span
-                                >
-                            </template>
-                            <template v-else-if="row.assignee_position">
-                                <i class="pi pi-briefcase" style="font-size: 0.65rem"></i>
-                                <span style="font-size: 0.7rem">{{ row.assignee_position }}</span>
-                            </template>
-                            <span v-else class="no-assignee" style="font-size: 0.65rem">Sin asignar</span>
-                        </div>
-                        <div v-if="row.creator" class="gantt-label-assignee-row mt-0.5 opacity-60" v-tooltip.top="'Creado por'">
-                            <i class="pi pi-pencil" style="font-size: 0.6rem"></i>
-                            <span style="font-size: 0.65rem"
-                                >{{ row.creator.name }} <small style="font-size: 0.6rem" class="opacity-70">{{ formatDate(row.created_at) }}</small></span
-                            >
-                        </div>
-                    </div>
-                </div>
-            </div>
-
-            <!-- Scrollable bar column -->
-            <div class="gantt-col-bars">
-                <!-- Date header -->
                 <div class="gantt-date-header">
-                    <div v-for="col in headerColumns" :key="col.offset" class="gantt-date-col" :class="{ 'is-weekend': col.isWeekend }" :style="{ width: (col.span / totalDays) * 100 + '%' }">
+                    <div v-if="todayOffset !== null" class="gantt-today-line gantt-today-line--head" :style="{ left: todayOffset + 'px' }"></div>
+                    <div
+                        v-for="col in headerColumns"
+                        :key="col.offset"
+                        class="gantt-date-col"
+                        :class="{ 'is-weekend': col.isWeekend, 'is-week-start': col.isWeekStart, 'is-sunday': col.isSunday, 'is-holiday': col.isHoliday }"
+                        :style="{ width: col.span * dayWidth + 'px' }"
+                        v-tooltip.bottom="col.holidayName || (col.isSunday ? 'Domingo' : undefined)"
+                    >
                         <span class="gantt-date-main">{{ col.label }}</span>
                         <span v-if="col.subLabel" class="gantt-date-sub">{{ col.subLabel }}</span>
                     </div>
                 </div>
 
-                <!-- Bar body -->
-                <div class="gantt-body-area">
-                    <div v-if="todayOffset !== null" class="gantt-today-line" :style="{ left: todayOffset + '%' }"></div>
+                <!-- Ticket rows: cada ticket es UNA fila de grid (etiqueta + barras),
+                     por eso ambas celdas comparten siempre la misma altura. -->
+                <template v-for="row in ganttRows" :key="row.id">
+                    <!-- Label cell (sticky a la izquierda) -->
+                    <div
+                        class="gantt-label-row"
+                        :class="{ 'is-finished': isFinished(row.status) }"
+                        @click="handleTicketClick(row)"
+                        v-tooltip.right="`#${row.id} · ${row.title} | Creado por: ${row.creator?.name ?? '—'} (${row.creator?.position ?? '—'}) el ${formatDate(row.created_at, true)}`"
+                    >
+                        <span class="gantt-label-id">#{{ row.id }}</span>
+                        <div class="gantt-label-info">
+                            <span class="gantt-label-title">{{ row.title }}</span>
+                            <div class="gantt-label-meta">
+                                <span class="ticket-status-badge" :data-status="row.status" v-tooltip.top="TICKET_STATUS[row.status]?.label ?? row.status">
+                                    <i :class="TICKET_STATUS[row.status]?.icon ?? 'pi pi-circle'"></i>
+                                    {{ TICKET_STATUS[row.status]?.label ?? row.status }}
+                                </span>
+                                <Tag :value="SCHEDULE_STATUS[row.schedule_status]?.label ?? row.schedule_status" :severity="STATUS_SEVERITY[row.schedule_status] ?? 'secondary'" class="label-tag-sm" />
+                                <span v-if="row.priority" class="gantt-priority-badge" :data-priority="row.priority">
+                                    {{ row.priority }}
+                                </span>
+                            </div>
+                            <div class="gantt-label-assignee-row" v-tooltip.top="'Asignado a'">
+                                <template v-if="row.assignee">
+                                    <i class="pi pi-user" style="font-size: 0.65rem"></i>
+                                    <span style="font-size: 0.7rem"
+                                        >{{ row.assignee.name }} <small v-if="row.assignee.position" style="font-size: 0.62rem" class="opacity-60">({{ row.assignee.position }})</small></span
+                                    >
+                                </template>
+                                <template v-else-if="row.assignee_position">
+                                    <i class="pi pi-briefcase" style="font-size: 0.65rem"></i>
+                                    <span style="font-size: 0.7rem">{{ row.assignee_position }}</span>
+                                </template>
+                                <span v-else class="no-assignee" style="font-size: 0.65rem">Sin asignar</span>
+                            </div>
+                            <div v-if="row.creator" class="gantt-label-assignee-row mt-0.5 opacity-60" v-tooltip.top="'Creado por'">
+                                <i class="pi pi-pencil" style="font-size: 0.6rem"></i>
+                                <span style="font-size: 0.65rem"
+                                    >{{ row.creator.name }} <small style="font-size: 0.6rem" class="opacity-70">{{ formatDate(row.created_at) }}</small></span
+                                >
+                            </div>
+                        </div>
+                    </div>
 
-                    <div v-for="row in ganttRows" :key="row.id" class="gantt-bar-row" :class="{ 'is-finished': isFinished(row.status) }">
+                    <!-- Bar cell -->
+                    <div class="gantt-bar-row" :class="{ 'is-finished': isFinished(row.status) }">
+                        <!-- Línea de hoy (un segmento por fila → forma una línea continua) -->
+                        <div v-if="todayOffset !== null" class="gantt-today-line" :style="{ left: todayOffset + 'px' }"></div>
+
                         <!-- Grid bg cols -->
-                        <div v-for="col in headerColumns" :key="col.offset" class="gantt-bg-col" :class="{ 'is-weekend': col.isWeekend }" :style="{ width: (col.span / totalDays) * 100 + '%' }"></div>
+                        <div
+                            v-for="col in headerColumns"
+                            :key="col.offset"
+                            class="gantt-bg-col"
+                            :class="{ 'is-weekend': col.isWeekend, 'is-week-start': col.isWeekStart, 'is-sunday': col.isSunday, 'is-holiday': col.isHoliday }"
+                            :style="{ width: col.span * dayWidth + 'px' }"
+                        ></div>
 
                         <!-- Implementation bar -->
                         <div
                             v-if="row.barLeft !== null"
                             class="gantt-bar shadow-sm"
                             :class="row.cfg.bgClass"
-                            :style="{ left: row.barLeft + '%', width: row.barWidth + '%' }"
+                            :style="{ left: row.barLeft + 'px', width: row.barWidth + 'px' }"
                             @click="handleTicketClick(row)"
                             v-tooltip.top="
                                 `#${row.id} · ${row.title} | ${TICKET_STATUS[row.status]?.label ?? row.status} | ${formatDate(row.implementation_start)} → ${formatDate(row.implementation_end)} | Creado por: ${row.creator?.name ?? '—'} (${row.creator?.position ?? '—'}) el ${formatDate(row.created_at, true)}`
@@ -710,9 +774,9 @@ const navigateToTicket = (id) => {
                         </div>
 
                         <!-- Due date marker -->
-                        <div v-if="row.duePct !== null" class="gantt-due-marker" :style="{ left: row.duePct + '%' }" v-tooltip.top="`Fecha límite: ${formatDate(row.due_date)}`"></div>
+                        <div v-if="row.duePos !== null" class="gantt-due-marker" :style="{ left: row.duePos + 'px' }" v-tooltip.top="`Fecha límite: ${formatDate(row.due_date)}`"></div>
                     </div>
-                </div>
+                </template>
             </div>
         </div>
     </div>
@@ -1083,6 +1147,11 @@ const navigateToTicket = (id) => {
     height: 0;
 }
 
+.legend-holiday {
+    background: rgba(239, 68, 68, 0.35);
+    border: 1px solid #ef4444;
+}
+
 .legend-sep {
     color: var(--text-color-secondary);
     opacity: 0.35;
@@ -1095,27 +1164,24 @@ const navigateToTicket = (id) => {
     background: var(--surface-card);
     border: 1px solid var(--surface-border);
     border-radius: 12px;
-    overflow: hidden;
+    overflow: auto;
     box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
-    display: grid;
-    grid-template-columns: 300px 1fr;
 }
 
+/* Un único grid de 2 columnas: etiquetas (fija) + lienzo de barras.
+   Cada ticket ocupa UNA fila del grid, así etiqueta y barra siempre
+   comparten la misma altura. El ancho de la 2ª columna se fija inline
+   (ganttWidth px) para que encabezado y barras midan exactamente igual. */
 .gantt-grid {
-    display: contents;
-}
-
-/* ─── Columna de etiquetas (izquierda) ─── */
-.gantt-col-labels {
-    border-right: 2px solid var(--surface-border);
-    overflow: hidden;
-    display: flex;
-    flex-direction: column;
+    --gantt-label-w: 300px;
+    display: grid;
+    align-items: stretch;
 }
 
 .gantt-col-header {
     height: 56px;
     border-bottom: 1px solid var(--surface-border);
+    border-right: 2px solid var(--surface-border);
     background: var(--surface-50);
     display: flex;
     align-items: center;
@@ -1127,8 +1193,8 @@ const navigateToTicket = (id) => {
     letter-spacing: 0.05em;
     position: sticky;
     top: 0;
-    z-index: 3;
-    flex-shrink: 0;
+    left: 0;
+    z-index: 6;
 }
 
 .gantt-label-row {
@@ -1138,7 +1204,12 @@ const navigateToTicket = (id) => {
     padding: 0.5rem 0.75rem;
     gap: 0.5rem;
     border-bottom: 1px solid var(--surface-100);
+    border-right: 2px solid var(--surface-border);
     cursor: pointer;
+    position: sticky;
+    left: 0;
+    z-index: 5;
+    background: var(--surface-card);
     transition:
         background 0.15s,
         box-shadow 0.15s;
@@ -1326,13 +1397,7 @@ const navigateToTicket = (id) => {
     opacity: 0.35;
 }
 
-/* ─── Columna de barras (derecha) ─── */
-.gantt-col-bars {
-    overflow-x: auto;
-    min-width: 0;
-}
-
-/* Encabezado de fechas */
+/* ─── Encabezado de fechas (columna derecha del grid) ─── */
 .gantt-date-header {
     display: flex;
     height: 56px;
@@ -1340,7 +1405,7 @@ const navigateToTicket = (id) => {
     background: var(--surface-50);
     position: sticky;
     top: 0;
-    z-index: 3;
+    z-index: 4;
 }
 
 .gantt-date-col {
@@ -1348,13 +1413,32 @@ const navigateToTicket = (id) => {
     flex-direction: column;
     align-items: center;
     justify-content: center;
-    border-right: 1px solid var(--surface-100);
-    min-width: 28px;
+    border-right: 1px solid rgba(0, 0, 0, 0.08);
+    min-width: 0;
     flex-shrink: 0;
 }
 
 .gantt-date-col.is-weekend {
     background: var(--surface-100);
+}
+
+/* Línea más marcada al inicio de cada semana (lunes) */
+.gantt-date-col.is-week-start {
+    border-left: 2px solid rgba(0, 0, 0, 0.16);
+}
+
+/* Domingos y feriados — resaltados en rojo transparente */
+.gantt-date-col.is-sunday,
+.gantt-date-col.is-holiday {
+    background: rgba(239, 68, 68, 0.16);
+}
+
+.gantt-date-col.is-sunday .gantt-date-main,
+.gantt-date-col.is-holiday .gantt-date-main,
+.gantt-date-col.is-sunday .gantt-date-sub,
+.gantt-date-col.is-holiday .gantt-date-sub {
+    color: #dc2626;
+    font-weight: 700;
 }
 
 .gantt-date-main {
@@ -1370,11 +1454,8 @@ const navigateToTicket = (id) => {
     opacity: 0.7;
 }
 
-/* Cuerpo de barras */
-.gantt-body-area {
-    position: relative;
-}
-
+/* Línea de "Hoy" — un segmento por celda (encabezado + cada fila de barras),
+   que en conjunto dibuja una línea vertical continua. */
 .gantt-today-line {
     position: absolute;
     top: 0;
@@ -1386,7 +1467,8 @@ const navigateToTicket = (id) => {
     box-shadow: 0 0 6px rgba(59, 130, 246, 0.4);
 }
 
-.gantt-today-line::before {
+/* El punto solo se dibuja en el segmento del encabezado */
+.gantt-today-line--head::before {
     content: '';
     position: absolute;
     top: 0;
@@ -1408,13 +1490,24 @@ const navigateToTicket = (id) => {
 
 .gantt-bg-col {
     flex-shrink: 0;
-    border-right: 1px solid var(--surface-100);
+    border-right: 1px solid rgba(0, 0, 0, 0.08);
     min-height: 64px;
     height: 100%;
 }
 
 .gantt-bg-col.is-weekend {
     background: var(--surface-50);
+}
+
+/* Línea más marcada al inicio de cada semana (lunes) */
+.gantt-bg-col.is-week-start {
+    border-left: 2px solid rgba(0, 0, 0, 0.16);
+}
+
+/* Domingos y feriados — resaltados en rojo transparente */
+.gantt-bg-col.is-sunday,
+.gantt-bg-col.is-holiday {
+    background: rgba(239, 68, 68, 0.08);
 }
 
 /* Barras de colores */
@@ -1543,6 +1636,15 @@ const navigateToTicket = (id) => {
     border-color: var(--surface-700);
 }
 
+.app-dark .gantt-label-row {
+    background: var(--surface-900);
+    border-right-color: var(--surface-700);
+}
+
+.app-dark .gantt-col-header {
+    border-right-color: var(--surface-700);
+}
+
 .app-dark .gantt-label-row:hover {
     background: color-mix(in srgb, var(--primary-900) 30%, var(--surface-800));
     box-shadow: inset 3px 0 0 var(--primary-500);
@@ -1552,12 +1654,40 @@ const navigateToTicket = (id) => {
     border-bottom-color: var(--surface-700);
 }
 
+.app-dark .gantt-bg-col,
+.app-dark .gantt-date-col {
+    border-right-color: rgba(255, 255, 255, 0.1);
+}
+
+.app-dark .gantt-bg-col.is-week-start,
+.app-dark .gantt-date-col.is-week-start {
+    border-left-color: rgba(255, 255, 255, 0.2);
+}
+
 .app-dark .gantt-bg-col.is-weekend {
     background: var(--surface-800);
 }
 
 .app-dark .gantt-date-col.is-weekend {
     background: var(--surface-700);
+}
+
+/* Domingos y feriados — modo oscuro */
+.app-dark .gantt-bg-col.is-sunday,
+.app-dark .gantt-bg-col.is-holiday {
+    background: rgba(239, 68, 68, 0.15);
+}
+
+.app-dark .gantt-date-col.is-sunday,
+.app-dark .gantt-date-col.is-holiday {
+    background: rgba(239, 68, 68, 0.22);
+}
+
+.app-dark .gantt-date-col.is-sunday .gantt-date-main,
+.app-dark .gantt-date-col.is-holiday .gantt-date-main,
+.app-dark .gantt-date-col.is-sunday .gantt-date-sub,
+.app-dark .gantt-date-col.is-holiday .gantt-date-sub {
+    color: #f87171;
 }
 
 .app-dark .gantt-bar-unplanned {
@@ -1630,8 +1760,8 @@ const navigateToTicket = (id) => {
     .gantt-page {
         padding: 0.75rem;
     }
-    .gantt-container {
-        grid-template-columns: 200px 1fr;
+    .gantt-grid {
+        --gantt-label-w: 200px;
     }
     .gantt-label-title {
         max-width: 150px;
