@@ -15,7 +15,19 @@ const props = defineProps({
     }
 });
 
-const topDoctors = computed(() => props.doctors.slice(0, 10));
+const topDoctors = computed(() =>
+    props.doctors
+        .map((d) => ({
+            ...d,
+            // Días-cama utilizados = Atenciones × Promedio de Permanencia (PP).
+            // Si el backend envía `total_bed_days` (suma exacta de estancias), se usa ese
+            // valor; en su defecto se calcula como aproximación en el frontend.
+            bed_days: d.total_bed_days ?? (Number(d.total_attentions) || 0) * (Number(d.avg_stay_days) || 0)
+        }))
+        // El top se ordena por días-cama (mayor a menor), la métrica de mayor valor.
+        .sort((a, b) => b.bed_days - a.bed_days)
+        .slice(0, 10)
+);
 
 // Determinar el color del badge según el ranking
 const getRankBadgeColor = (index) => {
@@ -30,11 +42,18 @@ const formatStayDays = (days) => {
     if (!days) return '-';
     return `${Number(days).toFixed(1)} días`;
 };
+
+// Formatear días-cama utilizados (sin decimales, con separador de miles)
+const formatBedDays = (value) => {
+    const n = Number(value);
+    if (!n || isNaN(n)) return '-';
+    return n.toLocaleString('es-PE', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+};
 </script>
 
 <template>
     <div class="doctors-table-container">
-        <DataTable :value="topDoctors" :loading="loading" stripedRows showGridlines responsiveLayout="scroll" :paginator="false" class="doctors-table">
+        <DataTable :value="topDoctors" :loading="loading" stripedRows showGridlines responsiveLayout="scroll" :paginator="false" sortField="bed_days" :sortOrder="-1" class="doctors-table">
             <template #empty>
                 <div class="empty-state">
                     <i class="pi pi-users text-4xl text-gray-400 mb-2"></i>
@@ -83,6 +102,18 @@ const formatStayDays = (days) => {
                     <div class="stay-cell">
                         <i class="pi pi-calendar-times text-purple-400 mr-1"></i>
                         <span class="font-semibold">{{ formatStayDays(data.avg_stay_days) }}</span>
+                    </div>
+                </template>
+            </Column>
+
+            <Column field="bed_days" header="Días-Cama" :sortable="true" headerStyle="width: 130px">
+                <template #header>
+                    <i class="pi pi-info-circle ml-1 text-gray-400" v-tooltip.top="'Días-cama utilizados = Atenciones × PP. Representa la carga real aportada a la clínica.'"></i>
+                </template>
+                <template #body="{ data }">
+                    <div class="bed-days-cell">
+                        <i class="pi pi-bed mr-1"></i>
+                        <span class="bed-days-value">{{ formatBedDays(data.bed_days) }}</span>
                     </div>
                 </template>
             </Column>
@@ -168,6 +199,18 @@ const formatStayDays = (days) => {
     display: flex;
     align-items: center;
     color: var(--text-color-secondary);
+}
+
+.bed-days-cell {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: #0d9488;
+}
+
+.bed-days-value {
+    font-weight: 700;
+    font-size: 0.95rem;
 }
 
 :deep(.p-datatable .p-datatable-thead > tr > th) {
