@@ -123,8 +123,8 @@ export function useDocumentManagement() {
 
     const deleteCommentAttachment = async (documentId, attachmentId) => {
         try {
-            await store.deleteCommentAttachment(documentId, attachmentId);
-            toast.add({ severity: 'success', summary: 'Eliminado', detail: 'Adjunto eliminado', life: 3000 });
+            const response = await store.deleteCommentAttachment(documentId, attachmentId);
+            toast.add({ severity: 'success', summary: 'Eliminado', detail: response?.message || 'Adjunto eliminado', life: 3000 });
         } catch (error) {
             handleError(error, 'Error al eliminar el adjunto');
             throw error;

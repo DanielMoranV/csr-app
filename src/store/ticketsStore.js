@@ -432,12 +432,14 @@ export const useTicketsStore = defineStore('tickets', () => {
     const deleteTicket = async (id) => {
         state.isDeleting = true;
         try {
-            await TicketService.deleteTicket(id);
+            // DELETE responde 200 con body estándar { success, message, data:null }.
+            const response = await TicketService.deleteTicket(id);
             const index = state.tickets.findIndex((t) => t.id === id);
             if (index !== -1) {
                 state.tickets.splice(index, 1);
                 state.pagination.total--;
             }
+            return response;
         } catch (error) {
             // Error handled
             throw error;

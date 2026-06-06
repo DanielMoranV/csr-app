@@ -128,8 +128,8 @@ const confirmDelete = (row) => {
 const deleteCategory = async () => {
     deleting.value = true;
     try {
-        await TreasuryService.deleteMovementCategory(category.value.id);
-        toast.add({ severity: 'success', summary: 'Éxito', detail: 'Categoría eliminada', life: 3000 });
+        const response = await TreasuryService.deleteMovementCategory(category.value.id);
+        toast.add({ severity: 'success', summary: 'Éxito', detail: response?.message || 'Categoría eliminada', life: 3000 });
         deleteDialog.value = false;
         loadCategories();
     } catch (error) {

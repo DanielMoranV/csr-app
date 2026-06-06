@@ -86,9 +86,11 @@ export const useTicketAttachmentsStore = defineStore('ticketAttachments', () => 
         state.isDeleting = true;
         state.error = null;
         try {
-            // DELETE returns 204 No Content — no body to check, success = no exception thrown
-            await TicketAttachmentService.deleteAttachment(ticketId, attachmentId);
+            // DELETE responde 200 con body estándar { success, message, data:null }.
+            // No dependemos del status: si no hay excepción, fue exitoso.
+            const response = await TicketAttachmentService.deleteAttachment(ticketId, attachmentId);
             state.attachments = state.attachments.filter((att) => att.id !== attachmentId);
+            return response;
         } catch (error) {
             state.error = error;
             throw error;

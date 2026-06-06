@@ -158,8 +158,8 @@ const confirmDeleteAttachment = (attachment) => {
 const deleteAttachment = async () => {
     if (selectedAttachment.value) {
         try {
-            await attachmentsStore.deleteAttachment(props.ticketId, selectedAttachment.value.id);
-            toast.add({ severity: 'success', summary: 'Eliminación Exitosa', detail: 'Adjunto eliminado correctamente', life: 3000 });
+            const response = await attachmentsStore.deleteAttachment(props.ticketId, selectedAttachment.value.id);
+            toast.add({ severity: 'success', summary: 'Eliminación Exitosa', detail: response?.message || 'Adjunto eliminado correctamente', life: 3000 });
             confirmDeleteDialogVisible.value = false;
             selectedAttachment.value = null;
         } catch (error) {
