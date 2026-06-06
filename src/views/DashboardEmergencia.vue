@@ -885,7 +885,6 @@ const derivadasPorSubtipo = computed(() => {
         }));
 });
 
-
 onMounted(() => {
     const now = new Date();
     desde.value = new Date(now.getFullYear() - 1, 0, 1);
@@ -1316,9 +1315,7 @@ onMounted(() => {
                             <div v-if="derivadasPorSubtipo.length" class="em-cont-deriv-subtipo">
                                 <div class="em-cont-deriv-header">
                                     <span class="em-cont-deriv-title">Desglose de derivadas por subtipo</span>
-                                    <span class="em-cont-deriv-total">
-                                        {{ fNumber(continuidadData.resumen.con_hospitalizacion) }} de {{ fNumber(continuidadData.resumen.total_emergencias) }} emergencias
-                                    </span>
+                                    <span class="em-cont-deriv-total"> {{ fNumber(continuidadData.resumen.con_hospitalizacion) }} de {{ fNumber(continuidadData.resumen.total_emergencias) }} emergencias </span>
                                 </div>
                                 <div v-for="item in derivadasPorSubtipo" :key="item.subtipo" class="em-cont-deriv-row">
                                     <div class="em-cont-deriv-label">

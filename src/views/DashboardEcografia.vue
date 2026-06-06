@@ -113,10 +113,17 @@ const toggleAllMonths = () => {
     selectedMonths.value = selectedMonths.value.length === 12 ? [] : [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12];
 };
 
-watch([selectedYears, selectedMonths, selectedArea], () => {
-    if (!yearOptionsInitialized) { yearOptionsInitialized = true; return; }
-    detailPage.value = 1;
-}, { deep: true });
+watch(
+    [selectedYears, selectedMonths, selectedArea],
+    () => {
+        if (!yearOptionsInitialized) {
+            yearOptionsInitialized = true;
+            return;
+        }
+        detailPage.value = 1;
+    },
+    { deep: true }
+);
 
 // ─── API ──────────────────────────────────────────────────────────────────────
 const fetchData = async () => {
@@ -242,9 +249,7 @@ watch(yearOptions, (opts, oldOpts) => {
     }
 });
 
-const isFilterEmpty = () =>
-    (yearOptions.value.length > 0 && selectedYears.value.length === 0) ||
-    selectedMonths.value.length === 0;
+//const isFilterEmpty = () => (yearOptions.value.length > 0 && selectedYears.value.length === 0) || selectedMonths.value.length === 0;
 
 const areaOptions = computed(() => {
     const areas = [...new Set(allData.value.map((r) => r.area))].sort();
@@ -299,12 +304,8 @@ const areaExt = computed(() => porArea.value.find((a) => a.area === 'Ecografia E
 // ─── Mix particular / aseguradora ─────────────────────────────────────────────
 const mixDonutData = computed(() => {
     const m = pieMetric.value;
-    const pVal = m === 'monto'
-        ? filteredData.value.filter((r) => r.particular).reduce((s, r) => s + r.importe, 0)
-        : filteredData.value.filter((r) => r.particular).length;
-    const aVal = m === 'monto'
-        ? filteredData.value.filter((r) => !r.particular).reduce((s, r) => s + r.importe, 0)
-        : filteredData.value.filter((r) => !r.particular).length;
+    const pVal = m === 'monto' ? filteredData.value.filter((r) => r.particular).reduce((s, r) => s + r.importe, 0) : filteredData.value.filter((r) => r.particular).length;
+    const aVal = m === 'monto' ? filteredData.value.filter((r) => !r.particular).reduce((s, r) => s + r.importe, 0) : filteredData.value.filter((r) => !r.particular).length;
     return {
         labels: ['Particular', 'Aseguradora'],
         datasets: [{ data: [pVal, aVal], backgroundColor: ['#64748B', '#3B82F6'], borderWidth: 0, hoverOffset: 12 }]
@@ -330,13 +331,15 @@ const mixLegendItems = computed(() => {
     const fmt = pieMetric.value === 'monto' ? fMoney : fNum;
     return [
         {
-            label: 'Particular', color: '#64748B',
+            label: 'Particular',
+            color: '#64748B',
             pct: total > 0 ? ((pVal / total) * 100).toFixed(1) : '0.0',
             val: fmt(pVal),
             ticketMedio: partRows.length > 0 ? fMoney(partMonto / partRows.length) : 'S/ 0.00'
         },
         {
-            label: 'Aseguradora', color: '#3B82F6',
+            label: 'Aseguradora',
+            color: '#3B82F6',
             pct: total > 0 ? ((aVal / total) * 100).toFixed(1) : '0.0',
             val: fmt(aVal),
             ticketMedio: asegRows.length > 0 ? fMoney(asegMonto / asegRows.length) : 'S/ 0.00'
@@ -353,7 +356,7 @@ const mixDonutOptions = computed(() => ({
         datalabels: { display: false },
         tooltip: {
             callbacks: {
-                label: (ctx) => pieMetric.value === 'monto' ? ` ${fCurrency(ctx.parsed)}` : ` ${fNum(ctx.parsed)} atenciones`
+                label: (ctx) => (pieMetric.value === 'monto' ? ` ${fCurrency(ctx.parsed)}` : ` ${fNum(ctx.parsed)} atenciones`)
             }
         }
     }
@@ -411,7 +414,7 @@ const lineChartOptions = computed(() => ({
         legend: { position: 'bottom', labels: { usePointStyle: true, padding: 20, font: { size: 12 } } },
         tooltip: {
             callbacks: {
-                label: (ctx) => chartMetric.value === 'monto' ? ` ${fCurrency(ctx.parsed.y)}` : ` ${fNum(ctx.parsed.y)} atenciones`
+                label: (ctx) => (chartMetric.value === 'monto' ? ` ${fCurrency(ctx.parsed.y)}` : ` ${fNum(ctx.parsed.y)} atenciones`)
             }
         },
         datalabels: {
@@ -425,14 +428,14 @@ const lineChartOptions = computed(() => ({
             padding: 6,
             shadowBlur: 10,
             shadowColor: 'rgba(0,0,0,0.1)',
-            formatter: (v) => chartMetric.value === 'monto' ? `S/ ${Math.round(v / 1000)}K` : fNum(v)
+            formatter: (v) => (chartMetric.value === 'monto' ? `S/ ${Math.round(v / 1000)}K` : fNum(v))
         }
     },
     scales: {
         y: {
             beginAtZero: true,
             grid: { color: '#f0f6ff' },
-            ticks: { font: { size: 10, weight: '600' }, color: '#94a3b8', callback: (v) => chartMetric.value === 'monto' ? fMoneyK(v) : v }
+            ticks: { font: { size: 10, weight: '600' }, color: '#94a3b8', callback: (v) => (chartMetric.value === 'monto' ? fMoneyK(v) : v) }
         },
         x: { grid: { display: false }, ticks: { font: { size: 11 }, color: '#64748b' } }
     }
@@ -465,13 +468,13 @@ const categoriasOptions = computed(() => ({
     plugins: {
         legend: { display: false },
         datalabels: { display: false },
-        tooltip: { callbacks: { label: (ctx) => categoriasMetric.value === 'monto' ? ` ${fMoney(ctx.parsed.x)}` : ` ${fNum(ctx.parsed.x)} atenc.` } }
+        tooltip: { callbacks: { label: (ctx) => (categoriasMetric.value === 'monto' ? ` ${fMoney(ctx.parsed.x)}` : ` ${fNum(ctx.parsed.x)} atenc.`) } }
     },
     scales: {
         x: {
             beginAtZero: true,
             grid: { color: '#f1f5f9' },
-            ticks: { font: { size: 10 }, color: '#94a3b8', callback: (v) => categoriasMetric.value === 'monto' ? fMoneyK(v) : fNum(v) }
+            ticks: { font: { size: 10 }, color: '#94a3b8', callback: (v) => (categoriasMetric.value === 'monto' ? fMoneyK(v) : fNum(v)) }
         },
         y: { grid: { display: false }, ticks: { font: { size: 11, weight: '600' }, color: '#334155' } }
     }
@@ -480,23 +483,30 @@ const categoriasOptions = computed(() => ({
 // ─── Estacionalidad ───────────────────────────────────────────────────────────
 const estacionalidadChartData = computed(() => {
     const stats = {};
-    DAY_ORDER.forEach((d) => { stats[d] = { atenciones: 0, monto: 0 }; });
+    DAY_ORDER.forEach((d) => {
+        stats[d] = { atenciones: 0, monto: 0 };
+    });
     filteredData.value.forEach((r) => {
         const dayName = DAY_MAP[new Date(r.fecha + 'T00:00:00').getDay()];
-        if (stats[dayName]) { stats[dayName].atenciones++; stats[dayName].monto += r.importe; }
+        if (stats[dayName]) {
+            stats[dayName].atenciones++;
+            stats[dayName].monto += r.importe;
+        }
     });
     const metric = estacionalidadMetric.value;
     const COLOR = '#0F766E';
     return {
         labels: DAY_ORDER,
-        datasets: [{
-            data: DAY_ORDER.map((d) => stats[d][metric]),
-            backgroundColor: DAY_ORDER.map((d) => ['Sábado', 'Domingo'].includes(d) ? COLOR + '55' : COLOR + 'CC'),
-            borderColor: COLOR,
-            borderWidth: 1.5,
-            borderRadius: 6,
-            borderSkipped: false
-        }]
+        datasets: [
+            {
+                data: DAY_ORDER.map((d) => stats[d][metric]),
+                backgroundColor: DAY_ORDER.map((d) => (['Sábado', 'Domingo'].includes(d) ? COLOR + '55' : COLOR + 'CC')),
+                borderColor: COLOR,
+                borderWidth: 1.5,
+                borderRadius: 6,
+                borderSkipped: false
+            }
+        ]
     };
 });
 
@@ -506,14 +516,14 @@ const estacionalidadOptions = computed(() => ({
     plugins: {
         legend: { display: false },
         datalabels: { display: false },
-        tooltip: { callbacks: { label: (ctx) => estacionalidadMetric.value === 'monto' ? ` ${fMoney(ctx.parsed.y)}` : ` ${fNum(ctx.parsed.y)} atenc.` } }
+        tooltip: { callbacks: { label: (ctx) => (estacionalidadMetric.value === 'monto' ? ` ${fMoney(ctx.parsed.y)}` : ` ${fNum(ctx.parsed.y)} atenc.`) } }
     },
     scales: {
         x: { grid: { display: false }, ticks: { font: { size: 12, weight: '700' }, color: '#64748b' } },
         y: {
             beginAtZero: true,
             grid: { color: '#f1f5f9' },
-            ticks: { font: { size: 10, weight: '600' }, color: '#94a3b8', callback: (v) => estacionalidadMetric.value === 'monto' ? fMoneyK(v) : v }
+            ticks: { font: { size: 10, weight: '600' }, color: '#94a3b8', callback: (v) => (estacionalidadMetric.value === 'monto' ? fMoneyK(v) : v) }
         }
     }
 }));
@@ -676,12 +686,7 @@ const rankingSEGUS = computed(() => {
 const registrosFiltrados = computed(() => {
     const q = searchQuery.value.trim().toLowerCase();
     if (!q) return filteredData.value;
-    return filteredData.value.filter((r) =>
-        (r.medico ?? '').toLowerCase().includes(q) ||
-        (r.cod_seg ?? '').toLowerCase().includes(q) ||
-        (r.nombre_seg ?? '').toLowerCase().includes(q) ||
-        (r.cia ?? '').toLowerCase().includes(q)
-    );
+    return filteredData.value.filter((r) => (r.medico ?? '').toLowerCase().includes(q) || (r.cod_seg ?? '').toLowerCase().includes(q) || (r.nombre_seg ?? '').toLowerCase().includes(q) || (r.cia ?? '').toLowerCase().includes(q));
 });
 
 const totalPages = computed(() => Math.max(1, Math.ceil(registrosFiltrados.value.length / PAGE_SIZE)));
@@ -690,11 +695,19 @@ const registrosPaginados = computed(() => {
     return registrosFiltrados.value.slice(start, start + PAGE_SIZE);
 });
 
-watch(searchQuery, () => { detailPage.value = 1; });
-watch(filteredData, () => { detailPage.value = 1; });
+watch(searchQuery, () => {
+    detailPage.value = 1;
+});
+watch(filteredData, () => {
+    detailPage.value = 1;
+});
 
-const prevPage = () => { if (detailPage.value > 1) detailPage.value--; };
-const nextPage = () => { if (detailPage.value < totalPages.value) detailPage.value++; };
+const prevPage = () => {
+    if (detailPage.value > 1) detailPage.value--;
+};
+const nextPage = () => {
+    if (detailPage.value < totalPages.value) detailPage.value++;
+};
 
 // ─── Badge de ranking ─────────────────────────────────────────────────────────
 const rankClass = (idx) => {
@@ -754,12 +767,8 @@ onMounted(() => {
                 <div class="eco-header-controls">
                     <SelectButton v-model="topN" :options="topOptions" optionLabel="label" optionValue="value" class="eco-metric-toggle" />
                     <div class="eco-view-toggle">
-                        <button :class="['eco-view-btn', activeView === 'resumen' && 'eco-view-btn--active']" @click="activeView = 'resumen'">
-                            <i class="pi pi-chart-bar mr-1"></i> Resumen
-                        </button>
-                        <button :class="['eco-view-btn', activeView === 'detalle' && 'eco-view-btn--active']" @click="activeView = 'detalle'">
-                            <i class="pi pi-table mr-1"></i> Detalle
-                        </button>
+                        <button :class="['eco-view-btn', activeView === 'resumen' && 'eco-view-btn--active']" @click="activeView = 'resumen'"><i class="pi pi-chart-bar mr-1"></i> Resumen</button>
+                        <button :class="['eco-view-btn', activeView === 'detalle' && 'eco-view-btn--active']" @click="activeView = 'detalle'"><i class="pi pi-table mr-1"></i> Detalle</button>
                     </div>
                 </div>
             </div>
@@ -807,18 +816,17 @@ onMounted(() => {
 
             <!-- ── Empty state ─────────────────────────────────────────────── -->
             <div v-if="!allData.length && !errorMsg" class="eco-empty-state">
-                <i class="pi pi-inbox" style="font-size:3rem;opacity:.35"></i>
+                <i class="pi pi-inbox" style="font-size: 3rem; opacity: 0.35"></i>
                 <p>Selecciona un período y presiona Aplicar</p>
             </div>
             <div v-else-if="allData.length && !filteredData.length && !errorMsg" class="eco-empty-state">
-                <i class="pi pi-filter-slash" style="font-size:3rem;opacity:.35"></i>
+                <i class="pi pi-filter-slash" style="font-size: 3rem; opacity: 0.35"></i>
                 <p>Sin datos para los filtros seleccionados</p>
             </div>
 
             <template v-if="filteredData.length">
                 <!-- ══ VISTA RESUMEN ══════════════════════════════════════════ -->
                 <template v-if="activeView === 'resumen'">
-
                     <!-- Fila 1 — KPIs -->
                     <div class="eco-kpi-grid">
                         <KPICard title="Total Atenciones" :value="fNum(totales.atenciones)" subtitle="Período filtrado" icon="pi-users" color="green" />
@@ -897,17 +905,10 @@ onMounted(() => {
                         <Card class="eco-card">
                             <template #title>
                                 <div class="eco-card-title">
-                                    <span><i class="pi pi-chart-line mr-2" style="color:#0F766E"></i>Evolución Mensual por Año</span>
+                                    <span><i class="pi pi-chart-line mr-2" style="color: #0f766e"></i>Evolución Mensual por Año</span>
                                     <div class="eco-chart-toolbar">
                                         <SelectButton v-model="chartMetric" :options="metricOptions" optionLabel="label" optionValue="value" class="eco-metric-toggle" />
-                                        <Button
-                                            icon="pi pi-tag"
-                                            :label="showLabels ? 'Ocultar valores' : 'Ver valores'"
-                                            :outlined="!showLabels"
-                                            size="small"
-                                            severity="secondary"
-                                            @click="showLabels = !showLabels"
-                                        />
+                                        <Button icon="pi pi-tag" :label="showLabels ? 'Ocultar valores' : 'Ver valores'" :outlined="!showLabels" size="small" severity="secondary" @click="showLabels = !showLabels" />
                                         <Button icon="pi pi-file-excel" label="Excel" size="small" severity="success" outlined :loading="isExportingEvolucion" @click="handleExportEvolucionMensual" />
                                     </div>
                                 </div>
@@ -923,7 +924,7 @@ onMounted(() => {
                         <Card class="eco-card">
                             <template #title>
                                 <div class="eco-card-title">
-                                    <span><i class="pi pi-chart-pie mr-2" style="color:#3B82F6"></i>Particular vs Aseguradora</span>
+                                    <span><i class="pi pi-chart-pie mr-2" style="color: #3b82f6"></i>Particular vs Aseguradora</span>
                                     <SelectButton v-model="pieMetric" :options="metricOptions" optionLabel="label" optionValue="value" class="eco-metric-toggle" />
                                 </div>
                             </template>
@@ -959,7 +960,7 @@ onMounted(() => {
                         <Card class="eco-card">
                             <template #title>
                                 <div class="eco-card-title">
-                                    <span><i class="pi pi-list mr-2" style="color:#0F766E"></i>Categorías</span>
+                                    <span><i class="pi pi-list mr-2" style="color: #0f766e"></i>Categorías</span>
                                     <SelectButton v-model="categoriasMetric" :options="metricOptions" optionLabel="label" optionValue="value" class="eco-metric-toggle" />
                                 </div>
                             </template>
@@ -973,7 +974,7 @@ onMounted(() => {
                         <Card class="eco-card">
                             <template #title>
                                 <div class="eco-card-title">
-                                    <span><i class="pi pi-calendar mr-2" style="color:#0F766E"></i>Estacionalidad Semanal</span>
+                                    <span><i class="pi pi-calendar mr-2" style="color: #0f766e"></i>Estacionalidad Semanal</span>
                                     <SelectButton v-model="estacionalidadMetric" :options="metricOptions" optionLabel="label" optionValue="value" class="eco-metric-toggle" />
                                 </div>
                             </template>
@@ -989,7 +990,7 @@ onMounted(() => {
                     <Card class="eco-card">
                         <template #title>
                             <div class="eco-card-title">
-                                <span><i class="pi pi-chart-line mr-2" style="color:#0F766E"></i>Tendencia Temporal</span>
+                                <span><i class="pi pi-chart-line mr-2" style="color: #0f766e"></i>Tendencia Temporal</span>
                                 <div class="eco-chart-toolbar">
                                     <SelectButton v-model="trendGranularity" :options="trendGranularityOptions" optionLabel="label" optionValue="value" class="eco-metric-toggle" />
                                     <SelectButton v-model="trendMetric" :options="metricOptions" optionLabel="label" optionValue="value" class="eco-metric-toggle" />
@@ -1006,24 +1007,26 @@ onMounted(() => {
                     <!-- Fila 6 — Top Procedimientos SEGUS -->
                     <Card class="eco-card">
                         <template #title>
-                            <span><i class="pi pi-sort-amount-down mr-2" style="color:#0F766E"></i>Top Procedimientos SEGUS</span>
+                            <span><i class="pi pi-sort-amount-down mr-2" style="color: #0f766e"></i>Top Procedimientos SEGUS</span>
                         </template>
                         <template #content>
                             <DataTable :value="topProcedimientos" stripedRows size="small" class="eco-table">
-                                <Column field="cod_seg" header="SEGUS" sortable style="width:110px;font-weight:700" />
+                                <Column field="cod_seg" header="SEGUS" sortable style="width: 110px; font-weight: 700" />
                                 <Column field="nombre" header="Nombre" sortable />
-                                <Column field="categoria" header="Categoría" sortable style="width:160px">
+                                <Column field="categoria" header="Categoría" sortable style="width: 160px">
                                     <template #body="{ data }">
                                         <span class="eco-badge-cat">{{ data.categoria }}</span>
                                     </template>
                                 </Column>
-                                <Column field="atenciones" header="Atenciones" sortable style="width:110px;text-align:right">
+                                <Column field="atenciones" header="Atenciones" sortable style="width: 110px; text-align: right">
                                     <template #body="{ data }">{{ fNum(data.atenciones) }}</template>
                                 </Column>
-                                <Column field="monto" header="Monto (S/)" sortable style="width:130px;text-align:right">
-                                    <template #body="{ data }"><span class="eco-amount">{{ fMoney(data.monto) }}</span></template>
+                                <Column field="monto" header="Monto (S/)" sortable style="width: 130px; text-align: right">
+                                    <template #body="{ data }"
+                                        ><span class="eco-amount">{{ fMoney(data.monto) }}</span></template
+                                    >
                                 </Column>
-                                <Column field="ticket_medio" header="Ticket Medio" sortable style="width:120px;text-align:right">
+                                <Column field="ticket_medio" header="Ticket Medio" sortable style="width: 120px; text-align: right">
                                     <template #body="{ data }">{{ fMoney(data.ticket_medio) }}</template>
                                 </Column>
                             </DataTable>
@@ -1036,7 +1039,7 @@ onMounted(() => {
                         <Card class="eco-card">
                             <template #title>
                                 <div class="eco-card-title">
-                                    <span><i class="pi pi-building mr-2" style="color:#3B82F6"></i>Top Aseguradoras</span>
+                                    <span><i class="pi pi-building mr-2" style="color: #3b82f6"></i>Top Aseguradoras</span>
                                     <SelectButton v-model="topAsegMetric" :options="metricOptions" optionLabel="label" optionValue="value" class="eco-metric-toggle" />
                                 </div>
                             </template>
@@ -1051,7 +1054,7 @@ onMounted(() => {
                                             </div>
                                         </div>
                                         <div class="eco-rank-right">
-                                            <div class="eco-rank-value" style="color:#3B82F6">
+                                            <div class="eco-rank-value" style="color: #3b82f6">
                                                 {{ topAsegMetric === 'monto' ? fMoney(row.monto) : fNum(row.atenciones) }}
                                             </div>
                                             <div class="eco-rank-meta">
@@ -1067,7 +1070,7 @@ onMounted(() => {
                         <Card class="eco-card">
                             <template #title>
                                 <div class="eco-card-title">
-                                    <span><i class="pi pi-user mr-2" style="color:#0F766E"></i>Top Médicos Ejecutores</span>
+                                    <span><i class="pi pi-user mr-2" style="color: #0f766e"></i>Top Médicos Ejecutores</span>
                                     <SelectButton v-model="topMedMetric" :options="metricOptions" optionLabel="label" optionValue="value" class="eco-metric-toggle" />
                                 </div>
                             </template>
@@ -1082,7 +1085,7 @@ onMounted(() => {
                                             </div>
                                         </div>
                                         <div class="eco-rank-right">
-                                            <div class="eco-rank-value" style="color:#0F766E">
+                                            <div class="eco-rank-value" style="color: #0f766e">
                                                 {{ topMedMetric === 'monto' ? fMoney(row.monto) : fNum(row.atenciones) }}
                                             </div>
                                             <div class="eco-rank-meta">
@@ -1112,8 +1115,8 @@ onMounted(() => {
                     <Card class="eco-card">
                         <template #content>
                             <DataTable :value="registrosPaginados" stripedRows size="small" class="eco-table">
-                                <Column field="fecha" header="Fecha" sortable style="width:100px" />
-                                <Column field="area" header="Área" sortable style="width:170px">
+                                <Column field="fecha" header="Fecha" sortable style="width: 100px" />
+                                <Column field="area" header="Área" sortable style="width: 170px">
                                     <template #body="{ data }">
                                         <span :class="['eco-area-badge', data.area === 'Ecografia CSR' ? 'eco-area-badge--csr' : 'eco-area-badge--ext']">
                                             {{ data.area }}
@@ -1121,16 +1124,18 @@ onMounted(() => {
                                     </template>
                                 </Column>
                                 <Column field="medico" header="Médico" sortable />
-                                <Column field="cod_seg" header="SEGUS" sortable style="width:100px;font-weight:700" />
-                                <Column field="categoria" header="Categoría" sortable style="width:150px" />
-                                <Column field="cia" header="Aseguradora" sortable style="width:180px" />
-                                <Column field="particular" header="Tipo" style="width:90px;text-align:center">
+                                <Column field="cod_seg" header="SEGUS" sortable style="width: 100px; font-weight: 700" />
+                                <Column field="categoria" header="Categoría" sortable style="width: 150px" />
+                                <Column field="cia" header="Aseguradora" sortable style="width: 180px" />
+                                <Column field="particular" header="Tipo" style="width: 90px; text-align: center">
                                     <template #body="{ data }">
                                         <Tag :value="data.particular ? 'Particular' : 'Seguro'" :severity="data.particular ? 'secondary' : 'info'" />
                                     </template>
                                 </Column>
-                                <Column field="importe" header="Importe (S/)" sortable style="width:120px;text-align:right">
-                                    <template #body="{ data }"><span class="eco-amount">{{ fMoney(data.importe) }}</span></template>
+                                <Column field="importe" header="Importe (S/)" sortable style="width: 120px; text-align: right">
+                                    <template #body="{ data }"
+                                        ><span class="eco-amount">{{ fMoney(data.importe) }}</span></template
+                                    >
                                 </Column>
                             </DataTable>
                             <div v-if="!registrosPaginados.length" class="eco-empty">Sin registros para la búsqueda</div>
@@ -1148,20 +1153,22 @@ onMounted(() => {
                     <Card class="eco-card">
                         <template #title>
                             <button class="eco-collapse-btn" @click="rankingVisible = !rankingVisible">
-                                <i :class="['pi mr-2', rankingVisible ? 'pi-chevron-down' : 'pi-chevron-right']" style="color:#0F766E"></i>
+                                <i :class="['pi mr-2', rankingVisible ? 'pi-chevron-down' : 'pi-chevron-right']" style="color: #0f766e"></i>
                                 Ranking SEGUS
                                 <span class="eco-collapse-count">{{ rankingSEGUS.length }} procedimientos</span>
                             </button>
                         </template>
                         <template #content v-if="rankingVisible">
                             <DataTable :value="rankingSEGUS" stripedRows size="small" class="eco-table">
-                                <Column field="cod_seg" header="SEGUS" sortable style="width:110px;font-weight:700" />
+                                <Column field="cod_seg" header="SEGUS" sortable style="width: 110px; font-weight: 700" />
                                 <Column field="nombre" header="Nombre" sortable />
-                                <Column field="cantidad" header="Cantidad" sortable style="width:110px;text-align:right">
+                                <Column field="cantidad" header="Cantidad" sortable style="width: 110px; text-align: right">
                                     <template #body="{ data }">{{ fNum(data.cantidad) }}</template>
                                 </Column>
-                                <Column field="monto" header="Monto Total (S/)" sortable style="width:150px;text-align:right">
-                                    <template #body="{ data }"><span class="eco-amount">{{ fMoney(data.monto) }}</span></template>
+                                <Column field="monto" header="Monto Total (S/)" sortable style="width: 150px; text-align: right">
+                                    <template #body="{ data }"
+                                        ><span class="eco-amount">{{ fMoney(data.monto) }}</span></template
+                                    >
                                 </Column>
                             </DataTable>
                         </template>
@@ -1200,7 +1207,7 @@ onMounted(() => {
     justify-content: space-between;
     gap: 1.5rem;
     flex-wrap: wrap;
-    border-left: 4px solid #0F766E;
+    border-left: 4px solid #0f766e;
 }
 
 .eco-header-left {
@@ -1221,7 +1228,10 @@ onMounted(() => {
     gap: 0.5rem;
 }
 
-.eco-title-icon { color: #0F766E; font-size: 0.9rem; }
+.eco-title-icon {
+    color: #0f766e;
+    font-size: 0.9rem;
+}
 
 .eco-subtitle {
     font-size: 0.875rem;
@@ -1235,7 +1245,7 @@ onMounted(() => {
     gap: 0.5rem;
     padding: 0.375rem 0.75rem;
     background: linear-gradient(135deg, #f0fdf4 0%, #dcfce7 100%);
-    border-left: 3px solid #0F766E;
+    border-left: 3px solid #0f766e;
     border-radius: 6px;
     font-size: 0.8125rem;
     font-weight: 600;
@@ -1269,7 +1279,9 @@ onMounted(() => {
     color: var(--text-color-secondary);
 }
 
-.eco-calendar { min-width: 155px; }
+.eco-calendar {
+    min-width: 155px;
+}
 
 .eco-shortcuts {
     display: flex;
@@ -1281,18 +1293,25 @@ onMounted(() => {
 .eco-shortcut-btn {
     padding: 0.4rem 0.75rem;
     border-radius: 6px;
-    border: 1px solid #0F766E44;
+    border: 1px solid #0f766e44;
     background: #f0fdf4;
     color: #065f46;
     font-size: 0.75rem;
     font-weight: 600;
     cursor: pointer;
-    transition: background 0.15s, border-color 0.15s;
+    transition:
+        background 0.15s,
+        border-color 0.15s;
     white-space: nowrap;
 }
 
-.eco-shortcut-btn:hover { background: #dcfce7; border-color: #0F766E; }
-.eco-apply-btn { align-self: flex-end; }
+.eco-shortcut-btn:hover {
+    background: #dcfce7;
+    border-color: #0f766e;
+}
+.eco-apply-btn {
+    align-self: flex-end;
+}
 
 .eco-header-controls {
     display: flex;
@@ -1316,12 +1335,17 @@ onMounted(() => {
     border: none;
     background: var(--surface-50);
     color: var(--text-color-secondary);
-    transition: background 0.15s, color 0.15s;
+    transition:
+        background 0.15s,
+        color 0.15s;
     display: flex;
     align-items: center;
 }
 
-.eco-view-btn--active { background: #0F766E; color: #ffffff; }
+.eco-view-btn--active {
+    background: #0f766e;
+    color: #ffffff;
+}
 
 /* ─── Loading / Empty ─────────────────────────────────────────────────────── */
 .eco-loading {
@@ -1388,7 +1412,7 @@ onMounted(() => {
 .eco-toggle-all-btn {
     font-size: 0.6875rem;
     font-weight: 600;
-    color: #0F766E;
+    color: #0f766e;
     background: none;
     border: none;
     cursor: pointer;
@@ -1396,10 +1420,20 @@ onMounted(() => {
     transition: opacity 0.15s;
 }
 
-.eco-toggle-all-btn:hover { opacity: 0.75; }
+.eco-toggle-all-btn:hover {
+    opacity: 0.75;
+}
 
-.eco-month-select :deep(.p-selectbutton) { flex-wrap: wrap; gap: 0.25rem; }
-.eco-month-select :deep(.p-button) { padding: 0.25rem 0.55rem; font-size: 0.6875rem; font-weight: 700; min-width: unset; }
+.eco-month-select :deep(.p-selectbutton) {
+    flex-wrap: wrap;
+    gap: 0.25rem;
+}
+.eco-month-select :deep(.p-button) {
+    padding: 0.25rem 0.55rem;
+    font-size: 0.6875rem;
+    font-weight: 700;
+    min-width: unset;
+}
 
 /* ─── KPIs ────────────────────────────────────────────────────────────────── */
 .eco-kpi-grid {
@@ -1425,18 +1459,44 @@ onMounted(() => {
     gap: 1rem;
 }
 
-.eco-area-card--csr { border-left: 4px solid #0F766E; }
-.eco-area-card--ext { border-left: 4px solid #5EEAD4; }
+.eco-area-card--csr {
+    border-left: 4px solid #0f766e;
+}
+.eco-area-card--ext {
+    border-left: 4px solid #5eead4;
+}
 
-.eco-area-header { display: flex; align-items: center; gap: 0.625rem; }
+.eco-area-header {
+    display: flex;
+    align-items: center;
+    gap: 0.625rem;
+}
 
-.eco-area-dot { width: 12px; height: 12px; border-radius: 50%; flex-shrink: 0; }
-.eco-area-dot--csr { background: #0F766E; }
-.eco-area-dot--ext { background: #5EEAD4; border: 2px solid #0D9488; }
+.eco-area-dot {
+    width: 12px;
+    height: 12px;
+    border-radius: 50%;
+    flex-shrink: 0;
+}
+.eco-area-dot--csr {
+    background: #0f766e;
+}
+.eco-area-dot--ext {
+    background: #5eead4;
+    border: 2px solid #0d9488;
+}
 
-.eco-area-name { font-size: 0.9375rem; font-weight: 700; color: var(--text-color); }
+.eco-area-name {
+    font-size: 0.9375rem;
+    font-weight: 700;
+    color: var(--text-color);
+}
 
-.eco-area-kpis { display: grid; grid-template-columns: repeat(4, 1fr); gap: 0.5rem; }
+.eco-area-kpis {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 0.5rem;
+}
 
 .eco-area-kpi {
     display: flex;
@@ -1449,9 +1509,18 @@ onMounted(() => {
     text-align: center;
 }
 
-.eco-area-kpi-val { font-size: 0.875rem; font-weight: 800; color: var(--text-color); line-height: 1.2; }
-.eco-area-kpi-val--pct { color: #0F766E; }
-.eco-area-kpi-val--pct-ext { color: #0D9488; }
+.eco-area-kpi-val {
+    font-size: 0.875rem;
+    font-weight: 800;
+    color: var(--text-color);
+    line-height: 1.2;
+}
+.eco-area-kpi-val--pct {
+    color: #0f766e;
+}
+.eco-area-kpi-val--pct-ext {
+    color: #0d9488;
+}
 
 .eco-area-kpi-lbl {
     font-size: 0.625rem;
@@ -1461,12 +1530,30 @@ onMounted(() => {
     letter-spacing: 0.3px;
 }
 
-.eco-area-bar-track { height: 6px; background: var(--surface-200); border-radius: 99px; overflow: hidden; }
-.eco-area-bar-fill { height: 100%; border-radius: 99px; transition: width 0.5s ease; }
-.eco-area-bar-fill--csr { background: #0F766E; }
-.eco-area-bar-fill--ext { background: #5EEAD4; }
+.eco-area-bar-track {
+    height: 6px;
+    background: var(--surface-200);
+    border-radius: 99px;
+    overflow: hidden;
+}
+.eco-area-bar-fill {
+    height: 100%;
+    border-radius: 99px;
+    transition: width 0.5s ease;
+}
+.eco-area-bar-fill--csr {
+    background: #0f766e;
+}
+.eco-area-bar-fill--ext {
+    background: #5eead4;
+}
 
-.eco-area-empty { color: var(--text-color-secondary); font-size: 0.875rem; text-align: center; padding: 1rem; }
+.eco-area-empty {
+    color: var(--text-color-secondary);
+    font-size: 0.875rem;
+    text-align: center;
+    padding: 1rem;
+}
 
 /* ─── Charts grid ─────────────────────────────────────────────────────────── */
 .eco-charts-grid {
@@ -1475,7 +1562,9 @@ onMounted(() => {
     gap: 1.5rem;
 }
 
-.eco-card { box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08); }
+.eco-card {
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+}
 
 .eco-card-title {
     display: flex;
@@ -1485,14 +1574,36 @@ onMounted(() => {
     flex-wrap: wrap;
 }
 
-.eco-chart-toolbar { display: flex; align-items: center; gap: 0.5rem; flex-wrap: wrap; }
-.eco-metric-toggle { font-size: 0.75rem; }
+.eco-chart-toolbar {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    flex-wrap: wrap;
+}
+.eco-metric-toggle {
+    font-size: 0.75rem;
+}
 
-.eco-chart-wrapper { width: 100%; height: 320px; position: relative; }
-.eco-chart-wrapper-sm { width: 100%; height: 260px; position: relative; }
-.eco-chart { width: 100% !important; height: 100% !important; }
+.eco-chart-wrapper {
+    width: 100%;
+    height: 320px;
+    position: relative;
+}
+.eco-chart-wrapper-sm {
+    width: 100%;
+    height: 260px;
+    position: relative;
+}
+.eco-chart {
+    width: 100% !important;
+    height: 100% !important;
+}
 
-.eco-two-cols { display: grid; grid-template-columns: repeat(2, 1fr); gap: 1.5rem; }
+.eco-two-cols {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 1.5rem;
+}
 
 /* ─── Donut ───────────────────────────────────────────────────────────────── */
 .eco-donut-section {
@@ -1502,8 +1613,16 @@ onMounted(() => {
     gap: 1.5rem;
 }
 
-.eco-donut-wrapper { position: relative; width: 220px; height: 220px; flex-shrink: 0; }
-.eco-donut-chart { width: 100% !important; height: 100% !important; }
+.eco-donut-wrapper {
+    position: relative;
+    width: 220px;
+    height: 220px;
+    flex-shrink: 0;
+}
+.eco-donut-chart {
+    width: 100% !important;
+    height: 100% !important;
+}
 
 .eco-donut-center {
     position: absolute;
@@ -1515,10 +1634,28 @@ onMounted(() => {
     width: 130px;
 }
 
-.eco-donut-total { font-size: 1rem; font-weight: 800; color: var(--text-color); line-height: 1.2; word-break: break-all; }
-.eco-donut-label { font-size: 0.65rem; font-weight: 600; color: var(--text-color-secondary); text-transform: uppercase; letter-spacing: 0.5px; margin-top: 0.2rem; }
+.eco-donut-total {
+    font-size: 1rem;
+    font-weight: 800;
+    color: var(--text-color);
+    line-height: 1.2;
+    word-break: break-all;
+}
+.eco-donut-label {
+    font-size: 0.65rem;
+    font-weight: 600;
+    color: var(--text-color-secondary);
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    margin-top: 0.2rem;
+}
 
-.eco-donut-legend { width: 100%; display: flex; flex-direction: column; gap: 0.625rem; }
+.eco-donut-legend {
+    width: 100%;
+    display: flex;
+    flex-direction: column;
+    gap: 0.625rem;
+}
 
 .eco-legend-item {
     display: flex;
@@ -1530,14 +1667,47 @@ onMounted(() => {
     border: 1px solid var(--surface-border);
 }
 
-.eco-legend-left { display: flex; align-items: center; gap: 0.625rem; }
-.eco-legend-dot { width: 12px; height: 12px; border-radius: 50%; border: 2px solid rgba(0,0,0,.1); flex-shrink: 0; }
-.eco-legend-name { font-size: 0.8125rem; font-weight: 700; color: var(--text-color-secondary); text-transform: uppercase; letter-spacing: 0.3px; }
+.eco-legend-left {
+    display: flex;
+    align-items: center;
+    gap: 0.625rem;
+}
+.eco-legend-dot {
+    width: 12px;
+    height: 12px;
+    border-radius: 50%;
+    border: 2px solid rgba(0, 0, 0, 0.1);
+    flex-shrink: 0;
+}
+.eco-legend-name {
+    font-size: 0.8125rem;
+    font-weight: 700;
+    color: var(--text-color-secondary);
+    text-transform: uppercase;
+    letter-spacing: 0.3px;
+}
 
-.eco-legend-right { display: flex; flex-direction: column; align-items: flex-end; gap: 0.1rem; }
-.eco-legend-pct { font-size: 0.9375rem; font-weight: 800; color: var(--text-color); }
-.eco-legend-val { font-size: 0.6875rem; color: var(--text-color-secondary); font-weight: 500; }
-.eco-legend-ticket { font-size: 0.625rem; color: var(--text-color-secondary); font-weight: 500; }
+.eco-legend-right {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-end;
+    gap: 0.1rem;
+}
+.eco-legend-pct {
+    font-size: 0.9375rem;
+    font-weight: 800;
+    color: var(--text-color);
+}
+.eco-legend-val {
+    font-size: 0.6875rem;
+    color: var(--text-color-secondary);
+    font-weight: 500;
+}
+.eco-legend-ticket {
+    font-size: 0.625rem;
+    color: var(--text-color-secondary);
+    font-weight: 500;
+}
 
 /* ─── Rankings ────────────────────────────────────────────────────────────── */
 .eco-rank-list {
@@ -1560,9 +1730,17 @@ onMounted(() => {
     transition: background 0.15s;
 }
 
-.eco-rank-item:hover { background: var(--surface-100); }
+.eco-rank-item:hover {
+    background: var(--surface-100);
+}
 
-.eco-rank-left { display: flex; align-items: flex-start; gap: 0.5rem; flex: 1; min-width: 0; }
+.eco-rank-left {
+    display: flex;
+    align-items: flex-start;
+    gap: 0.5rem;
+    flex: 1;
+    min-width: 0;
+}
 
 .eco-rank-badge {
     font-size: 0.6875rem;
@@ -1575,17 +1753,57 @@ onMounted(() => {
     margin-top: 0.1rem;
 }
 
-.eco-rank-1 { background: #fef3c7; color: #92400e; border: 1px solid #fde68a; }
-.eco-rank-2 { background: #f1f5f9; color: #475569; border: 1px solid #e2e8f0; }
-.eco-rank-3 { background: #fff7ed; color: #9a3412; border: 1px solid #fed7aa; }
+.eco-rank-1 {
+    background: #fef3c7;
+    color: #92400e;
+    border: 1px solid #fde68a;
+}
+.eco-rank-2 {
+    background: #f1f5f9;
+    color: #475569;
+    border: 1px solid #e2e8f0;
+}
+.eco-rank-3 {
+    background: #fff7ed;
+    color: #9a3412;
+    border: 1px solid #fed7aa;
+}
 
-.eco-rank-info { flex: 1; min-width: 0; }
-.eco-rank-name { font-size: 0.75rem; font-weight: 700; color: var(--text-color); word-break: break-word; line-height: 1.3; }
-.eco-rank-sub { font-size: 0.625rem; font-weight: 600; color: var(--text-color-secondary); text-transform: uppercase; letter-spacing: 0.3px; margin-top: 0.1rem; }
+.eco-rank-info {
+    flex: 1;
+    min-width: 0;
+}
+.eco-rank-name {
+    font-size: 0.75rem;
+    font-weight: 700;
+    color: var(--text-color);
+    word-break: break-word;
+    line-height: 1.3;
+}
+.eco-rank-sub {
+    font-size: 0.625rem;
+    font-weight: 600;
+    color: var(--text-color-secondary);
+    text-transform: uppercase;
+    letter-spacing: 0.3px;
+    margin-top: 0.1rem;
+}
 
-.eco-rank-right { text-align: right; flex-shrink: 0; }
-.eco-rank-value { font-size: 0.875rem; font-weight: 800; line-height: 1.2; }
-.eco-rank-meta { font-size: 0.6rem; color: var(--text-color-secondary); font-weight: 500; margin-top: 0.1rem; }
+.eco-rank-right {
+    text-align: right;
+    flex-shrink: 0;
+}
+.eco-rank-value {
+    font-size: 0.875rem;
+    font-weight: 800;
+    line-height: 1.2;
+}
+.eco-rank-meta {
+    font-size: 0.6rem;
+    color: var(--text-color-secondary);
+    font-weight: 500;
+    margin-top: 0.1rem;
+}
 
 .eco-rank-empty {
     text-align: center;
@@ -1598,8 +1816,13 @@ onMounted(() => {
 }
 
 /* ─── Tables ──────────────────────────────────────────────────────────────── */
-.eco-table { font-size: 0.875rem; }
-.eco-amount { font-weight: 700; color: #0F766E; }
+.eco-table {
+    font-size: 0.875rem;
+}
+.eco-amount {
+    font-weight: 700;
+    color: #0f766e;
+}
 
 .eco-badge-cat {
     display: inline-block;
@@ -1612,15 +1835,44 @@ onMounted(() => {
     border: 1px solid #bbf7d0;
 }
 
-.eco-area-badge { display: inline-block; padding: 0.2rem 0.6rem; border-radius: 6px; font-size: 0.7rem; font-weight: 700; }
-.eco-area-badge--csr { background: #f0fdf4; color: #065f46; border: 1px solid #0F766E44; }
-.eco-area-badge--ext { background: #f0fdfa; color: #134e4a; border: 1px solid #5EEAD4; }
+.eco-area-badge {
+    display: inline-block;
+    padding: 0.2rem 0.6rem;
+    border-radius: 6px;
+    font-size: 0.7rem;
+    font-weight: 700;
+}
+.eco-area-badge--csr {
+    background: #f0fdf4;
+    color: #065f46;
+    border: 1px solid #0f766e44;
+}
+.eco-area-badge--ext {
+    background: #f0fdfa;
+    color: #134e4a;
+    border: 1px solid #5eead4;
+}
 
 /* ─── Detalle ─────────────────────────────────────────────────────────────── */
-.eco-detail-controls { display: flex; align-items: center; gap: 1rem; flex-wrap: wrap; }
-.eco-search-wrap { flex: 1; min-width: 260px; }
-.eco-search-input { width: 100%; }
-.eco-record-count { font-size: 0.8125rem; font-weight: 600; color: var(--text-color-secondary); white-space: nowrap; }
+.eco-detail-controls {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    flex-wrap: wrap;
+}
+.eco-search-wrap {
+    flex: 1;
+    min-width: 260px;
+}
+.eco-search-input {
+    width: 100%;
+}
+.eco-record-count {
+    font-size: 0.8125rem;
+    font-weight: 600;
+    color: var(--text-color-secondary);
+    white-space: nowrap;
+}
 
 .eco-pagination {
     display: flex;
@@ -1632,7 +1884,11 @@ onMounted(() => {
     margin-top: 0.5rem;
 }
 
-.eco-page-info { font-size: 0.8125rem; font-weight: 600; color: var(--text-color-secondary); }
+.eco-page-info {
+    font-size: 0.8125rem;
+    font-weight: 600;
+    color: var(--text-color-secondary);
+}
 
 .eco-collapse-btn {
     display: flex;
@@ -1657,29 +1913,59 @@ onMounted(() => {
     border-radius: 99px;
 }
 
-.eco-empty { text-align: center; padding: 2rem; color: var(--text-color-secondary); font-size: 0.875rem; }
+.eco-empty {
+    text-align: center;
+    padding: 2rem;
+    color: var(--text-color-secondary);
+    font-size: 0.875rem;
+}
 
 /* ─── Responsive ──────────────────────────────────────────────────────────── */
 @media (max-width: 1400px) {
-    .eco-charts-grid { grid-template-columns: 1fr; }
+    .eco-charts-grid {
+        grid-template-columns: 1fr;
+    }
 }
 
 @media (max-width: 1200px) {
-    .eco-two-cols { grid-template-columns: 1fr; }
-    .eco-area-kpis { grid-template-columns: repeat(2, 1fr); }
+    .eco-two-cols {
+        grid-template-columns: 1fr;
+    }
+    .eco-area-kpis {
+        grid-template-columns: repeat(2, 1fr);
+    }
 }
 
 @media (max-width: 900px) {
-    .eco-kpi-grid { grid-template-columns: repeat(2, 1fr); }
-    .eco-area-grid { grid-template-columns: 1fr; }
-    .eco-header { flex-direction: column; }
-    .eco-header-right { align-items: flex-start; width: 100%; }
+    .eco-kpi-grid {
+        grid-template-columns: repeat(2, 1fr);
+    }
+    .eco-area-grid {
+        grid-template-columns: 1fr;
+    }
+    .eco-header {
+        flex-direction: column;
+    }
+    .eco-header-right {
+        align-items: flex-start;
+        width: 100%;
+    }
 }
 
 @media (max-width: 600px) {
-    .eco-container { padding: 1rem; }
-    .eco-kpi-grid { grid-template-columns: 1fr; }
-    .eco-filter-row { flex-direction: column; align-items: stretch; }
-    .eco-calendar { min-width: unset; width: 100%; }
+    .eco-container {
+        padding: 1rem;
+    }
+    .eco-kpi-grid {
+        grid-template-columns: 1fr;
+    }
+    .eco-filter-row {
+        flex-direction: column;
+        align-items: stretch;
+    }
+    .eco-calendar {
+        min-width: unset;
+        width: 100%;
+    }
 }
 </style>
