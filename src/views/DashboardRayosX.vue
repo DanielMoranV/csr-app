@@ -243,16 +243,12 @@ watch(yearOptions, (opts, oldOpts) => {
 
 const buildFilterParams = () => {
     const p = {};
-    if (selectedYears.value.length > 0 && selectedYears.value.length < yearOptions.value.length)
-        p.years = selectedYears.value;
-    if (selectedMonths.value.length > 0 && selectedMonths.value.length < 12)
-        p.months = selectedMonths.value;
+    if (selectedYears.value.length > 0 && selectedYears.value.length < yearOptions.value.length) p.years = selectedYears.value;
+    if (selectedMonths.value.length > 0 && selectedMonths.value.length < 12) p.months = selectedMonths.value;
     return p;
 };
 
-const isFilterEmpty = () =>
-    (yearOptions.value.length > 0 && selectedYears.value.length === 0) ||
-    selectedMonths.value.length === 0;
+const isFilterEmpty = () => (yearOptions.value.length > 0 && selectedYears.value.length === 0) || selectedMonths.value.length === 0;
 
 const toggleAllMonths = () => {
     selectedMonths.value = selectedMonths.value.length === 12 ? [] : [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12];
@@ -525,7 +521,10 @@ const trendGranularityOptions = [
 
 const fetchTendencia = async () => {
     if (!desde.value || !hasta.value) return;
-    if (isFilterEmpty()) { trendData.value = []; return; }
+    if (isFilterEmpty()) {
+        trendData.value = [];
+        return;
+    }
     isTrendLoading.value = true;
     try {
         const res = await rxApi.getTendencia({ desde: toISO(desde.value), hasta: toISO(hasta.value), granularity: trendGranularity.value, ...buildFilterParams() });
@@ -653,21 +652,29 @@ const trendChartOptions = computed(() => {
 
 watch(trendGranularity, fetchTendencia);
 
-watch([selectedYears, selectedMonths], async () => {
-    if (!yearOptionsInitialized) { yearOptionsInitialized = true; return; }
-    if (!desde.value || !hasta.value || !summary.value) return;
-    if (isFilterEmpty()) { filtersEmpty.value = true; trendData.value = []; return; }
-    filtersEmpty.value = false;
-    try {
-        const [res] = await Promise.all([
-            rxApi.getSummary({ desde: toISO(desde.value), hasta: toISO(hasta.value), top: topN.value, ...buildFilterParams() }),
-            fetchTendencia()
-        ]);
-        summary.value = res?.data || null;
-    } catch {
-        // silent — filter-change errors handled gracefully
-    }
-}, { deep: true });
+watch(
+    [selectedYears, selectedMonths],
+    async () => {
+        if (!yearOptionsInitialized) {
+            yearOptionsInitialized = true;
+            return;
+        }
+        if (!desde.value || !hasta.value || !summary.value) return;
+        if (isFilterEmpty()) {
+            filtersEmpty.value = true;
+            trendData.value = [];
+            return;
+        }
+        filtersEmpty.value = false;
+        try {
+            const [res] = await Promise.all([rxApi.getSummary({ desde: toISO(desde.value), hasta: toISO(hasta.value), top: topN.value, ...buildFilterParams() }), fetchTendencia()]);
+            summary.value = res?.data || null;
+        } catch {
+            // silent — filter-change errors handled gracefully
+        }
+    },
+    { deep: true }
+);
 
 // ─── Sorted region table ───────────────────────────────────────────────────────
 const regionesSorted = computed(() => [...(summary.value?.regiones || [])].sort((a, b) => b.atenciones - a.atenciones));
@@ -797,286 +804,286 @@ onUnmounted(() => {
                 </div>
             </div>
 
-            <div v-if="filtersEmpty" class="rx-empty" style="min-height: 200px;">
+            <div v-if="filtersEmpty" class="rx-empty" style="min-height: 200px">
                 <i class="pi pi-filter-slash" style="font-size: 2.5rem; opacity: 0.4"></i>
                 <p>Selecciona al menos un mes para ver los datos</p>
             </div>
 
             <template v-else>
-            <!-- Evolución Mensual por Año -->
-            <Card class="rx-card">
-                <template #title>
-                    <div class="rx-card-title-row">
-                        <span><i class="pi pi-chart-line mr-2 text-primary"></i>Evolución Mensual por Año</span>
-                        <div class="rx-chart-toolbar">
-                            <SelectButton v-model="chartMetric" :options="metricOptions" optionLabel="label" optionValue="value" class="rx-metric-toggle" />
-                            <Button icon="pi pi-tag" :label="showLabels ? 'Ocultar valores' : 'Ver valores'" :outlined="!showLabels" size="small" severity="secondary" @click="showLabels = !showLabels" />
-                            <Button icon="pi pi-file-excel" label="Excel" size="small" severity="success" outlined :loading="isExportingEvolucion" @click="handleExportEvolucionMensual" />
-                        </div>
-                    </div>
-                </template>
-                <template #content>
-                    <div class="rx-chart-wrapper">
-                        <Chart type="line" :data="monthlyChartData" :options="lineChartOptions" class="rx-chart" />
-                    </div>
-                </template>
-            </Card>
-
-            <!-- Mix Particular/Seguros + Top Seguros -->
-            <div class="rx-two-col">
-                <Card class="rx-card">
-                    <template #title>
-                        <span><i class="pi pi-chart-pie mr-2 text-primary"></i>Particular vs Seguros</span>
-                    </template>
-                    <template #content>
-                        <div class="rx-mix-content" v-if="mixDonutData">
-                            <div class="rx-donut-wrapper">
-                                <Chart type="doughnut" :data="mixDonutData" :options="donutOptions" class="rx-donut-chart" />
-                                <div class="rx-donut-center">
-                                    <div class="rx-donut-total">{{ fNum(summary.totales.atenciones) }}</div>
-                                    <div class="rx-donut-label">Atenciones</div>
-                                </div>
-                            </div>
-                            <div class="rx-mix-stats-grid">
-                                <div class="rx-mix-col">
-                                    <div class="rx-mix-col-header">
-                                        <span class="rx-mix-col-dot" style="background: #0369a1"></span>
-                                        <span class="rx-mix-col-title">Particular</span>
-                                    </div>
-                                    <div class="rx-mix-row">
-                                        <span class="rx-mix-row-label">Atenciones</span>
-                                        <div class="rx-mix-row-right">
-                                            <span class="rx-mix-row-val">{{ fNum(summary.mix.particular.atenciones) }}</span>
-                                            <span class="rx-mix-row-pct">{{ fPct(summary.mix.particular.pct_atenciones) }}</span>
-                                        </div>
-                                    </div>
-                                    <div class="rx-mix-row">
-                                        <span class="rx-mix-row-label">Facturación</span>
-                                        <div class="rx-mix-row-right">
-                                            <span class="rx-mix-row-val">{{ fMoney(summary.mix.particular.monto) }}</span>
-                                            <span class="rx-mix-row-pct">{{ fPct(summary.mix.particular.pct_monto) }}</span>
-                                        </div>
-                                    </div>
-                                    <div class="rx-mix-row">
-                                        <span class="rx-mix-row-label">Ticket Medio</span>
-                                        <span class="rx-mix-row-val">{{ fMoney(summary.mix.particular.ticket_medio) }}</span>
-                                    </div>
-                                </div>
-                                <div class="rx-mix-stats-divider"></div>
-                                <div class="rx-mix-col">
-                                    <div class="rx-mix-col-header">
-                                        <span class="rx-mix-col-dot" style="background: #bae6fd; border: 1px solid #7dd3fc"></span>
-                                        <span class="rx-mix-col-title">Seguros</span>
-                                    </div>
-                                    <div class="rx-mix-row">
-                                        <span class="rx-mix-row-label">Atenciones</span>
-                                        <div class="rx-mix-row-right">
-                                            <span class="rx-mix-row-val">{{ fNum(summary.mix.aseguradora.atenciones) }}</span>
-                                            <span class="rx-mix-row-pct">{{ fPct(summary.mix.aseguradora.pct_atenciones) }}</span>
-                                        </div>
-                                    </div>
-                                    <div class="rx-mix-row">
-                                        <span class="rx-mix-row-label">Facturación</span>
-                                        <div class="rx-mix-row-right">
-                                            <span class="rx-mix-row-val">{{ fMoney(summary.mix.aseguradora.monto) }}</span>
-                                            <span class="rx-mix-row-pct">{{ fPct(summary.mix.aseguradora.pct_monto) }}</span>
-                                        </div>
-                                    </div>
-                                    <div class="rx-mix-row">
-                                        <span class="rx-mix-row-label">Ticket Medio</span>
-                                        <span class="rx-mix-row-val">{{ fMoney(summary.mix.aseguradora.ticket_medio) }}</span>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                    </template>
-                </Card>
-
-                <Card class="rx-card">
-                    <template #title>
-                        <span><i class="pi pi-shield mr-2" style="color: #0369a1"></i>Top Seguros</span>
-                    </template>
-                    <template #content>
-                        <DataTable :value="summary.top_aseguradoras.filter((r) => r.cia !== 'PARTICULAR')" size="small" class="rx-table" sortField="atenciones" :sortOrder="-1" stripedRows>
-                            <Column field="cia" header="Seguro / Convenio" sortable>
-                                <template #body="{ data: row }">
-                                    <span class="rx-tag-cia">{{ row.cia }}</span>
-                                </template>
-                            </Column>
-                            <Column field="atenciones" header="Atenc." sortable style="width: 80px; text-align: right">
-                                <template #body="{ data: row }">{{ fNum(row.atenciones) }}</template>
-                            </Column>
-                            <Column field="monto" header="Monto S/" sortable style="width: 130px; text-align: right">
-                                <template #body="{ data: row }">{{ fMoney(row.monto) }}</template>
-                            </Column>
-                            <Column field="ticket_medio" header="Ticket" sortable style="width: 110px; text-align: right">
-                                <template #body="{ data: row }">{{ fMoney(row.ticket_medio) }}</template>
-                            </Column>
-                        </DataTable>
-                    </template>
-                </Card>
-            </div>
-
-            <!-- Regiones + Procedencia -->
-            <div class="rx-two-col rx-two-col--6040">
-                <Card class="rx-card">
-                    <template #title>
-                        <span><i class="pi pi-map mr-2" style="color: #10b981"></i>Regiones Anatómicas</span>
-                    </template>
-                    <template #content>
-                        <div class="rx-chart-wrapper rx-chart-wrapper--sm">
-                            <Chart type="bar" :data="regionesChartData" :options="regionesOptions" class="rx-chart" />
-                        </div>
-                        <DataTable :value="regionesSorted" size="small" class="rx-table mt-3" stripedRows>
-                            <Column field="region" header="Región" sortable>
-                                <template #body="{ data: row }">
-                                    <span class="rx-region-badge" :style="{ background: regionColor(row.region) + '22', color: regionColor(row.region), borderColor: regionColor(row.region) + '66' }">
-                                        {{ row.region }}
-                                    </span>
-                                </template>
-                            </Column>
-                            <Column field="atenciones" header="Atenc." sortable style="width: 80px; text-align: right">
-                                <template #body="{ data: row }">{{ fNum(row.atenciones) }}</template>
-                            </Column>
-                            <Column field="pct_atenciones" header="%" sortable style="width: 60px; text-align: right">
-                                <template #body="{ data: row }">{{ fPct(row.pct_atenciones) }}</template>
-                            </Column>
-                            <Column field="monto" header="Monto S/" sortable style="width: 130px; text-align: right">
-                                <template #body="{ data: row }">{{ fMoney(row.monto) }}</template>
-                            </Column>
-                            <Column field="ticket_medio" header="Ticket" sortable style="width: 110px; text-align: right">
-                                <template #body="{ data: row }">{{ fMoney(row.ticket_medio) }}</template>
-                            </Column>
-                        </DataTable>
-                    </template>
-                </Card>
-
-                <Card class="rx-card">
-                    <template #title>
-                        <span><i class="pi pi-directions mr-2" style="color: #8b5cf6"></i>Procedencia</span>
-                    </template>
-                    <template #content>
-                        <div class="rx-chart-wrapper rx-chart-wrapper--xs">
-                            <Chart type="bar" :data="procedenciaChartData" :options="procedenciaOptions" class="rx-chart" />
-                        </div>
-                        <div class="rx-proc-list">
-                            <div v-for="p in summary.procedencia" :key="p.procedencia" class="rx-proc-item">
-                                <div class="rx-proc-left">
-                                    <span class="rx-proc-dot"></span>
-                                    <span class="rx-proc-name">{{ p.procedencia }}</span>
-                                </div>
-                                <div class="rx-proc-right">
-                                    <span class="rx-proc-val">{{ fNum(p.atenciones) }}</span>
-                                    <span class="rx-proc-pct">{{ fPct(p.pct_atenciones) }}</span>
-                                </div>
-                            </div>
-                        </div>
-                    </template>
-                </Card>
-            </div>
-
-            <!-- Top Procedimientos + Top Médicos que Indican -->
-            <div class="rx-two-col">
+                <!-- Evolución Mensual por Año -->
                 <Card class="rx-card">
                     <template #title>
                         <div class="rx-card-title-row">
-                            <span><i class="pi pi-list mr-2" style="color: #f59e0b"></i>Top Procedimientos</span>
-                            <SelectButton v-model="topN" :options="topOptions" optionLabel="label" optionValue="value" class="rx-metric-toggle" />
-                        </div>
-                    </template>
-                    <template #content>
-                        <DataTable :value="summary.top_procedimientos" size="small" class="rx-table" sortField="atenciones" :sortOrder="-1" stripedRows paginator :rows="10">
-                            <Column field="cod_seg" header="Cód. SEGUS" sortable style="width: 120px">
-                                <template #body="{ data: row }"
-                                    ><span class="rx-code">{{ row.cod_seg }}</span></template
-                                >
-                            </Column>
-                            <Column field="nombre" header="Procedimiento" sortable />
-                            <Column field="region" header="Región" sortable style="width: 140px">
-                                <template #body="{ data: row }">
-                                    <span class="rx-region-badge" :style="{ background: regionColor(row.region) + '22', color: regionColor(row.region), borderColor: regionColor(row.region) + '66' }">
-                                        {{ row.region }}
-                                    </span>
-                                </template>
-                            </Column>
-                            <Column field="atenciones" header="Atenc." sortable style="width: 75px; text-align: right">
-                                <template #body="{ data: row }">{{ fNum(row.atenciones) }}</template>
-                            </Column>
-                            <Column field="monto" header="Monto S/" sortable style="width: 120px; text-align: right">
-                                <template #body="{ data: row }">{{ fMoney(row.monto) }}</template>
-                            </Column>
-                            <Column field="ticket_medio" header="Ticket" sortable style="width: 100px; text-align: right">
-                                <template #body="{ data: row }">{{ fMoney(row.ticket_medio) }}</template>
-                            </Column>
-                        </DataTable>
-                    </template>
-                </Card>
-
-                <Card v-if="summary.top_medicos_indica?.length" class="rx-card">
-                    <template #title>
-                        <div class="rx-card-title-row">
-                            <span><i class="pi pi-user mr-2" style="color: #0369a1"></i>Top Médicos que Indican</span>
-                        </div>
-                    </template>
-                    <template #content>
-                        <DataTable :value="summary.top_medicos_indica" size="small" class="rx-table" sortField="placas" :sortOrder="-1" stripedRows :rowClass="medicoRowClass">
-                            <Column field="cod_medico" header="Cód." sortable style="width: 80px">
-                                <template #body="{ data: row }">
-                                    <span class="rx-code">{{ row.cod_medico }}</span>
-                                </template>
-                            </Column>
-                            <Column field="medico" header="Médico que Indica" sortable />
-                            <Column field="placas" header="Placas" sortable style="width: 75px; text-align: right">
-                                <template #body="{ data: row }">{{ fNum(row.placas) }}</template>
-                            </Column>
-                            <Column field="monto" header="Monto S/" sortable style="width: 120px; text-align: right">
-                                <template #body="{ data: row }">{{ fMoney(row.monto) }}</template>
-                            </Column>
-                            <Column field="ticket_medio" header="Ticket" sortable style="width: 100px; text-align: right">
-                                <template #body="{ data: row }">{{ fMoney(row.ticket_medio) }}</template>
-                            </Column>
-                        </DataTable>
-                    </template>
-                </Card>
-            </div>
-
-            <!-- Tendencia Temporal + Estacionalidad Semanal -->
-            <div class="rx-two-col">
-                <Card class="rx-card">
-                    <template #title>
-                        <div class="rx-card-title-row">
-                            <span><i class="pi pi-chart-line mr-2" style="color: #0369a1"></i>Tendencia Temporal</span>
+                            <span><i class="pi pi-chart-line mr-2 text-primary"></i>Evolución Mensual por Año</span>
                             <div class="rx-chart-toolbar">
-                                <SelectButton v-model="trendGranularity" :options="trendGranularityOptions" optionLabel="label" optionValue="value" class="rx-metric-toggle" />
-                                <SelectButton v-model="trendMetric" :options="metricOptions" optionLabel="label" optionValue="value" class="rx-metric-toggle" />
+                                <SelectButton v-model="chartMetric" :options="metricOptions" optionLabel="label" optionValue="value" class="rx-metric-toggle" />
+                                <Button icon="pi pi-tag" :label="showLabels ? 'Ocultar valores' : 'Ver valores'" :outlined="!showLabels" size="small" severity="secondary" @click="showLabels = !showLabels" />
+                                <Button icon="pi pi-file-excel" label="Excel" size="small" severity="success" outlined :loading="isExportingEvolucion" @click="handleExportEvolucionMensual" />
                             </div>
                         </div>
                     </template>
                     <template #content>
                         <div class="rx-chart-wrapper">
-                            <div v-if="isTrendLoading" class="rx-trend-loading">
-                                <ProgressSpinner style="width: 32px; height: 32px" />
-                            </div>
-                            <Chart v-else type="line" :data="trendChartData" :options="trendChartOptions" class="rx-chart" />
+                            <Chart type="line" :data="monthlyChartData" :options="lineChartOptions" class="rx-chart" />
                         </div>
                     </template>
                 </Card>
 
-                <Card class="rx-card">
-                    <template #title>
-                        <span><i class="pi pi-calendar mr-2" style="color: #14b8a6"></i>Estacionalidad Semanal</span>
-                    </template>
-                    <template #subtitle>
-                        <span>Barras claras = fines de semana (solo urgencias)</span>
-                    </template>
-                    <template #content>
-                        <div class="rx-chart-wrapper rx-chart-wrapper--sm">
-                            <Chart type="bar" :data="estacionalidadChartData" :options="estacionalidadOptions" class="rx-chart" />
-                        </div>
-                    </template>
-                </Card>
-            </div>
-            </template><!-- /v-else (filtersEmpty) -->
+                <!-- Mix Particular/Seguros + Top Seguros -->
+                <div class="rx-two-col">
+                    <Card class="rx-card">
+                        <template #title>
+                            <span><i class="pi pi-chart-pie mr-2 text-primary"></i>Particular vs Seguros</span>
+                        </template>
+                        <template #content>
+                            <div class="rx-mix-content" v-if="mixDonutData">
+                                <div class="rx-donut-wrapper">
+                                    <Chart type="doughnut" :data="mixDonutData" :options="donutOptions" class="rx-donut-chart" />
+                                    <div class="rx-donut-center">
+                                        <div class="rx-donut-total">{{ fNum(summary.totales.atenciones) }}</div>
+                                        <div class="rx-donut-label">Atenciones</div>
+                                    </div>
+                                </div>
+                                <div class="rx-mix-stats-grid">
+                                    <div class="rx-mix-col">
+                                        <div class="rx-mix-col-header">
+                                            <span class="rx-mix-col-dot" style="background: #0369a1"></span>
+                                            <span class="rx-mix-col-title">Particular</span>
+                                        </div>
+                                        <div class="rx-mix-row">
+                                            <span class="rx-mix-row-label">Atenciones</span>
+                                            <div class="rx-mix-row-right">
+                                                <span class="rx-mix-row-val">{{ fNum(summary.mix.particular.atenciones) }}</span>
+                                                <span class="rx-mix-row-pct">{{ fPct(summary.mix.particular.pct_atenciones) }}</span>
+                                            </div>
+                                        </div>
+                                        <div class="rx-mix-row">
+                                            <span class="rx-mix-row-label">Facturación</span>
+                                            <div class="rx-mix-row-right">
+                                                <span class="rx-mix-row-val">{{ fMoney(summary.mix.particular.monto) }}</span>
+                                                <span class="rx-mix-row-pct">{{ fPct(summary.mix.particular.pct_monto) }}</span>
+                                            </div>
+                                        </div>
+                                        <div class="rx-mix-row">
+                                            <span class="rx-mix-row-label">Ticket Medio</span>
+                                            <span class="rx-mix-row-val">{{ fMoney(summary.mix.particular.ticket_medio) }}</span>
+                                        </div>
+                                    </div>
+                                    <div class="rx-mix-stats-divider"></div>
+                                    <div class="rx-mix-col">
+                                        <div class="rx-mix-col-header">
+                                            <span class="rx-mix-col-dot" style="background: #bae6fd; border: 1px solid #7dd3fc"></span>
+                                            <span class="rx-mix-col-title">Seguros</span>
+                                        </div>
+                                        <div class="rx-mix-row">
+                                            <span class="rx-mix-row-label">Atenciones</span>
+                                            <div class="rx-mix-row-right">
+                                                <span class="rx-mix-row-val">{{ fNum(summary.mix.aseguradora.atenciones) }}</span>
+                                                <span class="rx-mix-row-pct">{{ fPct(summary.mix.aseguradora.pct_atenciones) }}</span>
+                                            </div>
+                                        </div>
+                                        <div class="rx-mix-row">
+                                            <span class="rx-mix-row-label">Facturación</span>
+                                            <div class="rx-mix-row-right">
+                                                <span class="rx-mix-row-val">{{ fMoney(summary.mix.aseguradora.monto) }}</span>
+                                                <span class="rx-mix-row-pct">{{ fPct(summary.mix.aseguradora.pct_monto) }}</span>
+                                            </div>
+                                        </div>
+                                        <div class="rx-mix-row">
+                                            <span class="rx-mix-row-label">Ticket Medio</span>
+                                            <span class="rx-mix-row-val">{{ fMoney(summary.mix.aseguradora.ticket_medio) }}</span>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </template>
+                    </Card>
+
+                    <Card class="rx-card">
+                        <template #title>
+                            <span><i class="pi pi-shield mr-2" style="color: #0369a1"></i>Top Seguros</span>
+                        </template>
+                        <template #content>
+                            <DataTable :value="summary.top_aseguradoras.filter((r) => r.cia !== 'PARTICULAR')" size="small" class="rx-table" sortField="atenciones" :sortOrder="-1" stripedRows>
+                                <Column field="cia" header="Seguro / Convenio" sortable>
+                                    <template #body="{ data: row }">
+                                        <span class="rx-tag-cia">{{ row.cia }}</span>
+                                    </template>
+                                </Column>
+                                <Column field="atenciones" header="Atenc." sortable style="width: 80px; text-align: right">
+                                    <template #body="{ data: row }">{{ fNum(row.atenciones) }}</template>
+                                </Column>
+                                <Column field="monto" header="Monto S/" sortable style="width: 130px; text-align: right">
+                                    <template #body="{ data: row }">{{ fMoney(row.monto) }}</template>
+                                </Column>
+                                <Column field="ticket_medio" header="Ticket" sortable style="width: 110px; text-align: right">
+                                    <template #body="{ data: row }">{{ fMoney(row.ticket_medio) }}</template>
+                                </Column>
+                            </DataTable>
+                        </template>
+                    </Card>
+                </div>
+
+                <!-- Regiones + Procedencia -->
+                <div class="rx-two-col rx-two-col--6040">
+                    <Card class="rx-card">
+                        <template #title>
+                            <span><i class="pi pi-map mr-2" style="color: #10b981"></i>Regiones Anatómicas</span>
+                        </template>
+                        <template #content>
+                            <div class="rx-chart-wrapper rx-chart-wrapper--sm">
+                                <Chart type="bar" :data="regionesChartData" :options="regionesOptions" class="rx-chart" />
+                            </div>
+                            <DataTable :value="regionesSorted" size="small" class="rx-table mt-3" stripedRows>
+                                <Column field="region" header="Región" sortable>
+                                    <template #body="{ data: row }">
+                                        <span class="rx-region-badge" :style="{ background: regionColor(row.region) + '22', color: regionColor(row.region), borderColor: regionColor(row.region) + '66' }">
+                                            {{ row.region }}
+                                        </span>
+                                    </template>
+                                </Column>
+                                <Column field="atenciones" header="Atenc." sortable style="width: 80px; text-align: right">
+                                    <template #body="{ data: row }">{{ fNum(row.atenciones) }}</template>
+                                </Column>
+                                <Column field="pct_atenciones" header="%" sortable style="width: 60px; text-align: right">
+                                    <template #body="{ data: row }">{{ fPct(row.pct_atenciones) }}</template>
+                                </Column>
+                                <Column field="monto" header="Monto S/" sortable style="width: 130px; text-align: right">
+                                    <template #body="{ data: row }">{{ fMoney(row.monto) }}</template>
+                                </Column>
+                                <Column field="ticket_medio" header="Ticket" sortable style="width: 110px; text-align: right">
+                                    <template #body="{ data: row }">{{ fMoney(row.ticket_medio) }}</template>
+                                </Column>
+                            </DataTable>
+                        </template>
+                    </Card>
+
+                    <Card class="rx-card">
+                        <template #title>
+                            <span><i class="pi pi-directions mr-2" style="color: #8b5cf6"></i>Procedencia</span>
+                        </template>
+                        <template #content>
+                            <div class="rx-chart-wrapper rx-chart-wrapper--xs">
+                                <Chart type="bar" :data="procedenciaChartData" :options="procedenciaOptions" class="rx-chart" />
+                            </div>
+                            <div class="rx-proc-list">
+                                <div v-for="p in summary.procedencia" :key="p.procedencia" class="rx-proc-item">
+                                    <div class="rx-proc-left">
+                                        <span class="rx-proc-dot"></span>
+                                        <span class="rx-proc-name">{{ p.procedencia }}</span>
+                                    </div>
+                                    <div class="rx-proc-right">
+                                        <span class="rx-proc-val">{{ fNum(p.atenciones) }}</span>
+                                        <span class="rx-proc-pct">{{ fPct(p.pct_atenciones) }}</span>
+                                    </div>
+                                </div>
+                            </div>
+                        </template>
+                    </Card>
+                </div>
+
+                <!-- Top Procedimientos + Top Médicos que Indican -->
+                <div class="rx-two-col">
+                    <Card class="rx-card">
+                        <template #title>
+                            <div class="rx-card-title-row">
+                                <span><i class="pi pi-list mr-2" style="color: #f59e0b"></i>Top Procedimientos</span>
+                                <SelectButton v-model="topN" :options="topOptions" optionLabel="label" optionValue="value" class="rx-metric-toggle" />
+                            </div>
+                        </template>
+                        <template #content>
+                            <DataTable :value="summary.top_procedimientos" size="small" class="rx-table" sortField="atenciones" :sortOrder="-1" stripedRows paginator :rows="10">
+                                <Column field="cod_seg" header="Cód. SEGUS" sortable style="width: 120px">
+                                    <template #body="{ data: row }"
+                                        ><span class="rx-code">{{ row.cod_seg }}</span></template
+                                    >
+                                </Column>
+                                <Column field="nombre" header="Procedimiento" sortable />
+                                <Column field="region" header="Región" sortable style="width: 140px">
+                                    <template #body="{ data: row }">
+                                        <span class="rx-region-badge" :style="{ background: regionColor(row.region) + '22', color: regionColor(row.region), borderColor: regionColor(row.region) + '66' }">
+                                            {{ row.region }}
+                                        </span>
+                                    </template>
+                                </Column>
+                                <Column field="atenciones" header="Atenc." sortable style="width: 75px; text-align: right">
+                                    <template #body="{ data: row }">{{ fNum(row.atenciones) }}</template>
+                                </Column>
+                                <Column field="monto" header="Monto S/" sortable style="width: 120px; text-align: right">
+                                    <template #body="{ data: row }">{{ fMoney(row.monto) }}</template>
+                                </Column>
+                                <Column field="ticket_medio" header="Ticket" sortable style="width: 100px; text-align: right">
+                                    <template #body="{ data: row }">{{ fMoney(row.ticket_medio) }}</template>
+                                </Column>
+                            </DataTable>
+                        </template>
+                    </Card>
+
+                    <Card v-if="summary.top_medicos_indica?.length" class="rx-card">
+                        <template #title>
+                            <div class="rx-card-title-row">
+                                <span><i class="pi pi-user mr-2" style="color: #0369a1"></i>Top Médicos que Indican</span>
+                            </div>
+                        </template>
+                        <template #content>
+                            <DataTable :value="summary.top_medicos_indica" size="small" class="rx-table" sortField="placas" :sortOrder="-1" stripedRows :rowClass="medicoRowClass">
+                                <Column field="cod_medico" header="Cód." sortable style="width: 80px">
+                                    <template #body="{ data: row }">
+                                        <span class="rx-code">{{ row.cod_medico }}</span>
+                                    </template>
+                                </Column>
+                                <Column field="medico" header="Médico que Indica" sortable />
+                                <Column field="placas" header="Placas" sortable style="width: 75px; text-align: right">
+                                    <template #body="{ data: row }">{{ fNum(row.placas) }}</template>
+                                </Column>
+                                <Column field="monto" header="Monto S/" sortable style="width: 120px; text-align: right">
+                                    <template #body="{ data: row }">{{ fMoney(row.monto) }}</template>
+                                </Column>
+                                <Column field="ticket_medio" header="Ticket" sortable style="width: 100px; text-align: right">
+                                    <template #body="{ data: row }">{{ fMoney(row.ticket_medio) }}</template>
+                                </Column>
+                            </DataTable>
+                        </template>
+                    </Card>
+                </div>
+
+                <!-- Tendencia Temporal + Estacionalidad Semanal -->
+                <div class="rx-two-col">
+                    <Card class="rx-card">
+                        <template #title>
+                            <div class="rx-card-title-row">
+                                <span><i class="pi pi-chart-line mr-2" style="color: #0369a1"></i>Tendencia Temporal</span>
+                                <div class="rx-chart-toolbar">
+                                    <SelectButton v-model="trendGranularity" :options="trendGranularityOptions" optionLabel="label" optionValue="value" class="rx-metric-toggle" />
+                                    <SelectButton v-model="trendMetric" :options="metricOptions" optionLabel="label" optionValue="value" class="rx-metric-toggle" />
+                                </div>
+                            </div>
+                        </template>
+                        <template #content>
+                            <div class="rx-chart-wrapper">
+                                <div v-if="isTrendLoading" class="rx-trend-loading">
+                                    <ProgressSpinner style="width: 32px; height: 32px" />
+                                </div>
+                                <Chart v-else type="line" :data="trendChartData" :options="trendChartOptions" class="rx-chart" />
+                            </div>
+                        </template>
+                    </Card>
+
+                    <Card class="rx-card">
+                        <template #title>
+                            <span><i class="pi pi-calendar mr-2" style="color: #14b8a6"></i>Estacionalidad Semanal</span>
+                        </template>
+                        <template #subtitle>
+                            <span>Barras claras = fines de semana (solo urgencias)</span>
+                        </template>
+                        <template #content>
+                            <div class="rx-chart-wrapper rx-chart-wrapper--sm">
+                                <Chart type="bar" :data="estacionalidadChartData" :options="estacionalidadOptions" class="rx-chart" />
+                            </div>
+                        </template>
+                    </Card>
+                </div> </template
+            ><!-- /v-else (filtersEmpty) -->
         </template>
 
         <div v-else-if="!isLoading" class="rx-empty">
