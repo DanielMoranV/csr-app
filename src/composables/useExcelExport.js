@@ -95,10 +95,10 @@ export function useExcelExport() {
                         cell.t = 'n';
                         cell.z = '#,##0';
                     }
-                    // Aplicar formato de moneda
+                    // Aplicar formato de moneda (soles peruanos)
                     else if (columnDef.type === 'currency') {
                         cell.t = 'n';
-                        cell.z = '$#,##0.00';
+                        cell.z = '"S/." #,##0.00';
                     }
                 }
             }
