@@ -16,11 +16,13 @@ import Select from 'primevue/select';
 import SelectButton from 'primevue/selectbutton';
 import ToggleButton from 'primevue/togglebutton';
 import { useToast } from 'primevue/usetoast';
-import { computed, onMounted, ref, watch } from 'vue';
+import { computed, onMounted, onUnmounted, ref, watch } from 'vue';
+import { useExcelExport } from '@/composables/useExcelExport';
 
 ChartJS.register(ChartDataLabels);
 
 const toast = useToast();
+const { exportToExcel } = useExcelExport();
 
 const desde = ref(null);
 const hasta = ref(null);
@@ -31,6 +33,11 @@ const errorMsg = ref('');
 const selectedArea = ref('all');
 const selectedYears = ref([]);
 const selectedMonths = ref([1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12]);
+
+// Filtro flotante (sticky) — estado visual al quedar pegado bajo el topbar
+const filtersSentinel = ref(null);
+const isFilterStuck = ref(false);
+let filterObserver = null;
 const chartMetric = ref('monto');
 const showLabels = ref(false);
 const pieMetric = ref('monto');
@@ -148,8 +155,6 @@ const areaOptions = computed(() => {
 
 const totalFacturacion = computed(() => filteredData.value.reduce((s, r) => s + r.importe, 0));
 const totalAtenciones = computed(() => new Set(filteredData.value.map((r) => r.admision)).size);
-const totalParticular = computed(() => filteredData.value.filter((r) => r.particular).reduce((s, r) => s + r.importe, 0));
-const pctParticular = computed(() => (totalFacturacion.value > 0 ? ((totalParticular.value / totalFacturacion.value) * 100).toFixed(1) + '%' : '0.0%'));
 
 // Monthly line chart — one line per year, months on X axis
 const monthlyChartData = computed(() => {
@@ -529,6 +534,12 @@ const trendGranularityOptions = [
     { label: 'Mes', value: 'month' }
 ];
 
+const trendView = ref('chart');
+const trendViewOptions = [
+    { label: 'Gráfico', value: 'chart' },
+    { label: 'Tabla', value: 'table' }
+];
+
 const getWeekKey = (d) => {
     const day = d.getDay() || 7;
     const thu = new Date(d);
@@ -538,8 +549,9 @@ const getWeekKey = (d) => {
     return `${thu.getFullYear()}-${String(week).padStart(2, '0')}`;
 };
 
-const trendChartData = computed(() => {
-    if (!filteredData.value.length) return { labels: [], datasets: [] };
+// Datos agrupados compartidos entre el gráfico de tendencia y su tabla
+const trendRows = computed(() => {
+    if (!filteredData.value.length) return [];
 
     const buckets = {};
     filteredData.value.forEach((r) => {
@@ -557,27 +569,55 @@ const trendChartData = computed(() => {
         buckets[key].cantidad++;
     });
 
-    const sorted = Object.keys(buckets).sort();
-    const labels = sorted.map((k) => {
-        if (trendGranularity.value === 'day') {
-            const [, m, d] = k.split('-');
-            return `${d}/${m}`;
-        }
-        if (trendGranularity.value === 'week') {
-            const [y, w] = k.split('-');
-            return `Sem ${parseInt(w)} ${y}`;
-        }
-        const [y, m] = k.split('-');
-        return `${MONTH_NAMES[parseInt(m) - 1]} ${y}`;
-    });
+    return Object.keys(buckets)
+        .sort()
+        .map((k) => {
+            let label;
+            if (trendGranularity.value === 'day') {
+                const [, m, d] = k.split('-');
+                label = `${d}/${m}`;
+            } else if (trendGranularity.value === 'week') {
+                const [y, w] = k.split('-');
+                label = `Sem ${parseInt(w)} ${y}`;
+            } else {
+                const [y, m] = k.split('-');
+                label = `${MONTH_NAMES[parseInt(m) - 1]} ${y}`;
+            }
+            return { periodo: k, label, cantidad: buckets[k].cantidad, monto: buckets[k].monto };
+        });
+});
+
+const trendTotals = computed(() => trendRows.value.reduce((a, r) => ({ cantidad: a.cantidad + r.cantidad, monto: a.monto + r.monto }), { cantidad: 0, monto: 0 }));
+
+const trendGranularityLabel = computed(() => trendGranularityOptions.find((o) => o.value === trendGranularity.value)?.label ?? '');
+
+const exportTrendToExcel = () => {
+    if (!trendRows.value.length) {
+        toast.add({ severity: 'warn', summary: 'Sin datos', detail: 'No hay datos para exportar', life: 3000 });
+        return;
+    }
+    const columns = [
+        { field: 'label', header: 'Período', width: 18 },
+        { field: 'cantidad', header: 'Cantidad', type: 'number', width: 14 },
+        { field: 'monto', header: 'Monto', type: 'currency', width: 18 }
+    ];
+    const rows = [...trendRows.value, { label: 'Total', cantidad: trendTotals.value.cantidad, monto: trendTotals.value.monto }];
+    const periodo = desde.value && hasta.value ? `${formatDate(desde.value)}_${formatDate(hasta.value)}` : 'periodo';
+    exportToExcel(rows, columns, `tendencia-temporal-${trendGranularity.value}-${periodo}`, { sheetName: `Tendencia ${trendGranularityLabel.value}` });
+    toast.add({ severity: 'success', summary: 'Exportado', detail: 'Archivo descargado correctamente', life: 3000 });
+};
+
+const trendChartData = computed(() => {
+    const rows = trendRows.value;
+    if (!rows.length) return { labels: [], datasets: [] };
 
     const color = '#0369a1';
     return {
-        labels,
+        labels: rows.map((r) => r.label),
         datasets: [
             {
                 label: trendMetric.value === 'monto' ? 'Facturación' : 'Atenciones',
-                data: sorted.map((k) => (trendMetric.value === 'monto' ? buckets[k].monto : buckets[k].cantidad)),
+                data: rows.map((r) => (trendMetric.value === 'monto' ? r.monto : r.cantidad)),
                 borderColor: color,
                 backgroundColor: color + '18',
                 borderWidth: 2.5,
@@ -891,6 +931,22 @@ onMounted(() => {
     hasta.value = new Date(now.getFullYear(), now.getMonth(), now.getDate());
     fetchData();
 });
+
+// Detecta cuando la barra de filtros queda pegada bajo el topbar (4rem).
+// El sentinel se monta junto con la barra (v-if rawData), por eso se observa vía watch.
+watch(filtersSentinel, (el) => {
+    if (filterObserver) filterObserver.disconnect();
+    if (!el) {
+        isFilterStuck.value = false;
+        return;
+    }
+    filterObserver = new IntersectionObserver(([entry]) => (isFilterStuck.value = !entry.isIntersecting), { rootMargin: '-64px 0px 0px 0px', threshold: 0 });
+    filterObserver.observe(el);
+});
+
+onUnmounted(() => {
+    if (filterObserver) filterObserver.disconnect();
+});
 </script>
 
 <template>
@@ -938,8 +994,9 @@ onMounted(() => {
             <!-- Error -->
             <Message v-if="errorMsg" severity="error" :closable="false">{{ errorMsg }}</Message>
 
-            <!-- Filters bar -->
-            <div v-if="rawData.length" class="em-filters-bar">
+            <!-- Filters bar (sticky bajo el topbar) -->
+            <div v-if="rawData.length" ref="filtersSentinel" class="em-filters-sentinel" aria-hidden="true"></div>
+            <div v-if="rawData.length" class="em-filters-bar" :class="{ 'is-stuck': isFilterStuck }">
                 <!-- Area filter -->
                 <div class="em-filter-section">
                     <span class="em-filter-label">Área</span>
@@ -1213,14 +1270,32 @@ onMounted(() => {
                             <div class="em-card-title">
                                 <span><i class="pi pi-chart-line mr-2" style="color: #0369a1"></i>Tendencia Temporal</span>
                                 <div class="em-chart-toolbar">
+                                    <SelectButton v-model="trendView" :options="trendViewOptions" optionLabel="label" optionValue="value" class="em-metric-toggle" />
                                     <SelectButton v-model="trendGranularity" :options="trendGranularityOptions" optionLabel="label" optionValue="value" class="em-metric-toggle" />
-                                    <SelectButton v-model="trendMetric" :options="metricOptions" optionLabel="label" optionValue="value" class="em-metric-toggle" />
+                                    <SelectButton v-if="trendView === 'chart'" v-model="trendMetric" :options="metricOptions" optionLabel="label" optionValue="value" class="em-metric-toggle" />
+                                    <Button v-else icon="pi pi-file-excel" label="Excel" size="small" severity="success" outlined :disabled="!trendRows.length" @click="exportTrendToExcel" />
                                 </div>
                             </div>
                         </template>
                         <template #content>
-                            <div class="em-chart-wrapper">
+                            <div v-if="trendView === 'chart'" class="em-chart-wrapper">
                                 <Chart type="line" :data="trendChartData" :options="trendChartOptions" class="em-chart" />
+                            </div>
+                            <div v-else class="em-chart-wrapper em-trend-table-wrapper">
+                                <div v-if="!trendRows.length" class="em-rank-empty">Sin datos para el período</div>
+                                <DataTable v-else :value="trendRows" stripedRows size="small" scrollable scrollHeight="flex" class="em-table em-trend-table">
+                                    <Column field="label" header="Período" sortable>
+                                        <template #footer>Total</template>
+                                    </Column>
+                                    <Column field="cantidad" header="Cantidad" sortable style="text-align: right">
+                                        <template #body="{ data }">{{ fNumber(data.cantidad) }}</template>
+                                        <template #footer>{{ fNumber(trendTotals.cantidad) }}</template>
+                                    </Column>
+                                    <Column field="monto" header="Monto" sortable style="text-align: right">
+                                        <template #body="{ data }">{{ fCurrency(data.monto) }}</template>
+                                        <template #footer>{{ fCurrency(trendTotals.monto) }}</template>
+                                    </Column>
+                                </DataTable>
                             </div>
                         </template>
                     </Card>
@@ -1708,6 +1783,12 @@ onMounted(() => {
 }
 
 /* ─── FILTERS BAR ─────────────────────────────────────────────────────────── */
+.em-filters-sentinel {
+    height: 0;
+    margin: 0;
+    padding: 0;
+}
+
 .em-filters-bar {
     display: flex;
     align-items: flex-start;
@@ -1717,6 +1798,17 @@ onMounted(() => {
     border-radius: 10px;
     box-shadow: 0 1px 4px rgba(0, 0, 0, 0.06);
     flex-wrap: wrap;
+    position: sticky;
+    top: 4rem;
+    z-index: 900;
+    transition:
+        box-shadow 0.2s ease,
+        border-radius 0.2s ease;
+}
+
+.em-filters-bar.is-stuck {
+    border-radius: 0 0 10px 10px;
+    box-shadow: 0 6px 16px rgba(0, 0, 0, 0.12);
 }
 
 .em-filter-section {
@@ -1830,6 +1922,26 @@ onMounted(() => {
 .em-chart {
     width: 100% !important;
     height: 100% !important;
+}
+
+/* Tabla de Tendencia Temporal */
+.em-trend-table-wrapper {
+    overflow: hidden;
+}
+
+.em-trend-table {
+    height: 100%;
+}
+
+.em-trend-table :deep(tfoot td) {
+    font-weight: 700;
+    color: #0369a1;
+    background: #f8fafc;
+    border-top: 2px solid #e2e8f0;
+}
+
+.em-trend-table :deep(td:not(:first-child)) {
+    font-variant-numeric: tabular-nums;
 }
 
 /* Donut */

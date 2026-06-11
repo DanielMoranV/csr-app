@@ -39,6 +39,11 @@ const showLabels = ref(false);
 const selectedYears = ref([]);
 const selectedMonths = ref([1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12]);
 
+// Filtro flotante (sticky) — estado visual al quedar pegado bajo el topbar
+const filtersSentinel = ref(null);
+const isFilterStuck = ref(false);
+let filterObserver = null;
+
 const metricOptions = [
     { label: 'Importe', value: 'monto' },
     { label: 'Cantidad', value: 'cantidad' }
@@ -676,6 +681,18 @@ const medicoRowClass = (row) => {
 
 let themeObserver = null;
 
+// Detecta cuando la barra de filtros queda pegada bajo el topbar (4rem).
+// El sentinel se monta junto con la barra (v-if), por eso se observa vía watch.
+watch(filtersSentinel, (el) => {
+    if (filterObserver) filterObserver.disconnect();
+    if (!el) {
+        isFilterStuck.value = false;
+        return;
+    }
+    filterObserver = new IntersectionObserver(([entry]) => (isFilterStuck.value = !entry.isIntersecting), { rootMargin: '-64px 0px 0px 0px', threshold: 0 });
+    filterObserver.observe(el);
+});
+
 onMounted(() => {
     const now = new Date();
     desde.value = new Date(now.getFullYear() - 1, 0, 1);
@@ -691,6 +708,7 @@ onMounted(() => {
 
 onUnmounted(() => {
     themeObserver?.disconnect();
+    filterObserver?.disconnect();
 });
 </script>
 
@@ -760,8 +778,9 @@ onUnmounted(() => {
                 </div>
             </div>
 
-            <!-- Filtros de evolución (Año + Mes) -->
-            <div v-if="summary.tendencia_mensual?.length" class="rx-filters-bar">
+            <!-- Filtros de evolución (Año + Mes) — sticky bajo el topbar -->
+            <div v-if="summary.tendencia_mensual?.length" ref="filtersSentinel" class="rx-filters-sentinel" aria-hidden="true"></div>
+            <div v-if="summary.tendencia_mensual?.length" class="rx-filters-bar" :class="{ 'is-stuck': isFilterStuck }">
                 <div class="rx-filter-section">
                     <span class="rx-filter-label">Año</span>
                     <SelectButton v-model="selectedYears" :options="yearOptions" optionLabel="label" optionValue="value" multiple />
@@ -1261,6 +1280,12 @@ onUnmounted(() => {
 }
 
 /* ─── FILTERS BAR ─────────────────────────────────────────────────────────── */
+.rx-filters-sentinel {
+    height: 0;
+    margin: 0;
+    padding: 0;
+}
+
 .rx-filters-bar {
     display: flex;
     align-items: flex-start;
@@ -1270,6 +1295,17 @@ onUnmounted(() => {
     border-radius: 10px;
     box-shadow: 0 1px 4px rgba(0, 0, 0, 0.06);
     flex-wrap: wrap;
+    position: sticky;
+    top: 4rem;
+    z-index: 900;
+    transition:
+        box-shadow 0.2s ease,
+        border-radius 0.2s ease;
+}
+
+.rx-filters-bar.is-stuck {
+    border-radius: 0 0 10px 10px;
+    box-shadow: 0 6px 16px rgba(0, 0, 0, 0.12);
 }
 
 .rx-filter-section {

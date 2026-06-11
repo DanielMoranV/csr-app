@@ -15,7 +15,7 @@ import ProgressSpinner from 'primevue/progressspinner';
 import SelectButton from 'primevue/selectbutton';
 import Tag from 'primevue/tag';
 import { useToast } from 'primevue/usetoast';
-import { computed, onMounted, ref, watch } from 'vue';
+import { computed, onMounted, onUnmounted, ref, watch } from 'vue';
 
 ChartJS.register(ChartDataLabels);
 
@@ -41,6 +41,11 @@ const errorMsg = ref('');
 const selectedArea = ref('all');
 const selectedYears = ref([]);
 const selectedMonths = ref([1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12]);
+
+// Filtro flotante (sticky) — estado visual al quedar pegado bajo el topbar
+const filtersSentinel = ref(null);
+const isFilterStuck = ref(false);
+let filterObserver = null;
 
 // Controles de gráficos
 const chartMetric = ref('monto');
@@ -717,12 +722,28 @@ const rankClass = (idx) => {
     return '';
 };
 
+// Detecta cuando la barra de filtros queda pegada bajo el topbar (4rem).
+// El sentinel se monta junto con la barra (v-if), por eso se observa vía watch.
+watch(filtersSentinel, (el) => {
+    if (filterObserver) filterObserver.disconnect();
+    if (!el) {
+        isFilterStuck.value = false;
+        return;
+    }
+    filterObserver = new IntersectionObserver(([entry]) => (isFilterStuck.value = !entry.isIntersecting), { rootMargin: '-64px 0px 0px 0px', threshold: 0 });
+    filterObserver.observe(el);
+});
+
 // ─── Init ─────────────────────────────────────────────────────────────────────
 onMounted(() => {
     const now = new Date();
     desde.value = new Date(now.getFullYear() - 1, 0, 1); // 1 enero del año pasado
     hasta.value = new Date(now.getFullYear(), now.getMonth(), now.getDate()); // hoy
     fetchData();
+});
+
+onUnmounted(() => {
+    filterObserver?.disconnect();
 });
 </script>
 
@@ -784,8 +805,9 @@ onMounted(() => {
             <!-- ── Error ───────────────────────────────────────────────────── -->
             <Message v-if="errorMsg" severity="error" :closable="false">{{ errorMsg }}</Message>
 
-            <!-- ── Barra de filtros locales ─────────────────────────────────── -->
-            <div v-if="allData.length" class="eco-filters-bar">
+            <!-- ── Barra de filtros locales (sticky bajo el topbar) ─────────── -->
+            <div v-if="allData.length" ref="filtersSentinel" class="eco-filters-sentinel" aria-hidden="true"></div>
+            <div v-if="allData.length" class="eco-filters-bar" :class="{ 'is-stuck': isFilterStuck }">
                 <!-- Área -->
                 <div class="eco-filter-section">
                     <span class="eco-filter-label">Área</span>
@@ -1371,6 +1393,12 @@ onMounted(() => {
 }
 
 /* ─── Barra de filtros locales ────────────────────────────────────────────── */
+.eco-filters-sentinel {
+    height: 0;
+    margin: 0;
+    padding: 0;
+}
+
 .eco-filters-bar {
     display: flex;
     align-items: flex-start;
@@ -1380,6 +1408,17 @@ onMounted(() => {
     border-radius: 10px;
     box-shadow: 0 1px 4px rgba(0, 0, 0, 0.06);
     flex-wrap: wrap;
+    position: sticky;
+    top: 4rem;
+    z-index: 900;
+    transition:
+        box-shadow 0.2s ease,
+        border-radius 0.2s ease;
+}
+
+.eco-filters-bar.is-stuck {
+    border-radius: 0 0 10px 10px;
+    box-shadow: 0 6px 16px rgba(0, 0, 0, 0.12);
 }
 
 .eco-filter-section {
