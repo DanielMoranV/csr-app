@@ -33,7 +33,7 @@ export const PERMISSION_GROUPS = {
 };
 
 export function usePermissions() {
-    const { user } = useAuth();
+    const { user, hasPermission, isSuperuser } = useAuth();
 
     // Posición actual del usuario
     const userPosition = computed(() => {
@@ -127,7 +127,13 @@ export function usePermissions() {
                     return item.items.length > 0;
                 }
 
-                // Para items sin hijos, verificar permisos
+                // Items controlados por permiso dinámico (RBAC) tienen prioridad
+                // sobre la verificación por posición.
+                if (item.permission) {
+                    return isSuperuser.value || hasPermission(item.permission);
+                }
+
+                // Para items sin hijos, verificar permisos por posición
                 if (!item.positions) return true;
 
                 // Verificar si el usuario tiene acceso

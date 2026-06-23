@@ -17,6 +17,12 @@ export function useAuth() {
     const isLoading = computed(() => authStore.state.isLoading);
     const isTokenExpired = computed(() => authStore.isTokenExpired);
 
+    // RBAC: permisos y roles del usuario (sistema dinámico modulo.accion)
+    const permissions = computed(() => user.value?.permissions || []);
+    const roles = computed(() => user.value?.roles || []);
+    // is_superuser = true => acceso global (SISTEMAS)
+    const isSuperuser = computed(() => user.value?.is_superuser === true);
+
     // Métodos de autenticación con manejo de errores mejorado
     const login = async (dni, password, options = {}) => {
         const result = await authStore.login(dni, password);
@@ -100,14 +106,26 @@ export function useAuth() {
         }
     };
 
-    // Método para verificar si el usuario tiene permisos específicos
+    // Verifica si el usuario tiene un permiso específico (slug modulo.accion).
+    // Los superusuarios (SISTEMAS) tienen acceso global.
     const hasPermission = (permission) => {
+        if (isSuperuser.value) return true;
         if (!user.value || !permission) return false;
+        return permissions.value.includes(permission);
+    };
 
-        // TODO: Implementar lógica de permisos según estructura de usuario
-        // Por ejemplo: return user.value.permissions?.includes(permission);
-        console.warn('hasPermission: Implementación pendiente para:', permission);
-        return false; // Seguro por defecto - denegar acceso
+    // Verifica si el usuario tiene AL MENOS uno de los permisos indicados.
+    const hasAnyPermission = (perms = []) => {
+        if (isSuperuser.value) return true;
+        if (!Array.isArray(perms) || perms.length === 0) return false;
+        return perms.some((perm) => permissions.value.includes(perm));
+    };
+
+    // Verifica si el usuario tiene TODOS los permisos indicados.
+    const hasAllPermissions = (perms = []) => {
+        if (isSuperuser.value) return true;
+        if (!Array.isArray(perms) || perms.length === 0) return false;
+        return perms.every((perm) => permissions.value.includes(perm));
     };
 
     // Método para obtener información actualizada del usuario
@@ -145,6 +163,11 @@ export function useAuth() {
         isLoading,
         isTokenExpired,
 
+        // RBAC
+        permissions,
+        roles,
+        isSuperuser,
+
         // Métodos de autenticación
         login,
         register,
@@ -155,6 +178,8 @@ export function useAuth() {
         // Utilidades
         requireAuth,
         hasPermission,
+        hasAnyPermission,
+        hasAllPermissions,
         updateUserActivity,
         validateLoginData,
         validateRegisterData

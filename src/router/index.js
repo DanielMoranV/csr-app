@@ -30,6 +30,12 @@ const router = createRouter({
                     meta: { requiresAuth: true, positions: MODULE_PERMISSIONS.usuarios.positions }
                 },
                 {
+                    path: MODULE_PERMISSIONS.roleManagement.path,
+                    name: MODULE_PERMISSIONS.roleManagement.name,
+                    component: () => import('@/views/admin/RoleManagement.vue'),
+                    meta: { requiresAuth: true, permission: MODULE_PERMISSIONS.roleManagement.permission }
+                },
+                {
                     path: MODULE_PERMISSIONS.sisclinImport.path,
                     name: MODULE_PERMISSIONS.sisclinImport.name,
                     component: () => import('@/views/sisclin/SisclinImport.vue'),
@@ -313,6 +319,18 @@ router.beforeEach(async (to, from, next) => {
                 }
             }
 
+            // Verificar permiso dinámico (RBAC) si se especifica. is_superuser
+            // (SISTEMAS) tiene acceso global. No se usa `position` para esto.
+            const requiredPermission = to.meta.permission;
+            if (requiredPermission) {
+                const currentUser = authStore.getUser;
+                const allowed = currentUser?.is_superuser === true || (Array.isArray(currentUser?.permissions) && currentUser.permissions.includes(requiredPermission));
+
+                if (!allowed) {
+                    return next({ name: 'accessDenied' });
+                }
+            }
+
             return next();
         }
 
@@ -342,7 +360,7 @@ router.beforeEach(async (to, from, next) => {
 });
 
 // Actualizar actividad del usuario en cada navegación exitosa
-router.afterEach((to) => {
+router.afterEach(() => {
     const authStore = useAuthStore();
 
     if (authStore.isLoggedIn) {

@@ -182,6 +182,18 @@ export const MODULE_PERMISSIONS = {
         menuSection: 'Administración'
     },
 
+    // Administración de Roles y Permisos (RBAC)
+    // El acceso NO se controla por posición sino por el permiso dinámico
+    // `roles.manage` (o is_superuser). Ver guard de router y filtro de menú.
+    roleManagement: {
+        name: 'role-management',
+        path: '/admin/roles',
+        permission: 'roles.manage',
+        label: 'Roles y Permisos',
+        icon: 'pi pi-fw pi-shield',
+        menuSection: 'Administración'
+    },
+
     // Estado de hospitalización
     hospitalizacion: {
         name: 'hospitalizacion',
@@ -535,7 +547,8 @@ export function generateMenuStructure() {
             label: module.label,
             icon: module.icon,
             to: module.path,
-            positions: module.positions
+            positions: module.positions,
+            permission: module.permission
         });
     });
 
