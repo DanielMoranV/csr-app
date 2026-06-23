@@ -127,19 +127,12 @@ export function usePermissions() {
                     return item.items.length > 0;
                 }
 
-                // Items controlados por permiso dinámico (RBAC) tienen prioridad
-                // sobre la verificación por posición. `permission` puede ser un
-                // slug (string) o un arreglo de slugs ("cualquiera de").
-                if (item.permission) {
-                    if (isSuperuser.value) return true;
-                    return Array.isArray(item.permission) ? hasAnyPermission(item.permission) : hasPermission(item.permission);
-                }
-
-                // Para items sin hijos, verificar permisos por posición
-                if (!item.positions) return true;
-
-                // Verificar si el usuario tiene acceso
-                return hasAnyPosition(item.positions);
+                // El menú se gobierna por permiso RBAC. `permission` puede ser un
+                // slug (string) o un arreglo de slugs ("cualquiera de"). Un item
+                // sin permiso es público (visible para cualquier sesión válida).
+                if (!item.permission) return true;
+                if (isSuperuser.value) return true;
+                return Array.isArray(item.permission) ? hasAnyPermission(item.permission) : hasPermission(item.permission);
             });
     };
 

@@ -1,222 +1,123 @@
-# Sistema de Permisos Centralizado
+# Sistema de Permisos Centralizado (RBAC)
 
-Este sistema permite gestionar los permisos de acceso a los módulos de la aplicación desde un único archivo de configuración.
+El acceso al **menú lateral** y a las **rutas** se gobierna por **permisos RBAC dinámicos**
+(`modulo.accion`, ej. `treasury.view`), no por el cargo (`position`) del usuario.
+
+> Histórico: el sistema migró de autorización por `position` (cargo) a roles + permisos.
+> El campo `positions` aún existe en algunos módulos como **dato legado inerte** (no lo usan
+> ni el menú ni el router). La autorización de navegación es 100% por permiso.
 
 ## Archivo de configuración
 
-**Ubicación:** `/src/config/permissions.js`
+**Ubicación:** `/src/config/permissions.js` — fuente única de verdad para router y menú.
+
+## Cómo funciona el acceso
+
+El objeto `user` (de login / `GET /api/auth/me`) incluye:
+
+```jsonc
+{
+  "permissions": ["treasury.view", "roles.manage", "..."], // slugs efectivos del usuario
+  "is_superuser": false,                                    // true = SISTEMAS, acceso global
+  "roles": [{ "id": 21, "name": "Auditor Médico", "slug": "auditor-medico" }]
+}
+```
+
+Regla de visibilidad de un módulo (menú y ruta):
+
+```js
+visible = user.is_superuser || requiredPermission.some(p => user.permissions.includes(p))
+```
+
+- **`is_superuser`** (SISTEMAS) ve y accede a todo.
+- Un módulo **sin `permission`** es **público**: visible para cualquier sesión válida.
+- `permission` puede ser un **slug (string)** o un **arreglo de slugs** ("cualquiera de").
+
+El catálogo de permisos es **dinámico**: se administra desde el módulo "Roles y Permisos"
+(`/admin/roles`) y se lee del backend (`GET /api/permissions`). No se hardcodea en el front.
 
 ## Cómo modificar permisos
 
-### 1. Para cambiar permisos de un módulo existente
+### 1. Cambiar el permiso de un módulo existente
 
-Edita el objeto correspondiente en `MODULE_PERMISSIONS`:
+Edita el campo `permission` del módulo en `MODULE_PERMISSIONS`:
 
 ```javascript
-// Ejemplo: Dar acceso al dashboard solo a SISTEMAS
-dashboard: {
-    name: 'dashboard',
-    path: '/dashboard',
-    positions: [POSITIONS.SISTEMAS], // ← Modificar aquí
-    label: 'Dashboard',
-    icon: 'pi pi-fw pi-home',
-    menuSection: 'Principal'
+treasuryBanks: {
+    name: 'treasury-banks',
+    path: '/tesoreria/bancos',
+    permission: 'treasury.view',   // ← slug requerido (o ['treasury.view', 'treasury.manage'])
+    label: 'Bancos',
+    icon: 'pi pi-fw pi-building',
+    menuSection: 'Tesorería'
 }
 ```
 
-Puedes usar:
-- **Posiciones individuales:** `[POSITIONS.SISTEMAS, POSITIONS.RRHH]`
-- **Grupos predefinidos:** `PERMISSION_GROUPS.HIGH_MANAGEMENT`
-- **Acceso universal:** `PERMISSION_GROUPS.ALL` o `['*']`
+> El slug debe existir en el backend y estar asignado a los roles correspondientes,
+> de lo contrario el módulo quedará oculto para los no-superusuarios.
 
-### 2. Para agregar un nuevo módulo
+### 2. Agregar un nuevo módulo
 
-Agrega una nueva entrada en `MODULE_PERMISSIONS`:
+Agrega la entrada en `MODULE_PERMISSIONS`:
 
 ```javascript
 miNuevoModulo: {
-    name: 'mi-nuevo-modulo',           // nombre de la ruta
-    path: '/mi-nuevo-modulo',          // URL
-    positions: [POSITIONS.SISTEMAS],   // permisos
-    label: 'Mi Nuevo Módulo',          // texto del menú
-    icon: 'pi pi-fw pi-star',          // ícono PrimeVue
-    menuSection: 'Mi Sección',         // sección del menú
-    showInMenu: true                   // mostrar en menú (opcional, default: true)
+    name: 'mi-nuevo-modulo',
+    path: '/mi-nuevo-modulo',
+    permission: 'mi-modulo.view',  // omitir el campo => módulo público (toda sesión válida)
+    label: 'Mi Nuevo Módulo',
+    icon: 'pi pi-fw pi-star',
+    menuSection: 'Mi Sección',
+    showInMenu: true               // opcional, default: true
 }
 ```
 
-Luego agrégalo al router en `/src/router/index.js`:
+Y la ruta en `/src/router/index.js`:
 
 ```javascript
 {
     path: MODULE_PERMISSIONS.miNuevoModulo.path,
     name: MODULE_PERMISSIONS.miNuevoModulo.name,
     component: () => import('@/views/MiNuevoModulo.vue'),
-    meta: {
-        requiresAuth: true,
-        positions: MODULE_PERMISSIONS.miNuevoModulo.positions
-    }
+    meta: { requiresAuth: true }   // el guard resuelve el permiso desde MODULE_PERMISSIONS por nombre de ruta
 }
 ```
 
-### 3. Para crear un nuevo grupo de permisos
+> El guard del router (`beforeEach` en `router/index.js`) resuelve el permiso requerido
+> desde `MODULE_PERMISSIONS` usando `to.name` (índice `moduleByName`). También respeta
+> `meta.permission` si se define explícitamente. **No es necesario** repetir el permiso en el `meta`.
 
-Agrega una nueva entrada en `PERMISSION_GROUPS`:
+## Helpers de autorización
 
-```javascript
-export const PERMISSION_GROUPS = {
-    // ... grupos existentes
+En componentes/vistas usa el composable `useAuth()`:
 
-    MI_NUEVO_GRUPO: [
-        POSITIONS.SISTEMAS,
-        POSITIONS.ADMINISTRACION,
-        POSITIONS.CONTABILIDAD
-    ]
-};
+```js
+const { hasPermission, hasAnyPermission, hasAllPermissions, isSuperuser, permissions, roles } = useAuth();
+
+if (hasPermission('treasury.manage')) { /* mostrar botón de edición */ }
 ```
 
-Luego úsalo en cualquier módulo:
-
-```javascript
-miModulo: {
-    // ...
-    positions: PERMISSION_GROUPS.MI_NUEVO_GRUPO
-}
-```
-
-## Posiciones disponibles
-
-### Administrativas
-- `SISTEMAS` - Acceso global total
-- `DIRECTOR_MEDICO`
-- `GERENCIA`
-- `ADMINISTRACION`
-- `RRHH`
-- `CONTABILIDAD`
-
-### Operativas
-- `FACTURACION`
-- `ADMISION`
-- `LOGISTICA`
-
-### Médicas
-- `MEDICOS`
-- `EMERGENCIA`
-- `HOSPITALIZACION`
-- `QUIROFANO`
-- `CONSULTORIOS`
-
-### Diagnóstico
-- `LABORATORIO`
-- `RAYOS_X`
-
-### Otras
-- `FARMACIA`
-- `ARCHIVO_HISTORIAS`
-
-## Grupos de permisos predefinidos
-
-- `ADMIN_FULL` - Solo SISTEMAS
-- `HIGH_MANAGEMENT` - SISTEMAS, GERENCIA, ADMINISTRACION, DIRECTOR_MEDICO
-- `ADMINISTRATIVE` - Personal administrativo
-- `OPERATIONAL` - Personal operativo (ADMISION, FACTURACION)
-- `MEDICAL` - Personal médico
-- `HOSPITALIZATION_STAFF` - Personal con acceso a hospitalización
-- `ATTENTIONS_ACCESS` - Personal con acceso a atenciones
-- `ALL` - Todos los usuarios autenticados
-
-## Ventajas de este sistema
-
-✅ **Un solo lugar para modificar permisos** - Edita `permissions.js` y los cambios se aplican en router y menú automáticamente
-
-✅ **Consistencia garantizada** - Router y menú siempre usan los mismos permisos
-
-✅ **Fácil de mantener** - No duplicar arrays de posiciones en múltiples archivos
-
-✅ **Documentación clara** - Todas las rutas y permisos están centralizados y documentados
+`isSuperuser` y `hasPermission` ya contemplan el acceso global del superusuario.
 
 ## Permisos a nivel de componente/funcionalidad
 
-Además de los permisos de módulos (acceso a rutas), algunos componentes pueden tener permisos específicos para funcionalidades individuales dentro de una vista.
-
-### Ejemplo: HospitalAttentions.vue
-
-**Ubicación:** `/src/views/attentions/HospitalAttentions.vue` (líneas 19-29)
-
-Este componente tiene tres niveles de permisos:
+Varios roles pueden **ver** una pantalla pero solo algunos **editar** ciertas secciones.
+Para eso se usa `hasPermission(slug)` dentro de la vista (ocultar/deshabilitar botones, modo
+solo-lectura, etc.). Ejemplo:
 
 ```javascript
-// PERMISOS DE EDICIÓN: HOSPITALIZACION, DIRECTOR_MEDICO y MEDICOS pueden editar detalles y tareas de atención
-const canEdit = computed(() =>
-    hasPosition(USER_POSITIONS.HOSPITALIZACION) ||
-    hasPosition(USER_POSITIONS.DIRECTOR_MEDICO) ||
-    hasPosition(USER_POSITIONS.MEDICOS)
-);
-
-// PERMISOS DE AUDITORÍA: Solo DIRECTOR_MEDICO puede registrar/editar auditorías médicas diarias
-const canEditAudits = computed(() => hasPosition(USER_POSITIONS.DIRECTOR_MEDICO));
-
-// PERMISOS DE APROBACIÓN: Solo DIRECTOR_MEDICO puede aprobar alta de atención
-const isDirectorMedico = computed(() => hasPosition(USER_POSITIONS.DIRECTOR_MEDICO));
+// Ver la lista la permite el permiso de módulo; gestionar requiere el permiso ".manage"
+const canManage = computed(() => hasPermission('hospitalization.manage'));
+const canApprove = computed(() => hasPermission('hospital-attentions.approve'));
 ```
 
-**¿Cuándo usar permisos a nivel de componente?**
-- Cuando múltiples roles pueden **ver** la misma pantalla pero solo algunos pueden **editar** ciertas secciones
-- Cuando hay acciones específicas dentro de un módulo que requieren permisos especiales
-- Para ocultar/deshabilitar botones o formularios según el rol del usuario
+> Nota: algunos componentes aún usan helpers por **posición** (`hasAnyPosition`,
+> `PERMISSION_GROUPS` de `usePermissions`) para lógica intra-vista heredada. Esto es
+> independiente de la autorización de navegación (que es por permiso) y se migrará por separado.
 
-**Cómo modificar:**
-1. Localiza la sección de "CONFIGURACIÓN DE PERMISOS POR FUNCIONALIDAD" en el componente
-2. Modifica la posición requerida en el computed correspondiente
-3. El componente aplicará automáticamente la restricción (botones ocultos, formularios en modo solo lectura, etc.)
+## Ventajas
 
-### Ubicaciones de permisos a nivel de componente
-
-| Componente | Funcionalidad | Posición Requerida | Línea Aprox. |
-|------------|---------------|-------------------|--------------|
-| `HospitalAttentions.vue` | Editar detalles y tareas | `HOSPITALIZACION`, `DIRECTOR_MEDICO`, `MEDICOS` | 23 |
-| `HospitalAttentions.vue` | Auditorías médicas | `DIRECTOR_MEDICO` | 30 |
-| `HospitalAttentions.vue` | Aprobar alta de atención | `DIRECTOR_MEDICO` | 33 |
-
-## Ejemplos comunes
-
-### Agregar CONTABILIDAD a un módulo existente
-
-```javascript
-usuarios: {
-    // ... configuración existente
-    positions: [POSITIONS.SISTEMAS, POSITIONS.ADMINISTRACION, POSITIONS.RRHH, POSITIONS.CONTABILIDAD]
-}
-```
-
-### Hacer un módulo accesible a todo el personal médico
-
-```javascript
-consultasMedicas: {
-    // ... configuración
-    positions: PERMISSION_GROUPS.MEDICAL
-}
-```
-
-### Crear módulo solo para SISTEMAS
-
-```javascript
-configuracion: {
-    // ... configuración
-    positions: PERMISSION_GROUPS.ADMIN_FULL
-}
-```
-
-### Cambiar quién puede registrar auditorías médicas
-
-En `/src/views/attentions/HospitalAttentions.vue`, modifica:
-
-```javascript
-// Antes: Solo DIRECTOR_MEDICO
-const canEditAudits = computed(() => hasPosition(USER_POSITIONS.DIRECTOR_MEDICO));
-
-// Después: DIRECTOR_MEDICO y MEDICOS
-const canEditAudits = computed(() =>
-    hasPosition(USER_POSITIONS.DIRECTOR_MEDICO) || hasPosition(USER_POSITIONS.MEDICOS)
-);
-```
+✅ **Una sola fuente de verdad** (`permissions.js`): router y menú coinciden automáticamente.
+✅ **Permisos dinámicos**: roles y permisos se administran en runtime desde `/admin/roles`.
+✅ **Superusuario** (`is_superuser`) con acceso global, sin asignaciones explícitas.
+✅ **Públicos explícitos**: un módulo sin `permission` es accesible para toda sesión válida.

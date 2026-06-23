@@ -313,11 +313,11 @@ router.beforeEach(async (to, from, next) => {
                 return next({ name: 'login' });
             }
 
-            // Autorización: el permiso RBAC tiene PRECEDENCIA sobre la posición
-            // (cargo legado). Si la ruta —o su módulo en MODULE_PERMISSIONS— define
-            // un permiso, se exige ese permiso; si no, se cae a la verificación por
-            // posición. is_superuser (SISTEMAS) tiene acceso global. `permission`
-            // puede ser un slug (string) o un arreglo de slugs ("cualquiera de").
+            // Autorización por permiso RBAC. La ruta —o su módulo en
+            // MODULE_PERMISSIONS— define el permiso requerido; un módulo sin
+            // permiso es público (cualquier sesión válida). is_superuser
+            // (SISTEMAS) tiene acceso global. `permission` puede ser un slug
+            // (string) o un arreglo de slugs ("cualquiera de").
             const currentUser = authStore.getUser;
             const routeModule = moduleByName[to.name];
             const requiredPermission = to.meta.permission ?? routeModule?.permission;
@@ -329,15 +329,6 @@ router.beforeEach(async (to, from, next) => {
 
                 if (!allowed) {
                     return next({ name: 'accessDenied' });
-                }
-            } else {
-                // Verificación por posición (cargo) legada, solo si no hay permiso definido
-                const requiredPositions = to.meta.positions;
-                if (requiredPositions && requiredPositions.length > 0 && !requiredPositions.includes('*')) {
-                    const userPosition = currentUser?.position;
-                    if (!userPosition || !requiredPositions.includes(userPosition)) {
-                        return next({ name: 'accessDenied' });
-                    }
                 }
             }
 

@@ -533,30 +533,6 @@ export const MODULE_PERMISSIONS = {
 };
 
 /**
- * Obtiene los permisos de un módulo por su nombre
- * @param {string} moduleName - Nombre del módulo
- * @returns {Array} Array de posiciones permitidas
- */
-export function getModulePermissions(moduleName) {
-    return MODULE_PERMISSIONS[moduleName]?.positions || [];
-}
-
-/**
- * Verifica si una posición tiene acceso a un módulo
- * @param {string} moduleName - Nombre del módulo
- * @param {string} userPosition - Posición del usuario
- * @returns {boolean}
- */
-export function hasModuleAccess(moduleName, userPosition) {
-    const positions = getModulePermissions(moduleName);
-
-    if (!positions || positions.length === 0) return true;
-    if (positions.includes('*')) return true;
-
-    return positions.includes(userPosition);
-}
-
-/**
  * Genera la estructura del menú agrupada por secciones
  * @returns {Array} Estructura del menú
  */
@@ -577,7 +553,6 @@ export function generateMenuStructure() {
             label: module.label,
             icon: module.icon,
             to: module.path,
-            positions: module.positions,
             permission: module.permission
         });
     });
