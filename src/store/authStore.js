@@ -410,14 +410,28 @@ export const useAuthStore = defineStore('auth', () => {
     let refreshInterval = null;
 
     // Inicializar store al cargar
-    const initialize = () => {
+    const initialize = async () => {
         const hasSession = loadAuthDataFromCache();
 
         // NOTA: setInterval auto-refresh removido - tokens ya no expiran
         // No es necesario refrescar periodicamente
 
-        // Si ya había sesión activa (recarga de página), iniciar canales Echo
-        if (hasSession && state.user?.id) {
+        // Forzar refresco de /auth/me para traer permisos/roles actualizados:
+        // la sesión cacheada puede ser previa a cambios de RBAC y el menú/rutas
+        // ahora se gatean por permiso. Si falla por red, se conserva el usuario
+        // cacheado; un 401 limpia la sesión dentro de getCurrentUser().
+        if (hasSession && state.token) {
+            try {
+                await getCurrentUser();
+            } catch (error) {
+                if (import.meta.env.DEV) {
+                    console.warn('[AuthStore] No se pudo refrescar /auth/me al iniciar, se usa la sesión cacheada:', error);
+                }
+            }
+        }
+
+        // Si hay sesión activa (recarga de página), iniciar canales Echo
+        if (state.isAuthenticated && state.user?.id) {
             const ticketsStore = useTicketsStore();
             ticketsStore.initEchoListeners();
             const tasksStore = useTasksStore();

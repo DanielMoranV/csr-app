@@ -3,6 +3,10 @@ import AppLayout from '@/layout/AppLayout.vue';
 import { useAuthStore } from '@/store/authStore';
 import { createRouter, createWebHistory } from 'vue-router';
 
+// Índice de módulos por nombre de ruta, para resolver el permiso requerido
+// (fuente única de verdad: el campo `permission` de cada módulo en MODULE_PERMISSIONS).
+const moduleByName = Object.fromEntries(Object.values(MODULE_PERMISSIONS).map((m) => [m.name, m]));
+
 const router = createRouter({
     history: createWebHistory(),
     routes: [
@@ -309,25 +313,31 @@ router.beforeEach(async (to, from, next) => {
                 return next({ name: 'login' });
             }
 
-            // Verificar permisos de posición si se especifican
-            const requiredPositions = to.meta.positions;
-            if (requiredPositions && requiredPositions.length > 0 && !requiredPositions.includes('*')) {
-                const userPosition = authStore.getUser?.position;
+            // Autorización: el permiso RBAC tiene PRECEDENCIA sobre la posición
+            // (cargo legado). Si la ruta —o su módulo en MODULE_PERMISSIONS— define
+            // un permiso, se exige ese permiso; si no, se cae a la verificación por
+            // posición. is_superuser (SISTEMAS) tiene acceso global. `permission`
+            // puede ser un slug (string) o un arreglo de slugs ("cualquiera de").
+            const currentUser = authStore.getUser;
+            const routeModule = moduleByName[to.name];
+            const requiredPermission = to.meta.permission ?? routeModule?.permission;
 
-                if (!userPosition || !requiredPositions.includes(userPosition)) {
-                    return next({ name: 'accessDenied' });
-                }
-            }
-
-            // Verificar permiso dinámico (RBAC) si se especifica. is_superuser
-            // (SISTEMAS) tiene acceso global. No se usa `position` para esto.
-            const requiredPermission = to.meta.permission;
             if (requiredPermission) {
-                const currentUser = authStore.getUser;
-                const allowed = currentUser?.is_superuser === true || (Array.isArray(currentUser?.permissions) && currentUser.permissions.includes(requiredPermission));
+                const userPerms = Array.isArray(currentUser?.permissions) ? currentUser.permissions : [];
+                const required = Array.isArray(requiredPermission) ? requiredPermission : [requiredPermission];
+                const allowed = currentUser?.is_superuser === true || required.some((perm) => userPerms.includes(perm));
 
                 if (!allowed) {
                     return next({ name: 'accessDenied' });
+                }
+            } else {
+                // Verificación por posición (cargo) legada, solo si no hay permiso definido
+                const requiredPositions = to.meta.positions;
+                if (requiredPositions && requiredPositions.length > 0 && !requiredPositions.includes('*')) {
+                    const userPosition = currentUser?.position;
+                    if (!userPosition || !requiredPositions.includes(userPosition)) {
+                        return next({ name: 'accessDenied' });
+                    }
                 }
             }
 

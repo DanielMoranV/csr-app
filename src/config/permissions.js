@@ -116,6 +116,7 @@ export const MODULE_PERMISSIONS = {
     dashboard: {
         name: 'dashboard',
         path: '/dashboard',
+        permission: 'dashboards.hospitalization',
         positions: PERMISSION_GROUPS.HIGH_MANAGEMENT,
         label: 'Dashboard Hospitalización',
         icon: 'pi pi-fw pi-home',
@@ -126,6 +127,7 @@ export const MODULE_PERMISSIONS = {
     dashboardEmergencia: {
         name: 'dashboard-emergencia',
         path: '/emergencia',
+        permission: 'dashboards.emergency',
         positions: PERMISSION_GROUPS.DASHBOARDS,
         label: 'Dashboard Emergencia',
         icon: 'pi pi-fw pi-bolt',
@@ -136,6 +138,7 @@ export const MODULE_PERMISSIONS = {
     dashboardRayosX: {
         name: 'dashboard-rayosx',
         path: '/rayos-x',
+        permission: 'dashboards.xray',
         positions: PERMISSION_GROUPS.DASHBOARDS,
         label: 'Dashboard Rayos X',
         icon: 'pi pi-fw pi-image',
@@ -146,6 +149,7 @@ export const MODULE_PERMISSIONS = {
     dashboardEcografia: {
         name: 'dashboard-ecografia',
         path: '/ecografia',
+        permission: 'dashboards.ultrasound',
         positions: PERMISSION_GROUPS.DASHBOARDS,
         label: 'Dashboard Ecografía',
         icon: 'pi pi-fw pi-circle',
@@ -156,6 +160,7 @@ export const MODULE_PERMISSIONS = {
     dashboardErrores: {
         name: 'dashboard-errores',
         path: '/errores-admision',
+        permission: 'dashboards.admission-errors',
         positions: PERMISSION_GROUPS.DASHBOARDS,
         label: 'Errores de Admisión',
         icon: 'pi pi-fw pi-exclamation-circle',
@@ -176,6 +181,7 @@ export const MODULE_PERMISSIONS = {
     usuarios: {
         name: 'usuarios',
         path: '/usuarios',
+        permission: 'users.view',
         positions: [POSITIONS.SISTEMAS, POSITIONS.ADMINISTRACION, POSITIONS.GERENCIA, POSITIONS.RRHH],
         label: 'Usuarios',
         icon: 'pi pi-fw pi-users',
@@ -198,6 +204,7 @@ export const MODULE_PERMISSIONS = {
     hospitalizacion: {
         name: 'hospitalizacion',
         path: '/hospitalizacion',
+        permission: 'hospitalization.view',
         positions: PERMISSION_GROUPS.HOSPITALIZATION_STAFF,
         label: 'Estado Actual',
         icon: 'pi pi-fw pi-th-large',
@@ -208,6 +215,7 @@ export const MODULE_PERMISSIONS = {
     hospitalizacionStatusTv: {
         name: 'hospitalizacion-status-tv',
         path: '/hospitalizacion-status-tv',
+        permission: 'hospitalization.view',
         positions: PERMISSION_GROUPS.HOSPITALIZATION_STAFF,
         label: 'Estado TV',
         icon: 'pi pi-fw pi-desktop',
@@ -229,6 +237,7 @@ export const MODULE_PERMISSIONS = {
     hospitalAttentions: {
         name: 'hospital-attentions',
         path: '/hospital-attentions',
+        permission: 'hospital-attentions.view',
         positions: PERMISSION_GROUPS.ATTENTIONS_ACCESS,
         label: 'Atenciones',
         icon: 'pi pi-fw pi-clipboard',
@@ -239,6 +248,7 @@ export const MODULE_PERMISSIONS = {
     habitaciones: {
         name: 'habitaciones',
         path: '/habitaciones',
+        permission: 'rooms.view',
         positions: [POSITIONS.SISTEMAS, POSITIONS.ADMINISTRACION, POSITIONS.GERENCIA, POSITIONS.HOSPITALIZACION, POSITIONS.ADMISION],
         label: 'Habitaciones',
         icon: 'pi pi-fw pi-building',
@@ -249,6 +259,7 @@ export const MODULE_PERMISSIONS = {
     bedReservations: {
         name: 'bed-reservations',
         path: '/bed-reservations',
+        permission: 'bed-reservations.view',
         positions: PERMISSION_GROUPS.BED_RESERVATIONS_STAFF,
         label: 'Reservas de Camas',
         icon: 'pi pi-fw pi-book',
@@ -259,6 +270,7 @@ export const MODULE_PERMISSIONS = {
     hospitalTasks: {
         name: 'hospital-tasks',
         path: '/hospital-tasks',
+        permission: 'hospital-tasks.view',
         positions: PERMISSION_GROUPS.HOSPITALIZATION_STAFF,
         label: 'Tareas',
         icon: 'pi pi-fw pi-check-square',
@@ -269,6 +281,7 @@ export const MODULE_PERMISSIONS = {
     sisclinImport: {
         name: 'sisclin-import',
         path: '/sisclin/import',
+        permission: 'sisclin.import',
         positions: [POSITIONS.SISTEMAS, POSITIONS.ADMINISTRACION, POSITIONS.GERENCIA],
         label: 'Import. Hosp.',
         icon: 'pi pi-fw pi-database',
@@ -289,6 +302,7 @@ export const MODULE_PERMISSIONS = {
     ticketRecurrenceRules: {
         name: 'ticket-recurrence-rules',
         path: '/tickets/recurrence-rules',
+        permission: 'tickets.manage-rules',
         positions: [POSITIONS.SISTEMAS, POSITIONS.ADMINISTRACION, POSITIONS.GERENCIA],
         label: 'Reglas de Recurrencia',
         icon: 'pi pi-fw pi-sync',
@@ -331,6 +345,7 @@ export const MODULE_PERMISSIONS = {
     doctors: {
         name: 'doctors',
         path: '/medicos',
+        permission: 'doctors.view',
         positions: [POSITIONS.SISTEMAS, POSITIONS.DIRECTOR_MEDICO, POSITIONS.ADMINISTRACION, POSITIONS.GERENCIA, POSITIONS.RRHH],
         label: 'Médicos',
         icon: 'pi pi-fw pi-heart-fill',
@@ -341,6 +356,7 @@ export const MODULE_PERMISSIONS = {
     medicalSpecialties: {
         name: 'medical-specialties',
         path: '/especialidades-medicas',
+        permission: 'medical-specialties.view',
         positions: [POSITIONS.SISTEMAS, POSITIONS.DIRECTOR_MEDICO, POSITIONS.ADMINISTRACION, POSITIONS.GERENCIA, POSITIONS.RRHH],
         label: 'Especialidades',
         icon: 'pi pi-fw pi-heart',
@@ -351,6 +367,7 @@ export const MODULE_PERMISSIONS = {
     doctorSchedules: {
         name: 'doctor-schedules',
         path: '/horarios-medicos',
+        permission: 'doctor-schedules.view',
         positions: [POSITIONS.SISTEMAS, POSITIONS.DIRECTOR_MEDICO, POSITIONS.ADMINISTRACION, POSITIONS.GERENCIA, POSITIONS.RRHH, POSITIONS.HOSPITALIZACION, POSITIONS.QUIROFANO],
         label: 'Horarios',
         icon: 'pi pi-fw pi-calendar',
@@ -361,6 +378,7 @@ export const MODULE_PERMISSIONS = {
     medicalFees: {
         name: 'medical-fees',
         path: '/honorarios-medicos',
+        permission: 'medical-fees.view',
         positions: [POSITIONS.SISTEMAS, POSITIONS.DIRECTOR_MEDICO, POSITIONS.ADMINISTRACION, POSITIONS.GERENCIA, POSITIONS.CONTABILIDAD, POSITIONS.RRHH],
         label: 'Honorarios',
         icon: 'pi pi-fw pi-dollar',
@@ -371,6 +389,7 @@ export const MODULE_PERMISSIONS = {
     tariffs: {
         name: 'tariffs',
         path: '/tarifarios',
+        permission: 'tariffs.view',
         positions: [POSITIONS.SISTEMAS, POSITIONS.DIRECTOR_MEDICO, POSITIONS.ADMINISTRACION, POSITIONS.GERENCIA, POSITIONS.CONTABILIDAD],
         label: 'Tarifarios',
         icon: 'pi pi-fw pi-money-bill',
@@ -381,6 +400,7 @@ export const MODULE_PERMISSIONS = {
     tariffConsultation: {
         name: 'tariff-consultation',
         path: '/consulta-tarifarios',
+        permission: 'tariffs.consult',
         positions: [
             POSITIONS.FACTURACION,
             POSITIONS.FARMACIA,
@@ -405,6 +425,7 @@ export const MODULE_PERMISSIONS = {
     reservationManagement: {
         name: 'reservation-management',
         path: '/reservations/manage',
+        permission: 'reservations.manage',
         positions: [POSITIONS.SISTEMAS, POSITIONS.ADMISION, POSITIONS.ADMINISTRACION, POSITIONS.GERENCIA, POSITIONS.DIRECTOR_MEDICO],
         label: 'Gestión de Reservas',
         icon: 'pi pi-fw pi-address-book',
@@ -415,6 +436,7 @@ export const MODULE_PERMISSIONS = {
     myMedicalFees: {
         name: 'myMedicalFees',
         path: '/my-medical-fees',
+        permission: 'medical-fees.view-own',
         positions: [POSITIONS.MEDICOS, POSITIONS.EMERGENCIA, POSITIONS.DIRECTOR_MEDICO, POSITIONS.AUDITOR_MEDICO],
         label: 'Mis Honorarios',
         icon: 'pi pi-fw pi-user-edit',
@@ -425,6 +447,7 @@ export const MODULE_PERMISSIONS = {
     mySchedules: {
         name: 'mySchedules',
         path: '/my-schedules',
+        permission: 'doctor-schedules.view-own',
         positions: [POSITIONS.MEDICOS, POSITIONS.EMERGENCIA, POSITIONS.DIRECTOR_MEDICO, POSITIONS.AUDITOR_MEDICO],
         label: 'Mis Horarios',
         icon: 'pi pi-fw pi-calendar-plus',
@@ -435,6 +458,7 @@ export const MODULE_PERMISSIONS = {
     treasuryBanks: {
         name: 'treasury-banks',
         path: '/tesoreria/bancos',
+        permission: 'treasury.view',
         positions: PERMISSION_GROUPS.TREASURY,
         label: 'Bancos',
         icon: 'pi pi-fw pi-building',
@@ -445,6 +469,7 @@ export const MODULE_PERMISSIONS = {
     treasuryBankAccounts: {
         name: 'treasury-bank-accounts',
         path: '/tesoreria/cuentas',
+        permission: 'treasury.view',
         positions: PERMISSION_GROUPS.TREASURY,
         label: 'Cuentas Bancarias',
         icon: 'pi pi-fw pi-wallet',
@@ -455,6 +480,7 @@ export const MODULE_PERMISSIONS = {
     treasuryBankMovements: {
         name: 'treasury-bank-movements',
         path: '/tesoreria/movimientos',
+        permission: 'treasury.view',
         positions: PERMISSION_GROUPS.TREASURY,
         label: 'Movimientos',
         icon: 'pi pi-fw pi-calculator',
@@ -465,6 +491,7 @@ export const MODULE_PERMISSIONS = {
     treasuryCounterparties: {
         name: 'treasury-counterparties',
         path: '/tesoreria/contrapartes',
+        permission: 'treasury.view',
         positions: PERMISSION_GROUPS.TREASURY,
         label: 'Terceros / Contrapartes',
         icon: 'pi pi-fw pi-users',
@@ -475,6 +502,7 @@ export const MODULE_PERMISSIONS = {
     treasuryMedicalImport: {
         name: 'treasury-medical-import',
         path: '/tesoreria/importar-honorarios',
+        permission: 'treasury.view',
         positions: [POSITIONS.SISTEMAS, POSITIONS.GERENCIA, POSITIONS.CONTABILIDAD],
         label: 'Import. Honorarios',
         icon: 'pi pi-fw pi-upload',
@@ -485,6 +513,7 @@ export const MODULE_PERMISSIONS = {
     treasuryYearSummary: {
         name: 'treasury-year-summary',
         path: '/tesoreria/resumen-anual',
+        permission: 'treasury.view',
         positions: PERMISSION_GROUPS.TREASURY,
         label: 'Resumen del Año',
         icon: 'pi pi-fw pi-chart-bar',
@@ -495,6 +524,7 @@ export const MODULE_PERMISSIONS = {
     treasuryMovementCategories: {
         name: 'treasury-movement-categories',
         path: '/tesoreria/categorias',
+        permission: 'treasury.view',
         positions: PERMISSION_GROUPS.TREASURY,
         label: 'Categorías',
         icon: 'pi pi-fw pi-tags',
