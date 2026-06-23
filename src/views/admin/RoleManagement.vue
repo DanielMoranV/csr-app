@@ -45,8 +45,18 @@ onMounted(async () => {
 const roleDialogVisible = ref(false);
 const isEditingRole = ref(false);
 const editingRoleId = ref(null);
+const editingRoleIsSystem = ref(false);
 const roleForm = ref({ name: '', description: '' });
 const roleErrors = ref({});
+
+// Roles del sistema = espejo 1:1 de los antiguos cargos (capa de compatibilidad
+// generada por el backend). No son roles de negocio configurables: no se pueden
+// renombrar ni eliminar. Se separan de los personalizados para no confundir.
+const customRoles = computed(() => roles.value.filter((r) => !r.is_system));
+const systemRoles = computed(() => roles.value.filter((r) => r.is_system));
+
+// Los roles del sistema se muestran colapsados por defecto
+const showSystemRoles = ref(false);
 
 const resetRoleForm = () => {
     roleForm.value = { name: '', description: '' };
@@ -56,6 +66,7 @@ const resetRoleForm = () => {
 const openNewRole = () => {
     isEditingRole.value = false;
     editingRoleId.value = null;
+    editingRoleIsSystem.value = false;
     resetRoleForm();
     roleDialogVisible.value = true;
 };
@@ -63,14 +74,21 @@ const openNewRole = () => {
 const openEditRole = (role) => {
     isEditingRole.value = true;
     editingRoleId.value = role.id;
+    editingRoleIsSystem.value = !!role.is_system;
     roleForm.value = { name: role.name || '', description: role.description || '' };
     roleErrors.value = {};
     roleDialogVisible.value = true;
 };
 
+const roleDialogTitle = computed(() => {
+    if (!isEditingRole.value) return 'Crear rol personalizado';
+    return editingRoleIsSystem.value ? 'Editar rol del sistema' : 'Editar rol personalizado';
+});
+
 const validateRoleForm = () => {
     roleErrors.value = {};
-    if (!roleForm.value.name.trim()) {
+    // En roles de sistema el nombre es de solo lectura, no se valida.
+    if (!editingRoleIsSystem.value && !roleForm.value.name.trim()) {
         roleErrors.value.name = 'El nombre es obligatorio';
     }
     return Object.keys(roleErrors.value).length === 0;
@@ -78,15 +96,16 @@ const validateRoleForm = () => {
 
 const handleSaveRole = async () => {
     if (!validateRoleForm()) return;
-    const payload = {
-        name: roleForm.value.name.trim(),
-        description: roleForm.value.description.trim() || null
-    };
+    const description = roleForm.value.description.trim() || null;
     try {
         if (isEditingRole.value) {
+            // En roles de sistema solo se edita la descripción (el nombre no se
+            // puede renombrar: el backend responde 409). Los nuevos roles creados
+            // desde el front siempre nacen con is_system: false.
+            const payload = editingRoleIsSystem.value ? { description } : { name: roleForm.value.name.trim(), description };
             await updateRole(editingRoleId.value, payload);
         } else {
-            await createRole(payload);
+            await createRole({ name: roleForm.value.name.trim(), description });
         }
         roleDialogVisible.value = false;
         resetRoleForm();
@@ -247,50 +266,127 @@ const handleSaveUserRoles = async () => {
                 <TabPanels>
                     <!-- ───── PESTAÑA 1: ROLES ───── -->
                     <TabPanel value="0">
-                        <div class="tab-toolbar">
-                            <span class="tab-count">{{ roles.length }} {{ roles.length === 1 ? 'rol' : 'roles' }}</span>
-                            <Button label="Nuevo rol" icon="pi pi-plus" @click="openNewRole" />
+                        <!-- Texto introductorio: qué son cada tipo de rol -->
+                        <Message severity="info" :closable="false" class="intro-message">
+                            <div class="intro-content">
+                                <p><strong>Roles personalizados</strong> — creados por ustedes para necesidades específicas. Se pueden renombrar, editar, asignar permisos y eliminar libremente.</p>
+                                <p>
+                                    <strong>Roles del sistema</strong> — roles base preexistentes que reflejan los cargos del personal. Son infraestructura interna: puedes ajustar sus <em>permisos</em> y <em>descripción</em>, pero <em>no</em>
+                                    renombrarlos ni eliminarlos.
+                                </p>
+                            </div>
+                        </Message>
+
+                        <!-- Sección: Roles personalizados (prominente) -->
+                        <div class="section-block">
+                            <div class="tab-toolbar">
+                                <div class="section-heading">
+                                    <i class="pi pi-user-plus"></i>
+                                    <span class="section-title">Roles personalizados</span>
+                                    <span class="tab-count">{{ customRoles.length }}</span>
+                                </div>
+                                <Button label="Crear rol personalizado" icon="pi pi-plus" @click="openNewRole" />
+                            </div>
+
+                            <DataTable :value="customRoles" :loading="isLoading" responsiveLayout="scroll" emptyMessage="Aún no hay roles personalizados. Usa “Crear rol personalizado” para añadir uno." stripedRows class="p-datatable-sm">
+                                <Column field="name" header="Rol" :sortable="true" style="min-width: 220px">
+                                    <template #body="{ data }">
+                                        <span class="font-semibold">{{ data.name }}</span>
+                                    </template>
+                                </Column>
+
+                                <Column field="description" header="Descripción" style="min-width: 280px">
+                                    <template #body="{ data }">
+                                        <span v-if="data.description" class="text-muted">{{ data.description }}</span>
+                                        <span v-else class="text-muted italic">Sin descripción</span>
+                                    </template>
+                                </Column>
+
+                                <Column header="Permisos" style="min-width: 110px">
+                                    <template #body="{ data }">
+                                        <Tag :value="data.permissions_count ?? 0" severity="info" />
+                                    </template>
+                                </Column>
+
+                                <Column header="Usuarios" style="min-width: 110px">
+                                    <template #body="{ data }">
+                                        <Tag :value="data.users_count ?? 0" :severity="(data.users_count ?? 0) > 0 ? 'success' : 'secondary'" />
+                                    </template>
+                                </Column>
+
+                                <Column header="Acciones" style="min-width: 160px">
+                                    <template #body="{ data }">
+                                        <div class="flex gap-1">
+                                            <Button icon="pi pi-key" size="small" rounded severity="info" outlined v-tooltip.top="'Gestionar permisos'" @click="goToPermissions(data)" />
+                                            <Button icon="pi pi-pencil" size="small" rounded severity="success" outlined v-tooltip.top="'Editar nombre y descripción'" @click="openEditRole(data)" />
+                                            <Button icon="pi pi-trash" size="small" rounded severity="danger" outlined :disabled="!canDeleteRole(data)" v-tooltip.top="deleteReason(data)" :loading="isDeleting" @click="confirmDeleteRole(data)" />
+                                        </div>
+                                    </template>
+                                </Column>
+                            </DataTable>
                         </div>
 
-                        <DataTable :value="roles" :loading="isLoading" :rows="25" :paginator="roles.length > 25" :rowsPerPageOptions="[10, 25, 50]" responsiveLayout="scroll" emptyMessage="No se encontraron roles" stripedRows class="p-datatable-sm">
-                            <Column field="name" header="Rol" :sortable="true" style="min-width: 220px">
-                                <template #body="{ data }">
-                                    <div class="flex items-center gap-2">
-                                        <span class="font-semibold">{{ data.name }}</span>
-                                        <Tag v-if="data.is_system" value="Sistema" severity="warn" v-tooltip.top="'Rol de sistema: no se puede eliminar'" />
-                                    </div>
-                                </template>
-                            </Column>
+                        <!-- Sección: Roles del sistema (colapsada por defecto) -->
+                        <div class="section-block system-block">
+                            <button type="button" class="system-toggle" @click="showSystemRoles = !showSystemRoles">
+                                <i :class="showSystemRoles ? 'pi pi-chevron-down' : 'pi pi-chevron-right'"></i>
+                                <i class="pi pi-server"></i>
+                                <span class="section-title">Roles del sistema</span>
+                                <span class="tab-count">{{ systemRoles.length }}</span>
+                                <span class="system-hint">roles base — solo permisos y descripción</span>
+                            </button>
 
-                            <Column field="description" header="Descripción" style="min-width: 280px">
-                                <template #body="{ data }">
-                                    <span v-if="data.description" class="text-muted">{{ data.description }}</span>
-                                    <span v-else class="text-muted italic">Sin descripción</span>
-                                </template>
-                            </Column>
+                            <DataTable
+                                v-if="showSystemRoles"
+                                :value="systemRoles"
+                                :loading="isLoading"
+                                :rows="25"
+                                :paginator="systemRoles.length > 25"
+                                :rowsPerPageOptions="[10, 25, 50]"
+                                responsiveLayout="scroll"
+                                emptyMessage="No hay roles del sistema"
+                                stripedRows
+                                class="p-datatable-sm mt-3"
+                            >
+                                <Column field="name" header="Rol" :sortable="true" style="min-width: 220px">
+                                    <template #body="{ data }">
+                                        <div class="flex items-center gap-2">
+                                            <span class="font-semibold">{{ data.name }}</span>
+                                            <Tag value="Sistema" severity="warn" v-tooltip.top="'Rol base del sistema: no se puede renombrar ni eliminar'" />
+                                        </div>
+                                    </template>
+                                </Column>
 
-                            <Column header="Permisos" style="min-width: 110px">
-                                <template #body="{ data }">
-                                    <Tag :value="data.permissions_count ?? 0" severity="info" />
-                                </template>
-                            </Column>
+                                <Column field="description" header="Descripción" style="min-width: 280px">
+                                    <template #body="{ data }">
+                                        <span v-if="data.description" class="text-muted">{{ data.description }}</span>
+                                        <span v-else class="text-muted italic">Sin descripción</span>
+                                    </template>
+                                </Column>
 
-                            <Column header="Usuarios" style="min-width: 110px">
-                                <template #body="{ data }">
-                                    <Tag :value="data.users_count ?? 0" :severity="(data.users_count ?? 0) > 0 ? 'success' : 'secondary'" />
-                                </template>
-                            </Column>
+                                <Column header="Permisos" style="min-width: 110px">
+                                    <template #body="{ data }">
+                                        <Tag :value="data.permissions_count ?? 0" severity="info" />
+                                    </template>
+                                </Column>
 
-                            <Column header="Acciones" style="min-width: 160px">
-                                <template #body="{ data }">
-                                    <div class="flex gap-1">
-                                        <Button icon="pi pi-key" size="small" rounded severity="info" outlined v-tooltip.top="'Gestionar permisos'" @click="goToPermissions(data)" />
-                                        <Button icon="pi pi-pencil" size="small" rounded severity="success" outlined v-tooltip.top="'Editar'" @click="openEditRole(data)" />
-                                        <Button icon="pi pi-trash" size="small" rounded severity="danger" outlined :disabled="!canDeleteRole(data)" v-tooltip.top="deleteReason(data)" :loading="isDeleting" @click="confirmDeleteRole(data)" />
-                                    </div>
-                                </template>
-                            </Column>
-                        </DataTable>
+                                <Column header="Usuarios" style="min-width: 110px">
+                                    <template #body="{ data }">
+                                        <Tag :value="data.users_count ?? 0" :severity="(data.users_count ?? 0) > 0 ? 'success' : 'secondary'" />
+                                    </template>
+                                </Column>
+
+                                <Column header="Acciones" style="min-width: 160px">
+                                    <template #body="{ data }">
+                                        <div class="flex gap-1">
+                                            <Button icon="pi pi-key" size="small" rounded severity="info" outlined v-tooltip.top="'Gestionar permisos'" @click="goToPermissions(data)" />
+                                            <Button icon="pi pi-pencil" size="small" rounded severity="success" outlined v-tooltip.top="'Editar descripción (el nombre no se puede cambiar)'" @click="openEditRole(data)" />
+                                            <Button icon="pi pi-trash" size="small" rounded severity="danger" outlined disabled v-tooltip.top="'Rol base del sistema: no se puede eliminar'" />
+                                        </div>
+                                    </template>
+                                </Column>
+                            </DataTable>
+                        </div>
                     </TabPanel>
 
                     <!-- ───── PESTAÑA 2: PERMISOS POR ROL ───── -->
@@ -299,7 +395,7 @@ const handleSaveUserRoles = async () => {
                             <div class="flex items-center gap-3 flex-wrap">
                                 <label class="font-semibold">Rol:</label>
                                 <Select v-model="selectedRoleId" :options="roleOptions" optionLabel="label" optionValue="value" placeholder="Seleccione un rol" filter class="w-72" />
-                                <Tag v-if="selectedRoleObject?.is_system" value="Sistema" severity="warn" v-tooltip.top="'Rol de sistema: editable pero no eliminable'" />
+                                <Tag v-if="selectedRoleObject?.is_system" value="Sistema" severity="warn" v-tooltip.top="'Rol base del sistema. Puedes ajustar sus permisos y descripción, pero no renombrarlo ni eliminarlo.'" />
                             </div>
                             <Button label="Guardar permisos" icon="pi pi-save" :loading="isSaving" :disabled="!selectedRoleId" @click="handleSavePermissions" />
                         </div>
@@ -351,12 +447,23 @@ const handleSaveUserRoles = async () => {
         </div>
 
         <!-- Diálogo crear/editar rol -->
-        <Dialog v-model:visible="roleDialogVisible" :header="isEditingRole ? 'Editar rol' : 'Nuevo rol'" :modal="true" :closable="!isSaving" class="w-full md:w-[560px]">
+        <Dialog v-model:visible="roleDialogVisible" :header="roleDialogTitle" :modal="true" :closable="!isSaving" class="w-full md:w-[560px]">
+            <Message v-if="editingRoleIsSystem" severity="warn" :closable="false" class="mb-4"> Rol base del sistema. Puedes ajustar su descripción (y sus permisos en la pestaña “Permisos por rol”), pero no renombrarlo ni eliminarlo. </Message>
             <div class="flex flex-col gap-5 py-3">
                 <div class="field">
-                    <label for="role-name" class="font-semibold mb-2 block">Nombre <span class="text-red-500">*</span></label>
-                    <InputText id="role-name" v-model="roleForm.name" placeholder="Ej: Supervisor" class="w-full" :class="{ 'p-invalid': roleErrors.name }" :disabled="isSaving" @input="roleErrors.name = ''" />
+                    <label for="role-name" class="font-semibold mb-2 block">Nombre <span v-if="!editingRoleIsSystem" class="text-red-500">*</span></label>
+                    <InputText
+                        id="role-name"
+                        v-model="roleForm.name"
+                        placeholder="Ej: Supervisor de turno"
+                        class="w-full"
+                        :class="{ 'p-invalid': roleErrors.name }"
+                        :disabled="isSaving || editingRoleIsSystem"
+                        v-tooltip.top="editingRoleIsSystem ? 'El nombre de un rol del sistema no se puede cambiar' : ''"
+                        @input="roleErrors.name = ''"
+                    />
                     <small v-if="roleErrors.name" class="p-error">{{ roleErrors.name }}</small>
+                    <small v-else-if="editingRoleIsSystem" class="text-muted mt-1">El nombre es de solo lectura en roles del sistema.</small>
                 </div>
                 <div class="field">
                     <label for="role-description" class="font-semibold mb-2 block">Descripción</label>
@@ -436,8 +543,84 @@ const handleSaveUserRoles = async () => {
 }
 
 .tab-count {
-    font-weight: 600;
+    font-weight: 700;
+    font-size: 0.8rem;
+    color: var(--primary-color);
+    background: color-mix(in srgb, var(--primary-color) 12%, transparent);
+    border-radius: 999px;
+    padding: 0.1rem 0.6rem;
+    min-width: 1.5rem;
+    text-align: center;
+}
+
+.intro-message {
+    margin: 0.5rem 0 1.5rem 0;
+}
+
+.intro-content {
+    display: flex;
+    flex-direction: column;
+    gap: 0.4rem;
+    font-size: 0.875rem;
+    line-height: 1.4;
+}
+
+.intro-content p {
+    margin: 0;
+}
+
+.section-block {
+    margin-bottom: 2rem;
+}
+
+.section-heading {
+    display: flex;
+    align-items: center;
+    gap: 0.6rem;
+}
+
+.section-heading i {
+    color: var(--primary-color);
+    font-size: 1.1rem;
+}
+
+.section-title {
+    font-size: 1.1rem;
+    font-weight: 700;
+    color: var(--text-color);
+}
+
+.system-block {
+    border-top: 1px dashed var(--surface-border);
+    padding-top: 1.25rem;
+}
+
+.system-toggle {
+    display: flex;
+    align-items: center;
+    gap: 0.6rem;
+    width: 100%;
+    background: transparent;
+    border: none;
+    cursor: pointer;
+    padding: 0.25rem 0;
+    color: var(--text-color);
+    text-align: left;
+}
+
+.system-toggle:hover .section-title {
+    color: var(--primary-color);
+}
+
+.system-toggle .pi-server {
     color: var(--text-color-secondary);
+    font-size: 1.1rem;
+}
+
+.system-hint {
+    font-size: 0.78rem;
+    color: var(--text-color-secondary);
+    font-style: italic;
 }
 
 .loading-state {
