@@ -3,7 +3,6 @@ import { useBoletas } from '@/composables/useBoletas';
 import Button from 'primevue/button';
 import Checkbox from 'primevue/checkbox';
 import Column from 'primevue/column';
-import ConfirmDialog from 'primevue/confirmdialog';
 import DataTable from 'primevue/datatable';
 import Dialog from 'primevue/dialog';
 import IconField from 'primevue/iconfield';
@@ -230,7 +229,6 @@ const confirmDelete = (emp) => {
             </template>
         </Dialog>
 
-        <ConfirmDialog />
     </div>
 </template>
 

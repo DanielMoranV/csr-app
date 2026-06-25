@@ -3,7 +3,6 @@ import { ATTACHMENT_MODES, useBoletas } from '@/composables/useBoletas';
 import Button from 'primevue/button';
 import Chip from 'primevue/chip';
 import Column from 'primevue/column';
-import ConfirmDialog from 'primevue/confirmdialog';
 import DataTable from 'primevue/datatable';
 import Dialog from 'primevue/dialog';
 import Editor from 'primevue/editor';
@@ -349,7 +348,9 @@ onMounted(async () => {
                 <div class="header-icon-wrapper"><i class="pi pi-envelope"></i></div>
                 <div class="header-content">
                     <h1 class="header-title">Nuevo envío masivo</h1>
-                    <p class="header-subtitle"><i class="pi pi-info-circle mr-2"></i>Redacta y envía como un correo. Campaña: <strong>{{ autoName }}</strong></p>
+                    <p class="header-subtitle">
+                        <i class="pi pi-info-circle mr-2"></i>Redacta y envía como un correo. Campaña: <strong>{{ autoName }}</strong>
+                    </p>
                 </div>
                 <div class="header-actions">
                     <Button label="Enviar" icon="pi pi-send" :loading="sending" :disabled="!canSend" @click="confirmSend" />
@@ -415,7 +416,10 @@ onMounted(async () => {
 
                         <!-- per_dni: ZIP con {dni}.pdf -->
                         <div v-if="attachmentMode === 'per_dni'">
-                            <small class="text-muted block mb-2">Archivos <code>{dni}.pdf</code> (8 dígitos). Se asocian al periodo <strong>{{ period }}</strong> y tipo <strong>{{ docTypeLabel }}</strong>.</small>
+                            <small class="text-muted block mb-2"
+                                >Archivos <code>{dni}.pdf</code> (8 dígitos). Se asocian al periodo <strong>{{ period }}</strong> y tipo <strong>{{ docTypeLabel }}</strong
+                                >.</small
+                            >
                             <div class="inline-row">
                                 <FileUpload ref="zipUploader" mode="basic" accept=".zip,application/zip,application/x-zip-compressed" :maxFileSize="52428800" :auto="false" chooseLabel="Seleccionar ZIP" @select="onZipSelect" />
                                 <span v-if="zipFile" class="mono">{{ zipFile.name }}</span>
@@ -423,7 +427,8 @@ onMounted(async () => {
                                 <Button label="Subir ZIP" icon="pi pi-cloud-upload" size="small" :disabled="!zipFile || !period" :loading="isUploading" @click="handleUploadZip" />
                             </div>
                             <Message v-if="uploadResult" severity="success" :closable="false" class="mt-2">
-                                <strong>{{ uploadResult.stored }}</strong> PDF(s) subido(s). Disponibles: <strong>{{ uploadResult.total_available }}</strong>.
+                                <strong>{{ uploadResult.stored }}</strong> PDF(s) subido(s). Disponibles: <strong>{{ uploadResult.total_available }}</strong
+                                >.
                                 <span v-if="uploadResult.invalid?.length"> · {{ uploadResult.invalid.length }} rechazado(s).</span>
                             </Message>
                         </div>
@@ -535,8 +540,6 @@ onMounted(async () => {
                 <Button label="Listo" icon="pi pi-check" @click="pickerVisible = false" />
             </template>
         </Dialog>
-
-        <ConfirmDialog />
     </div>
 </template>
 

@@ -2,7 +2,6 @@
 import { attachmentModeInfo, CAMPAIGN_ACTIVE_STATUSES, campaignStatusInfo, recipientStatusInfo, useBoletas } from '@/composables/useBoletas';
 import Button from 'primevue/button';
 import Column from 'primevue/column';
-import ConfirmDialog from 'primevue/confirmdialog';
 import DataTable from 'primevue/datatable';
 import ProgressBar from 'primevue/progressbar';
 import Select from 'primevue/select';
@@ -310,7 +309,6 @@ const formatDate = (value) => {
             </div>
         </div>
 
-        <ConfirmDialog />
     </div>
 </template>
 

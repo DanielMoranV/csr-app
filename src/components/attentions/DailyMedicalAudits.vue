@@ -1,6 +1,5 @@
 <script setup>
 import { useDailyMedicalAudits } from '@/composables/useDailyMedicalAudits';
-import ConfirmDialog from 'primevue/confirmdialog';
 import { useConfirm } from 'primevue/useconfirm';
 import { useToast } from 'primevue/usetoast';
 import { computed, defineEmits, defineProps, onMounted, ref, watch } from 'vue';
@@ -25,7 +24,7 @@ const emit = defineEmits(['audit-created', 'audit-updated', 'audit-deleted', 'au
 const confirm = useConfirm();
 const toast = useToast();
 
-const { getAuditSeverity, getComplianceScoreSeverity, formatAuditDate, formatAuditDateTime, getTodayDate } = useDailyMedicalAudits();
+const { getComplianceScoreSeverity, formatAuditDate, formatAuditDateTime, getTodayDate } = useDailyMedicalAudits();
 
 const localAudits = ref([]);
 const isDialogVisible = ref(false);

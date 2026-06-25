@@ -8,7 +8,6 @@ import Textarea from 'primevue/textarea';
 import Tag from 'primevue/tag';
 import IconField from 'primevue/iconfield';
 import InputIcon from 'primevue/inputicon';
-import ConfirmDialog from 'primevue/confirmdialog';
 import { useConfirm } from 'primevue/useconfirm';
 import { useMedicalSpecialties } from '@/composables/useMedicalSpecialties';
 import { usePermissions } from '@/composables/usePermissions';
@@ -309,7 +308,6 @@ const dialogTitle = computed(() => {
             </template>
         </Dialog>
 
-        <ConfirmDialog />
     </div>
 </template>
 

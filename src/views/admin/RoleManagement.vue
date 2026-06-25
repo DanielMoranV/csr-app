@@ -5,7 +5,6 @@ import { useUsersStore } from '@/store/usersStore';
 import Button from 'primevue/button';
 import Checkbox from 'primevue/checkbox';
 import Column from 'primevue/column';
-import ConfirmDialog from 'primevue/confirmdialog';
 import DataTable from 'primevue/datatable';
 import Dialog from 'primevue/dialog';
 import InputText from 'primevue/inputtext';
@@ -478,7 +477,6 @@ const handleSaveUserRoles = async () => {
             </template>
         </Dialog>
 
-        <ConfirmDialog />
     </div>
 </template>
 

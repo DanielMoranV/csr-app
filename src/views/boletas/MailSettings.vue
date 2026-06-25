@@ -7,7 +7,7 @@ import Password from 'primevue/password';
 import Select from 'primevue/select';
 import { onMounted, ref } from 'vue';
 
-const { mailSettings, isLoadingMailSettings, isSavingMailSettings, isTestingMail, fetchMailSettings, saveMailSettings, testMailSettings } = useBoletas();
+const { isLoadingMailSettings, isSavingMailSettings, isTestingMail, fetchMailSettings, saveMailSettings, testMailSettings } = useBoletas();
 
 const encryptionOptions = [
     { label: 'TLS', value: 'tls' },

@@ -3,7 +3,6 @@ import { ATTACHMENT_MODES, useBoletas } from '@/composables/useBoletas';
 import Button from 'primevue/button';
 import Checkbox from 'primevue/checkbox';
 import Column from 'primevue/column';
-import ConfirmDialog from 'primevue/confirmdialog';
 import DataTable from 'primevue/datatable';
 import Dialog from 'primevue/dialog';
 import Editor from 'primevue/editor';
@@ -281,7 +280,6 @@ onUnmounted(() => clearTimeout(previewTimer));
             </template>
         </Dialog>
 
-        <ConfirmDialog />
     </div>
 </template>
 

@@ -12,7 +12,6 @@ import { PERMISSION_GROUPS } from '@/config/permissions';
 import { usePermissions } from '@/composables/usePermissions';
 import { useAuthStore } from '@/store/authStore';
 import Button from 'primevue/button';
-import ConfirmDialog from 'primevue/confirmdialog';
 import IconField from 'primevue/iconfield';
 import InputIcon from 'primevue/inputicon';
 import InputText from 'primevue/inputtext';
@@ -379,7 +378,6 @@ const exportToExcel = () => {
 
         <CreateDoctorWithUserDialog v-model:visible="createWithUserDialogVisible" @created="handleDoctorWithUserCreated" />
 
-        <ConfirmDialog />
     </div>
 </template>
 
