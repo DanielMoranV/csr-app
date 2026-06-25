@@ -34,8 +34,16 @@ export const boletas = {
     previewTemplate: (id, payload = {}) => axios.post(`/boletas/templates/${id}/preview`, payload),
 
     /**
+     * Vista previa ad-hoc (sin plantilla guardada).
+     * @param {{ subject: string, body: string, mes?: string }} payload
+     * @returns {Promise} data: { subject, body, html, variables }
+     */
+    previewAdhoc: (payload) => axios.post('/boletas/preview', payload),
+
+    /**
      * Crear plantilla.
-     * @param {{ name, document_type?, subject, body, is_default? }} data
+     * @param {{ name, document_type?, attachment_mode?, subject, body, is_default? }} data
+     *   attachment_mode: 'per_dni' | 'shared' | 'none' (default 'per_dni').
      */
     createTemplate: (data) => axios.post('/boletas/templates', data),
 
@@ -73,11 +81,26 @@ export const boletas = {
     // ── Destinatarios / Padrón ───────────────────────────────────────────────
 
     /**
-     * Padrón de empleados (fuente de destinatarios).
+     * Padrón de empleados (fuente de destinatarios). No pagina: array directo.
      * @param {{ q?: string, active?: number|string }} params
      * @returns {Promise} data: [{ id, dni, nombre, email, area, is_active }]
      */
     getEmployees: (params = {}) => axios.get('/boletas/employees', { params }),
+
+    /** Obtener un empleado. @returns {Promise} data: Employee */
+    getEmployee: (id) => axios.get(`/boletas/employees/${id}`),
+
+    /**
+     * Crear empleado. El input usa `full_name`; la respuesta lo devuelve como `nombre`.
+     * @param {{ dni, full_name, email, area?, is_active? }} data
+     */
+    createEmployee: (data) => axios.post('/boletas/employees', data),
+
+    /** Actualizar empleado. @param {{ dni, full_name, email, area?, is_active? }} data */
+    updateEmployee: (id, data) => axios.put(`/boletas/employees/${id}`, data),
+
+    /** Eliminar empleado. 422 si tiene usuario vinculado. */
+    deleteEmployee: (id) => axios.delete(`/boletas/employees/${id}`),
 
     /**
      * Validar Excel/CSV de destinatarios sin persistir (multipart). El FormData
@@ -129,13 +152,49 @@ export const boletas = {
 
     /**
      * Crear campaña (queda en `draft`).
-     * @param {{ name, period, document_type?, email_template_id, recipients[] }} data
+     * @param {{ name, period, document_type?, attachment_mode?, email_template_id, recipients[] }} data
+     *   attachment_mode opcional: si falta y hay plantilla, hereda el de la
+     *   plantilla; sin plantilla, default 'per_dni'.
      */
     createCampaign: (data) => axios.post('/boletas/campaigns', data),
+
+    /**
+     * Subir el PDF compartido de una campaña (modo `shared`). Solo si la campaña
+     * está en `draft`; de lo contrario el backend responde 422.
+     * @param {number} id
+     * @param {FormData} formData - campo `file` (PDF, máx 20 MB)
+     * @returns {Promise} data: { has_attachment, ... }
+     */
+    uploadCampaignAttachment: (id, formData) =>
+        axios.post(`/boletas/campaigns/${id}/attachment`, formData, {
+            headers: { 'Content-Type': 'multipart/form-data' }
+        }),
 
     /** Lanzar campaña: congela plantilla y encola envíos. */
     launchCampaign: (id) => axios.post(`/boletas/campaigns/${id}/launch`),
 
     /** Reintentar destinatarios fallidos. */
-    retryFailed: (id) => axios.post(`/boletas/campaigns/${id}/retry-failed`)
+    retryFailed: (id) => axios.post(`/boletas/campaigns/${id}/retry-failed`),
+
+    // ── Configuración del correo emisor (SMTP) ───────────────────────────────
+
+    /**
+     * Configuración SMTP actual. No devuelve la contraseña.
+     * @returns {Promise} data: { host, port, encryption, username, from_address, from_name, has_password }
+     */
+    getMailSettings: () => axios.get('/boletas/mail-settings'),
+
+    /**
+     * Guardar configuración SMTP. `password` es opcional: si va vacía, el backend
+     * conserva la guardada.
+     * @param {{ host, port, encryption, username, password?, from_address, from_name }} data
+     */
+    updateMailSettings: (data) => axios.put('/boletas/mail-settings', data),
+
+    /**
+     * Enviar correo de prueba con la configuración guardada.
+     * @param {{ to: string }} data
+     * @returns {Promise} 200 si funcionó; 422 con el error SMTP si falló.
+     */
+    testMailSettings: (data) => axios.post('/boletas/mail-settings/test', data)
 };

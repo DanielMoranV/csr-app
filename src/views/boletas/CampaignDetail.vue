@@ -1,5 +1,5 @@
 <script setup>
-import { CAMPAIGN_ACTIVE_STATUSES, campaignStatusInfo, recipientStatusInfo, useBoletas } from '@/composables/useBoletas';
+import { attachmentModeInfo, CAMPAIGN_ACTIVE_STATUSES, campaignStatusInfo, recipientStatusInfo, useBoletas } from '@/composables/useBoletas';
 import Button from 'primevue/button';
 import Column from 'primevue/column';
 import ConfirmDialog from 'primevue/confirmdialog';
@@ -197,6 +197,7 @@ const formatDate = (value) => {
                         <Tag :value="campaignTag.label" :severity="campaignTag.severity" class="mr-2" />
                         <span v-if="currentCampaign" class="mono">{{ currentCampaign.period }}</span>
                         <span v-if="currentCampaign"> · {{ docTypeLabel(currentCampaign.document_type) }}</span>
+                        <Tag v-if="currentCampaign?.attachment_mode" :value="attachmentModeInfo(currentCampaign.attachment_mode).short" severity="secondary" class="ml-2" />
                     </p>
                 </div>
                 <div class="header-actions flex gap-2 flex-wrap">

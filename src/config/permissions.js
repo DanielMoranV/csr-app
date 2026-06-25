@@ -535,6 +535,16 @@ export const MODULE_PERMISSIONS = {
     // Visibilidad del menú: `boletas.view` O `boletas.manage`. Las acciones de
     // escritura se gobiernan en la UI con `boletas.manage` (ver useBoletas).
 
+    // Padrón de empleados
+    boletasEmployees: {
+        name: 'boletas-employees',
+        path: '/boletas/empleados',
+        permission: ['boletas.view', 'boletas.manage'],
+        label: 'Padrón',
+        icon: 'pi pi-fw pi-users',
+        menuSection: 'Boletas'
+    },
+
     // Plantillas de correo
     boletasTemplates: {
         name: 'boletas-templates',
@@ -545,14 +555,16 @@ export const MODULE_PERMISSIONS = {
         menuSection: 'Boletas'
     },
 
-    // Archivos PDF (boletas)
+    // Archivos PDF (boletas) — el ZIP se sube desde el compose; la vista queda
+    // accesible por ruta pero fuera del menú.
     boletasFiles: {
         name: 'boletas-files',
         path: '/boletas/archivos',
         permission: ['boletas.view', 'boletas.manage'],
         label: 'Archivos PDF',
         icon: 'pi pi-fw pi-file-pdf',
-        menuSection: 'Boletas'
+        menuSection: 'Boletas',
+        showInMenu: false
     },
 
     // Historial de campañas
@@ -585,6 +597,16 @@ export const MODULE_PERMISSIONS = {
         icon: 'pi pi-fw pi-chart-line',
         menuSection: 'Boletas',
         showInMenu: false
+    },
+
+    // Configuración del correo emisor (SMTP) — requiere boletas.settings
+    boletasMailSettings: {
+        name: 'boletas-mail-settings',
+        path: '/boletas/ajustes-correo',
+        permission: 'boletas.settings',
+        label: 'Ajustes de correo',
+        icon: 'pi pi-fw pi-cog',
+        menuSection: 'Boletas'
     }
 };
 

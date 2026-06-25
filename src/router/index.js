@@ -244,6 +244,12 @@ const router = createRouter({
                 },
                 // ── Envío Masivo de Documentos (Boletas) ──
                 {
+                    path: MODULE_PERMISSIONS.boletasEmployees.path,
+                    name: MODULE_PERMISSIONS.boletasEmployees.name,
+                    component: () => import('@/views/boletas/Employees.vue'),
+                    meta: { requiresAuth: true, permission: MODULE_PERMISSIONS.boletasEmployees.permission }
+                },
+                {
                     path: MODULE_PERMISSIONS.boletasTemplates.path,
                     name: MODULE_PERMISSIONS.boletasTemplates.name,
                     component: () => import('@/views/boletas/Templates.vue'),
@@ -265,7 +271,7 @@ const router = createRouter({
                     // Estática antes que la dinámica `:id` para evitar capturas
                     path: MODULE_PERMISSIONS.boletasCampaignNew.path,
                     name: MODULE_PERMISSIONS.boletasCampaignNew.name,
-                    component: () => import('@/views/boletas/CampaignWizard.vue'),
+                    component: () => import('@/views/boletas/ComposeCampaign.vue'),
                     meta: { requiresAuth: true, permission: MODULE_PERMISSIONS.boletasCampaignNew.permission }
                 },
                 {
@@ -274,6 +280,12 @@ const router = createRouter({
                     component: () => import('@/views/boletas/CampaignDetail.vue'),
                     props: true,
                     meta: { requiresAuth: true, permission: MODULE_PERMISSIONS.boletasCampaignDetail.permission }
+                },
+                {
+                    path: MODULE_PERMISSIONS.boletasMailSettings.path,
+                    name: MODULE_PERMISSIONS.boletasMailSettings.name,
+                    component: () => import('@/views/boletas/MailSettings.vue'),
+                    meta: { requiresAuth: true, permission: MODULE_PERMISSIONS.boletasMailSettings.permission }
                 }
             ]
         },

@@ -1,5 +1,5 @@
 <script setup>
-import { useBoletas } from '@/composables/useBoletas';
+import { ATTACHMENT_MODES, useBoletas } from '@/composables/useBoletas';
 import Button from 'primevue/button';
 import Checkbox from 'primevue/checkbox';
 import Column from 'primevue/column';
@@ -27,11 +27,11 @@ const documentTypeLabel = (slug) => documentTypes.value.find((d) => d.slug === s
 const dialogVisible = ref(false);
 const isEditing = ref(false);
 const editingId = ref(null);
-const form = ref({ name: '', document_type: 'boleta', subject: '', body: '', is_default: false });
+const form = ref({ name: '', document_type: 'boleta', attachment_mode: 'per_dni', subject: '', body: '', is_default: false });
 const errors = ref({});
 
 const resetForm = () => {
-    form.value = { name: '', document_type: 'boleta', subject: '', body: '', is_default: false };
+    form.value = { name: '', document_type: 'boleta', attachment_mode: 'per_dni', subject: '', body: '', is_default: false };
     errors.value = {};
     previewHtml.value = '';
 };
@@ -50,6 +50,7 @@ const openEdit = (tpl) => {
     form.value = {
         name: tpl.name || '',
         document_type: tpl.document_type || 'boleta',
+        attachment_mode: tpl.attachment_mode || 'per_dni',
         subject: tpl.subject || '',
         body: tpl.body || '',
         is_default: !!tpl.is_default
@@ -84,6 +85,7 @@ const handleSave = async () => {
     const payload = {
         name: form.value.name.trim(),
         document_type: form.value.document_type,
+        attachment_mode: form.value.attachment_mode,
         subject: form.value.subject.trim(),
         body: form.value.body,
         is_default: form.value.is_default
@@ -129,6 +131,7 @@ const markDefault = async (tpl) => {
         await updateTemplate(tpl.id, {
             name: full.name,
             document_type: full.document_type,
+            attachment_mode: full.attachment_mode || 'per_dni',
             subject: full.subject,
             body: full.body,
             is_default: true
@@ -232,6 +235,11 @@ onUnmounted(() => clearTimeout(previewTimer));
                     <div class="field">
                         <label class="field-label">Tipo de documento</label>
                         <Select v-model="form.document_type" :options="documentTypes" optionLabel="label" optionValue="slug" class="w-full" placeholder="Seleccione un tipo" />
+                    </div>
+                    <div class="field">
+                        <label class="field-label">¿Lleva documento adjunto?</label>
+                        <Select v-model="form.attachment_mode" :options="ATTACHMENT_MODES" optionLabel="label" optionValue="value" class="w-full" />
+                        <small class="text-muted">Por defecto del envío al usar esta plantilla (se puede cambiar al enviar).</small>
                     </div>
                     <div class="field">
                         <label class="field-label">Asunto <span class="req">*</span></label>

@@ -28,6 +28,20 @@ export const CAMPAIGN_STATUS = {
 /** Estados de campaña en los que conviene hacer polling de progreso. */
 export const CAMPAIGN_ACTIVE_STATUSES = ['queued', 'processing'];
 
+/**
+ * Modos de adjunto de un envío (campo `attachment_mode`):
+ *  - per_dni: documento personalizado por persona (ZIP {dni}.pdf → /files/upload)
+ *  - shared:  un mismo PDF para todos (→ /campaigns/{id}/attachment)
+ *  - none:    sin adjunto, solo el cuerpo del correo
+ */
+export const ATTACHMENT_MODES = [
+    { value: 'per_dni', label: 'Sí, personalizado por DNI', short: 'Personalizado por DNI', icon: 'pi pi-id-card' },
+    { value: 'shared', label: 'Sí, el mismo para todos', short: 'Compartido', icon: 'pi pi-file' },
+    { value: 'none', label: 'No, solo correo', short: 'Sin adjunto', icon: 'pi pi-envelope' }
+];
+
+export const attachmentModeInfo = (mode) => ATTACHMENT_MODES.find((m) => m.value === mode) || ATTACHMENT_MODES[0];
+
 export const recipientStatusInfo = (status) => RECIPIENT_STATUS[status] || { label: status || '—', severity: 'secondary' };
 export const campaignStatusInfo = (status) => CAMPAIGN_STATUS[status] || { label: status || '—', severity: 'secondary' };
 
@@ -47,15 +61,18 @@ export function useBoletas() {
     // requieren `boletas.manage`.
     const canManage = computed(() => hasPermission('boletas.manage'));
     const canView = computed(() => hasPermission('boletas.view') || hasPermission('boletas.manage'));
+    const canSettings = computed(() => hasPermission('boletas.settings'));
 
     // ── Estado expuesto ──────────────────────────────────────────────────────
     const documentTypes = computed(() => store.documentTypes);
     const templates = computed(() => store.templates);
     const campaigns = computed(() => store.campaigns);
     const files = computed(() => store.files);
+    const employees = computed(() => store.employees);
     const filesMeta = computed(() => store.state.filesMeta);
     const campaignsPagination = computed(() => store.state.campaignsPagination);
     const currentCampaign = computed(() => store.state.currentCampaign);
+    const mailSettings = computed(() => store.state.mailSettings);
 
     const isLoadingTemplates = computed(() => store.state.isLoadingTemplates);
     const isSavingTemplate = computed(() => store.state.isSavingTemplate);
@@ -65,12 +82,18 @@ export function useBoletas() {
     const isUploading = computed(() => store.state.isUploading);
     const isDeletingFile = computed(() => store.state.isDeletingFile);
     const isLoadingEmployees = computed(() => store.state.isLoadingEmployees);
+    const isSavingEmployee = computed(() => store.state.isSavingEmployee);
+    const isDeletingEmployee = computed(() => store.state.isDeletingEmployee);
     const isValidating = computed(() => store.state.isValidating);
     const isLoadingCampaigns = computed(() => store.state.isLoadingCampaigns);
     const isLoadingCampaign = computed(() => store.state.isLoadingCampaign);
     const isCreatingCampaign = computed(() => store.state.isCreatingCampaign);
+    const isUploadingAttachment = computed(() => store.state.isUploadingAttachment);
     const isLaunching = computed(() => store.state.isLaunching);
     const isRetrying = computed(() => store.state.isRetrying);
+    const isLoadingMailSettings = computed(() => store.state.isLoadingMailSettings);
+    const isSavingMailSettings = computed(() => store.state.isSavingMailSettings);
+    const isTestingMail = computed(() => store.state.isTestingMail);
 
     // ── Catálogo ─────────────────────────────────────────────────────────────
     const fetchDocumentTypes = async () => {
@@ -104,6 +127,11 @@ export function useBoletas() {
     /** Vista previa. No muestra toast en error (la usa el editor en vivo). */
     const previewTemplate = async (id, payload) => {
         return await store.previewTemplate(id, payload);
+    };
+
+    /** Vista previa ad-hoc (sin plantilla). Silenciosa en error. */
+    const previewAdhoc = async (payload) => {
+        return await store.previewAdhoc(payload);
     };
 
     const createTemplate = async (data) => {
@@ -194,6 +222,49 @@ export function useBoletas() {
         }
     };
 
+    // ── Padrón (CRUD) ────────────────────────────────────────────────────────────
+    const fetchEmployee = async (id) => {
+        try {
+            return await store.fetchEmployee(id);
+        } catch (error) {
+            handleError(error, 'Error al cargar el empleado');
+            throw error;
+        }
+    };
+
+    const createEmployee = async (data) => {
+        try {
+            const employee = await store.createEmployee(data);
+            success('Empleado creado correctamente');
+            return employee;
+        } catch (error) {
+            handleError(error, 'Error al crear el empleado');
+            throw error;
+        }
+    };
+
+    const updateEmployee = async (id, data) => {
+        try {
+            const employee = await store.updateEmployee(id, data);
+            success('Empleado actualizado correctamente');
+            return employee;
+        } catch (error) {
+            handleError(error, 'Error al actualizar el empleado');
+            throw error;
+        }
+    };
+
+    const deleteEmployee = async (id) => {
+        try {
+            await store.deleteEmployee(id);
+            success('Empleado eliminado correctamente');
+        } catch (error) {
+            // 422: el backend explica el motivo (p. ej. tiene usuario vinculado).
+            handleError(error, 'No se pudo eliminar el empleado');
+            throw error;
+        }
+    };
+
     // ── Campañas ─────────────────────────────────────────────────────────────
     const fetchCampaigns = async (params) => {
         try {
@@ -234,6 +305,17 @@ export function useBoletas() {
         }
     };
 
+    /** Subir el PDF compartido (modo `shared`) de una campaña en draft. */
+    const uploadCampaignAttachment = async (id, formData) => {
+        try {
+            return await store.uploadCampaignAttachment(id, formData);
+        } catch (error) {
+            // 422: "Solo se puede subir el adjunto a una campaña en borrador", etc.
+            handleError(error, 'Error al subir el documento adjunto');
+            throw error;
+        }
+    };
+
     const launchCampaign = async (id) => {
         try {
             const result = await store.launchCampaign(id);
@@ -258,6 +340,39 @@ export function useBoletas() {
             return result;
         } catch (error) {
             handleError(error, 'Error al reintentar los envíos fallidos');
+            throw error;
+        }
+    };
+
+    // ── Configuración del correo emisor ──────────────────────────────────────────
+    const fetchMailSettings = async () => {
+        try {
+            return await store.fetchMailSettings();
+        } catch (error) {
+            handleError(error, 'Error al cargar la configuración de correo');
+            throw error;
+        }
+    };
+
+    const saveMailSettings = async (data) => {
+        try {
+            const result = await store.saveMailSettings(data);
+            success('Configuración de correo guardada correctamente');
+            return result;
+        } catch (error) {
+            handleError(error, 'Error al guardar la configuración de correo');
+            throw error;
+        }
+    };
+
+    const testMailSettings = async (data) => {
+        try {
+            const result = await store.testMailSettings(data);
+            success('Correo de prueba enviado correctamente');
+            return result;
+        } catch (error) {
+            // 422: el backend devuelve el error SMTP concreto.
+            handleError(error, 'No se pudo enviar el correo de prueba');
             throw error;
         }
     };
@@ -362,14 +477,17 @@ export function useBoletas() {
         // Permisos
         canManage,
         canView,
+        canSettings,
         // Estado
         documentTypes,
         templates,
         campaigns,
         files,
+        employees,
         filesMeta,
         campaignsPagination,
         currentCampaign,
+        mailSettings,
         isLoadingTemplates,
         isSavingTemplate,
         isDeletingTemplate,
@@ -378,18 +496,25 @@ export function useBoletas() {
         isUploading,
         isDeletingFile,
         isLoadingEmployees,
+        isSavingEmployee,
+        isDeletingEmployee,
         isValidating,
         isLoadingCampaigns,
         isLoadingCampaign,
         isCreatingCampaign,
+        isUploadingAttachment,
         isLaunching,
         isRetrying,
+        isLoadingMailSettings,
+        isSavingMailSettings,
+        isTestingMail,
         // Catálogo
         fetchDocumentTypes,
         // Plantillas
         fetchTemplates,
         fetchTemplate,
         previewTemplate,
+        previewAdhoc,
         createTemplate,
         updateTemplate,
         deleteTemplate,
@@ -397,8 +522,12 @@ export function useBoletas() {
         fetchFiles,
         uploadFiles,
         deleteFile,
-        // Destinatarios
+        // Destinatarios / Padrón
         fetchEmployees,
+        fetchEmployee,
+        createEmployee,
+        updateEmployee,
+        deleteEmployee,
         validateRecipients,
         // Campañas
         fetchCampaigns,
@@ -406,10 +535,15 @@ export function useBoletas() {
         fetchCampaignProgress,
         fetchCampaignRecipients,
         createCampaign,
+        uploadCampaignAttachment,
         launchCampaign,
         retryFailed,
         downloadErrors,
         downloadConstancia,
+        // Configuración de correo
+        fetchMailSettings,
+        saveMailSettings,
+        testMailSettings,
         // Helpers de estado
         recipientStatusInfo,
         campaignStatusInfo

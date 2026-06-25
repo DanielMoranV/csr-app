@@ -21,6 +21,9 @@ export const useBoletasStore = defineStore('boletas', () => {
         templates: [],
         currentTemplate: null,
 
+        // Padrón de empleados
+        employees: [],
+
         // Archivos
         files: [],
         filesMeta: { period: null, document_type: null, count: 0 },
@@ -29,6 +32,9 @@ export const useBoletasStore = defineStore('boletas', () => {
         campaigns: [],
         campaignsPagination: { page: 1, perPage: 15, total: 0, lastPage: 1 },
         currentCampaign: null,
+
+        // Configuración del correo emisor (SMTP)
+        mailSettings: null,
 
         // Flags de carga
         isLoadingDocumentTypes: false,
@@ -40,12 +46,18 @@ export const useBoletasStore = defineStore('boletas', () => {
         isUploading: false,
         isDeletingFile: false,
         isLoadingEmployees: false,
+        isSavingEmployee: false,
+        isDeletingEmployee: false,
         isValidating: false,
         isLoadingCampaigns: false,
         isLoadingCampaign: false,
         isCreatingCampaign: false,
+        isUploadingAttachment: false,
         isLaunching: false,
-        isRetrying: false
+        isRetrying: false,
+        isLoadingMailSettings: false,
+        isSavingMailSettings: false,
+        isTestingMail: false
     });
 
     // ── Getters ──────────────────────────────────────────────────────────────
@@ -53,6 +65,7 @@ export const useBoletasStore = defineStore('boletas', () => {
     const templates = computed(() => state.templates);
     const campaigns = computed(() => state.campaigns);
     const files = computed(() => state.files);
+    const employees = computed(() => state.employees);
 
     // ── Catálogo ─────────────────────────────────────────────────────────────
     const fetchDocumentTypes = async () => {
@@ -100,6 +113,19 @@ export const useBoletasStore = defineStore('boletas', () => {
         state.isPreviewing = true;
         try {
             const response = await boletasApi.previewTemplate(id, payload);
+            if (apiUtils.isSuccess(response)) {
+                return apiUtils.getData(response);
+            }
+            throw response;
+        } finally {
+            state.isPreviewing = false;
+        }
+    };
+
+    const previewAdhoc = async (payload) => {
+        state.isPreviewing = true;
+        try {
+            const response = await boletasApi.previewAdhoc(payload);
             if (apiUtils.isSuccess(response)) {
                 return apiUtils.getData(response);
             }
@@ -211,11 +237,66 @@ export const useBoletasStore = defineStore('boletas', () => {
             const response = await boletasApi.getEmployees(params);
             if (apiUtils.isSuccess(response)) {
                 const data = apiUtils.getData(response);
-                return Array.isArray(data) ? data : data?.data || [];
+                state.employees = Array.isArray(data) ? data : data?.data || [];
+                return state.employees;
             }
             throw response;
         } finally {
             state.isLoadingEmployees = false;
+        }
+    };
+
+    const fetchEmployee = async (id) => {
+        const response = await boletasApi.getEmployee(id);
+        if (apiUtils.isSuccess(response)) {
+            return apiUtils.getData(response);
+        }
+        throw response;
+    };
+
+    const createEmployee = async (data) => {
+        state.isSavingEmployee = true;
+        try {
+            const response = await boletasApi.createEmployee(data);
+            if (apiUtils.isSuccess(response)) {
+                const created = apiUtils.getData(response);
+                if (created) state.employees.unshift(created);
+                return created;
+            }
+            throw response;
+        } finally {
+            state.isSavingEmployee = false;
+        }
+    };
+
+    const updateEmployee = async (id, data) => {
+        state.isSavingEmployee = true;
+        try {
+            const response = await boletasApi.updateEmployee(id, data);
+            if (apiUtils.isSuccess(response)) {
+                const updated = apiUtils.getData(response);
+                const index = state.employees.findIndex((e) => e.id === id);
+                if (index !== -1 && updated) state.employees[index] = updated;
+                return updated;
+            }
+            throw response;
+        } finally {
+            state.isSavingEmployee = false;
+        }
+    };
+
+    const deleteEmployee = async (id) => {
+        state.isDeletingEmployee = true;
+        try {
+            const response = await boletasApi.deleteEmployee(id);
+            if (apiUtils.isSuccess(response)) {
+                const index = state.employees.findIndex((e) => e.id === id);
+                if (index !== -1) state.employees.splice(index, 1);
+                return response;
+            }
+            throw response;
+        } finally {
+            state.isDeletingEmployee = false;
         }
     };
 
@@ -239,17 +320,19 @@ export const useBoletasStore = defineStore('boletas', () => {
             const response = await boletasApi.getCampaigns(params);
             if (apiUtils.isSuccess(response)) {
                 const data = apiUtils.getData(response);
-                // Soporta tanto array plano como paginador estilo Laravel
+                // Soporta array plano, envoltorio { data, pagination } (formato de
+                // la API) y paginador estilo Laravel plano (compatibilidad).
                 if (Array.isArray(data)) {
                     state.campaigns = data;
                     state.campaignsPagination = { page: 1, perPage: data.length, total: data.length, lastPage: 1 };
                 } else {
                     state.campaigns = data?.data || [];
+                    const pg = data?.pagination || data || {};
                     state.campaignsPagination = {
-                        page: data?.current_page ?? 1,
-                        perPage: data?.per_page ?? params.per_page ?? 15,
-                        total: data?.total ?? state.campaigns.length,
-                        lastPage: data?.last_page ?? 1
+                        page: pg.current_page ?? pg.page ?? 1,
+                        perPage: pg.per_page ?? pg.perPage ?? params.per_page ?? 15,
+                        total: pg.total ?? state.campaigns.length,
+                        lastPage: pg.last_page ?? pg.total_pages ?? pg.lastPage ?? 1
                     };
                 }
                 return state.campaigns;
@@ -289,12 +372,13 @@ export const useBoletasStore = defineStore('boletas', () => {
             if (Array.isArray(data)) {
                 return { items: data, total: data.length, page: 1, perPage: data.length, lastPage: 1 };
             }
+            const pg = data?.pagination || data || {};
             return {
                 items: data?.data || [],
-                total: data?.total ?? (data?.data?.length || 0),
-                page: data?.current_page ?? 1,
-                perPage: data?.per_page ?? params.per_page ?? 25,
-                lastPage: data?.last_page ?? 1
+                total: pg.total ?? (data?.data?.length || 0),
+                page: pg.current_page ?? pg.page ?? 1,
+                perPage: pg.per_page ?? pg.perPage ?? params.per_page ?? 25,
+                lastPage: pg.last_page ?? pg.total_pages ?? pg.lastPage ?? 1
             };
         }
         throw response;
@@ -310,6 +394,19 @@ export const useBoletasStore = defineStore('boletas', () => {
             throw response;
         } finally {
             state.isCreatingCampaign = false;
+        }
+    };
+
+    const uploadCampaignAttachment = async (id, formData) => {
+        state.isUploadingAttachment = true;
+        try {
+            const response = await boletasApi.uploadCampaignAttachment(id, formData);
+            if (apiUtils.isSuccess(response)) {
+                return apiUtils.getData(response);
+            }
+            throw response;
+        } finally {
+            state.isUploadingAttachment = false;
         }
     };
 
@@ -343,6 +440,48 @@ export const useBoletasStore = defineStore('boletas', () => {
     const downloadErrors = (id) => boletasApi.downloadErrors(id);
     const downloadConstancia = (id, recipientId) => boletasApi.downloadConstancia(id, recipientId);
 
+    // ── Configuración del correo emisor ───────────────────────────────────────
+    const fetchMailSettings = async () => {
+        state.isLoadingMailSettings = true;
+        try {
+            const response = await boletasApi.getMailSettings();
+            if (apiUtils.isSuccess(response)) {
+                state.mailSettings = apiUtils.getData(response);
+                return state.mailSettings;
+            }
+            throw response;
+        } finally {
+            state.isLoadingMailSettings = false;
+        }
+    };
+
+    const saveMailSettings = async (data) => {
+        state.isSavingMailSettings = true;
+        try {
+            const response = await boletasApi.updateMailSettings(data);
+            if (apiUtils.isSuccess(response)) {
+                state.mailSettings = apiUtils.getData(response) || state.mailSettings;
+                return state.mailSettings;
+            }
+            throw response;
+        } finally {
+            state.isSavingMailSettings = false;
+        }
+    };
+
+    const testMailSettings = async (data) => {
+        state.isTestingMail = true;
+        try {
+            const response = await boletasApi.testMailSettings(data);
+            if (apiUtils.isSuccess(response)) {
+                return apiUtils.getData(response);
+            }
+            throw response;
+        } finally {
+            state.isTestingMail = false;
+        }
+    };
+
     // ── Helpers internos ───────────────────────────────────────────────────────
     const patchTemplate = (id, partial) => {
         const index = state.templates.findIndex((t) => t.id === id);
@@ -365,12 +504,14 @@ export const useBoletasStore = defineStore('boletas', () => {
         templates,
         campaigns,
         files,
+        employees,
         // Catálogo
         fetchDocumentTypes,
         // Plantillas
         fetchTemplates,
         fetchTemplate,
         previewTemplate,
+        previewAdhoc,
         createTemplate,
         updateTemplate,
         deleteTemplate,
@@ -378,8 +519,12 @@ export const useBoletasStore = defineStore('boletas', () => {
         fetchFiles,
         uploadFiles,
         deleteFile,
-        // Destinatarios
+        // Destinatarios / Padrón
         fetchEmployees,
+        fetchEmployee,
+        createEmployee,
+        updateEmployee,
+        deleteEmployee,
         validateRecipients,
         // Campañas
         fetchCampaigns,
@@ -387,9 +532,14 @@ export const useBoletasStore = defineStore('boletas', () => {
         fetchCampaignProgress,
         fetchCampaignRecipients,
         createCampaign,
+        uploadCampaignAttachment,
         launchCampaign,
         retryFailed,
         downloadErrors,
-        downloadConstancia
+        downloadConstancia,
+        // Configuración de correo
+        fetchMailSettings,
+        saveMailSettings,
+        testMailSettings
     };
 });

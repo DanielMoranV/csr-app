@@ -9,7 +9,9 @@
       "Bash(npm install *)",
       "Bash(ls -d step*)",
       "Bash(ls -d inputnumber textarea)",
-      "Bash(echo \"EXIT: $?\")"
+      "Bash(echo \"EXIT: $?\")",
+      "Bash(npx vite *)",
+      "Bash(node -e \"const p=require\\('./package.json'\\); console.log\\('quill:', p.dependencies.quill||p.devDependencies?.quill\\); console.log\\('primevue:', p.dependencies.primevue\\)\")"
     ]
   }
 }
