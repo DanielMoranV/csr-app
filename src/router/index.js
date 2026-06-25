@@ -241,6 +241,39 @@ const router = createRouter({
                     name: MODULE_PERMISSIONS.dashboardErrores.name,
                     component: () => import('@/views/DashboardErrores.vue'),
                     meta: { requiresAuth: true, positions: MODULE_PERMISSIONS.dashboardErrores.positions }
+                },
+                // ── Envío Masivo de Documentos (Boletas) ──
+                {
+                    path: MODULE_PERMISSIONS.boletasTemplates.path,
+                    name: MODULE_PERMISSIONS.boletasTemplates.name,
+                    component: () => import('@/views/boletas/Templates.vue'),
+                    meta: { requiresAuth: true, permission: MODULE_PERMISSIONS.boletasTemplates.permission }
+                },
+                {
+                    path: MODULE_PERMISSIONS.boletasFiles.path,
+                    name: MODULE_PERMISSIONS.boletasFiles.name,
+                    component: () => import('@/views/boletas/Files.vue'),
+                    meta: { requiresAuth: true, permission: MODULE_PERMISSIONS.boletasFiles.permission }
+                },
+                {
+                    path: MODULE_PERMISSIONS.boletasCampaigns.path,
+                    name: MODULE_PERMISSIONS.boletasCampaigns.name,
+                    component: () => import('@/views/boletas/CampaignHistory.vue'),
+                    meta: { requiresAuth: true, permission: MODULE_PERMISSIONS.boletasCampaigns.permission }
+                },
+                {
+                    // Estática antes que la dinámica `:id` para evitar capturas
+                    path: MODULE_PERMISSIONS.boletasCampaignNew.path,
+                    name: MODULE_PERMISSIONS.boletasCampaignNew.name,
+                    component: () => import('@/views/boletas/CampaignWizard.vue'),
+                    meta: { requiresAuth: true, permission: MODULE_PERMISSIONS.boletasCampaignNew.permission }
+                },
+                {
+                    path: MODULE_PERMISSIONS.boletasCampaignDetail.path,
+                    name: MODULE_PERMISSIONS.boletasCampaignDetail.name,
+                    component: () => import('@/views/boletas/CampaignDetail.vue'),
+                    props: true,
+                    meta: { requiresAuth: true, permission: MODULE_PERMISSIONS.boletasCampaignDetail.permission }
                 }
             ]
         },

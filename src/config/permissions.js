@@ -529,6 +529,62 @@ export const MODULE_PERMISSIONS = {
         label: 'Categorías',
         icon: 'pi pi-fw pi-tags',
         menuSection: 'Tesorería'
+    },
+
+    // ── Envío Masivo de Documentos (Boletas) ──────────────────────────────────
+    // Visibilidad del menú: `boletas.view` O `boletas.manage`. Las acciones de
+    // escritura se gobiernan en la UI con `boletas.manage` (ver useBoletas).
+
+    // Plantillas de correo
+    boletasTemplates: {
+        name: 'boletas-templates',
+        path: '/boletas/plantillas',
+        permission: ['boletas.view', 'boletas.manage'],
+        label: 'Plantillas',
+        icon: 'pi pi-fw pi-envelope',
+        menuSection: 'Boletas'
+    },
+
+    // Archivos PDF (boletas)
+    boletasFiles: {
+        name: 'boletas-files',
+        path: '/boletas/archivos',
+        permission: ['boletas.view', 'boletas.manage'],
+        label: 'Archivos PDF',
+        icon: 'pi pi-fw pi-file-pdf',
+        menuSection: 'Boletas'
+    },
+
+    // Historial de campañas
+    boletasCampaigns: {
+        name: 'boletas-campaigns',
+        path: '/boletas/campanas',
+        permission: ['boletas.view', 'boletas.manage'],
+        label: 'Campañas',
+        icon: 'pi pi-fw pi-send',
+        menuSection: 'Boletas'
+    },
+
+    // Nueva campaña (asistente) — solo operación, no aparece en el menú
+    boletasCampaignNew: {
+        name: 'boletas-campaign-new',
+        path: '/boletas/campanas/nueva',
+        permission: 'boletas.manage',
+        label: 'Nueva Campaña',
+        icon: 'pi pi-fw pi-plus',
+        menuSection: 'Boletas',
+        showInMenu: false
+    },
+
+    // Detalle / seguimiento de campaña — se accede desde el historial
+    boletasCampaignDetail: {
+        name: 'boletas-campaign-detail',
+        path: '/boletas/campanas/:id',
+        permission: ['boletas.view', 'boletas.manage'],
+        label: 'Detalle de Campaña',
+        icon: 'pi pi-fw pi-chart-line',
+        menuSection: 'Boletas',
+        showInMenu: false
     }
 };
 
@@ -558,7 +614,7 @@ export function generateMenuStructure() {
     });
 
     // Convertir a array en el orden deseado
-    const sectionOrder = ['Principal', 'Mi Cuenta', 'Administración', 'Personal Médico', 'Hospitalización', 'Tesorería', 'SISCLIN', 'Soporte Técnico'];
+    const sectionOrder = ['Principal', 'Mi Cuenta', 'Administración', 'Personal Médico', 'Hospitalización', 'Tesorería', 'Boletas', 'SISCLIN', 'Soporte Técnico'];
 
     return sectionOrder
         .filter((section) => sections[section])
