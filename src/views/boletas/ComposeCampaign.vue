@@ -1,5 +1,5 @@
 <script setup>
-import { ATTACHMENT_MODES, useBoletas } from '@/composables/useBoletas';
+import { ATTACHMENT_MODES, CAMPAIGN_EDITABLE_STATUSES, campaignStatusInfo, useBoletas } from '@/composables/useBoletas';
 import Button from 'primevue/button';
 import Chip from 'primevue/chip';
 import Column from 'primevue/column';
@@ -18,6 +18,9 @@ import { useConfirm } from 'primevue/useconfirm';
 import { computed, onMounted, onUnmounted, ref, watch } from 'vue';
 import { useRouter } from 'vue-router';
 
+// `id` solo llega en la ruta de edición (boletas-campaign-edit); en "nueva" es null.
+const props = defineProps({ id: { type: [String, Number], default: null } });
+
 const router = useRouter();
 const confirm = useConfirm();
 const {
@@ -31,6 +34,7 @@ const {
     isUploadingAttachment,
     isPreviewing,
     isCreatingCampaign,
+    isUpdatingCampaign,
     isLaunching,
     fetchTemplates,
     fetchDocumentTypes,
@@ -41,8 +45,20 @@ const {
     fetchFiles,
     previewAdhoc,
     createCampaign,
+    updateCampaign,
+    fetchCampaign,
+    fetchCampaignRecipients,
     launchCampaign
 } = useBoletas();
+
+// ── Modo edición ──────────────────────────────────────────────────────────────
+// Editar una campaña draft/failed: se precarga el formulario y al guardar se
+// hace PUT (vuelve a draft) + launch (reenvío a TODOS). El backend valida que
+// solo draft/failed sean editables (422 en otro caso); aquí se replica el gate.
+const isEdit = computed(() => props.id != null);
+const isLoadingEdit = ref(false);
+// Si la campaña ya tenía un PDF compartido cargado, no es obligatorio re-subirlo.
+const existingAttachment = ref(false);
 
 // ── Cabecera del envío: tipo de documento + periodo (nombre automático) ───────
 const documentType = ref('boleta');
@@ -279,19 +295,22 @@ onUnmounted(() => clearTimeout(previewTimer));
 const canSend = computed(() => {
     if (!(finalRecipients.value.length > 0 && period.value && subject.value.trim() && htmlHasContent(body.value))) return false;
     // shared exige el PDF compartido antes de poder enviar (el backend bloquea
-    // el lanzamiento sin adjunto cargado).
-    if (attachmentMode.value === 'shared' && !sharedPdf.value) return false;
+    // el lanzamiento sin adjunto cargado). En edición vale el PDF ya cargado.
+    if (attachmentMode.value === 'shared' && !sharedPdf.value && !(isEdit.value && existingAttachment.value)) return false;
     return true;
 });
-const sending = computed(() => isCreatingCampaign.value || isUploadingAttachment.value || isLaunching.value);
+const sending = computed(() => isCreatingCampaign.value || isUpdatingCampaign.value || isUploadingAttachment.value || isLaunching.value);
 
 const confirmSend = () => {
     if (!canSend.value) return;
+    const message = isEdit.value
+        ? `Se guardarán los cambios y se reenviará "${docTypeLabel.value}" del periodo ${period.value} a TODOS los ${finalRecipients.value.length} destinatario(s) desde cero (no solo a los fallidos). El envío es asíncrono. ¿Continuar?`
+        : `Se enviará "${docTypeLabel.value}" del periodo ${period.value} a ${finalRecipients.value.length} destinatario(s). El envío es asíncrono. ¿Continuar?`;
     confirm.require({
-        message: `Se enviará "${docTypeLabel.value}" del periodo ${period.value} a ${finalRecipients.value.length} destinatario(s). El envío es asíncrono. ¿Continuar?`,
-        header: 'Enviar correo masivo',
+        message,
+        header: isEdit.value ? 'Guardar y reenviar' : 'Enviar correo masivo',
         icon: 'pi pi-send',
-        acceptLabel: 'Sí, enviar',
+        acceptLabel: isEdit.value ? 'Sí, guardar y reenviar' : 'Sí, enviar',
         rejectLabel: 'Cancelar',
         accept: doSend
     });
@@ -308,11 +327,13 @@ const doSend = async () => {
         recipients: finalRecipients.value
     };
     try {
-        // Orden requerido para shared: crear (draft) → subir PDF → lanzar.
-        const campaign = await createCampaign(payload);
-        const id = campaign?.id;
+        // Edición: PUT (vuelve a draft, contadores en 0) en vez de crear.
+        // Orden requerido para shared: (crear|editar) → subir PDF → lanzar.
+        const campaign = isEdit.value ? await updateCampaign(props.id, payload) : await createCampaign(payload);
+        const id = campaign?.id ?? props.id;
         if (!id) throw new Error('No se obtuvo el ID de la campaña');
-        if (attachmentMode.value === 'shared') {
+        // Solo se re-sube el PDF compartido si el usuario eligió uno nuevo.
+        if (attachmentMode.value === 'shared' && sharedPdf.value) {
             const fd = new FormData();
             fd.append('file', sharedPdf.value);
             await uploadCampaignAttachment(id, fd);
@@ -325,10 +346,52 @@ const doSend = async () => {
     }
 };
 
+// Precarga el formulario con los datos de la campaña a editar y sus destinatarios.
+const loadForEdit = async () => {
+    isLoadingEdit.value = true;
+    try {
+        const c = await fetchCampaign(props.id);
+        // Gate de editabilidad (el backend también lo valida con 422).
+        if (!CAMPAIGN_EDITABLE_STATUSES.includes(c?.status)) {
+            confirm.require({
+                message: `Esta campaña está en estado "${campaignStatusInfo(c?.status).label}" y no se puede editar. Volverás al detalle.`,
+                header: 'No editable',
+                icon: 'pi pi-exclamation-triangle',
+                acceptLabel: 'Entendido',
+                rejectClass: 'hidden',
+                accept: () => router.replace({ name: 'boletas-campaign-detail', params: { id: props.id } }),
+                onHide: () => router.replace({ name: 'boletas-campaign-detail', params: { id: props.id } })
+            });
+            return;
+        }
+        documentType.value = c.document_type || 'boleta';
+        if (c.period) period.value = c.period;
+        attachmentMode.value = c.attachment_mode || 'per_dni';
+        subject.value = c.subject || '';
+        body.value = c.body || '';
+        existingAttachment.value = !!c.has_attachment;
+        // Destinatarios actuales → se cargan como seleccionados del padrón (editables).
+        const res = await fetchCampaignRecipients(props.id, { per_page: 1000 });
+        recipientMode.value = 'padron';
+        selectedEmployees.value = (res.items || []).map((r) => ({ nombre: r.nombre, email: r.email, dni: r.dni }));
+        runPreview();
+    } catch {
+        // notificado por el composable
+    } finally {
+        isLoadingEdit.value = false;
+    }
+};
+
 onMounted(async () => {
     period.value = periodOptions.value[0];
     await Promise.all([fetchTemplates(), fetchDocumentTypes()]);
-    // Preseleccionar plantilla por defecto y precargar su cuerpo
+
+    if (isEdit.value) {
+        await loadForEdit();
+        return;
+    }
+
+    // Creación: preseleccionar plantilla por defecto y precargar su cuerpo
     const def = templates.value.find((t) => t.is_default);
     if (def) {
         selectedTemplateId.value = def.id;
@@ -344,18 +407,29 @@ onMounted(async () => {
     <div class="boletas-view">
         <div class="main-card">
             <div class="header-section">
-                <Button icon="pi pi-arrow-left" rounded text @click="router.push({ name: 'boletas-campaigns' })" v-tooltip.bottom="'Volver al historial'" />
-                <div class="header-icon-wrapper"><i class="pi pi-envelope"></i></div>
+                <Button
+                    icon="pi pi-arrow-left"
+                    rounded
+                    text
+                    @click="router.push(isEdit ? { name: 'boletas-campaign-detail', params: { id: props.id } } : { name: 'boletas-campaigns' })"
+                    v-tooltip.bottom="isEdit ? 'Volver al detalle' : 'Volver al historial'"
+                />
+                <div class="header-icon-wrapper"><i :class="isEdit ? 'pi pi-pencil' : 'pi pi-envelope'"></i></div>
                 <div class="header-content">
-                    <h1 class="header-title">Nuevo envío masivo</h1>
+                    <h1 class="header-title">{{ isEdit ? 'Editar envío masivo' : 'Nuevo envío masivo' }}</h1>
                     <p class="header-subtitle">
                         <i class="pi pi-info-circle mr-2"></i>Redacta y envía como un correo. Campaña: <strong>{{ autoName }}</strong>
                     </p>
                 </div>
                 <div class="header-actions">
-                    <Button label="Enviar" icon="pi pi-send" :loading="sending" :disabled="!canSend" @click="confirmSend" />
+                    <Button :label="isEdit ? 'Guardar y reenviar' : 'Enviar'" icon="pi pi-send" :loading="sending" :disabled="!canSend" @click="confirmSend" />
                 </div>
             </div>
+
+            <Message v-if="isEdit" severity="warn" :closable="false" class="mb-4">
+                <i class="pi pi-exclamation-triangle mr-2"></i>Al guardar, la campaña volverá a <strong>borrador</strong> y se relanzará: el reenvío irá a <strong>todos</strong> los destinatarios, no solo a los fallidos. Para reenviar únicamente los
+                fallidos con el mismo contenido, usa <strong>"Reintentar fallidos"</strong> en el detalle.
+            </Message>
 
             <div class="compose-grid">
                 <!-- ───── Columna izquierda: redacción ───── -->

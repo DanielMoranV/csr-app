@@ -275,6 +275,14 @@ const router = createRouter({
                     meta: { requiresAuth: true, permission: MODULE_PERMISSIONS.boletasCampaignNew.permission }
                 },
                 {
+                    // Edición (draft/failed) — reutiliza el compose; va antes que `:id`
+                    path: MODULE_PERMISSIONS.boletasCampaignEdit.path,
+                    name: MODULE_PERMISSIONS.boletasCampaignEdit.name,
+                    component: () => import('@/views/boletas/ComposeCampaign.vue'),
+                    props: true,
+                    meta: { requiresAuth: true, permission: MODULE_PERMISSIONS.boletasCampaignEdit.permission }
+                },
+                {
                     path: MODULE_PERMISSIONS.boletasCampaignDetail.path,
                     name: MODULE_PERMISSIONS.boletasCampaignDetail.name,
                     component: () => import('@/views/boletas/CampaignDetail.vue'),

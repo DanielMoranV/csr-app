@@ -1,5 +1,5 @@
 <script setup>
-import { attachmentModeInfo, CAMPAIGN_ACTIVE_STATUSES, campaignStatusInfo, recipientStatusInfo, useBoletas } from '@/composables/useBoletas';
+import { attachmentModeInfo, CAMPAIGN_ACTIVE_STATUSES, CAMPAIGN_EDITABLE_STATUSES, campaignStatusInfo, recipientStatusInfo, useBoletas } from '@/composables/useBoletas';
 import Button from 'primevue/button';
 import Column from 'primevue/column';
 import DataTable from 'primevue/datatable';
@@ -43,6 +43,12 @@ const docTypeLabel = (slug) => documentTypes.value.find((d) => d.slug === slug)?
 
 const isActive = computed(() => CAMPAIGN_ACTIVE_STATUSES.includes(progress.value.status));
 const campaignTag = computed(() => campaignStatusInfo(progress.value.status || currentCampaign.value?.status));
+
+// Editable solo en draft/failed y con permiso de escritura. Editar la devuelve a
+// borrador y, al guardar, reenvía a TODOS (distinto de "Reintentar fallidos").
+const canEdit = computed(() => canManage.value && CAMPAIGN_EDITABLE_STATUSES.includes(progress.value.status || currentCampaign.value?.status));
+
+const goEdit = () => router.push({ name: 'boletas-campaign-edit', params: { id: props.id } });
 
 const num = (obj, ...keys) => {
     for (const k of keys) if (obj?.[k] !== undefined && obj?.[k] !== null) return obj[k];
@@ -201,6 +207,7 @@ const formatDate = (value) => {
                 </div>
                 <div class="header-actions flex gap-2 flex-wrap">
                     <Button label="Descargar errores" icon="pi pi-file-excel" outlined severity="secondary" :disabled="!hasFailures" :loading="downloadingErrors" @click="handleDownloadErrors" />
+                    <Button v-if="canEdit" label="Editar" icon="pi pi-pencil" outlined @click="goEdit" />
                     <Button v-if="canManage" label="Reintentar fallidos" icon="pi pi-replay" :disabled="!hasFailures" :loading="isRetrying" @click="handleRetry" />
                 </div>
             </div>
@@ -308,7 +315,6 @@ const formatDate = (value) => {
                 </DataTable>
             </div>
         </div>
-
     </div>
 </template>
 

@@ -1,5 +1,5 @@
 <script setup>
-import { campaignStatusInfo, useBoletas } from '@/composables/useBoletas';
+import { CAMPAIGN_EDITABLE_STATUSES, campaignStatusInfo, useBoletas } from '@/composables/useBoletas';
 import Button from 'primevue/button';
 import Column from 'primevue/column';
 import DataTable from 'primevue/datatable';
@@ -50,6 +50,10 @@ const formatDate = (value) => {
 const openDetail = (campaign) => {
     router.push({ name: 'boletas-campaign-detail', params: { id: campaign.id } });
 };
+
+// Editable solo en draft/failed (el detalle/edición valida de nuevo).
+const isEditable = (campaign) => canManage.value && CAMPAIGN_EDITABLE_STATUSES.includes(campaign?.status);
+const openEdit = (campaign) => router.push({ name: 'boletas-campaign-edit', params: { id: campaign.id } });
 
 const goNew = () => router.push({ name: 'boletas-campaign-new' });
 </script>
@@ -118,8 +122,11 @@ const goNew = () => router.push({ name: 'boletas-campaign-new' });
                 <Column header="Fecha" style="min-width: 170px">
                     <template #body="{ data }">{{ formatDate(data.created_at || data.launched_at) }}</template>
                 </Column>
-                <Column header="" style="width: 60px">
-                    <template #body="{ data }"><Button icon="pi pi-arrow-right" size="small" text rounded @click.stop="openDetail(data)" v-tooltip.left="'Ver detalle'" /></template>
+                <Column header="" style="width: 96px">
+                    <template #body="{ data }">
+                        <Button v-if="isEditable(data)" icon="pi pi-pencil" size="small" text rounded @click.stop="openEdit(data)" v-tooltip.left="'Editar'" />
+                        <Button icon="pi pi-arrow-right" size="small" text rounded @click.stop="openDetail(data)" v-tooltip.left="'Ver detalle'" />
+                    </template>
                 </Column>
             </DataTable>
         </div>

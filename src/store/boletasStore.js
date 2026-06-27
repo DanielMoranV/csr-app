@@ -52,6 +52,7 @@ export const useBoletasStore = defineStore('boletas', () => {
         isLoadingCampaigns: false,
         isLoadingCampaign: false,
         isCreatingCampaign: false,
+        isUpdatingCampaign: false,
         isUploadingAttachment: false,
         isLaunching: false,
         isRetrying: false,
@@ -397,6 +398,22 @@ export const useBoletasStore = defineStore('boletas', () => {
         }
     };
 
+    const updateCampaign = async (id, data) => {
+        state.isUpdatingCampaign = true;
+        try {
+            const response = await boletasApi.updateCampaign(id, data);
+            if (apiUtils.isSuccess(response)) {
+                const updated = apiUtils.getData(response);
+                // La campaña vuelve a draft con contadores en 0: refrescar el detalle abierto.
+                if (state.currentCampaign?.id === id) state.currentCampaign = updated;
+                return updated;
+            }
+            throw response;
+        } finally {
+            state.isUpdatingCampaign = false;
+        }
+    };
+
     const uploadCampaignAttachment = async (id, formData) => {
         state.isUploadingAttachment = true;
         try {
@@ -532,6 +549,7 @@ export const useBoletasStore = defineStore('boletas', () => {
         fetchCampaignProgress,
         fetchCampaignRecipients,
         createCampaign,
+        updateCampaign,
         uploadCampaignAttachment,
         launchCampaign,
         retryFailed,

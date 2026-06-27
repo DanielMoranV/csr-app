@@ -29,6 +29,17 @@ export const CAMPAIGN_STATUS = {
 export const CAMPAIGN_ACTIVE_STATUSES = ['queued', 'processing'];
 
 /**
+ * Estados en los que una campaña es editable (PUT) y relanzable. Editar la
+ * devuelve a `draft` y resetea contadores; el relanzamiento reenvía a TODOS los
+ * destinatarios. Para reenviar solo los fallidos con el mismo contenido se usa
+ * `retryFailed` (disponible en `failed` y `completed_with_errors`).
+ */
+export const CAMPAIGN_EDITABLE_STATUSES = ['draft', 'failed'];
+
+/** ¿La campaña con este estado se puede editar/relanzar? */
+export const canEditCampaign = (status) => CAMPAIGN_EDITABLE_STATUSES.includes(status);
+
+/**
  * Modos de adjunto de un envío (campo `attachment_mode`):
  *  - per_dni: documento personalizado por persona (ZIP {dni}.pdf → /files/upload)
  *  - shared:  un mismo PDF para todos (→ /campaigns/{id}/attachment)
@@ -88,6 +99,7 @@ export function useBoletas() {
     const isLoadingCampaigns = computed(() => store.state.isLoadingCampaigns);
     const isLoadingCampaign = computed(() => store.state.isLoadingCampaign);
     const isCreatingCampaign = computed(() => store.state.isCreatingCampaign);
+    const isUpdatingCampaign = computed(() => store.state.isUpdatingCampaign);
     const isUploadingAttachment = computed(() => store.state.isUploadingAttachment);
     const isLaunching = computed(() => store.state.isLaunching);
     const isRetrying = computed(() => store.state.isRetrying);
@@ -305,6 +317,19 @@ export function useBoletas() {
         }
     };
 
+    /**
+     * Editar una campaña en `draft`/`failed`. La devuelve a borrador con
+     * contadores en 0; el llamador debe relanzarla. 422 si no es editable.
+     */
+    const updateCampaign = async (id, data) => {
+        try {
+            return await store.updateCampaign(id, data);
+        } catch (error) {
+            handleError(error, 'Error al guardar los cambios de la campaña');
+            throw error;
+        }
+    };
+
     /** Subir el PDF compartido (modo `shared`) de una campaña en draft. */
     const uploadCampaignAttachment = async (id, formData) => {
         try {
@@ -502,6 +527,7 @@ export function useBoletas() {
         isLoadingCampaigns,
         isLoadingCampaign,
         isCreatingCampaign,
+        isUpdatingCampaign,
         isUploadingAttachment,
         isLaunching,
         isRetrying,
@@ -535,6 +561,7 @@ export function useBoletas() {
         fetchCampaignProgress,
         fetchCampaignRecipients,
         createCampaign,
+        updateCampaign,
         uploadCampaignAttachment,
         launchCampaign,
         retryFailed,
@@ -546,6 +573,7 @@ export function useBoletas() {
         testMailSettings,
         // Helpers de estado
         recipientStatusInfo,
-        campaignStatusInfo
+        campaignStatusInfo,
+        canEditCampaign
     };
 }

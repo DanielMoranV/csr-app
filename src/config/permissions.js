@@ -588,6 +588,17 @@ export const MODULE_PERMISSIONS = {
         showInMenu: false
     },
 
+    // Editar campaña corregible (draft/failed) — reutiliza el compose, fuera del menú
+    boletasCampaignEdit: {
+        name: 'boletas-campaign-edit',
+        path: '/boletas/campanas/:id/editar',
+        permission: 'boletas.manage',
+        label: 'Editar Campaña',
+        icon: 'pi pi-fw pi-pencil',
+        menuSection: 'Boletas',
+        showInMenu: false
+    },
+
     // Detalle / seguimiento de campaña — se accede desde el historial
     boletasCampaignDetail: {
         name: 'boletas-campaign-detail',

@@ -159,6 +159,22 @@ export const boletas = {
     createCampaign: (data) => axios.post('/boletas/campaigns', data),
 
     /**
+     * Editar una campaña corregible y devolverla a `draft`.
+     *
+     * Solo permitido si la campaña está en `draft` o `failed` (otros estados →
+     * 422). Tras editar, el backend resetea los contadores `sent`/`failed` a 0;
+     * hay que relanzarla con `launchCampaign`, y el reenvío irá a TODOS los
+     * destinatarios (no solo a los fallidos — para eso está `retryFailed`).
+     *
+     * @param {number} id
+     * @param {{ name?, period?, document_type?, attachment_mode?, email_template_id?, subject?, body?, recipients? }} data
+     *   Todos los campos son opcionales (solo se envía lo que se corrige). Si se
+     *   manda `recipients`, REEMPLAZA la lista completa. Si se manda `body`, el
+     *   `subject` es obligatorio.
+     */
+    updateCampaign: (id, data) => axios.put(`/boletas/campaigns/${id}`, data),
+
+    /**
      * Subir el PDF compartido de una campaña (modo `shared`). Solo si la campaña
      * está en `draft`; de lo contrario el backend responde 422.
      * @param {number} id
