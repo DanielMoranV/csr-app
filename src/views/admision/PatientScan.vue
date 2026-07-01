@@ -7,40 +7,74 @@ import IconField from 'primevue/iconfield';
 import InputIcon from 'primevue/inputicon';
 import InputText from 'primevue/inputtext';
 import ProgressSpinner from 'primevue/progressspinner';
+import Select from 'primevue/select';
 import Tag from 'primevue/tag';
 import { computed, nextTick, ref } from 'vue';
 
-const { scanResult, isScanning, notFound, lastQuery, scanPatient, clearScan, pagoStatusInfo, financiamientoInfo, turnoStatusInfo } = useAdmision();
+const { scanResult, isScanning, notFound, lastQuery, error, syncPatient, clearScan, pagoStatusInfo, financiamientoInfo, turnoStatusInfo, tipoAtencionInfo } = useAdmision();
 
 // ── Búsqueda ───────────────────────────────────────────────────────────────
 const documento = ref('');
 const searchInput = ref(null);
 // Marca si ya se hizo al menos una búsqueda (para distinguir el estado inicial).
 const hasSearched = ref(false);
-// Error de red/servidor del último intento (distinto de "no encontrado").
-const failed = ref(false);
+
+// Tipo de documento. "auto" ⇒ no se envía `tipo` y el backend lo detecta por
+// longitud (8→DNI, 9→Historia, 10→Nº admisión).
+const tipo = ref('auto');
+const tipoOptions = [
+    { label: 'Auto', value: 'auto' },
+    { label: 'DNI', value: 'dni' },
+    { label: 'Historia', value: 'historia' },
+    { label: 'Nº admisión', value: 'num_admision' }
+];
 
 const handleSearch = async () => {
     const value = documento.value.trim();
     if (!value || isScanning.value) return;
     hasSearched.value = true;
-    failed.value = false;
-    try {
-        const result = await scanPatient(value);
-        // Un fallo de red/servidor devuelve null pero NO marca notFound.
-        if (!result && !notFound.value) failed.value = true;
-    } catch {
-        failed.value = true;
-    }
+    await syncPatient(value, tipo.value === 'auto' ? undefined : tipo.value);
 };
 
 const handleClear = () => {
     documento.value = '';
     hasSearched.value = false;
-    failed.value = false;
     clearScan();
     nextTick(() => searchInput.value?.$el?.focus());
 };
+
+// ── Estado de error/vacío (mensaje en línea según el caso) ────────────────────
+// notFound (404) y los distintos fallos de sincronización se resuelven a un
+// único bloque de estado con copia clara para la admisionista.
+const errorInfo = computed(() => {
+    if (notFound.value) {
+        return {
+            icon: 'pi pi-user-minus',
+            cls: 'warn',
+            title: 'Paciente no encontrado',
+            subtitle: `No se encontró un paciente con el documento «${lastQuery.value}» en Sisclin. Verifica el número e inténtalo nuevamente.`,
+            retry: false
+        };
+    }
+    const e = error.value;
+    if (!e) return null;
+    const byStatus = {
+        409: { icon: 'pi pi-sync', cls: 'warn', title: 'Sincronizando, espera un momento…', subtitle: 'Ya hay una sincronización en curso para este documento. Vuelve a intentar en unos segundos.', retry: true },
+        422: { icon: 'pi pi-exclamation-circle', cls: 'warn', title: 'Documento no válido', subtitle: e.message || 'Revisa el documento ingresado (entre 3 y 50 caracteres).', retry: false },
+        503: { icon: 'pi pi-server', cls: 'danger', title: 'Servicio de sincronización no disponible', subtitle: 'Sisclin no responde en este momento. Intenta más tarde.', retry: true },
+        504: { icon: 'pi pi-clock', cls: 'danger', title: 'La sincronización tardó demasiado', subtitle: 'Sisclin no respondió a tiempo. Vuelve a intentarlo.', retry: true }
+    };
+    return byStatus[e.status] || { icon: 'pi pi-exclamation-triangle', cls: 'danger', title: 'Ocurrió un problema al consultar el paciente', subtitle: e.message || '', retry: true };
+});
+
+// ── Desglose de pendientes en el historial (expandible por fila) ──────────────
+const expandedPagos = ref(new Set());
+const togglePendientes = (atencionId) => {
+    const next = new Set(expandedPagos.value);
+    next.has(atencionId) ? next.delete(atencionId) : next.add(atencionId);
+    expandedPagos.value = next;
+};
+const isPagoExpanded = (atencionId) => expandedPagos.value.has(atencionId);
 
 // ── Datos derivados del paciente ─────────────────────────────────────────────
 const paciente = computed(() => scanResult.value?.paciente || null);
@@ -80,6 +114,9 @@ const formatTime = (iso) => {
 
 // El médico puede venir null → mostrar el nombre del servicio como respaldo.
 const medicoOServicio = (cita) => cita?.servicio?.nombre_medico || cita?.servicio?.nombre_servicio || 'Servicio no especificado';
+
+// Monto que falta cobrar en ventanilla (0 si no aplica o no viene informado).
+const montoPendiente = (pago) => Number(pago?.monto_pendiente) || 0;
 </script>
 
 <template>
@@ -96,6 +133,7 @@ const medicoOServicio = (cita) => cita?.servicio?.nombre_medico || cita?.servici
 
             <!-- Barra de búsqueda -->
             <div class="search-bar">
+                <Select v-model="tipo" :options="tipoOptions" optionLabel="label" optionValue="value" class="tipo-select" :disabled="isScanning" v-tooltip.top="'Tipo de documento (Auto lo detecta por longitud)'" />
                 <IconField class="search-field">
                     <InputIcon class="pi pi-search" />
                     <InputText ref="searchInput" v-model="documento" placeholder="Escanea o escribe el documento y presiona Enter…" class="search-input" autofocus :disabled="isScanning" @keyup.enter="handleSearch" />
@@ -104,10 +142,11 @@ const medicoOServicio = (cita) => cita?.servicio?.nombre_medico || cita?.servici
                 <Button v-if="hasSearched" label="Limpiar" icon="pi pi-times" severity="secondary" outlined :disabled="isScanning" @click="handleClear" />
             </div>
 
-            <!-- Estado: cargando -->
+            <!-- Estado: cargando (migración desde Sisclin, ~5 s) -->
             <div v-if="isScanning" class="state-block">
                 <ProgressSpinner style="width: 48px; height: 48px" strokeWidth="4" />
-                <p class="state-text">Consultando paciente…</p>
+                <p class="state-text">Sincronizando con Sisclin…</p>
+                <p class="state-subtext">Esto puede tardar unos 5 segundos.</p>
             </div>
 
             <!-- Estado: inicial (aún no se busca) -->
@@ -116,20 +155,12 @@ const medicoOServicio = (cita) => cita?.servicio?.nombre_medico || cita?.servici
                 <p class="state-text">Escanea el documento del paciente para comenzar.</p>
             </div>
 
-            <!-- Estado: no encontrado -->
-            <div v-else-if="notFound" class="state-block">
-                <i class="pi pi-user-minus state-icon warn"></i>
-                <p class="state-text">
-                    No se encontró un paciente con el documento <strong>«{{ lastQuery }}»</strong>.
-                </p>
-                <p class="state-subtext">Verifica el número e inténtalo nuevamente.</p>
-            </div>
-
-            <!-- Estado: error de red/servidor -->
-            <div v-else-if="failed" class="state-block">
-                <i class="pi pi-exclamation-triangle state-icon danger"></i>
-                <p class="state-text">Ocurrió un problema al consultar el paciente.</p>
-                <Button label="Reintentar" icon="pi pi-refresh" @click="handleSearch" />
+            <!-- Estado: error / no encontrado (mensaje según el caso) -->
+            <div v-else-if="errorInfo" class="state-block">
+                <i :class="[errorInfo.icon, 'state-icon', errorInfo.cls]"></i>
+                <p class="state-text">{{ errorInfo.title }}</p>
+                <p v-if="errorInfo.subtitle" class="state-subtext">{{ errorInfo.subtitle }}</p>
+                <Button v-if="errorInfo.retry" label="Reintentar" icon="pi pi-refresh" @click="handleSearch" />
             </div>
 
             <!-- Resultado -->
@@ -183,7 +214,10 @@ const medicoOServicio = (cita) => cita?.servicio?.nombre_medico || cita?.servici
                                     <span class="today-medico">{{ medicoOServicio(cita) }}</span>
                                     <span v-if="cita.servicio?.especialidad" class="today-especialidad">{{ cita.servicio.especialidad }}</span>
                                 </div>
-                                <Tag :value="cita.tipo_atencion" severity="contrast" class="tipo-tag" />
+                                <Tag :severity="tipoAtencionInfo(cita.tipo_atencion).severity" class="tipo-tag">
+                                    <i :class="tipoAtencionInfo(cita.tipo_atencion).icon" class="mr-1"></i>
+                                    {{ tipoAtencionInfo(cita.tipo_atencion).label }}
+                                </Tag>
                             </div>
 
                             <div class="today-details">
@@ -213,11 +247,27 @@ const medicoOServicio = (cita) => cita?.servicio?.nombre_medico || cita?.servici
                                         <span
                                             >Total: <strong>{{ formatMoney(cita.pago?.total) }}</strong></span
                                         >
+                                        <span v-if="cita.pago?.servicios_evaluables">{{ cita.pago.servicios_pagados ?? 0 }}/{{ cita.pago.servicios_evaluables }} servicios pagados</span>
+                                        <span v-if="montoPendiente(cita.pago) > 0" class="falta"
+                                            >Falta pagar: <strong>{{ formatMoney(cita.pago.monto_pendiente) }}</strong></span
+                                        >
                                         <span v-if="cita.financiamiento?.tipo === 'SEGURO'" class="copago"
                                             >Copago: <strong>{{ formatMoney(cita.pago?.total_copago) }}</strong></span
                                         >
                                     </div>
                                 </div>
+                            </div>
+
+                            <!-- Detalle de servicios pendientes de cobro en ventanilla -->
+                            <div v-if="cita.pago?.pendientes?.length" class="pendientes">
+                                <span class="pendientes-title"><i class="pi pi-list"></i> Pendiente en ventanilla</span>
+                                <ul class="pendientes-list">
+                                    <li v-for="(serv, idx) in cita.pago.pendientes" :key="serv.codigo_servicio || idx">
+                                        <span class="mono pendiente-cod">{{ serv.codigo_servicio || '—' }}</span>
+                                        <span class="pendiente-rubro">{{ serv.rubro || 'Servicio' }}</span>
+                                        <span class="pendiente-total">{{ formatMoney(serv.total) }}</span>
+                                    </li>
+                                </ul>
                             </div>
                         </article>
                     </div>
@@ -251,7 +301,12 @@ const medicoOServicio = (cita) => cita?.servicio?.nombre_medico || cita?.servici
                             </template>
                         </Column>
                         <Column header="Tipo" style="min-width: 120px">
-                            <template #body="{ data }"><Tag :value="data.tipo_atencion" severity="contrast" /></template>
+                            <template #body="{ data }">
+                                <Tag :severity="tipoAtencionInfo(data.tipo_atencion).severity">
+                                    <i :class="tipoAtencionInfo(data.tipo_atencion).icon" class="mr-1"></i>
+                                    {{ tipoAtencionInfo(data.tipo_atencion).label }}
+                                </Tag>
+                            </template>
                         </Column>
                         <Column header="Financiamiento" style="min-width: 150px">
                             <template #body="{ data }">
@@ -277,6 +332,19 @@ const medicoOServicio = (cita) => cita?.servicio?.nombre_medico || cita?.servici
                                 <div class="cell-sub">
                                     {{ formatMoney(data.pago?.total) }}<template v-if="data.financiamiento?.tipo === 'SEGURO'"> · Copago {{ formatMoney(data.pago?.total_copago) }}</template>
                                 </div>
+                                <!-- Desglose expandible cuando hay servicios pendientes -->
+                                <button v-if="data.pago?.pendientes?.length" type="button" class="pendientes-toggle falta" @click="togglePendientes(data.atencion_id)">
+                                    Falta {{ formatMoney(data.pago.monto_pendiente) }}
+                                    <i :class="isPagoExpanded(data.atencion_id) ? 'pi pi-chevron-up' : 'pi pi-chevron-down'"></i>
+                                </button>
+                                <div v-else-if="montoPendiente(data.pago) > 0" class="cell-sub falta">Falta {{ formatMoney(data.pago.monto_pendiente) }}</div>
+                                <ul v-if="isPagoExpanded(data.atencion_id) && data.pago?.pendientes?.length" class="cell-pendientes">
+                                    <li v-for="(serv, idx) in data.pago.pendientes" :key="serv.codigo_servicio || idx">
+                                        <span class="mono pendiente-cod">{{ serv.codigo_servicio || '—' }}</span>
+                                        <span class="pendiente-rubro">{{ serv.rubro || 'Servicio' }}</span>
+                                        <span class="pendiente-total">{{ formatMoney(serv.total) }}</span>
+                                    </li>
+                                </ul>
                             </template>
                         </Column>
                     </DataTable>
@@ -344,6 +412,9 @@ const medicoOServicio = (cita) => cita?.servicio?.nombre_medico || cita?.servici
     gap: 0.75rem;
     flex-wrap: wrap;
     margin-bottom: 1.5rem;
+}
+.tipo-select {
+    min-width: 130px;
 }
 .search-field {
     flex: 1;
@@ -539,6 +610,9 @@ const medicoOServicio = (cita) => cita?.servicio?.nombre_medico || cita?.servici
 .today-card.pago-CUBIERTO_SEGURO {
     border-left-color: var(--blue-500, #3b82f6);
 }
+.today-card.pago-TRASLADADO {
+    border-left-color: var(--surface-400, #9ca3af);
+}
 .today-card.pago-SIN_SERVICIOS {
     border-left-color: var(--surface-400, #9ca3af);
 }
@@ -618,6 +692,96 @@ const medicoOServicio = (cita) => cita?.servicio?.nombre_medico || cita?.servici
 .copago {
     color: var(--text-color);
     font-weight: 600;
+}
+.falta {
+    color: var(--red-500, #ef4444);
+    font-weight: 600;
+}
+
+/* Detalle de servicios pendientes en ventanilla */
+.pendientes {
+    border-top: 1px dashed var(--surface-border);
+    padding-top: 0.6rem;
+}
+.pendientes-title {
+    display: block;
+    font-size: 0.75rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    color: var(--text-color-secondary);
+    margin-bottom: 0.4rem;
+}
+.pendientes-title i {
+    margin-right: 0.3rem;
+    opacity: 0.75;
+}
+.pendientes-list {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 0.25rem;
+}
+.pendientes-list li {
+    display: flex;
+    align-items: baseline;
+    gap: 0.5rem;
+    font-size: 0.85rem;
+}
+.pendiente-cod {
+    color: var(--text-color-secondary);
+    flex-shrink: 0;
+}
+.pendiente-rubro {
+    flex: 1;
+    color: var(--text-color);
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+.pendiente-total {
+    font-weight: 600;
+    color: var(--text-color);
+    flex-shrink: 0;
+}
+
+/* Desglose expandible de pendientes en la tabla de historial */
+.pendientes-toggle {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.3rem;
+    background: none;
+    border: none;
+    padding: 0;
+    margin-top: 0.15rem;
+    font: inherit;
+    font-size: 0.8rem;
+    cursor: pointer;
+}
+.pendientes-toggle i {
+    font-size: 0.7rem;
+}
+.cell-pendientes {
+    list-style: none;
+    margin: 0.35rem 0 0;
+    padding: 0.4rem 0.5rem;
+    border-radius: 8px;
+    background: var(--surface-ground);
+    display: flex;
+    flex-direction: column;
+    gap: 0.25rem;
+}
+.cell-pendientes li {
+    display: flex;
+    align-items: baseline;
+    gap: 0.5rem;
+    font-size: 0.8rem;
+}
+.cell-pendientes .pendiente-rubro {
+    flex: 1;
+    color: var(--text-color);
 }
 
 /* Celdas de tabla */

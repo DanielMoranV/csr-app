@@ -12,6 +12,7 @@ import { computed } from 'vue';
  *  - PARCIAL         ámbar  · pagó algunos servicios, faltan otros
  *  - PENDIENTE       rojo   · no ha pagado
  *  - CUBIERTO_SEGURO azul   · seguro sin copago; no debe nada en ventanilla
+ *  - TRASLADADO      neutro · cobrado en otro documento; nada que cobrar aquí
  *  - SIN_SERVICIOS   neutro · la atención aún no tiene servicios cargados
  */
 export const PAGO_STATUS = {
@@ -19,6 +20,7 @@ export const PAGO_STATUS = {
     PARCIAL: { label: 'Pago parcial', severity: 'warn', icon: 'pi pi-exclamation-circle' },
     PENDIENTE: { label: 'Pendiente de pago', severity: 'danger', icon: 'pi pi-times-circle' },
     CUBIERTO_SEGURO: { label: 'Cubierto por seguro', severity: 'info', icon: 'pi pi-shield' },
+    TRASLADADO: { label: 'Trasladado', severity: 'secondary', icon: 'pi pi-arrow-right-arrow-left' },
     SIN_SERVICIOS: { label: 'Sin servicios', severity: 'secondary', icon: 'pi pi-minus-circle' }
 };
 
@@ -35,9 +37,25 @@ export const TURNO_STATUS = {
     ANULADO: { label: 'Anulado', severity: 'danger' }
 };
 
+/**
+ * Tipo de atención (`tipo_atencion`, MAYÚSCULAS) → color + ícono, para
+ * distinguir de un vistazo el origen de la cita.
+ *  - AMBULATORIO  azul   · consulta externa
+ *  - EMERGENCIA   rojo   · tópico/emergencia
+ *  - HOSPITALARIO ámbar  · internamiento
+ *  - PROCESO      oscuro · procedimiento
+ */
+export const TIPO_ATENCION = {
+    AMBULATORIO: { label: 'Ambulatorio', severity: 'info', icon: 'pi pi-user' },
+    EMERGENCIA: { label: 'Emergencia', severity: 'danger', icon: 'pi pi-bolt' },
+    HOSPITALARIO: { label: 'Hospitalario', severity: 'warn', icon: 'pi pi-building' },
+    PROCESO: { label: 'Proceso', severity: 'contrast', icon: 'pi pi-sync' }
+};
+
 export const pagoStatusInfo = (estado) => PAGO_STATUS[estado] || { label: estado || '—', severity: 'secondary', icon: 'pi pi-question-circle' };
 export const financiamientoInfo = (tipo) => FINANCIAMIENTO[tipo] || { label: tipo || '—', severity: 'secondary', icon: 'pi pi-wallet' };
 export const turnoStatusInfo = (estado) => TURNO_STATUS[estado] || { label: estado || '—', severity: 'secondary' };
+export const tipoAtencionInfo = (tipo) => TIPO_ATENCION[tipo] || { label: tipo || '—', severity: 'contrast', icon: 'pi pi-tag' };
 
 /**
  * Composable del módulo de Admisión (ventanilla). Envuelve el store del
@@ -48,16 +66,37 @@ export function useAdmision() {
     const store = useAdmisionStore();
     const toast = useToast();
 
+    // Atenciones históricas a traer por defecto (rango 1-20 en el backend).
+    const DEFAULT_LIMIT_ULTIMAS = 5;
+
     // ── Estado expuesto ──────────────────────────────────────────────────────
     const scanResult = computed(() => store.state.scanResult);
     const isScanning = computed(() => store.state.isScanning);
     const notFound = computed(() => store.state.notFound);
     const lastQuery = computed(() => store.state.lastQuery);
+    const error = computed(() => store.state.error);
 
     /**
-     * Buscar un paciente por documento. El 404 ("no encontrado") NO muestra
-     * toast: la vista lo comunica en línea con un mensaje claro. El resto de
-     * errores (422, red, etc.) sí se notifican.
+     * Buscar un paciente migrando fresco desde Sisclin (flujo principal). Los
+     * estados de error (notFound / error con status) quedan en el store y la
+     * vista los renderiza en línea; aquí no se muestran toasts.
+     *
+     * @param {string} documento
+     * @param {'dni'|'historia'|'num_admision'} [tipo] - omitir para auto-detectar.
+     * @returns {Promise<object|null>} el resultado, o null si falló.
+     */
+    const syncPatient = async (documento, tipo) => {
+        try {
+            return await store.syncPatient({ documento, tipo, limitUltimas: DEFAULT_LIMIT_ULTIMAS });
+        } catch {
+            // El estado ya quedó clasificado en el store (notFound / error).
+            return null;
+        }
+    };
+
+    /**
+     * Lectura rápida sin migrar. El 404 NO muestra toast (la vista lo comunica
+     * en línea); el resto de errores sí se notifican.
      *
      * @param {string} documento
      * @param {number} [limitUltimas]
@@ -103,12 +142,15 @@ export function useAdmision() {
         isScanning,
         notFound,
         lastQuery,
+        error,
         // Acciones
+        syncPatient,
         scanPatient,
         clearScan,
         // Helpers de presentación
         pagoStatusInfo,
         financiamientoInfo,
-        turnoStatusInfo
+        turnoStatusInfo,
+        tipoAtencionInfo
     };
 }

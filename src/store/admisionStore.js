@@ -10,6 +10,12 @@ import { computed, reactive } from 'vue';
  * último resultado de búsqueda y los flags de carga/errores para que la vista
  * distinga entre "cargando", "no encontrado" y "error de red".
  */
+// Reintentos automáticos ante 409 (otra sincronización del mismo documento en
+// curso): se espera y se vuelve a intentar manteniendo el spinner activo.
+const MAX_SYNC_RETRIES = 2;
+const SYNC_RETRY_DELAY_MS = 2500;
+const delay = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
+
 export const useAdmisionStore = defineStore('admision', () => {
     // ── Estado ───────────────────────────────────────────────────────────────
     const state = reactive({
@@ -19,7 +25,10 @@ export const useAdmisionStore = defineStore('admision', () => {
         lastQuery: '',
         isScanning: false,
         // Diferencia el "no encontrado" (404) de un error genérico para la UI.
-        notFound: false
+        notFound: false,
+        // Último error no-404 (sync en curso, servicio caído, timeout, validación…)
+        // como { status, message }; null si la última búsqueda no falló.
+        error: null
     });
 
     // ── Getters ──────────────────────────────────────────────────────────────
@@ -27,15 +36,65 @@ export const useAdmisionStore = defineStore('admision', () => {
 
     // ── Acciones ─────────────────────────────────────────────────────────────
 
-    /**
-     * Buscar un paciente por documento. Lanza el error normalizado del
-     * interceptor (con `status`) para que el composable notifique según el caso.
-     * Marca `notFound` en 404 para que la vista muestre el mensaje adecuado.
-     */
-    const scanPatient = async (documento, limitUltimas) => {
+    /** Deja el estado limpio antes de una nueva búsqueda. */
+    const beginSearch = (documento) => {
         state.isScanning = true;
         state.notFound = false;
+        state.error = null;
         state.lastQuery = documento;
+    };
+
+    /** Clasifica el fallo: 404 → notFound; el resto → error { status, message }. */
+    const registerError = (error) => {
+        state.scanResult = null;
+        if (error?.status === 404) {
+            state.notFound = true;
+        } else {
+            state.error = { status: error?.status ?? 0, message: apiUtils.getMessage(error) };
+        }
+    };
+
+    /**
+     * Buscar un paciente MIGRANDO fresco desde Sisclin (endpoint principal).
+     * Reintenta automáticamente ante 409 hasta MAX_SYNC_RETRIES manteniendo el
+     * spinner. Marca notFound/error para que la vista muestre el estado adecuado
+     * y relanza el error normalizado (con `status`).
+     */
+    const syncPatient = async ({ documento, tipo, limitUltimas } = {}) => {
+        beginSearch(documento);
+        try {
+            let attempts = 0;
+            // eslint-disable-next-line no-constant-condition
+            while (true) {
+                try {
+                    const response = await admisionApi.syncPatient({ documento, tipo, limitUltimas });
+                    if (apiUtils.isSuccess(response)) {
+                        state.scanResult = apiUtils.getData(response);
+                        return state.scanResult;
+                    }
+                    throw response;
+                } catch (err) {
+                    if (err?.status === 409 && attempts < MAX_SYNC_RETRIES) {
+                        attempts++;
+                        await delay(SYNC_RETRY_DELAY_MS);
+                        continue;
+                    }
+                    throw err;
+                }
+            }
+        } catch (error) {
+            registerError(error);
+            throw error;
+        } finally {
+            state.isScanning = false;
+        }
+    };
+
+    /**
+     * Lectura rápida SIN migrar desde Sisclin. Misma clasificación de errores.
+     */
+    const scanPatient = async (documento, limitUltimas) => {
+        beginSearch(documento);
         try {
             const response = await admisionApi.scanPatient(documento, limitUltimas);
             if (apiUtils.isSuccess(response)) {
@@ -44,8 +103,7 @@ export const useAdmisionStore = defineStore('admision', () => {
             }
             throw response;
         } catch (error) {
-            state.scanResult = null;
-            if (error?.status === 404) state.notFound = true;
+            registerError(error);
             throw error;
         } finally {
             state.isScanning = false;
@@ -57,11 +115,13 @@ export const useAdmisionStore = defineStore('admision', () => {
         state.scanResult = null;
         state.lastQuery = '';
         state.notFound = false;
+        state.error = null;
     };
 
     return {
         state,
         scanResult,
+        syncPatient,
         scanPatient,
         clearScan
     };
