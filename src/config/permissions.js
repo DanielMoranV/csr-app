@@ -542,6 +542,19 @@ export const MODULE_PERMISSIONS = {
         menuSection: 'Tesorería'
     },
 
+    // ── Admisión (ventanilla) ──────────────────────────────────────────────────
+    // Escaneo de paciente: la admisionista busca por documento y ve al paciente,
+    // su financiamiento, citas de hoy e historial. Público (cualquier sesión
+    // válida): el backend solo exige JWT en el endpoint.
+    admisionScan: {
+        name: 'admision-scan',
+        path: '/admision/escaneo',
+        positions: PERMISSION_GROUPS.ALL,
+        label: 'Escaneo de Paciente',
+        icon: 'pi pi-id-card',
+        menuSection: 'Admisión'
+    },
+
     // ── Envío Masivo de Documentos (Boletas) ──────────────────────────────────
     // Visibilidad del menú: `boletas.view` O `boletas.manage`. Las acciones de
     // escritura se gobiernan en la UI con `boletas.manage` (ver useBoletas).
@@ -658,7 +671,7 @@ export function generateMenuStructure() {
     });
 
     // Convertir a array en el orden deseado
-    const sectionOrder = ['Principal', 'Mi Cuenta', 'Administración', 'Personal Médico', 'Hospitalización', 'Tesorería', 'Boletas', 'SISCLIN', 'Soporte Técnico'];
+    const sectionOrder = ['Principal', 'Mi Cuenta', 'Administración', 'Admisión', 'Personal Médico', 'Hospitalización', 'Tesorería', 'Boletas', 'SISCLIN', 'Soporte Técnico'];
 
     return sectionOrder
         .filter((section) => sections[section])

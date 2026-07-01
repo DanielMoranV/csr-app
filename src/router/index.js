@@ -248,6 +248,13 @@ const router = createRouter({
                     component: () => import('@/views/DashboardErrores.vue'),
                     meta: { requiresAuth: true, positions: MODULE_PERMISSIONS.dashboardErrores.positions }
                 },
+                // ── Admisión (ventanilla) ──
+                {
+                    path: MODULE_PERMISSIONS.admisionScan.path,
+                    name: MODULE_PERMISSIONS.admisionScan.name,
+                    component: () => import('@/views/admision/PatientScan.vue'),
+                    meta: { requiresAuth: true, positions: MODULE_PERMISSIONS.admisionScan.positions }
+                },
                 // ── Envío Masivo de Documentos (Boletas) ──
                 {
                     path: MODULE_PERMISSIONS.boletasEmployees.path,
