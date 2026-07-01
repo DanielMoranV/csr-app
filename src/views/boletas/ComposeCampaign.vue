@@ -395,6 +395,15 @@ const goPrev = () => {
     if (currentStep.value > 0) currentStep.value -= 1;
 };
 
+// Navegación por clic en el indicador de pasos. Se intercepta en vez de usar
+// v-model directo porque el `disabled` de los items de Steps solo aplica estilo
+// en varias versiones de PrimeVue y no impide el clic: sin este guard, hacer clic
+// en un paso incompleto escribiría currentStep saltándose la validación de goNext.
+// Solo se acepta el salto si el paso destino es accesible (anteriores completos).
+const onStepSelect = (index) => {
+    if (isStepReachable(index)) currentStep.value = index;
+};
+
 // "Cambiar" tipo/periodo tras bloquear: descarta los PDFs ya asociados y re-comprueba.
 const unlockHeader = () => {
     confirm.require({
@@ -551,8 +560,9 @@ onMounted(async () => {
                 fallidos con el mismo contenido, usa <strong>"Reintentar fallidos"</strong> en el detalle.
             </Message>
 
-            <!-- Indicador de progreso del wizard (clic para saltar a pasos completos) -->
-            <Steps :model="stepItems" v-model:activeStep="currentStep" :readonly="false" class="wizard-steps mb-4" />
+            <!-- Indicador de progreso del wizard: clic solo para volver/saltar a pasos
+                 accesibles. El salto se filtra en onStepSelect (no v-model directo). -->
+            <Steps :model="stepItems" :activeStep="currentStep" @update:activeStep="onStepSelect" :readonly="false" class="wizard-steps mb-4" />
 
             <!-- ═══════ Paso 1: Destinatarios ═══════ -->
             <div v-show="currentStep === 0" class="step-panel">
