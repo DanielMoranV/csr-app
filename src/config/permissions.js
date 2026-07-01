@@ -550,7 +550,7 @@ export const MODULE_PERMISSIONS = {
         name: 'admision-scan',
         path: '/admision/escaneo',
         positions: PERMISSION_GROUPS.ALL,
-        label: 'Escaneo de Paciente',
+        label: 'Buscar Paciente',
         icon: 'pi pi-id-card',
         menuSection: 'Admisión'
     },

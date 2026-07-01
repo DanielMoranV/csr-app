@@ -112,8 +112,14 @@ const formatTime = (iso) => {
     return d ? timeFmt.format(d) : '';
 };
 
-// El médico puede venir null → mostrar el nombre del servicio como respaldo.
-const medicoOServicio = (cita) => cita?.servicio?.nombre_medico || cita?.servicio?.nombre_servicio || 'Servicio no especificado';
+// `nombre_servicio` trae el nombre limpio del médico (APELLIDOS NOMBRES) o, en
+// servicios sin médico (Rayos X, farmacia…), el nombre del servicio. El campo
+// `nombre_medico` viene con muletillas/consultorio, no se usa.
+const medicoOServicio = (cita) => cita?.servicio?.nombre_servicio || cita?.servicio?.nombre_medico || 'Servicio no especificado';
+
+// Procedimientos realizados (nombres del tarifario), unidos en una línea.
+// Vacío si la atención aún no tiene detalles de servicio.
+const procedimientosTexto = (cita) => (Array.isArray(cita?.procedimientos) ? cita.procedimientos.join(', ') : '');
 
 // Monto que falta cobrar en ventanilla (0 si no aplica o no viene informado).
 const montoPendiente = (pago) => Number(pago?.monto_pendiente) || 0;
@@ -126,7 +132,7 @@ const montoPendiente = (pago) => Number(pago?.monto_pendiente) || 0;
             <div class="header-section">
                 <div class="header-icon-wrapper"><i class="pi pi-id-card"></i></div>
                 <div class="header-content">
-                    <h1 class="header-title">Escaneo de Paciente</h1>
+                    <h1 class="header-title">Buscar Paciente</h1>
                     <p class="header-subtitle"><i class="pi pi-info-circle mr-2"></i>Busca por DNI, código de paciente o número de historia para ver su cita de hoy y su estado de pago.</p>
                 </div>
             </div>
@@ -213,6 +219,7 @@ const montoPendiente = (pago) => Number(pago?.monto_pendiente) || 0;
                                 <div class="today-service">
                                     <span class="today-medico">{{ medicoOServicio(cita) }}</span>
                                     <span v-if="cita.servicio?.especialidad" class="today-especialidad">{{ cita.servicio.especialidad }}</span>
+                                    <span v-if="procedimientosTexto(cita)" class="today-proc"><i class="pi pi-file-o"></i> {{ procedimientosTexto(cita) }}</span>
                                 </div>
                                 <Tag :severity="tipoAtencionInfo(cita.tipo_atencion).severity" class="tipo-tag">
                                     <i :class="tipoAtencionInfo(cita.tipo_atencion).icon" class="mr-1"></i>
@@ -297,6 +304,7 @@ const montoPendiente = (pago) => Number(pago?.monto_pendiente) || 0;
                                 <div class="cell-service">
                                     <span class="font-semibold">{{ medicoOServicio(data) }}</span>
                                     <span v-if="data.servicio?.especialidad" class="cell-sub">{{ data.servicio.especialidad }}</span>
+                                    <span v-if="procedimientosTexto(data)" class="cell-proc"><i class="pi pi-file-o"></i> {{ procedimientosTexto(data) }}</span>
                                 </div>
                             </template>
                         </Column>
@@ -635,6 +643,15 @@ const montoPendiente = (pago) => Number(pago?.monto_pendiente) || 0;
     font-size: 0.85rem;
     color: var(--text-color-secondary);
 }
+.today-proc {
+    font-size: 0.85rem;
+    color: var(--text-color-secondary);
+    margin-top: 0.1rem;
+}
+.today-proc i {
+    margin-right: 0.25rem;
+    opacity: 0.75;
+}
 .tipo-tag {
     flex-shrink: 0;
 }
@@ -798,6 +815,15 @@ const montoPendiente = (pago) => Number(pago?.monto_pendiente) || 0;
     font-size: 0.8rem;
     color: var(--text-color-secondary);
     margin-top: 0.15rem;
+}
+.cell-proc {
+    font-size: 0.8rem;
+    color: var(--text-color-secondary);
+    margin-top: 0.15rem;
+}
+.cell-proc i {
+    margin-right: 0.25rem;
+    opacity: 0.75;
 }
 .text-muted {
     color: var(--text-color-secondary);
