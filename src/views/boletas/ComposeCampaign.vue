@@ -13,6 +13,7 @@ import InputText from 'primevue/inputtext';
 import Message from 'primevue/message';
 import Select from 'primevue/select';
 import SelectButton from 'primevue/selectbutton';
+import Steps from 'primevue/steps';
 import Tag from 'primevue/tag';
 import { useConfirm } from 'primevue/useconfirm';
 import { useToast } from 'primevue/usetoast';
@@ -70,6 +71,12 @@ const existingAttachment = ref(false);
 const documentType = ref('boleta');
 const period = ref('');
 const attachmentMode = ref('per_dni');
+
+// Wizard: paso actual (0..3) y bloqueo de tipo/periodo tras subir el adjunto.
+// Una vez subido el ZIP (o elegido el PDF compartido), tipo y periodo quedan
+// fijos para que la ruta {document_type}/{period}/{dni}.pdf coincida en el envío.
+const currentStep = ref(0);
+const headerLocked = ref(false);
 
 const periodOptions = computed(() => {
     const out = [];
@@ -197,6 +204,8 @@ const handleUploadZip = async () => {
         uploadResult.value = await uploadFiles(formData);
         clearZip();
         await checkPdfs();
+        // ZIP subido para este tipo/periodo → fijarlos para no desalinear la ruta.
+        headerLocked.value = true;
     } catch {
         // notificado por el composable
     }
@@ -220,6 +229,8 @@ const onSharedPdfSelect = (event) => {
         return;
     }
     sharedPdf.value = f;
+    // Al fijar el PDF compartido, bloquear tipo/periodo (coherencia del envío).
+    if (f) headerLocked.value = true;
 };
 const clearSharedPdf = () => {
     sharedPdf.value = null;
@@ -346,6 +357,62 @@ const canSend = computed(() => {
 });
 const sending = computed(() => isCreatingCampaign.value || isUpdatingCampaign.value || isUploadingAttachment.value || isLaunching.value);
 
+// ── Wizard: pasos, validación por paso y navegación ───────────────────────────
+const periodValid = computed(() => PERIOD_REGEX.test(String(period.value || '').trim()));
+const attachmentModeLabel = computed(() => ATTACHMENT_MODES.find((m) => m.value === attachmentMode.value)?.label || attachmentMode.value);
+
+// Paso 1: al menos un destinatario.
+const step1Complete = computed(() => finalRecipients.value.length > 0);
+// Paso 2: periodo válido + requisito de adjunto según el modo.
+//  · per_dni: PDFs comprobados y sin faltantes (evita "PDF no encontrado").
+//  · shared:  PDF compartido elegido (o ya existente en edición).
+//  · none:    sin requisito de adjunto.
+const step2Complete = computed(() => {
+    if (!periodValid.value) return false;
+    if (attachmentMode.value === 'per_dni') return pdfCheck.value.checked === true && pdfCheck.value.missing.length === 0;
+    if (attachmentMode.value === 'shared') return !!sharedPdf.value || (isEdit.value && existingAttachment.value);
+    return true;
+});
+// Paso 3: asunto con texto y cuerpo con contenido.
+const step3Complete = computed(() => !!subject.value.trim() && htmlHasContent(body.value));
+
+// Completitud por índice (el paso 4 —revisar/enviar— no tiene requisito propio).
+const stepsCompleteness = computed(() => [step1Complete.value, step2Complete.value, step3Complete.value, true]);
+// Un paso es accesible si todos los anteriores están completos.
+const isStepReachable = (i) => stepsCompleteness.value.slice(0, i).every(Boolean);
+
+const stepItems = computed(() => [
+    { label: 'Destinatarios', icon: 'pi pi-users', disabled: !isStepReachable(0) },
+    { label: 'Documento y adjunto', icon: 'pi pi-file', disabled: !isStepReachable(1) },
+    { label: 'Mensaje', icon: 'pi pi-pencil', disabled: !isStepReachable(2) },
+    { label: 'Revisar y enviar', icon: 'pi pi-send', disabled: !isStepReachable(3) }
+]);
+
+const goNext = () => {
+    if (currentStep.value < 3 && stepsCompleteness.value[currentStep.value]) currentStep.value += 1;
+};
+const goPrev = () => {
+    if (currentStep.value > 0) currentStep.value -= 1;
+};
+
+// "Cambiar" tipo/periodo tras bloquear: descarta los PDFs ya asociados y re-comprueba.
+const unlockHeader = () => {
+    confirm.require({
+        message: 'Cambiar el tipo o el periodo descartará los PDFs ya asociados a esta campaña. ¿Continuar?',
+        header: 'Cambiar tipo o periodo',
+        icon: 'pi pi-exclamation-triangle',
+        acceptLabel: 'Sí, cambiar',
+        rejectLabel: 'Cancelar',
+        accept: () => {
+            headerLocked.value = false;
+            uploadResult.value = null;
+            pdfCheck.value = { checked: false, missing: [], available: 0 };
+            // Forzar una nueva comprobación en per_dni con el tipo/periodo vigentes.
+            if (attachmentMode.value === 'per_dni') checkPdfs();
+        }
+    });
+};
+
 const confirmSend = () => {
     if (!canSend.value) return;
     const message = isEdit.value
@@ -426,6 +493,11 @@ const loadForEdit = async () => {
         // Al reeditar una campaña fallida en modo per_dni, comprobar de inmediato
         // qué PDFs faltan (sin esperar a que el usuario pulse "Comprobar").
         if (attachmentMode.value === 'per_dni') await checkPdfs();
+        // Si ya tenía PDFs (per_dni) o adjunto (shared), arrancar bloqueado para
+        // no invitar a cambiar tipo/periodo por accidente.
+        if ((attachmentMode.value === 'per_dni' && pdfCheck.value.available > 0) || (attachmentMode.value === 'shared' && existingAttachment.value)) {
+            headerLocked.value = true;
+        }
     } catch {
         // notificado por el composable
     } finally {
@@ -472,9 +544,6 @@ onMounted(async () => {
                         <i class="pi pi-info-circle mr-2"></i>Redacta y envía como un correo. Campaña: <strong>{{ autoName }}</strong>
                     </p>
                 </div>
-                <div class="header-actions">
-                    <Button :label="isEdit ? 'Guardar y reenviar' : 'Enviar'" icon="pi pi-send" :loading="sending" :disabled="!canSend" @click="confirmSend" />
-                </div>
             </div>
 
             <Message v-if="isEdit" severity="warn" :closable="false" class="mb-4">
@@ -482,148 +551,215 @@ onMounted(async () => {
                 fallidos con el mismo contenido, usa <strong>"Reintentar fallidos"</strong> en el detalle.
             </Message>
 
-            <div class="compose-grid">
-                <!-- ───── Columna izquierda: redacción ───── -->
-                <div class="compose-form">
-                    <!-- Para -->
-                    <div class="row-block">
-                        <label class="field-label">Para <span class="req">*</span></label>
-                        <SelectButton v-model="recipientMode" :options="recipientModeOptions" optionLabel="label" optionValue="value" :allowEmpty="false" class="mb-2">
-                            <template #option="{ option }"><i :class="option.icon" class="mr-2"></i>{{ option.label }}</template>
-                        </SelectButton>
+            <!-- Indicador de progreso del wizard (clic para saltar a pasos completos) -->
+            <Steps :model="stepItems" v-model:activeStep="currentStep" :readonly="false" class="wizard-steps mb-4" />
 
-                        <!-- Padrón -->
-                        <div v-if="recipientMode === 'padron'">
-                            <div class="recipients-chips" v-if="selectedEmployees.length">
-                                <Chip v-for="e in selectedEmployees.slice(0, 30)" :key="e.dni" :label="e.nombre || e.full_name" removable @remove="removeEmployee(e.dni)" />
-                                <span v-if="selectedEmployees.length > 30" class="more-count">+{{ selectedEmployees.length - 30 }} más</span>
-                            </div>
-                            <div class="recipients-actions">
-                                <Button label="Seleccionar destinatarios" icon="pi pi-users" outlined size="small" @click="openPicker" />
-                                <Button v-if="selectedEmployees.length" label="Quitar todos" icon="pi pi-times" text size="small" severity="secondary" @click="clearSelection" />
-                                <Tag :value="`${selectedEmployees.length} seleccionado(s)`" :severity="selectedEmployees.length ? 'success' : 'secondary'" />
-                            </div>
+            <!-- ═══════ Paso 1: Destinatarios ═══════ -->
+            <div v-show="currentStep === 0" class="step-panel">
+                <div class="row-block">
+                    <label class="field-label">Para <span class="req">*</span></label>
+                    <SelectButton v-model="recipientMode" :options="recipientModeOptions" optionLabel="label" optionValue="value" :allowEmpty="false" class="mb-2">
+                        <template #option="{ option }"><i :class="option.icon" class="mr-2"></i>{{ option.label }}</template>
+                    </SelectButton>
+
+                    <!-- Padrón -->
+                    <div v-if="recipientMode === 'padron'">
+                        <div class="recipients-chips" v-if="selectedEmployees.length">
+                            <Chip v-for="e in selectedEmployees.slice(0, 30)" :key="e.dni" :label="e.nombre || e.full_name" removable @remove="removeEmployee(e.dni)" />
+                            <span v-if="selectedEmployees.length > 30" class="more-count">+{{ selectedEmployees.length - 30 }} más</span>
                         </div>
-
-                        <!-- Excel -->
-                        <div v-else>
-                            <Message severity="info" :closable="false" class="mb-2">El archivo debe tener columnas <strong>nombre</strong>, <strong>email</strong> y <strong>dni</strong>. Se valida sin guardar.</Message>
-                            <div class="inline-row">
-                                <FileUpload mode="basic" accept=".xlsx,.xls,.csv" :maxFileSize="10485760" :auto="false" chooseLabel="Seleccionar archivo" @select="onExcelSelect" />
-                                <span v-if="selectedExcel" class="mono">{{ selectedExcel.name }}</span>
-                                <Button label="Validar" icon="pi pi-check-circle" size="small" :disabled="!selectedExcel" :loading="isValidating" @click="runValidation" />
-                            </div>
-                            <div v-if="validateResult" class="summary-row mt-2">
-                                <Tag :value="`${validateResult.summary?.valid ?? validateResult.valid?.length ?? 0} válidos`" severity="success" icon="pi pi-check" />
-                                <Tag :value="`${validateResult.summary?.invalid ?? validateResult.invalid?.length ?? 0} con error`" :severity="(validateResult.invalid?.length || 0) > 0 ? 'danger' : 'secondary'" icon="pi pi-times" />
-                            </div>
+                        <div class="recipients-actions">
+                            <Button label="Seleccionar destinatarios" icon="pi pi-users" outlined size="small" @click="openPicker" />
+                            <Button v-if="selectedEmployees.length" label="Quitar todos" icon="pi pi-times" text size="small" severity="secondary" @click="clearSelection" />
+                            <Tag :value="`${selectedEmployees.length} seleccionado(s)`" :severity="selectedEmployees.length ? 'success' : 'secondary'" />
                         </div>
                     </div>
 
-                    <!-- Tipo de documento + periodo -->
+                    <!-- Excel -->
+                    <div v-else>
+                        <Message severity="info" :closable="false" class="mb-2">El archivo debe tener columnas <strong>nombre</strong>, <strong>email</strong> y <strong>dni</strong>. Se valida sin guardar.</Message>
+                        <div class="inline-row">
+                            <FileUpload mode="basic" accept=".xlsx,.xls,.csv" :maxFileSize="10485760" :auto="false" chooseLabel="Seleccionar archivo" @select="onExcelSelect" />
+                            <span v-if="selectedExcel" class="mono">{{ selectedExcel.name }}</span>
+                            <Button label="Validar" icon="pi pi-check-circle" size="small" :disabled="!selectedExcel" :loading="isValidating" @click="runValidation" />
+                        </div>
+                        <div v-if="validateResult" class="summary-row mt-2">
+                            <Tag :value="`${validateResult.summary?.valid ?? validateResult.valid?.length ?? 0} válidos`" severity="success" icon="pi pi-check" />
+                            <Tag :value="`${validateResult.summary?.invalid ?? validateResult.invalid?.length ?? 0} con error`" :severity="(validateResult.invalid?.length || 0) > 0 ? 'danger' : 'secondary'" icon="pi pi-times" />
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- ═══════ Paso 2: Documento y adjunto ═══════ -->
+            <div v-show="currentStep === 1" class="step-panel">
+                <!-- Tipo de documento + periodo (se bloquean tras subir el adjunto) -->
+                <div class="row-block">
+                    <div class="lock-head">
+                        <label class="field-label mb-0">Documento y periodo</label>
+                        <Tag v-if="headerLocked" value="Fijado" icon="pi pi-lock" severity="secondary" />
+                        <Button v-if="headerLocked" label="Cambiar" icon="pi pi-pencil" text size="small" @click="unlockHeader" />
+                    </div>
+                    <small v-if="headerLocked" class="text-muted block mb-2">Tipo y periodo quedaron fijos al asociar el adjunto. Pulsa <strong>Cambiar</strong> para editarlos (descarta los PDFs asociados).</small>
                     <div class="row-inline">
                         <div class="field flex-1">
-                            <label class="field-label">Tipo de documento</label>
-                            <Select v-model="documentType" :options="documentTypes" optionLabel="label" optionValue="slug" class="w-full" placeholder="Seleccione un tipo" />
+                            <label class="field-label-sm">Tipo de documento</label>
+                            <Select v-model="documentType" :options="documentTypes" optionLabel="label" optionValue="slug" class="w-full" placeholder="Seleccione un tipo" :disabled="headerLocked" />
                         </div>
                         <div class="field flex-1">
-                            <label class="field-label">Periodo <span class="req">*</span></label>
-                            <Select v-model="period" :options="periodOptions" editable placeholder="2026-06" class="w-full" />
-                        </div>
-                    </div>
-
-                    <!-- Modo de adjunto -->
-                    <div class="row-block">
-                        <label class="field-label">¿Lleva documento adjunto?</label>
-                        <SelectButton v-model="attachmentMode" :options="ATTACHMENT_MODES" optionLabel="label" optionValue="value" :allowEmpty="false" class="mb-2">
-                            <template #option="{ option }"><i :class="option.icon" class="mr-2"></i>{{ option.label }}</template>
-                        </SelectButton>
-
-                        <!-- per_dni: ZIP con {dni}.pdf -->
-                        <div v-if="attachmentMode === 'per_dni'">
-                            <small class="text-muted block mb-2"
-                                >Archivos <code>{dni}.pdf</code> (8 dígitos). Se asocian al periodo <strong>{{ period }}</strong> y tipo <strong>{{ docTypeLabel }}</strong
-                                >.</small
-                            >
-                            <div class="inline-row">
-                                <FileUpload ref="zipUploader" mode="basic" accept=".zip,application/zip,application/x-zip-compressed" :maxFileSize="52428800" :auto="false" chooseLabel="Seleccionar ZIP" @select="onZipSelect" />
-                                <span v-if="zipFile" class="mono">{{ zipFile.name }}</span>
-                                <Button v-if="zipFile" icon="pi pi-times" text rounded severity="danger" size="small" @click="clearZip" />
-                                <Button label="Subir ZIP" icon="pi pi-cloud-upload" size="small" :disabled="!zipFile || !period" :loading="isUploading" @click="handleUploadZip" />
-                            </div>
-                            <Message v-if="uploadResult" severity="success" :closable="false" class="mt-2">
-                                <strong>{{ uploadResult.stored }}</strong> PDF(s) subido(s). Disponibles: <strong>{{ uploadResult.total_available }}</strong
-                                >.
-                                <span v-if="uploadResult.invalid?.length"> · {{ uploadResult.invalid.length }} rechazado(s).</span>
-                            </Message>
-                        </div>
-
-                        <!-- shared: un mismo PDF para todos -->
-                        <div v-else-if="attachmentMode === 'shared'">
-                            <small class="text-muted block mb-2">Un mismo PDF para todos los destinatarios (máx. 20&nbsp;MB). Se adjunta al enviar.</small>
-                            <div class="inline-row">
-                                <FileUpload mode="basic" accept="application/pdf,.pdf" :maxFileSize="20971520" :auto="false" chooseLabel="Seleccionar PDF" @select="onSharedPdfSelect" />
-                                <span v-if="sharedPdf" class="mono">{{ sharedPdf.name }}</span>
-                                <Button v-if="sharedPdf" icon="pi pi-times" text rounded severity="danger" size="small" @click="clearSharedPdf" />
-                            </div>
-                            <small v-if="sharedPdfError" class="p-error">{{ sharedPdfError }}</small>
-                        </div>
-
-                        <!-- none: sin adjunto -->
-                        <div v-else>
-                            <small class="text-muted">Sin adjunto: se enviará solo el cuerpo del correo.</small>
-                        </div>
-                    </div>
-
-                    <!-- Mensaje -->
-                    <div class="row-block">
-                        <label class="field-label">Mensaje</label>
-                        <div class="inline-row mb-2">
-                            <Select v-model="selectedTemplateId" :options="templateOptions" optionLabel="label" optionValue="value" :loading="isLoadingTemplates" class="flex-1" placeholder="Cargar desde una plantilla…" showClear />
-                            <Button label="Cargar" icon="pi pi-download" size="small" outlined :disabled="!selectedTemplateId" @click="applyTemplate" />
-                        </div>
-
-                        <div class="field mb-2">
-                            <label class="field-label-sm">Asunto <span class="req">*</span></label>
-                            <InputText v-model="subject" class="w-full" placeholder="Tu boleta de {MES}" />
-                            <div class="var-row">
-                                <span class="var-hint">Insertar:</span>
-                                <Button label="{NOMBRE}" size="small" text @click="insertInSubject('{NOMBRE}')" />
-                                <Button label="{MES}" size="small" text @click="insertInSubject('{MES}')" />
-                            </div>
-                        </div>
-
-                        <div class="field">
-                            <label class="field-label-sm">Cuerpo <span class="req">*</span></label>
-                            <Editor v-model="body" editorStyle="height: 240px" />
-                            <div class="var-row">
-                                <span class="var-hint">Insertar:</span>
-                                <Button label="{NOMBRE}" size="small" text @click="insertInBody('{NOMBRE}')" />
-                                <Button label="{MES}" size="small" text @click="insertInBody('{MES}')" />
-                                <small class="text-muted ml-2">Decide si usar las variables o no. El HTML se sanea en el servidor.</small>
-                            </div>
+                            <label class="field-label-sm">Periodo <span class="req">*</span></label>
+                            <Select v-model="period" :options="periodOptions" editable placeholder="2026-06" class="w-full" :disabled="headerLocked" />
+                            <small v-if="period && !periodValid" class="p-error">Formato esperado: YYYY-MM (por ejemplo, 2026-06).</small>
                         </div>
                     </div>
                 </div>
 
-                <!-- ───── Columna derecha: vista previa ───── -->
-                <div class="compose-preview">
-                    <div class="preview-head"><i class="pi pi-eye mr-2"></i>Vista previa <i v-if="isPreviewing" class="pi pi-spin pi-spinner ml-2"></i></div>
-                    <iframe v-if="previewHtml" :srcdoc="previewHtml" class="preview-frame" title="Vista previa del correo"></iframe>
-                    <div v-else class="preview-empty"><i class="pi pi-inbox"></i><span>Escribe el asunto y el cuerpo para ver la vista previa.</span></div>
+                <!-- Modo de adjunto -->
+                <div class="row-block">
+                    <label class="field-label">¿Lleva documento adjunto?</label>
+                    <SelectButton v-model="attachmentMode" :options="ATTACHMENT_MODES" optionLabel="label" optionValue="value" :allowEmpty="false" :disabled="headerLocked" class="mb-2">
+                        <template #option="{ option }"><i :class="option.icon" class="mr-2"></i>{{ option.label }}</template>
+                    </SelectButton>
 
-                    <!-- Aviso de PDFs faltantes (solo modo personalizado por DNI) -->
-                    <template v-if="attachmentMode === 'per_dni'">
-                        <div v-if="pdfCheck.checked" class="pdf-check">
-                            <Message v-if="pdfCheck.missing.length === 0" severity="success" :closable="false">Todos los destinatarios tienen su PDF para {{ period }}.</Message>
-                            <Message v-else severity="warn" :closable="false">
-                                <strong>{{ pdfCheck.missing.length }}</strong> destinatario(s) sin PDF en {{ period }} ({{ docTypeLabel }}); esos envíos <strong>fallarán</strong> con "PDF no encontrado". Sube los PDFs faltantes o quita a esos
-                                destinatarios antes de enviar.
-                            </Message>
+                    <!-- per_dni: ZIP con {dni}.pdf -->
+                    <div v-if="attachmentMode === 'per_dni'">
+                        <small class="text-muted block mb-2"
+                            >Archivos <code>{dni}.pdf</code> (8 dígitos). Se asocian al periodo <strong>{{ period }}</strong> y tipo <strong>{{ docTypeLabel }}</strong
+                            >.</small
+                        >
+                        <div class="inline-row">
+                            <FileUpload ref="zipUploader" mode="basic" accept=".zip,application/zip,application/x-zip-compressed" :maxFileSize="52428800" :auto="false" chooseLabel="Seleccionar ZIP" @select="onZipSelect" />
+                            <span v-if="zipFile" class="mono">{{ zipFile.name }}</span>
+                            <Button v-if="zipFile" icon="pi pi-times" text rounded severity="danger" size="small" @click="clearZip" />
+                            <Button label="Subir ZIP" icon="pi pi-cloud-upload" size="small" :disabled="!zipFile || !period" :loading="isUploading" @click="handleUploadZip" />
                         </div>
-                        <Button label="Comprobar PDFs disponibles" icon="pi pi-search" size="small" text class="mt-2" :disabled="!finalRecipients.length || !period" @click="checkPdfs" />
-                    </template>
+                        <Message v-if="uploadResult" severity="success" :closable="false" class="mt-2">
+                            <strong>{{ uploadResult.stored }}</strong> PDF(s) subido(s). Disponibles: <strong>{{ uploadResult.total_available }}</strong
+                            >.
+                            <span v-if="uploadResult.invalid?.length"> · {{ uploadResult.invalid.length }} rechazado(s).</span>
+                        </Message>
+
+                        <!-- Comprobación de PDFs: obligatoria para avanzar -->
+                        <div class="pdf-check">
+                            <Message v-if="pdfCheck.checked && pdfCheck.missing.length === 0" severity="success" :closable="false">Todos los destinatarios ({{ finalRecipients.length }}) tienen su PDF para {{ period }}.</Message>
+                            <Message v-else-if="pdfCheck.checked" severity="warn" :closable="false">
+                                Faltan <strong>{{ pdfCheck.missing.length }}</strong> PDF(s) de {{ finalRecipients.length }} en {{ period }} ({{ docTypeLabel }}). Sube el ZIP con los DNIs faltantes o quita a esos destinatarios. Esos envíos
+                                <strong>fallarán</strong> con "PDF no encontrado".
+                                <div class="missing-dnis">
+                                    <span v-for="dni in pdfCheck.missing.slice(0, 60)" :key="dni" class="mono missing-dni">{{ dni }}</span>
+                                    <span v-if="pdfCheck.missing.length > 60" class="more-count">+{{ pdfCheck.missing.length - 60 }} más</span>
+                                </div>
+                            </Message>
+                            <Message v-else severity="info" :closable="false">Comprueba los PDFs disponibles para poder continuar.</Message>
+                            <Button label="Comprobar PDFs disponibles" icon="pi pi-search" size="small" text class="mt-2" :disabled="!finalRecipients.length || !period" @click="checkPdfs" />
+                        </div>
+                    </div>
+
+                    <!-- shared: un mismo PDF para todos -->
+                    <div v-else-if="attachmentMode === 'shared'">
+                        <small class="text-muted block mb-2">Un mismo PDF para todos los destinatarios (máx. 20&nbsp;MB). Se adjunta al enviar.</small>
+                        <div class="inline-row">
+                            <FileUpload mode="basic" accept="application/pdf,.pdf" :maxFileSize="20971520" :auto="false" chooseLabel="Seleccionar PDF" @select="onSharedPdfSelect" />
+                            <span v-if="sharedPdf" class="mono">{{ sharedPdf.name }}</span>
+                            <Button v-if="sharedPdf" icon="pi pi-times" text rounded severity="danger" size="small" @click="clearSharedPdf" />
+                        </div>
+                        <small v-if="sharedPdfError" class="p-error">{{ sharedPdfError }}</small>
+                        <Message v-if="!sharedPdf && isEdit && existingAttachment" severity="info" :closable="false" class="mt-2">Ya hay un PDF compartido cargado. Solo elige uno nuevo si quieres reemplazarlo.</Message>
+                    </div>
+
+                    <!-- none: sin adjunto -->
+                    <div v-else>
+                        <small class="text-muted">Sin adjunto: se enviará solo el cuerpo del correo.</small>
+                    </div>
                 </div>
+            </div>
+
+            <!-- ═══════ Paso 3: Mensaje ═══════ -->
+            <div v-show="currentStep === 2" class="step-panel">
+                <div class="compose-grid">
+                    <div class="compose-form">
+                        <div class="row-block">
+                            <label class="field-label">Mensaje</label>
+                            <div class="inline-row mb-2">
+                                <Select v-model="selectedTemplateId" :options="templateOptions" optionLabel="label" optionValue="value" :loading="isLoadingTemplates" class="flex-1" placeholder="Cargar desde una plantilla…" showClear />
+                                <Button label="Cargar" icon="pi pi-download" size="small" outlined :disabled="!selectedTemplateId" @click="applyTemplate" />
+                            </div>
+
+                            <div class="field mb-2">
+                                <label class="field-label-sm">Asunto <span class="req">*</span></label>
+                                <InputText v-model="subject" class="w-full" placeholder="Tu boleta de {MES}" />
+                                <div class="var-row">
+                                    <span class="var-hint">Insertar:</span>
+                                    <Button label="{NOMBRE}" size="small" text @click="insertInSubject('{NOMBRE}')" />
+                                    <Button label="{MES}" size="small" text @click="insertInSubject('{MES}')" />
+                                </div>
+                            </div>
+
+                            <div class="field">
+                                <label class="field-label-sm">Cuerpo <span class="req">*</span></label>
+                                <Editor v-model="body" editorStyle="height: 240px" />
+                                <div class="var-row">
+                                    <span class="var-hint">Insertar:</span>
+                                    <Button label="{NOMBRE}" size="small" text @click="insertInBody('{NOMBRE}')" />
+                                    <Button label="{MES}" size="small" text @click="insertInBody('{MES}')" />
+                                    <small class="text-muted ml-2">Decide si usar las variables o no. El HTML se sanea en el servidor.</small>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Vista previa en vivo -->
+                    <div class="compose-preview">
+                        <div class="preview-head"><i class="pi pi-eye mr-2"></i>Vista previa <i v-if="isPreviewing" class="pi pi-spin pi-spinner ml-2"></i></div>
+                        <iframe v-if="previewHtml" :srcdoc="previewHtml" class="preview-frame" title="Vista previa del correo"></iframe>
+                        <div v-else class="preview-empty"><i class="pi pi-inbox"></i><span>Escribe el asunto y el cuerpo para ver la vista previa.</span></div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- ═══════ Paso 4: Revisar y enviar ═══════ -->
+            <div v-show="currentStep === 3" class="step-panel">
+                <div class="row-block review-block">
+                    <label class="field-label">Revisa antes de enviar</label>
+                    <ul class="review-list">
+                        <li>
+                            <i class="pi pi-file mr-2"></i>Tipo de documento: <strong>{{ docTypeLabel }}</strong>
+                        </li>
+                        <li>
+                            <i class="pi pi-calendar mr-2"></i>Periodo: <strong>{{ period }}</strong>
+                        </li>
+                        <li>
+                            <i class="pi pi-users mr-2"></i>Destinatarios: <strong>{{ finalRecipients.length }}</strong>
+                        </li>
+                        <li>
+                            <i class="pi pi-paperclip mr-2"></i>Adjunto: <strong>{{ attachmentModeLabel }}</strong>
+                        </li>
+                        <li v-if="attachmentMode === 'per_dni'">
+                            <i class="pi pi-check-circle mr-2"></i>PDFs disponibles: <strong>{{ pdfCheck.available }}</strong> · faltantes:
+                            <strong :class="{ 'p-error': pdfCheck.missing.length }">{{ pdfCheck.missing.length }}</strong>
+                        </li>
+                        <li>
+                            <i class="pi pi-envelope mr-2"></i>Asunto: <strong>{{ subject }}</strong>
+                        </li>
+                    </ul>
+                    <Message severity="info" :closable="false" class="mt-2"><i class="pi pi-info-circle mr-2"></i>El envío es asíncrono: podrás seguir su progreso en el detalle de la campaña.</Message>
+                </div>
+            </div>
+
+            <!-- Pie del wizard: navegación + envío final -->
+            <div class="wizard-footer">
+                <Button label="Anterior" icon="pi pi-arrow-left" text :disabled="currentStep === 0" @click="goPrev" />
+                <div class="wizard-spacer"></div>
+                <Button
+                    v-if="currentStep < 3"
+                    label="Siguiente"
+                    icon="pi pi-arrow-right"
+                    iconPos="right"
+                    :disabled="!stepsCompleteness[currentStep]"
+                    v-tooltip.top="!stepsCompleteness[currentStep] ? 'Completa este paso para continuar' : ''"
+                    @click="goNext"
+                />
+                <Button v-else :label="isEdit ? 'Guardar y reenviar' : 'Enviar'" icon="pi pi-send" :loading="sending" :disabled="!canSend" @click="confirmSend" />
             </div>
         </div>
 
@@ -849,6 +985,80 @@ onMounted(async () => {
 }
 .pdf-check {
     margin-top: 0.75rem;
+}
+/* ── Wizard ── */
+.wizard-steps {
+    margin-top: 0.5rem;
+}
+.step-panel {
+    display: flex;
+    flex-direction: column;
+    gap: 1.5rem;
+    animation: step-fade 0.2s ease;
+}
+@keyframes step-fade {
+    from {
+        opacity: 0;
+        transform: translateY(4px);
+    }
+    to {
+        opacity: 1;
+        transform: none;
+    }
+}
+.wizard-footer {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    margin-top: 1.5rem;
+    padding-top: 1.25rem;
+    border-top: 1px solid var(--surface-border);
+}
+.wizard-spacer {
+    flex: 1;
+}
+.lock-head {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    flex-wrap: wrap;
+    margin-bottom: 0.5rem;
+}
+.mb-0 {
+    margin-bottom: 0 !important;
+}
+.missing-dnis {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.35rem;
+    margin-top: 0.5rem;
+    max-height: 120px;
+    overflow: auto;
+}
+.missing-dni {
+    background: color-mix(in srgb, var(--red-500, #ef4444) 12%, transparent);
+    color: var(--red-600, #dc2626);
+    padding: 0.05rem 0.4rem;
+    border-radius: 4px;
+    font-size: 0.8rem;
+}
+.review-block {
+    max-width: 640px;
+}
+.review-list {
+    list-style: none;
+    margin: 0.75rem 0 0 0;
+    padding: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 0.6rem;
+}
+.review-list li {
+    color: var(--text-color-secondary);
+    font-size: 0.95rem;
+}
+.review-list li strong {
+    color: var(--text-color);
 }
 .mono {
     font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
