@@ -450,11 +450,12 @@ const doSend = async () => {
         body: body.value,
         recipients: finalRecipients.value
     };
+    let id;
     try {
         // Edición: PUT (vuelve a draft, contadores en 0) en vez de crear.
         // Orden requerido para shared: (crear|editar) → subir PDF → lanzar.
         const campaign = isEdit.value ? await updateCampaign(props.id, payload) : await createCampaign(payload);
-        const id = campaign?.id ?? props.id;
+        id = campaign?.id ?? props.id;
         if (!id) throw new Error('No se obtuvo el ID de la campaña');
         // Solo se re-sube el PDF compartido si el usuario eligió uno nuevo.
         if (attachmentMode.value === 'shared' && sharedPdf.value) {
@@ -463,10 +464,24 @@ const doSend = async () => {
             await uploadCampaignAttachment(id, fd);
         }
         await launchCampaign(id);
-        router.push({ name: 'boletas-campaign-detail', params: { id } });
+    } catch (error) {
+        // Los errores de API ya muestran toast en el composable (traen `status`);
+        // el resto (p. ej. "No se obtuvo el ID") sería silencioso: lo notificamos
+        // aquí para que el fallo nunca pase desapercibido. La campaña queda en
+        // draft si falló el adjunto o el lanzamiento (visible en el historial).
+        if (!error?.status) {
+            toast.add({ severity: 'error', summary: 'No se pudo completar el envío', detail: error?.message || 'Ocurrió un error inesperado.', life: 6000 });
+        }
+        return;
+    }
+
+    // Navegación fuera del try de envío: la campaña ya se lanzó, así que un fallo
+    // de navegación (p. ej. ruta redundante) no debe confundirse con un fallo de
+    // envío. Se await-ea y se captura por separado para no dejar rechazos sueltos.
+    try {
+        await router.push({ name: 'boletas-campaign-detail', params: { id } });
     } catch {
-        // notificado por el composable; la campaña queda en draft si falló el
-        // adjunto o el lanzamiento (visible en el historial para reintentar).
+        // navegación abortada/redundante: sin efecto visible para el usuario
     }
 };
 
