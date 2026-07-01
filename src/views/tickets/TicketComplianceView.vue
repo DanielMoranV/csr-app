@@ -554,9 +554,10 @@ const navigateToTicket = (id) => {
                             <tr>
                                 <th style="width: 3.5rem">#</th>
                                 <th>Tarea</th>
-                                <th>Asignado</th>
+                                <th>Asignado a</th>
+                                <th>Asignado por</th>
                                 <th>Fecha de ejecución</th>
-                                <th>Fecha de culminación</th>
+                                <th>Culminado por</th>
                                 <th class="center">Cumplido</th>
                             </tr>
                         </thead>
@@ -572,9 +573,15 @@ const navigateToTicket = (id) => {
                                 <td class="id-cell">#{{ t.id }}</td>
                                 <td class="title-cell">{{ t.title }}</td>
                                 <td>
-                                    <div class="assignee-cell">
-                                        <span class="assignee-name">{{ t.assignee_name ?? '—' }}</span>
-                                        <span v-if="t.assignee_position" class="assignee-pos">{{ t.assignee_position }}</span>
+                                    <div class="person-cell">
+                                        <span class="person-name">{{ t.assignee_name ?? '—' }}</span>
+                                        <span v-if="t.assignee_position" class="person-sub">{{ t.assignee_position }}</span>
+                                    </div>
+                                </td>
+                                <td>
+                                    <div class="person-cell">
+                                        <span class="person-name">{{ t.assigned_by_name ?? '—' }}</span>
+                                        <span v-if="t.assigned_at" class="person-sub">{{ formatDate(t.assigned_at, true) }}</span>
                                     </div>
                                 </td>
                                 <td>
@@ -584,10 +591,12 @@ const navigateToTicket = (id) => {
                                     </div>
                                 </td>
                                 <td>
-                                    <div class="concl-cell" :class="{ 'concl-cell--late': isLateCompletion(t) }">
-                                        <span>{{ formatDate(t.concluded_at, true) }}</span>
+                                    <div v-if="t.concluded_at || t.concluded_by_name" class="person-cell concl-cell" :class="{ 'concl-cell--late': isLateCompletion(t) }">
+                                        <span class="person-name">{{ t.concluded_by_name ?? '—' }}</span>
+                                        <span class="person-sub">{{ formatDate(t.concluded_at, true) }}</span>
                                         <Tag v-if="isLateCompletion(t)" value="A destiempo" severity="warn" class="late-tag" />
                                     </div>
+                                    <span v-else class="person-muted">—</span>
                                 </td>
                                 <td class="center">
                                     <span class="cumplido-badge" :class="t.cumplido ? 'cumplido-badge--yes' : 'cumplido-badge--no'">
@@ -1191,19 +1200,28 @@ const navigateToTicket = (id) => {
     font-weight: 500;
 }
 
-.assignee-cell {
+/* Celdas de persona (asignado a / asignado por / culminado por) */
+.person-cell {
     display: flex;
     flex-direction: column;
     line-height: 1.25;
+    align-items: flex-start;
 }
 
-.assignee-name {
+.person-name {
     font-weight: 500;
+    white-space: nowrap;
 }
 
-.assignee-pos {
+.person-sub {
     font-size: 0.7rem;
     color: var(--text-color-secondary);
+    white-space: nowrap;
+}
+
+.person-muted {
+    color: var(--text-color-secondary);
+    opacity: 0.6;
 }
 
 .exec-cell {
@@ -1219,16 +1237,13 @@ const navigateToTicket = (id) => {
     padding: 0.05rem 0.35rem;
 }
 
-/* Fecha de culminación */
+/* Culminado por */
 .concl-cell {
-    display: flex;
-    flex-direction: column;
-    gap: 0.2rem;
-    align-items: flex-start;
-    white-space: nowrap;
+    gap: 0.15rem;
 }
 
-.concl-cell--late {
+.concl-cell--late .person-name,
+.concl-cell--late .person-sub {
     color: #b45309;
     font-weight: 600;
 }
@@ -1428,7 +1443,8 @@ const navigateToTicket = (id) => {
     color: #fca5a5;
 }
 
-.app-dark .concl-cell--late {
+.app-dark .concl-cell--late .person-name,
+.app-dark .concl-cell--late .person-sub {
     color: #fbbf24;
 }
 
