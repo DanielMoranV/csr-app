@@ -15,6 +15,7 @@ import Select from 'primevue/select';
 import SelectButton from 'primevue/selectbutton';
 import Tag from 'primevue/tag';
 import { useConfirm } from 'primevue/useconfirm';
+import { useToast } from 'primevue/usetoast';
 import { computed, onMounted, onUnmounted, ref, watch } from 'vue';
 import { useRouter } from 'vue-router';
 
@@ -23,6 +24,11 @@ const props = defineProps({ id: { type: [String, Number], default: null } });
 
 const router = useRouter();
 const confirm = useConfirm();
+const toast = useToast();
+
+// Periodo válido: YYYY-MM (el Select es editable, así que puede venir con espacios
+// o formato libre). Se usa para normalizar/validar antes de subir ZIP o enviar.
+const PERIOD_REGEX = /^\d{4}-\d{2}$/;
 const {
     templates,
     documentTypes,
@@ -164,8 +170,25 @@ const clearZip = () => {
     zipUploader.value?.clear?.();
 };
 
+// Normaliza el periodo (Select editable → puede traer espacios) y valida el patrón
+// YYYY-MM. Devuelve true si es válido; si no, muestra un toast y devuelve false.
+const normalizeAndValidatePeriod = () => {
+    period.value = String(period.value || '').trim();
+    if (!PERIOD_REGEX.test(period.value)) {
+        toast.add({
+            severity: 'warn',
+            summary: 'Periodo inválido',
+            detail: 'El periodo debe tener el formato YYYY-MM (por ejemplo, 2026-06).',
+            life: 5000
+        });
+        return false;
+    }
+    return true;
+};
+
 const handleUploadZip = async () => {
     if (!zipFile.value || !period.value) return;
+    if (!normalizeAndValidatePeriod()) return;
     const formData = new FormData();
     formData.append('period', period.value);
     formData.append('document_type', documentType.value);
@@ -217,6 +240,24 @@ const checkPdfs = async () => {
         pdfCheck.value = { checked: false, missing: [], available: 0 };
     }
 };
+
+// Recalcular la comprobación de PDFs automáticamente (con debounce para no
+// spamear la API) cuando cambie el periodo, tipo, modo o los destinatarios.
+// Solo aplica en modo per_dni; en otros modos se resetea el estado.
+let pdfCheckTimer = null;
+watch(
+    [period, documentType, attachmentMode, finalRecipients],
+    () => {
+        clearTimeout(pdfCheckTimer);
+        if (attachmentMode.value !== 'per_dni') {
+            pdfCheck.value = { checked: false, missing: [], available: 0 };
+            return;
+        }
+        pdfCheckTimer = setTimeout(checkPdfs, 400);
+    },
+    { deep: true }
+);
+onUnmounted(() => clearTimeout(pdfCheckTimer));
 
 // ── Mensaje: plantilla (precarga) + redacción con variables ───────────────────
 const subject = ref('');
@@ -297,6 +338,10 @@ const canSend = computed(() => {
     // shared exige el PDF compartido antes de poder enviar (el backend bloquea
     // el lanzamiento sin adjunto cargado). En edición vale el PDF ya cargado.
     if (attachmentMode.value === 'shared' && !sharedPdf.value && !(isEdit.value && existingAttachment.value)) return false;
+    // per_dni: obligamos a comprobar los PDFs antes de enviar y no permitimos el
+    // envío si falta alguno (el backend marcaría esos destinatarios como failed
+    // con "PDF no encontrado"). Sin comprobar (checked === false) → deshabilitado.
+    if (attachmentMode.value === 'per_dni' && !(pdfCheck.value.checked && pdfCheck.value.missing.length === 0)) return false;
     return true;
 });
 const sending = computed(() => isCreatingCampaign.value || isUpdatingCampaign.value || isUploadingAttachment.value || isLaunching.value);
@@ -317,6 +362,9 @@ const confirmSend = () => {
 };
 
 const doSend = async () => {
+    // Normalizar y validar el periodo antes de construir el payload: un periodo
+    // malformado provocaría rutas de PDF incorrectas y envíos fallidos.
+    if (!normalizeAndValidatePeriod()) return;
     const payload = {
         name: autoName.value,
         period: period.value,
@@ -375,6 +423,9 @@ const loadForEdit = async () => {
         recipientMode.value = 'padron';
         selectedEmployees.value = (res.items || []).map((r) => ({ nombre: r.nombre, email: r.email, dni: r.dni }));
         runPreview();
+        // Al reeditar una campaña fallida en modo per_dni, comprobar de inmediato
+        // qué PDFs faltan (sin esperar a que el usuario pulse "Comprobar").
+        if (attachmentMode.value === 'per_dni') await checkPdfs();
     } catch {
         // notificado por el composable
     } finally {
@@ -566,7 +617,8 @@ onMounted(async () => {
                         <div v-if="pdfCheck.checked" class="pdf-check">
                             <Message v-if="pdfCheck.missing.length === 0" severity="success" :closable="false">Todos los destinatarios tienen su PDF para {{ period }}.</Message>
                             <Message v-else severity="warn" :closable="false">
-                                <strong>{{ pdfCheck.missing.length }}</strong> destinatario(s) sin PDF en {{ period }} ({{ docTypeLabel }}); esos envíos podrían omitirse.
+                                <strong>{{ pdfCheck.missing.length }}</strong> destinatario(s) sin PDF en {{ period }} ({{ docTypeLabel }}); esos envíos <strong>fallarán</strong> con "PDF no encontrado". Sube los PDFs faltantes o quita a esos
+                                destinatarios antes de enviar.
                             </Message>
                         </div>
                         <Button label="Comprobar PDFs disponibles" icon="pi pi-search" size="small" text class="mt-2" :disabled="!finalRecipients.length || !period" @click="checkPdfs" />
