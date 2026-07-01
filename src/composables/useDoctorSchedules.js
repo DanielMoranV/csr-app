@@ -349,9 +349,7 @@ export function useDoctorSchedules() {
                 toast.add({
                     severity: 'warn',
                     summary: 'Conflicto de Ausencia',
-                    detail: Array.isArray(errorsObj.absence_conflict)
-                        ? errorsObj.absence_conflict[0]
-                        : errorsObj.absence_conflict,
+                    detail: Array.isArray(errorsObj.absence_conflict) ? errorsObj.absence_conflict[0] : errorsObj.absence_conflict,
                     life: 7000
                 });
                 return;

@@ -377,7 +377,6 @@ const exportToExcel = () => {
         <BulkLinkUserDialog v-if="canLinkUsers" v-model:visible="bulkLinkDialogVisible" :doctors="doctors" @completed="handleBulkLinkCompleted" />
 
         <CreateDoctorWithUserDialog v-model:visible="createWithUserDialogVisible" @created="handleDoctorWithUserCreated" />
-
     </div>
 </template>
 

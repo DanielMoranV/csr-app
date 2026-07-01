@@ -195,7 +195,6 @@ const formatSize = (bytes) => {
                 </DataTable>
             </div>
         </div>
-
     </div>
 </template>
 

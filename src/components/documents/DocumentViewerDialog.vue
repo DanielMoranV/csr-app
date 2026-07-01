@@ -1279,13 +1279,7 @@ const formatPermittedUsers = (step) => {
                                         Descargar sustento
                                     </button>
                                     <!-- Revertir a pendiente: deshace la firma/rechazo del último paso resuelto -->
-                                    <button
-                                        v-if="canRevertStep(step)"
-                                        class="step-revert-btn"
-                                        :disabled="isReverting"
-                                        @click="confirmRevertStep(step)"
-                                        title="Deshacer la firma/rechazo y devolver este paso a Pendiente"
-                                    >
+                                    <button v-if="canRevertStep(step)" class="step-revert-btn" :disabled="isReverting" @click="confirmRevertStep(step)" title="Deshacer la firma/rechazo y devolver este paso a Pendiente">
                                         <i class="pi pi-undo"></i>
                                         Revertir a pendiente
                                     </button>

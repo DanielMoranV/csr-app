@@ -228,7 +228,6 @@ const confirmDelete = (emp) => {
                 </div>
             </template>
         </Dialog>
-
     </div>
 </template>
 

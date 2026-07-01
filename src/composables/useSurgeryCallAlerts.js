@@ -97,8 +97,12 @@ export function useSurgeryCallAlerts(options = {}) {
             if (selectedVoice) utterance.voice = selectedVoice;
         }
 
-        utterance.onend = () => { isSpeaking.value = false; };
-        utterance.onerror = () => { isSpeaking.value = false; };
+        utterance.onend = () => {
+            isSpeaking.value = false;
+        };
+        utterance.onerror = () => {
+            isSpeaking.value = false;
+        };
 
         speechSynthesis.speak(utterance);
     };
@@ -163,7 +167,10 @@ export function useSurgeryCallAlerts(options = {}) {
                 timestamp: Date.now()
             });
 
-            notification.onclick = () => { window.focus(); notification.close(); };
+            notification.onclick = () => {
+                window.focus();
+                notification.close();
+            };
             setTimeout(() => notification.close(), 30000);
         } else if (Notification.permission === 'default') {
             Notification.requestPermission().then((permission) => {

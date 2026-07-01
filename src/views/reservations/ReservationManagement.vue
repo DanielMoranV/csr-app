@@ -150,15 +150,9 @@ const calendarOptions = computed(() => {
                         const doctorName = a.doctor?.name || '';
                         // Show last two name parts: "García Lo." style
                         const parts = doctorName.trim().split(/\s+/);
-                        const displayName =
-                            parts.length >= 2
-                                ? `${parts[parts.length - 2]} ${parts[parts.length - 1].charAt(0)}.`
-                                : doctorName.substring(0, 12);
+                        const displayName = parts.length >= 2 ? `${parts[parts.length - 2]} ${parts[parts.length - 1].charAt(0)}.` : doctorName.substring(0, 12);
                         const typeClass = a.is_full_day ? 'rm-abs-full' : 'rm-abs-partial';
-                        const timeStr =
-                            !a.is_full_day && a.start_time && a.end_time
-                                ? ` ${a.start_time.substring(0, 5)}-${a.end_time.substring(0, 5)}`
-                                : '';
+                        const timeStr = !a.is_full_day && a.start_time && a.end_time ? ` ${a.start_time.substring(0, 5)}-${a.end_time.substring(0, 5)}` : '';
                         return `<div class="rm-absence-badge ${typeClass}" title="${doctorName}: ${a.reason}"><span class="pi pi-ban rm-abs-icon"></span><span>${displayName}${timeStr}</span></div>`;
                     })
                     .join('');

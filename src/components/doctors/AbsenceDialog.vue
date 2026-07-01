@@ -100,8 +100,7 @@ const validate = () => {
 const handleSave = () => {
     if (!validate()) return;
 
-    const dateStr =
-        form.value.date instanceof Date ? form.value.date.toISOString().split('T')[0] : form.value.date;
+    const dateStr = form.value.date instanceof Date ? form.value.date.toISOString().split('T')[0] : form.value.date;
 
     const payload = {
         id: props.absence?.id || null,
@@ -130,31 +129,14 @@ const handleDelete = () => {
             <!-- Médico -->
             <div class="form-field">
                 <label class="form-label">Médico <span class="required">*</span></label>
-                <Select
-                    v-model="form.id_doctor"
-                    :options="doctors"
-                    optionLabel="name"
-                    optionValue="id"
-                    placeholder="Seleccione un médico"
-                    class="w-full"
-                    :class="{ 'p-invalid': formErrors.id_doctor }"
-                    filter
-                    showClear
-                />
+                <Select v-model="form.id_doctor" :options="doctors" optionLabel="name" optionValue="id" placeholder="Seleccione un médico" class="w-full" :class="{ 'p-invalid': formErrors.id_doctor }" filter showClear />
                 <small v-if="formErrors.id_doctor" class="error-message">{{ formErrors.id_doctor }}</small>
             </div>
 
             <!-- Fecha -->
             <div class="form-field">
                 <label class="form-label">Fecha <span class="required">*</span></label>
-                <DatePicker
-                    v-model="form.date"
-                    dateFormat="dd/mm/yy"
-                    placeholder="Seleccione una fecha"
-                    showIcon
-                    class="w-full"
-                    :class="{ 'p-invalid': formErrors.date }"
-                />
+                <DatePicker v-model="form.date" dateFormat="dd/mm/yy" placeholder="Seleccione una fecha" showIcon class="w-full" :class="{ 'p-invalid': formErrors.date }" />
                 <small v-if="formErrors.date" class="error-message">{{ formErrors.date }}</small>
             </div>
 
@@ -180,26 +162,12 @@ const handleDelete = () => {
             <div v-if="!form.is_full_day" class="form-row">
                 <div class="form-field">
                     <label class="form-label">Hora inicio <span class="required">*</span></label>
-                    <DatePicker
-                        v-model="form.start_time"
-                        timeOnly
-                        hourFormat="24"
-                        placeholder="HH:MM"
-                        class="w-full"
-                        :class="{ 'p-invalid': formErrors.start_time }"
-                    />
+                    <DatePicker v-model="form.start_time" timeOnly hourFormat="24" placeholder="HH:MM" class="w-full" :class="{ 'p-invalid': formErrors.start_time }" />
                     <small v-if="formErrors.start_time" class="error-message">{{ formErrors.start_time }}</small>
                 </div>
                 <div class="form-field">
                     <label class="form-label">Hora fin <span class="required">*</span></label>
-                    <DatePicker
-                        v-model="form.end_time"
-                        timeOnly
-                        hourFormat="24"
-                        placeholder="HH:MM"
-                        class="w-full"
-                        :class="{ 'p-invalid': formErrors.end_time }"
-                    />
+                    <DatePicker v-model="form.end_time" timeOnly hourFormat="24" placeholder="HH:MM" class="w-full" :class="{ 'p-invalid': formErrors.end_time }" />
                     <small v-if="formErrors.end_time" class="error-message">{{ formErrors.end_time }}</small>
                 </div>
             </div>
@@ -207,37 +175,17 @@ const handleDelete = () => {
             <!-- Motivo -->
             <div class="form-field">
                 <label class="form-label">Motivo <span class="required">*</span></label>
-                <Textarea
-                    v-model="form.reason"
-                    rows="3"
-                    placeholder="Describa el motivo de la ausencia (mínimo 5 caracteres)"
-                    class="w-full"
-                    :class="{ 'p-invalid': formErrors.reason }"
-                    autoResize
-                />
+                <Textarea v-model="form.reason" rows="3" placeholder="Describa el motivo de la ausencia (mínimo 5 caracteres)" class="w-full" :class="{ 'p-invalid': formErrors.reason }" autoResize />
                 <small v-if="formErrors.reason" class="error-message">{{ formErrors.reason }}</small>
             </div>
         </div>
 
         <template #footer>
             <div class="dialog-footer">
-                <Button
-                    v-if="isEditing"
-                    label="Eliminar"
-                    icon="pi pi-trash"
-                    severity="danger"
-                    outlined
-                    :disabled="saving"
-                    @click="handleDelete"
-                />
+                <Button v-if="isEditing" label="Eliminar" icon="pi pi-trash" severity="danger" outlined :disabled="saving" @click="handleDelete" />
                 <div class="footer-actions">
                     <Button label="Cancelar" icon="pi pi-times" severity="secondary" outlined :disabled="saving" @click="dialogVisible = false" />
-                    <Button
-                        :label="isEditing ? 'Actualizar' : 'Registrar'"
-                        :icon="saving ? 'pi pi-spin pi-spinner' : 'pi pi-check'"
-                        :loading="saving"
-                        @click="handleSave"
-                    />
+                    <Button :label="isEditing ? 'Actualizar' : 'Registrar'" :icon="saving ? 'pi pi-spin pi-spinner' : 'pi pi-check'" :loading="saving" @click="handleSave" />
                 </div>
             </div>
         </template>

@@ -104,6 +104,12 @@ const router = createRouter({
                     meta: { requiresAuth: true, positions: MODULE_PERMISSIONS.ticketGantt.positions }
                 },
                 {
+                    path: MODULE_PERMISSIONS.ticketCompliance.path,
+                    name: MODULE_PERMISSIONS.ticketCompliance.name,
+                    component: () => import('@/views/tickets/TicketComplianceView.vue'),
+                    meta: { requiresAuth: true, positions: MODULE_PERMISSIONS.ticketCompliance.positions }
+                },
+                {
                     path: MODULE_PERMISSIONS.documentManagement.path,
                     name: MODULE_PERMISSIONS.documentManagement.name,
                     component: () => import('@/views/documents/DocumentManagement.vue'),

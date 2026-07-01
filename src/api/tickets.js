@@ -91,5 +91,15 @@ export const TicketService = {
     async getGantt(params = {}) {
         const response = await api.get('/tickets/gantt', { params });
         return response;
+    },
+
+    /**
+     * Fetch task-compliance indicators for a given month.
+     * GET /tickets/compliance
+     * @param {{ year: number, month: number, assignee_position?: string, assignee_user_id?: number }} params
+     */
+    async getCompliance(params = {}) {
+        const response = await api.get('/tickets/compliance', { params });
+        return response;
     }
 };

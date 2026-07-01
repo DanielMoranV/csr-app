@@ -364,6 +364,7 @@ const getPrioritySeverity = (priority) => {
                     <Button icon="pi pi-refresh" class="action-btn secondary-action" outlined severity="secondary" @click="ticketsStore.fetchTickets()" v-tooltip.bottom="'Actualizar lista'" :loading="ticketsStore.isLoading" />
                     <Button icon="pi pi-download" class="action-btn secondary-action" outlined severity="info" @click="exportTickets" v-tooltip.bottom="'Exportar tickets'" />
                     <Button icon="pi pi-sliders-h" class="action-btn secondary-action" outlined severity="warn" @click="router.push({ name: 'ticket-gantt' })" v-tooltip.bottom="'Diagrama de Gantt'" />
+                    <Button icon="pi pi-chart-bar" class="action-btn secondary-action" outlined severity="help" @click="router.push({ name: 'ticket-compliance' })" v-tooltip.bottom="'Cumplimiento de Tareas'" />
                     <Button label="Nuevo Ticket" icon="pi pi-plus" class="new-btn" severity="success" @click="openCreateTicketDialog" />
                 </div>
             </div>

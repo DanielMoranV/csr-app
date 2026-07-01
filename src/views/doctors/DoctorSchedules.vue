@@ -521,9 +521,7 @@ const calendarOptions = ref({
 
             // Warn if selected doctor has a full-day absence on this date
             if (doctorFilter.value) {
-                const fullDayAbsence = absences.value.find(
-                    (a) => a.date === dateStr && a.id_doctor === doctorFilter.value && a.is_full_day
-                );
+                const fullDayAbsence = absences.value.find((a) => a.date === dateStr && a.id_doctor === doctorFilter.value && a.is_full_day);
                 if (fullDayAbsence) {
                     toast.add({
                         severity: 'warn',
@@ -708,10 +706,10 @@ const calendarOptions = ref({
         let absenceHtml = '';
         const dateAbsences = (() => {
             if (!doctorFilter.value) return []; // Solo mostrar ausencias si hay un médico seleccionado
-            
+
             return absences.value.filter((a) => {
                 if (a.date !== dateStr) return false;
-                
+
                 // Only show the selected doctor's absences
                 return String(a.id_doctor) === String(doctorFilter.value);
             });
@@ -722,10 +720,7 @@ const calendarOptions = ref({
                     const doctorName = absence.doctor?.name || 'Médico';
                     const truncated = truncateDoctorName(doctorName, 10);
                     const isFullDay = absence.is_full_day;
-                    const timeStr =
-                        !isFullDay && absence.start_time && absence.end_time
-                            ? ` ${absence.start_time.substring(0, 5)}-${absence.end_time.substring(0, 5)}`
-                            : '';
+                    const timeStr = !isFullDay && absence.start_time && absence.end_time ? ` ${absence.start_time.substring(0, 5)}-${absence.end_time.substring(0, 5)}` : '';
                     return `
                         <div class="absence-indicator ${isFullDay ? 'full-day' : 'partial'}"
                              data-absence-id="${absence.id}"

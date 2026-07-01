@@ -38,7 +38,10 @@ const {
 // Auto-ocultar alerta de llamado a quirófano (15 s)
 let alertTimeout = null;
 const dismissAlert = () => {
-    if (alertTimeout) { clearTimeout(alertTimeout); alertTimeout = null; }
+    if (alertTimeout) {
+        clearTimeout(alertTimeout);
+        alertTimeout = null;
+    }
     latestCall.value = null;
 };
 
@@ -56,7 +59,10 @@ watch(
 // Auto-ocultar alerta de retorno desde quirófano (20 s)
 let returnAlertTimeout = null;
 const dismissReturnAlert = () => {
-    if (returnAlertTimeout) { clearTimeout(returnAlertTimeout); returnAlertTimeout = null; }
+    if (returnAlertTimeout) {
+        clearTimeout(returnAlertTimeout);
+        returnAlertTimeout = null;
+    }
     latestReturn.value = null;
 };
 
@@ -1085,7 +1091,6 @@ onUnmounted(() => {
         transform: translateX(calc(-50% + 10px)) translateY(0);
     }
 }
-
 
 /* States */
 .display-loading,
@@ -2154,7 +2159,8 @@ onUnmounted(() => {
 }
 
 @keyframes surgery-alert-glow-red {
-    0%, 100% {
+    0%,
+    100% {
         box-shadow:
             0 20px 60px rgba(239, 68, 68, 0.5),
             0 0 0 4px rgba(255, 255, 255, 0.2);
@@ -2168,7 +2174,8 @@ onUnmounted(() => {
 }
 
 @keyframes surgery-alert-glow-green {
-    0%, 100% {
+    0%,
+    100% {
         box-shadow:
             0 20px 60px rgba(5, 150, 105, 0.5),
             0 0 0 4px rgba(255, 255, 255, 0.2);

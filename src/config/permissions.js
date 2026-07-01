@@ -321,6 +321,17 @@ export const MODULE_PERMISSIONS = {
         showInMenu: false
     },
 
+    // Indicadores de Cumplimiento de Tareas
+    ticketCompliance: {
+        name: 'ticket-compliance',
+        path: '/tickets/cumplimiento',
+        positions: PERMISSION_GROUPS.ALL,
+        label: 'Cumplimiento de Tareas',
+        icon: 'pi pi-fw pi-chart-bar',
+        menuSection: 'Soporte Técnico',
+        showInMenu: false
+    },
+
     // Gestión Documentaria
     documentManagement: {
         name: 'document-management',
