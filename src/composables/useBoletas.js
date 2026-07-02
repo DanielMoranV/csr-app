@@ -425,6 +425,24 @@ export function useBoletas() {
         }
     };
 
+    const downloadConstanciasBulk = async (id) => {
+        try {
+            const response = await store.downloadConstanciasBulk(id);
+            saveBlobResponse(response, `constancias_campana_${id}.pdf`);
+
+            const incluidas = Number(response?.headers?.['x-constancias-incluidas'] ?? 0);
+            const omitidas = Number(response?.headers?.['x-constancias-omitidas'] ?? 0);
+            if (omitidas > 0) {
+                success(`${incluidas} constancia(s) descargadas. ${omitidas} sin constancia generada fueron omitidas.`);
+            } else {
+                success(`${incluidas} constancia(s) descargadas`);
+            }
+        } catch (error) {
+            handleError(error, 'Error al descargar las constancias', { blob: true });
+            throw error;
+        }
+    };
+
     // ── Utilidades internas ────────────────────────────────────────────────────
 
     /** Descarga un Blob de una respuesta axios respetando `Content-Disposition`. */
@@ -567,6 +585,7 @@ export function useBoletas() {
         retryFailed,
         downloadErrors,
         downloadConstancia,
+        downloadConstanciasBulk,
         // Configuración de correo
         fetchMailSettings,
         saveMailSettings,

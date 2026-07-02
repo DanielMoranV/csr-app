@@ -456,6 +456,7 @@ export const useBoletasStore = defineStore('boletas', () => {
     // Descargas (devuelven la respuesta axios cruda con el Blob)
     const downloadErrors = (id) => boletasApi.downloadErrors(id);
     const downloadConstancia = (id, recipientId) => boletasApi.downloadConstancia(id, recipientId);
+    const downloadConstanciasBulk = (id) => boletasApi.downloadConstanciasBulk(id);
 
     // ── Configuración del correo emisor ───────────────────────────────────────
     const fetchMailSettings = async () => {
@@ -555,6 +556,7 @@ export const useBoletasStore = defineStore('boletas', () => {
         retryFailed,
         downloadErrors,
         downloadConstancia,
+        downloadConstanciasBulk,
         // Configuración de correo
         fetchMailSettings,
         saveMailSettings,

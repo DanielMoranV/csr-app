@@ -14,7 +14,8 @@ const props = defineProps({ id: { type: [String, Number], required: true } });
 const router = useRouter();
 const confirm = useConfirm();
 
-const { canManage, currentCampaign, isLoadingCampaign, isRetrying, fetchCampaign, fetchCampaignProgress, fetchCampaignRecipients, retryFailed, downloadErrors, downloadConstancia, documentTypes, fetchDocumentTypes } = useBoletas();
+const { canManage, currentCampaign, isLoadingCampaign, isRetrying, fetchCampaign, fetchCampaignProgress, fetchCampaignRecipients, retryFailed, downloadErrors, downloadConstancia, downloadConstanciasBulk, documentTypes, fetchDocumentTypes } =
+    useBoletas();
 
 const POLL_INTERVAL = 3000;
 let pollTimer = null;
@@ -180,7 +181,22 @@ const handleDownloadErrors = async () => {
     }
 };
 
+const downloadingBulk = ref(false);
+const handleDownloadConstanciasBulk = async () => {
+    downloadingBulk.value = true;
+    try {
+        await downloadConstanciasBulk(props.id);
+    } catch {
+        // notificado por el composable
+    } finally {
+        downloadingBulk.value = false;
+    }
+};
+
 const hasFailures = computed(() => progress.value.failed > 0);
+
+// Solo las campañas per_dni generan constancia individual; shared/none no la tienen.
+const hasConstancias = computed(() => currentCampaign.value?.attachment_mode === 'per_dni' && progress.value.sent > 0);
 
 const formatDate = (value) => {
     if (!value) return '—';
@@ -207,6 +223,7 @@ const formatDate = (value) => {
                 </div>
                 <div class="header-actions flex gap-2 flex-wrap">
                     <Button label="Descargar errores" icon="pi pi-file-excel" outlined severity="secondary" :disabled="!hasFailures" :loading="downloadingErrors" @click="handleDownloadErrors" />
+                    <Button label="Imprimir constancias" icon="pi pi-print" outlined severity="secondary" :disabled="!hasConstancias" :loading="downloadingBulk" @click="handleDownloadConstanciasBulk" />
                     <Button v-if="canEdit" label="Editar" icon="pi pi-pencil" outlined @click="goEdit" />
                     <Button v-if="canManage" label="Reintentar fallidos" icon="pi pi-replay" :disabled="!hasFailures" :loading="isRetrying" @click="handleRetry" />
                 </div>

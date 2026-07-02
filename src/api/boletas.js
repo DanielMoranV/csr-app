@@ -150,6 +150,12 @@ export const boletas = {
             responseType: 'blob'
         }),
 
+    /** Descargar TODAS las constancias de una campaña en un solo PDF (impresión masiva). @returns {Promise} respuesta axios (blob) */
+    downloadConstanciasBulk: (id) =>
+        axios.get(`/boletas/campaigns/${id}/constancias.pdf`, {
+            responseType: 'blob'
+        }),
+
     /**
      * Crear campaña (queda en `draft`).
      * @param {{ name, period, document_type?, attachment_mode?, email_template_id, recipients[] }} data
