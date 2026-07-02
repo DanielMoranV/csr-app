@@ -12,3 +12,6 @@ dist
 .eslintcache
 api-generator/typedoc.json
 **/.DS_Store
+
+# Claude Code local (personal) settings
+.claude/settings.local.json
