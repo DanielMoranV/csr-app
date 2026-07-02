@@ -12,6 +12,18 @@ const HEALTH_CHECK_INTERVAL = 30000;
 // Timeout para health check (2 segundos)
 const HEALTH_CHECK_TIMEOUT = 2000;
 
+/**
+ * ¿Se puede usar la API local (HTTP)?
+ * Si la página se sirvió por HTTPS, el navegador bloquea cualquier XHR a la
+ * API local HTTP por Mixed Content (incluido el propio health check). En ese
+ * caso NUNCA se debe activar el modo local, aunque estemos dentro de la LAN.
+ * Solo entrando por HTTP (LAN) tiene sentido el modo local.
+ */
+const canUseLocal = () =>
+    typeof window === 'undefined' ||
+    window.location.protocol !== 'https:' ||
+    LOCAL_API_URL.startsWith('https:');
+
 export const useApiConfigStore = defineStore('apiConfig', () => {
     // Estado reactivo
     const state = reactive({
@@ -35,6 +47,8 @@ export const useApiConfigStore = defineStore('apiConfig', () => {
      * @returns {Promise<boolean>} true si la API local está disponible
      */
     const checkLocalHealth = async () => {
+        if (!canUseLocal()) return false;
+
         try {
             state.isCheckingHealth = true;
             state.healthCheckError = null;
@@ -111,7 +125,7 @@ export const useApiConfigStore = defineStore('apiConfig', () => {
      * Verifica la salud y actualiza el modo si es necesario
      */
     const checkAndUpdateMode = async () => {
-        const isLocalHealthy = await checkLocalHealth();
+        const isLocalHealthy = canUseLocal() && (await checkLocalHealth());
 
         // Si la API local está disponible y no estamos en modo local, cambiar
         if (isLocalHealthy && state.currentMode !== 'local') {
