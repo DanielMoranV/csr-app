@@ -9,7 +9,11 @@ import InputText from 'primevue/inputtext';
 import ProgressSpinner from 'primevue/progressspinner';
 import Select from 'primevue/select';
 import Tag from 'primevue/tag';
-import { computed, nextTick, ref } from 'vue';
+import { computed, defineAsyncComponent, nextTick, ref } from 'vue';
+
+// El escáner arrastra ZXing (~pesado); se carga solo al abrir el diálogo para
+// no penalizar la carga de la vista (la mayoría busca por teclado / lector físico).
+const BarcodeScannerDialog = defineAsyncComponent(() => import('@/components/admision/BarcodeScannerDialog.vue'));
 
 const { scanResult, isScanning, notFound, lastQuery, error, syncPatient, clearScan, pagoStatusInfo, financiamientoInfo, turnoStatusInfo, tipoAtencionInfo } = useAdmision();
 
@@ -41,6 +45,15 @@ const handleClear = () => {
     hasSearched.value = false;
     clearScan();
     nextTick(() => searchInput.value?.$el?.focus());
+};
+
+// ── Escaneo con cámara ────────────────────────────────────────────────────────
+// El diálogo devuelve el texto del código; se coloca en el input y se busca
+// reutilizando el mismo flujo (con `tipo` según el selector, normalmente Auto).
+const scannerVisible = ref(false);
+const handleScanned = (code) => {
+    documento.value = code;
+    handleSearch();
 };
 
 // ── Estado de error/vacío (mensaje en línea según el caso) ────────────────────
@@ -145,6 +158,7 @@ const montoPendiente = (pago) => Number(pago?.monto_pendiente) || 0;
                     <InputText ref="searchInput" v-model="documento" placeholder="Escanea o escribe el documento y presiona Enter…" class="search-input" autofocus :disabled="isScanning" @keyup.enter="handleSearch" />
                 </IconField>
                 <Button label="Buscar" icon="pi pi-search" :loading="isScanning" @click="handleSearch" />
+                <Button label="Escanear" icon="pi pi-camera" severity="secondary" outlined :disabled="isScanning" @click="scannerVisible = true" v-tooltip.top="'Usar la cámara como lector de código de barras'" />
                 <Button v-if="hasSearched" label="Limpiar" icon="pi pi-times" severity="secondary" outlined :disabled="isScanning" @click="handleClear" />
             </div>
 
@@ -359,6 +373,9 @@ const montoPendiente = (pago) => Number(pago?.monto_pendiente) || 0;
                 </section>
             </div>
         </div>
+
+        <!-- Lector de código de barras por cámara (carga diferida al abrir) -->
+        <BarcodeScannerDialog v-if="scannerVisible" v-model:visible="scannerVisible" @detected="handleScanned" />
     </div>
 </template>
 

@@ -16,6 +16,8 @@
         "@fullcalendar/vue3": "^6.1.19",
         "@primeuix/themes": "^1.0.0",
         "@vueuse/core": "^14.2.0",
+        "@zxing/browser": "^0.2.0",
+        "@zxing/library": "^0.22.0",
         "axios": "^1.11.0",
         "chart.js": "3.3.2",
         "chartjs-plugin-datalabels": "^2.2.0",
