@@ -3,6 +3,7 @@ import { BrowserMultiFormatReader } from '@zxing/browser';
 import { BarcodeFormat, DecodeHintType } from '@zxing/library';
 import Button from 'primevue/button';
 import Dialog from 'primevue/dialog';
+import Slider from 'primevue/slider';
 import { computed, onBeforeUnmount, onMounted, ref, shallowRef, watch } from 'vue';
 
 /**
@@ -52,6 +53,10 @@ const stop = () => {
     }
     controls.value = null;
     reader.value = null;
+    track.value = null;
+    zoomCaps.value = null;
+    torchSupported.value = false;
+    torchOn.value = false;
     status.value = 'idle';
 };
 
@@ -92,16 +97,87 @@ const start = async (deviceId) => {
             if (text) handleDetected(text);
         };
 
-        if (selected) {
-            controls.value = await reader.value.decodeFromVideoDevice(selected, videoEl.value, onResult);
-        } else {
-            // Sin deviceId: pedimos la cámara trasera por constraint (móviles).
-            controls.value = await reader.value.decodeFromConstraints({ video: { facingMode: 'environment' } }, videoEl.value, onResult);
-        }
+        // Alta resolución + autofocus continuo: el PDF417 del DNI es muy denso y
+        // pequeño; a 640×480 y foco fijo sale borroso e ilegible. Pedimos hasta
+        // 1080p para tener suficientes píxeles por barra.
+        const video = {
+            width: { ideal: 1920 },
+            height: { ideal: 1080 },
+            focusMode: { ideal: 'continuous' }
+        };
+        if (selected) video.deviceId = { exact: selected };
+        else video.facingMode = { ideal: 'environment' };
+
+        controls.value = await reader.value.decodeFromConstraints({ video }, videoEl.value, onResult);
         status.value = 'scanning';
+
+        // Tras abrir el stream, ajustamos foco continuo y exponemos zoom/linterna
+        // (solo disponibles en algunas cámaras, típicamente móviles).
+        await applyTrackEnhancements();
     } catch (e) {
         status.value = 'error';
         errorMsg.value = describeError(e);
+    }
+};
+
+// ── Realce de la pista de vídeo: foco continuo, zoom y linterna ───────────────
+const track = shallowRef(null);
+const zoom = ref(1);
+const zoomCaps = ref(null); // { min, max, step } o null si no hay zoom
+const torchSupported = ref(false);
+const torchOn = ref(false);
+
+const applyTrackEnhancements = async () => {
+    track.value = null;
+    zoomCaps.value = null;
+    torchSupported.value = false;
+    torchOn.value = false;
+
+    const stream = videoEl.value?.srcObject;
+    const t = stream?.getVideoTracks?.()[0];
+    if (!t) return;
+    track.value = t;
+
+    const caps = t.getCapabilities?.() || {};
+    const settings = t.getSettings?.() || {};
+
+    // Autofocus continuo (clave para el DNI). Se aplica por separado porque
+    // muchos navegadores lo ignoran dentro de getUserMedia.
+    if (Array.isArray(caps.focusMode) && caps.focusMode.includes('continuous')) {
+        try {
+            await t.applyConstraints({ advanced: [{ focusMode: 'continuous' }] });
+        } catch {
+            /* noop */
+        }
+    }
+
+    // Zoom (óptico/digital): permite acercar un código pequeño.
+    if (caps.zoom && typeof caps.zoom.max === 'number') {
+        zoomCaps.value = { min: caps.zoom.min ?? 1, max: caps.zoom.max, step: caps.zoom.step || 0.1 };
+        zoom.value = settings.zoom ?? zoomCaps.value.min;
+    }
+
+    torchSupported.value = !!caps.torch;
+};
+
+const applyZoom = async (value) => {
+    zoom.value = value;
+    if (!track.value) return;
+    try {
+        await track.value.applyConstraints({ advanced: [{ zoom: value }] });
+    } catch {
+        /* noop */
+    }
+};
+
+const toggleTorch = async () => {
+    if (!track.value || !torchSupported.value) return;
+    const next = !torchOn.value;
+    try {
+        await track.value.applyConstraints({ advanced: [{ torch: next }] });
+        torchOn.value = next;
+    } catch {
+        /* noop */
     }
 };
 
@@ -170,9 +246,29 @@ onBeforeUnmount(stop);
                     <i class="pi pi-exclamation-triangle"></i>
                     <span>{{ errorMsg }}</span>
                 </div>
+
+                <!-- Linterna (si la cámara la soporta): ayuda con DNIs plastificados -->
+                <Button
+                    v-if="status === 'scanning' && torchSupported"
+                    class="torch-btn"
+                    :icon="torchOn ? 'pi pi-lightbulb' : 'pi pi-bolt'"
+                    rounded
+                    :severity="torchOn ? 'warn' : 'secondary'"
+                    v-tooltip.left="torchOn ? 'Apagar linterna' : 'Encender linterna'"
+                    @click="toggleTorch"
+                />
             </div>
 
-            <p v-if="status === 'scanning'" class="scanner-hint"><i class="pi pi-camera"></i> Apunta al código de barras del documento (DNI, pulsera o QR).</p>
+            <!-- Zoom: acerca el código pequeño del DNI hasta que enfoca nítido -->
+            <div v-if="status === 'scanning' && zoomCaps" class="zoom-control">
+                <i class="pi pi-search-minus"></i>
+                <Slider :modelValue="zoom" :min="zoomCaps.min" :max="zoomCaps.max" :step="zoomCaps.step" class="zoom-slider" @update:modelValue="applyZoom" />
+                <i class="pi pi-search-plus"></i>
+            </div>
+
+            <p v-if="status === 'scanning'" class="scanner-hint">
+                <i class="pi pi-camera"></i> Apunta al código de barras del documento. Para el DNI, acerca el reverso y usa el zoom hasta que enfoque nítido.
+            </p>
         </div>
 
         <template #footer>
@@ -238,5 +334,28 @@ onBeforeUnmount(stop);
     margin: 0;
     font-size: 0.9rem;
     color: var(--text-color-secondary);
+}
+
+/* Linterna sobre el vídeo */
+.torch-btn {
+    position: absolute;
+    top: 0.6rem;
+    right: 0.6rem;
+    z-index: 2;
+}
+
+/* Control de zoom */
+.zoom-control {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    padding: 0.25rem 0.25rem 0;
+}
+.zoom-control i {
+    color: var(--text-color-secondary);
+    font-size: 0.9rem;
+}
+.zoom-slider {
+    flex: 1;
 }
 </style>
