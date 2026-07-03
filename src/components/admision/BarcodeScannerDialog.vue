@@ -45,12 +45,31 @@ const currentDeviceId = ref(null);
 const hasMultipleCameras = computed(() => devices.value.length > 1);
 
 // ── Arranque / parada de la cámara ───────────────────────────────────────────
+
+// Libera cualquier pista de vídeo que siga abierta en el elemento <video>. ZXing
+// debería hacerlo en controls.stop(), pero si un arranque falla a medias el
+// stream puede quedar retenido y bloquear la cámara ("NotReadableError").
+const releaseStream = () => {
+    const stream = videoEl.value?.srcObject;
+    if (stream?.getTracks) {
+        stream.getTracks().forEach((t) => {
+            try {
+                t.stop();
+            } catch {
+                /* noop */
+            }
+        });
+    }
+    if (videoEl.value) videoEl.value.srcObject = null;
+};
+
 const stop = () => {
     try {
         controls.value?.stop();
     } catch {
         /* noop */
     }
+    releaseStream();
     controls.value = null;
     reader.value = null;
     track.value = null;
@@ -97,22 +116,35 @@ const start = async (deviceId) => {
             if (text) handleDetected(text);
         };
 
-        // Alta resolución + autofocus continuo: el PDF417 del DNI es muy denso y
-        // pequeño; a 640×480 y foco fijo sale borroso e ilegible. Pedimos hasta
-        // 1080p para tener suficientes píxeles por barra.
-        const video = {
-            width: { ideal: 1920 },
-            height: { ideal: 1080 },
-            focusMode: { ideal: 'continuous' }
-        };
-        if (selected) video.deviceId = { exact: selected };
-        else video.facingMode = { ideal: 'environment' };
+        // Base de constraints: cámara elegida (o trasera en móviles).
+        const baseVideo = () => (selected ? { deviceId: { exact: selected } } : { facingMode: { ideal: 'environment' } });
 
-        controls.value = await reader.value.decodeFromConstraints({ video }, videoEl.value, onResult);
+        // Se intenta primero en alta resolución (mejor para el PDF417 del DNI) y
+        // se degrada si la cámara no puede entregarla: muchas webcams lanzan
+        // NotReadableError/OverconstrainedError al pedir 1080p. El foco continuo
+        // NO se pide aquí (constraint no estándar que rompe algunas cámaras); se
+        // aplica después con applyConstraints, que no tumba el stream si falla.
+        const attempts = [{ video: { ...baseVideo(), width: { ideal: 1920 }, height: { ideal: 1080 } } }, { video: baseVideo() }, { video: true }];
+
+        let lastErr = null;
+        for (const constraints of attempts) {
+            try {
+                controls.value = await reader.value.decodeFromConstraints(constraints, videoEl.value, onResult);
+                lastErr = null;
+                break;
+            } catch (e) {
+                lastErr = e;
+                releaseStream();
+                // Si el usuario denegó el permiso, reintentar es inútil.
+                if (e?.name === 'NotAllowedError' || e?.name === 'SecurityError') break;
+            }
+        }
+        if (lastErr) throw lastErr;
+
         status.value = 'scanning';
 
-        // Tras abrir el stream, ajustamos foco continuo y exponemos zoom/linterna
-        // (solo disponibles en algunas cámaras, típicamente móviles).
+        // Con el stream ya abierto: foco continuo + zoom/linterna si la cámara
+        // los soporta (típicamente en móviles).
         await applyTrackEnhancements();
     } catch (e) {
         status.value = 'error';
@@ -190,7 +222,7 @@ const describeError = (e) => {
         case 'OverconstrainedError':
             return 'No se encontró una cámara disponible en este equipo.';
         case 'NotReadableError':
-            return 'La cámara está en uso por otra aplicación.';
+            return 'No se pudo acceder a la cámara. Ciérrala en otras apps o pestañas (Teams, Zoom, Cámara de Windows) y reintenta.';
         default:
             return e?.message || 'No se pudo iniciar la cámara.';
     }
