@@ -1,13 +1,21 @@
 <script setup>
 import { useBoletas } from '@/composables/useBoletas';
 import Button from 'primevue/button';
+import Column from 'primevue/column';
+import DataTable from 'primevue/datatable';
+import Dialog from 'primevue/dialog';
 import InputText from 'primevue/inputtext';
 import Message from 'primevue/message';
 import Password from 'primevue/password';
 import Select from 'primevue/select';
+import Tag from 'primevue/tag';
+import ToggleSwitch from 'primevue/toggleswitch';
+import { useConfirm } from 'primevue/useconfirm';
 import { onMounted, ref } from 'vue';
 
-const { isLoadingMailSettings, isSavingMailSettings, isTestingMail, fetchMailSettings, saveMailSettings, testMailSettings } = useBoletas();
+const { mailSettings, isLoadingMailSettings, isSavingMailSettings, isTestingMail, fetchMailSettings, createMailSetting, updateMailSetting, deleteMailSetting, setDefaultMailSetting, testMailSetting } = useBoletas();
+
+const confirm = useConfirm();
 
 const encryptionOptions = [
     { label: 'TLS', value: 'tls' },
@@ -15,58 +23,98 @@ const encryptionOptions = [
     { label: 'Ninguna', value: null }
 ];
 
-const form = ref({ host: '', port: 587, encryption: 'tls', username: '', password: '', from_address: '', from_name: '' });
-const hasPassword = ref(false);
-const errors = ref({});
-
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
 onMounted(async () => {
     try {
-        const data = await fetchMailSettings();
-        if (data) hydrate(data);
+        await fetchMailSettings();
     } catch {
         // notificado por el composable
     }
 });
 
-const hydrate = (data) => {
+// ── Diálogo crear/editar ──────────────────────────────────────────────────────
+const dialogVisible = ref(false);
+const editingId = ref(null); // null = crear
+const hasPassword = ref(false);
+const errors = ref({});
+
+const emptyForm = () => ({
+    label: '',
+    host: '',
+    port: 587,
+    encryption: 'tls',
+    username: '',
+    password: '',
+    from_address: '',
+    from_name: '',
+    is_default: false,
+    is_active: true
+});
+
+const form = ref(emptyForm());
+
+const openCreate = () => {
+    editingId.value = null;
+    hasPassword.value = false;
+    errors.value = {};
+    form.value = emptyForm();
+    dialogVisible.value = true;
+};
+
+const openEdit = (account) => {
+    editingId.value = account.id;
+    hasPassword.value = !!account.has_password;
+    errors.value = {};
     form.value = {
-        host: data.host || '',
-        port: data.port ?? 587,
-        encryption: data.encryption ?? null,
-        username: data.username || '',
+        label: account.label || '',
+        host: account.host || '',
+        port: account.port ?? 587,
+        encryption: account.encryption ?? null,
+        username: account.username || '',
         password: '', // nunca se precarga; vacío = conservar la guardada
-        from_address: data.from_address || '',
-        from_name: data.from_name || ''
+        from_address: account.from_address || '',
+        from_name: account.from_name || '',
+        is_default: !!account.is_default,
+        is_active: account.is_active !== false
     };
-    hasPassword.value = !!data.has_password;
+    dialogVisible.value = true;
 };
 
 const validate = () => {
     errors.value = {};
+    if (!form.value.label.trim()) errors.value.label = 'La etiqueta es obligatoria';
     if (!form.value.host.trim()) errors.value.host = 'El host es obligatorio';
-    if (!form.value.port || Number(form.value.port) <= 0) errors.value.port = 'Puerto no válido';
+    if (!form.value.port || Number(form.value.port) <= 0 || Number(form.value.port) > 65535) errors.value.port = 'Puerto no válido';
     if (!EMAIL_RE.test(form.value.from_address.trim())) errors.value.from_address = 'Correo remitente no válido';
     if (!form.value.from_name.trim()) errors.value.from_name = 'El nombre remitente es obligatorio';
+    // La contraseña solo es obligatoria al crear.
+    if (editingId.value == null && !form.value.password) errors.value.password = 'La contraseña es obligatoria';
     return Object.keys(errors.value).length === 0;
 };
 
 const handleSave = async () => {
     if (!validate()) return;
     const payload = {
+        label: form.value.label.trim(),
         host: form.value.host.trim(),
         port: Number(form.value.port),
         encryption: form.value.encryption,
         username: form.value.username.trim(),
         from_address: form.value.from_address.trim(),
-        from_name: form.value.from_name.trim()
+        from_name: form.value.from_name.trim(),
+        is_default: form.value.is_default,
+        is_active: form.value.is_active
     };
     // La contraseña solo se envía si se escribió una nueva; vacía => se conserva.
     if (form.value.password) payload.password = form.value.password;
     try {
-        const updated = await saveMailSettings(payload);
-        if (updated) hydrate(updated);
+        if (editingId.value == null) {
+            await createMailSetting(payload);
+        } else {
+            await updateMailSetting(editingId.value, payload);
+        }
+        dialogVisible.value = false;
     } catch (error) {
         if (error?.status === 422 && error?.errors && typeof error.errors === 'object') {
             const mapped = {};
@@ -78,9 +126,46 @@ const handleSave = async () => {
     }
 };
 
-// ── Envío de prueba ──────────────────────────────────────────────────────────
+// ── Marcar predeterminada ─────────────────────────────────────────────────────
+const handleSetDefault = async (account) => {
+    try {
+        await setDefaultMailSetting(account.id);
+    } catch {
+        // notificado por el composable
+    }
+};
+
+// ── Eliminar ──────────────────────────────────────────────────────────────────
+const handleDelete = (account) => {
+    confirm.require({
+        message: `¿Eliminar la cuenta "${account.label}"? Esta acción no se puede deshacer.`,
+        header: 'Eliminar cuenta',
+        icon: 'pi pi-exclamation-triangle',
+        acceptLabel: 'Sí, eliminar',
+        rejectLabel: 'Cancelar',
+        acceptClass: 'p-button-danger',
+        accept: async () => {
+            try {
+                await deleteMailSetting(account.id);
+            } catch {
+                // 422 (predeterminada o en uso): el composable muestra el motivo.
+            }
+        }
+    });
+};
+
+// ── Envío de prueba ───────────────────────────────────────────────────────────
+const testDialogVisible = ref(false);
+const testAccount = ref(null);
 const testEmail = ref('');
 const testError = ref('');
+
+const openTest = (account) => {
+    testAccount.value = account;
+    testEmail.value = '';
+    testError.value = '';
+    testDialogVisible.value = true;
+};
 
 const handleTest = async () => {
     testError.value = '';
@@ -89,11 +174,14 @@ const handleTest = async () => {
         return;
     }
     try {
-        await testMailSettings({ to: testEmail.value.trim() });
+        await testMailSetting(testAccount.value.id, { to: testEmail.value.trim() });
+        testDialogVisible.value = false;
     } catch {
         // el composable muestra el error SMTP concreto (422)
     }
 };
+
+const encryptionLabel = (value) => encryptionOptions.find((o) => o.value === value)?.label || 'Ninguna';
 </script>
 
 <template>
@@ -102,12 +190,66 @@ const handleTest = async () => {
             <div class="header-section">
                 <div class="header-icon-wrapper"><i class="pi pi-cog"></i></div>
                 <div class="header-content">
-                    <h1 class="header-title">Configuración del correo emisor</h1>
-                    <p class="header-subtitle"><i class="pi pi-info-circle mr-2"></i>Servidor SMTP y remitente usados para el envío masivo.</p>
+                    <h1 class="header-title">Cuentas de correo emisor</h1>
+                    <p class="header-subtitle"><i class="pi pi-info-circle mr-2"></i>Servidores SMTP y remitentes disponibles para el envío masivo. Cada campaña puede elegir con cuál se envía.</p>
+                </div>
+                <div class="header-actions">
+                    <Button label="Nueva cuenta" icon="pi pi-plus" @click="openCreate" />
                 </div>
             </div>
 
+            <DataTable :value="mailSettings" :loading="isLoadingMailSettings" responsiveLayout="scroll" stripedRows class="p-datatable-sm" dataKey="id" emptyMessage="Aún no hay cuentas de correo. Crea la primera con «Nueva cuenta».">
+                <Column header="Cuenta" style="min-width: 220px">
+                    <template #body="{ data }">
+                        <div class="account-cell">
+                            <span class="account-label">{{ data.label }}</span>
+                            <span class="account-from">{{ data.from_name }} &lt;{{ data.from_address }}&gt;</span>
+                        </div>
+                    </template>
+                </Column>
+                <Column header="Servidor" style="min-width: 200px">
+                    <template #body="{ data }">
+                        <span class="mono">{{ data.host }}:{{ data.port }}</span>
+                        <span class="text-muted"> · {{ encryptionLabel(data.encryption) }}</span>
+                    </template>
+                </Column>
+                <Column header="Estado" style="min-width: 160px">
+                    <template #body="{ data }">
+                        <Tag v-if="data.is_default" value="Predeterminada" severity="success" icon="pi pi-star-fill" class="mr-1" />
+                        <Tag v-if="!data.is_active" value="Deshabilitada" severity="warn" icon="pi pi-ban" />
+                    </template>
+                </Column>
+                <Column header="" style="min-width: 190px">
+                    <template #body="{ data }">
+                        <div class="row-actions">
+                            <Button icon="pi pi-pencil" text rounded size="small" v-tooltip.top="'Editar'" @click="openEdit(data)" />
+                            <Button
+                                icon="pi pi-star"
+                                text
+                                rounded
+                                size="small"
+                                severity="secondary"
+                                :disabled="data.is_default || !data.is_active"
+                                :loading="isSavingMailSettings"
+                                v-tooltip.top="data.is_default ? 'Ya es la predeterminada' : !data.is_active ? 'Habilítala para poder marcarla' : 'Marcar predeterminada'"
+                                @click="handleSetDefault(data)"
+                            />
+                            <Button icon="pi pi-paper-plane" text rounded size="small" v-tooltip.top="'Enviar prueba'" @click="openTest(data)" />
+                            <Button icon="pi pi-trash" text rounded size="small" severity="danger" v-tooltip.top="'Eliminar'" @click="handleDelete(data)" />
+                        </div>
+                    </template>
+                </Column>
+            </DataTable>
+        </div>
+
+        <!-- Diálogo crear/editar cuenta -->
+        <Dialog v-model:visible="dialogVisible" :header="editingId == null ? 'Nueva cuenta de correo' : 'Editar cuenta de correo'" :modal="true" class="w-full md:w-[640px]" :style="{ maxWidth: '95vw' }">
             <div class="settings-grid">
+                <div class="field field-full">
+                    <label class="field-label">Etiqueta <span class="req">*</span></label>
+                    <InputText v-model="form.label" class="w-full" :class="{ 'p-invalid': errors.label }" placeholder="Gerencia, RRHH, Administración…" @input="errors.label = ''" />
+                    <small v-if="errors.label" class="p-error">{{ errors.label }}</small>
+                </div>
                 <div class="field">
                     <label class="field-label">Servidor SMTP (host) <span class="req">*</span></label>
                     <InputText v-model="form.host" class="w-full" :class="{ 'p-invalid': errors.host }" placeholder="smtp.empresa.com" @input="errors.host = ''" />
@@ -127,9 +269,20 @@ const handleTest = async () => {
                     <InputText v-model="form.username" class="w-full" placeholder="usuario@empresa.com" autocomplete="off" />
                 </div>
                 <div class="field">
-                    <label class="field-label">Contraseña</label>
-                    <Password v-model="form.password" class="w-full" inputClass="w-full" :feedback="false" toggleMask :placeholder="hasPassword ? '•••• sin cambios' : 'Ingresa la contraseña'" autocomplete="new-password" />
-                    <small class="text-muted">Déjala vacía para conservar la contraseña actual.</small>
+                    <label class="field-label">Contraseña <span v-if="editingId == null" class="req">*</span></label>
+                    <Password
+                        v-model="form.password"
+                        class="w-full"
+                        inputClass="w-full"
+                        :class="{ 'p-invalid': errors.password }"
+                        :feedback="false"
+                        toggleMask
+                        :placeholder="hasPassword ? '•••• sin cambios' : 'Ingresa la contraseña'"
+                        autocomplete="new-password"
+                        @input="errors.password = ''"
+                    />
+                    <small v-if="errors.password" class="p-error">{{ errors.password }}</small>
+                    <small v-else-if="editingId != null" class="text-muted">Déjala vacía para conservar la contraseña actual.</small>
                 </div>
                 <div class="field">
                     <label class="field-label">Correo remitente <span class="req">*</span></label>
@@ -141,23 +294,36 @@ const handleTest = async () => {
                     <InputText v-model="form.from_name" class="w-full" :class="{ 'p-invalid': errors.from_name }" placeholder="Recursos Humanos" @input="errors.from_name = ''" />
                     <small v-if="errors.from_name" class="p-error">{{ errors.from_name }}</small>
                 </div>
-            </div>
-
-            <div class="actions-row">
-                <Button label="Guardar configuración" icon="pi pi-save" :loading="isSavingMailSettings" :disabled="isLoadingMailSettings" @click="handleSave" />
-            </div>
-
-            <!-- Envío de prueba -->
-            <div class="test-block">
-                <h3 class="block-title"><i class="pi pi-send mr-2"></i>Enviar correo de prueba</h3>
-                <Message severity="info" :closable="false" class="mb-3">Usa la configuración <strong>guardada</strong>. Guarda primero si hiciste cambios.</Message>
-                <div class="test-row">
-                    <InputText v-model="testEmail" class="flex-1" :class="{ 'p-invalid': testError }" placeholder="correo-destino@empresa.com" @input="testError = ''" />
-                    <Button label="Enviar prueba" icon="pi pi-paper-plane" :loading="isTestingMail" @click="handleTest" />
+                <div class="field toggle-field">
+                    <ToggleSwitch v-model="form.is_default" inputId="is_default" />
+                    <label for="is_default" class="toggle-label">Marcar como predeterminada</label>
                 </div>
+                <div class="field toggle-field">
+                    <ToggleSwitch v-model="form.is_active" inputId="is_active" />
+                    <label for="is_active" class="toggle-label">Habilitada</label>
+                </div>
+            </div>
+            <template #footer>
+                <Button label="Cancelar" icon="pi pi-times" text @click="dialogVisible = false" />
+                <Button :label="editingId == null ? 'Crear cuenta' : 'Guardar cambios'" icon="pi pi-save" :loading="isSavingMailSettings" @click="handleSave" />
+            </template>
+        </Dialog>
+
+        <!-- Diálogo de envío de prueba -->
+        <Dialog v-model:visible="testDialogVisible" header="Enviar correo de prueba" :modal="true" class="w-full md:w-[480px]" :style="{ maxWidth: '95vw' }">
+            <Message severity="info" :closable="false" class="mb-3">
+                Se enviará usando la cuenta <strong>{{ testAccount?.label }}</strong> ({{ testAccount?.from_address }}).
+            </Message>
+            <div class="field">
+                <label class="field-label">Correo destino <span class="req">*</span></label>
+                <InputText v-model="testEmail" class="w-full" :class="{ 'p-invalid': testError }" placeholder="correo-destino@empresa.com" @input="testError = ''" @keyup.enter="handleTest" />
                 <small v-if="testError" class="p-error">{{ testError }}</small>
             </div>
-        </div>
+            <template #footer>
+                <Button label="Cancelar" icon="pi pi-times" text @click="testDialogVisible = false" />
+                <Button label="Enviar prueba" icon="pi pi-paper-plane" :loading="isTestingMail" @click="handleTest" />
+            </template>
+        </Dialog>
     </div>
 </template>
 
@@ -195,6 +361,7 @@ const handleTest = async () => {
 }
 .header-content {
     flex: 1;
+    min-width: 200px;
 }
 .header-title {
     font-size: 1.6rem;
@@ -209,16 +376,39 @@ const handleTest = async () => {
     align-items: center;
     margin: 0;
 }
+.header-actions {
+    margin-left: auto;
+}
+.account-cell {
+    display: flex;
+    flex-direction: column;
+    gap: 0.15rem;
+}
+.account-label {
+    font-weight: 700;
+    color: var(--text-color);
+}
+.account-from {
+    font-size: 0.85rem;
+    color: var(--text-color-secondary);
+}
+.row-actions {
+    display: flex;
+    gap: 0.15rem;
+    flex-wrap: nowrap;
+}
 .settings-grid {
     display: grid;
     grid-template-columns: repeat(2, 1fr);
     gap: 1.25rem;
-    margin-bottom: 1.5rem;
 }
 .field {
     display: flex;
     flex-direction: column;
     gap: 0.35rem;
+}
+.field-full {
+    grid-column: 1 / -1;
 }
 .field-label {
     font-weight: 600;
@@ -227,28 +417,17 @@ const handleTest = async () => {
 .req {
     color: var(--red-500, #ef4444);
 }
-.actions-row {
-    display: flex;
-    justify-content: flex-end;
-    margin-bottom: 1.5rem;
+.toggle-field {
+    flex-direction: row;
+    align-items: center;
+    gap: 0.6rem;
 }
-.test-block {
-    border: 1px solid var(--surface-border);
-    border-radius: 12px;
-    padding: 1.25rem;
-    background: var(--surface-ground);
-}
-.block-title {
-    font-size: 1.05rem;
-    font-weight: 700;
-    margin: 0 0 0.75rem 0;
+.toggle-label {
+    font-weight: 600;
     color: var(--text-color);
 }
-.test-row {
-    display: flex;
-    gap: 0.75rem;
-    align-items: center;
-    flex-wrap: wrap;
+.mono {
+    font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
 }
 .text-muted {
     color: var(--text-color-secondary);
@@ -259,6 +438,9 @@ const handleTest = async () => {
     }
     .main-card {
         padding: 1rem;
+    }
+    .header-actions {
+        margin-left: 0;
     }
 }
 </style>

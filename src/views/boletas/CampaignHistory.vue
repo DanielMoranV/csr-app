@@ -119,6 +119,11 @@ const goNew = () => router.push({ name: 'boletas-campaign-new' });
                         ><span :class="failedOf(data) > 0 ? 'text-danger font-semibold' : 'text-muted'">{{ failedOf(data) }}</span></template
                     >
                 </Column>
+                <Column header="Remitente" style="min-width: 150px">
+                    <template #body="{ data }">
+                        <span class="text-muted">{{ data.mail_setting?.label ?? 'Predeterminada' }}</span>
+                    </template>
+                </Column>
                 <Column header="Fecha" style="min-width: 170px">
                     <template #body="{ data }">{{ formatDate(data.created_at || data.launched_at) }}</template>
                 </Column>

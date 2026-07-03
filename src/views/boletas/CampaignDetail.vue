@@ -219,6 +219,7 @@ const formatDate = (value) => {
                         <span v-if="currentCampaign" class="mono">{{ currentCampaign.period }}</span>
                         <span v-if="currentCampaign"> · {{ docTypeLabel(currentCampaign.document_type) }}</span>
                         <Tag v-if="currentCampaign?.attachment_mode" :value="attachmentModeInfo(currentCampaign.attachment_mode).short" severity="secondary" class="ml-2" />
+                        <Tag v-if="currentCampaign" :value="`Remitente: ${currentCampaign.mail_setting?.label ?? 'Predeterminada'}`" icon="pi pi-envelope" severity="secondary" class="ml-2" />
                     </p>
                 </div>
                 <div class="header-actions flex gap-2 flex-wrap">

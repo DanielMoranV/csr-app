@@ -34,6 +34,7 @@ const {
     templates,
     documentTypes,
     employees,
+    mailSettings,
     isLoadingTemplates,
     isLoadingEmployees,
     isValidating,
@@ -45,6 +46,7 @@ const {
     isLaunching,
     fetchTemplates,
     fetchDocumentTypes,
+    fetchMailSettings,
     fetchEmployees,
     validateRecipients,
     uploadFiles,
@@ -55,8 +57,21 @@ const {
     updateCampaign,
     fetchCampaign,
     fetchCampaignRecipients,
-    launchCampaign
+    launchCampaign,
+    canSettings
 } = useBoletas();
+
+// Carga silenciosa de cuentas remitentes: solo si el usuario tiene permiso para
+// listarlas (boletas.settings). Sin permiso o si falla, el Select queda vacío y
+// el backend cae a la cuenta predeterminada del sistema.
+const loadMailSettings = async () => {
+    if (!canSettings.value) return;
+    try {
+        await fetchMailSettings();
+    } catch {
+        // notificado por el composable; no bloquea la creación
+    }
+};
 
 // ── Modo edición ──────────────────────────────────────────────────────────────
 // Editar una campaña draft/failed: se precarga el formulario y al guardar se
@@ -277,6 +292,17 @@ const selectedTemplateId = ref(null);
 
 const templateOptions = computed(() => templates.value.map((t) => ({ label: t.is_default ? `${t.name} (por defecto)` : t.name, value: t.id })));
 
+// ── Cuenta remitente (opcional; null = usar la predeterminada del sistema) ─────
+const selectedMailSettingId = ref(null);
+const mailSettingOptions = computed(() =>
+    mailSettings.value
+        .filter((c) => c.is_active)
+        .map((c) => ({
+            label: `${c.label} — ${c.from_address}${c.is_default ? ' (predeterminada)' : ''}`,
+            value: c.id
+        }))
+);
+
 const applyTemplate = () => {
     const tpl = templates.value.find((t) => t.id === selectedTemplateId.value);
     if (!tpl) return;
@@ -448,7 +474,8 @@ const doSend = async () => {
         attachment_mode: attachmentMode.value,
         subject: subject.value.trim(),
         body: body.value,
-        recipients: finalRecipients.value
+        recipients: finalRecipients.value,
+        mail_setting_id: selectedMailSettingId.value || null
     };
     let id;
     try {
@@ -508,6 +535,7 @@ const loadForEdit = async () => {
         attachmentMode.value = c.attachment_mode || 'per_dni';
         subject.value = c.subject || '';
         body.value = c.body || '';
+        selectedMailSettingId.value = c.mail_setting_id ?? null;
         existingAttachment.value = !!c.has_attachment;
         // Destinatarios actuales → se cargan como seleccionados del padrón (editables).
         const res = await fetchCampaignRecipients(props.id, { per_page: 1000 });
@@ -532,6 +560,9 @@ const loadForEdit = async () => {
 onMounted(async () => {
     period.value = periodOptions.value[0];
     await Promise.all([fetchTemplates(), fetchDocumentTypes()]);
+    // Cuentas remitentes: opcional. Si el usuario no tiene permiso para listarlas
+    // (o falla la carga), el Select queda vacío y el backend usa la predeterminada.
+    loadMailSettings();
 
     if (isEdit.value) {
         await loadForEdit();
@@ -708,6 +739,12 @@ onMounted(async () => {
                             <div class="inline-row mb-2">
                                 <Select v-model="selectedTemplateId" :options="templateOptions" optionLabel="label" optionValue="value" :loading="isLoadingTemplates" class="flex-1" placeholder="Cargar desde una plantilla…" showClear />
                                 <Button label="Cargar" icon="pi pi-download" size="small" outlined :disabled="!selectedTemplateId" @click="applyTemplate" />
+                            </div>
+
+                            <div v-if="mailSettingOptions.length" class="field mb-2">
+                                <label class="field-label-sm">Enviar como <span class="text-muted">(remitente)</span></label>
+                                <Select v-model="selectedMailSettingId" :options="mailSettingOptions" optionLabel="label" optionValue="value" class="w-full" placeholder="Predeterminada" showClear :disabled="headerLocked" />
+                                <small class="text-muted">Si no eliges, se usa la cuenta predeterminada del sistema.</small>
                             </div>
 
                             <div class="field mb-2">

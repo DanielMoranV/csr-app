@@ -33,8 +33,8 @@ export const useBoletasStore = defineStore('boletas', () => {
         campaignsPagination: { page: 1, perPage: 15, total: 0, lastPage: 1 },
         currentCampaign: null,
 
-        // Configuración del correo emisor (SMTP)
-        mailSettings: null,
+        // Cuentas remitentes SMTP (lista; la predeterminada va primero)
+        mailSettings: [],
 
         // Flags de carga
         isLoadingDocumentTypes: false,
@@ -458,13 +458,14 @@ export const useBoletasStore = defineStore('boletas', () => {
     const downloadConstancia = (id, recipientId) => boletasApi.downloadConstancia(id, recipientId);
     const downloadConstanciasBulk = (id) => boletasApi.downloadConstanciasBulk(id);
 
-    // ── Configuración del correo emisor ───────────────────────────────────────
+    // ── Cuentas remitentes SMTP ───────────────────────────────────────────────
     const fetchMailSettings = async () => {
         state.isLoadingMailSettings = true;
         try {
             const response = await boletasApi.getMailSettings();
             if (apiUtils.isSuccess(response)) {
-                state.mailSettings = apiUtils.getData(response);
+                const data = apiUtils.getData(response);
+                state.mailSettings = Array.isArray(data) ? data : data?.data || [];
                 return state.mailSettings;
             }
             throw response;
@@ -473,13 +474,15 @@ export const useBoletasStore = defineStore('boletas', () => {
         }
     };
 
-    const saveMailSettings = async (data) => {
+    const createMailSetting = async (data) => {
         state.isSavingMailSettings = true;
         try {
-            const response = await boletasApi.updateMailSettings(data);
+            const response = await boletasApi.createMailSetting(data);
             if (apiUtils.isSuccess(response)) {
-                state.mailSettings = apiUtils.getData(response) || state.mailSettings;
-                return state.mailSettings;
+                const created = apiUtils.getData(response);
+                // Re-fetch para reflejar el cambio de is_default en todas las filas.
+                await fetchMailSettings();
+                return created;
             }
             throw response;
         } finally {
@@ -487,10 +490,55 @@ export const useBoletasStore = defineStore('boletas', () => {
         }
     };
 
-    const testMailSettings = async (data) => {
+    const updateMailSetting = async (id, data) => {
+        state.isSavingMailSettings = true;
+        try {
+            const response = await boletasApi.updateMailSetting(id, data);
+            if (apiUtils.isSuccess(response)) {
+                const updated = apiUtils.getData(response);
+                await fetchMailSettings();
+                return updated;
+            }
+            throw response;
+        } finally {
+            state.isSavingMailSettings = false;
+        }
+    };
+
+    const deleteMailSetting = async (id) => {
+        state.isSavingMailSettings = true;
+        try {
+            const response = await boletasApi.deleteMailSetting(id);
+            if (apiUtils.isSuccess(response)) {
+                const index = state.mailSettings.findIndex((m) => m.id === id);
+                if (index !== -1) state.mailSettings.splice(index, 1);
+                return response;
+            }
+            throw response;
+        } finally {
+            state.isSavingMailSettings = false;
+        }
+    };
+
+    const setDefaultMailSetting = async (id) => {
+        state.isSavingMailSettings = true;
+        try {
+            const response = await boletasApi.setDefaultMailSetting(id);
+            if (apiUtils.isSuccess(response)) {
+                // Re-fetch: el backend desmarca la anterior predeterminada.
+                await fetchMailSettings();
+                return apiUtils.getData(response);
+            }
+            throw response;
+        } finally {
+            state.isSavingMailSettings = false;
+        }
+    };
+
+    const testMailSetting = async (id, data) => {
         state.isTestingMail = true;
         try {
-            const response = await boletasApi.testMailSettings(data);
+            const response = await boletasApi.testMailSetting(id, data);
             if (apiUtils.isSuccess(response)) {
                 return apiUtils.getData(response);
             }
@@ -557,9 +605,12 @@ export const useBoletasStore = defineStore('boletas', () => {
         downloadErrors,
         downloadConstancia,
         downloadConstanciasBulk,
-        // Configuración de correo
+        // Cuentas remitentes SMTP
         fetchMailSettings,
-        saveMailSettings,
-        testMailSettings
+        createMailSetting,
+        updateMailSetting,
+        deleteMailSetting,
+        setDefaultMailSetting,
+        testMailSetting
     };
 });

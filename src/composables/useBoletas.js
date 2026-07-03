@@ -369,30 +369,63 @@ export function useBoletas() {
         }
     };
 
-    // ── Configuración del correo emisor ──────────────────────────────────────────
+    // ── Cuentas remitentes SMTP ──────────────────────────────────────────────────
     const fetchMailSettings = async () => {
         try {
             return await store.fetchMailSettings();
         } catch (error) {
-            handleError(error, 'Error al cargar la configuración de correo');
+            handleError(error, 'Error al cargar las cuentas de correo');
             throw error;
         }
     };
 
-    const saveMailSettings = async (data) => {
+    const createMailSetting = async (data) => {
         try {
-            const result = await store.saveMailSettings(data);
-            success('Configuración de correo guardada correctamente');
+            const result = await store.createMailSetting(data);
+            success('Cuenta de correo creada correctamente');
             return result;
         } catch (error) {
-            handleError(error, 'Error al guardar la configuración de correo');
+            handleError(error, 'Error al crear la cuenta de correo');
             throw error;
         }
     };
 
-    const testMailSettings = async (data) => {
+    const updateMailSetting = async (id, data) => {
         try {
-            const result = await store.testMailSettings(data);
+            const result = await store.updateMailSetting(id, data);
+            success('Cuenta de correo actualizada correctamente');
+            return result;
+        } catch (error) {
+            handleError(error, 'Error al actualizar la cuenta de correo');
+            throw error;
+        }
+    };
+
+    const deleteMailSetting = async (id) => {
+        try {
+            await store.deleteMailSetting(id);
+            success('Cuenta de correo eliminada correctamente');
+        } catch (error) {
+            // 422: es la predeterminada o está en uso por campañas.
+            handleError(error, 'No se pudo eliminar la cuenta de correo');
+            throw error;
+        }
+    };
+
+    const setDefaultMailSetting = async (id) => {
+        try {
+            const result = await store.setDefaultMailSetting(id);
+            success('Cuenta predeterminada actualizada');
+            return result;
+        } catch (error) {
+            handleError(error, 'No se pudo cambiar la cuenta predeterminada');
+            throw error;
+        }
+    };
+
+    const testMailSetting = async (id, data) => {
+        try {
+            const result = await store.testMailSetting(id, data);
             success('Correo de prueba enviado correctamente');
             return result;
         } catch (error) {
@@ -586,10 +619,13 @@ export function useBoletas() {
         downloadErrors,
         downloadConstancia,
         downloadConstanciasBulk,
-        // Configuración de correo
+        // Cuentas remitentes SMTP
         fetchMailSettings,
-        saveMailSettings,
-        testMailSettings,
+        createMailSetting,
+        updateMailSetting,
+        deleteMailSetting,
+        setDefaultMailSetting,
+        testMailSetting,
         // Helpers de estado
         recipientStatusInfo,
         campaignStatusInfo,

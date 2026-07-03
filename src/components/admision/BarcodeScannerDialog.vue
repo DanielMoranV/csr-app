@@ -298,9 +298,7 @@ onBeforeUnmount(stop);
                 <i class="pi pi-search-plus"></i>
             </div>
 
-            <p v-if="status === 'scanning'" class="scanner-hint">
-                <i class="pi pi-camera"></i> Apunta al código de barras del documento. Para el DNI, acerca el reverso y usa el zoom hasta que enfoque nítido.
-            </p>
+            <p v-if="status === 'scanning'" class="scanner-hint"><i class="pi pi-camera"></i> Apunta al código de barras del documento. Para el DNI, acerca el reverso y usa el zoom hasta que enfoque nítido.</p>
         </div>
 
         <template #footer>

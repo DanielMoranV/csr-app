@@ -158,9 +158,11 @@ export const boletas = {
 
     /**
      * Crear campaña (queda en `draft`).
-     * @param {{ name, period, document_type?, attachment_mode?, email_template_id, recipients[] }} data
+     * @param {{ name, period, document_type?, attachment_mode?, email_template_id, recipients[], mail_setting_id? }} data
      *   attachment_mode opcional: si falta y hay plantilla, hereda el de la
-     *   plantilla; sin plantilla, default 'per_dni'.
+     *   plantilla; sin plantilla, default 'per_dni'. `mail_setting_id` opcional
+     *   (integer o null = usar la cuenta remitente predeterminada); se congela al
+     *   crear. 422 si la cuenta no existe o está deshabilitada.
      */
     createCampaign: (data) => axios.post('/boletas/campaigns', data),
 
@@ -173,10 +175,11 @@ export const boletas = {
      * destinatarios (no solo a los fallidos — para eso está `retryFailed`).
      *
      * @param {number} id
-     * @param {{ name?, period?, document_type?, attachment_mode?, email_template_id?, subject?, body?, recipients? }} data
+     * @param {{ name?, period?, document_type?, attachment_mode?, email_template_id?, subject?, body?, recipients?, mail_setting_id? }} data
      *   Todos los campos son opcionales (solo se envía lo que se corrige). Si se
      *   manda `recipients`, REEMPLAZA la lista completa. Si se manda `body`, el
-     *   `subject` es obligatorio.
+     *   `subject` es obligatorio. `mail_setting_id` opcional (integer o null =
+     *   usar la predeterminada); 422 si no existe o está deshabilitada.
      */
     updateCampaign: (id, data) => axios.put(`/boletas/campaigns/${id}`, data),
 
@@ -198,25 +201,43 @@ export const boletas = {
     /** Reintentar destinatarios fallidos. */
     retryFailed: (id) => axios.post(`/boletas/campaigns/${id}/retry-failed`),
 
-    // ── Configuración del correo emisor (SMTP) ───────────────────────────────
+    // ── Cuentas remitentes SMTP ──────────────────────────────────────────────
 
     /**
-     * Configuración SMTP actual. No devuelve la contraseña.
-     * @returns {Promise} data: { host, port, encryption, username, from_address, from_name, has_password }
+     * Listar todas las cuentas remitentes (sin password). La predeterminada va
+     * primero.
+     * @returns {Promise} data: MailSetting[]
      */
     getMailSettings: () => axios.get('/boletas/mail-settings'),
 
-    /**
-     * Guardar configuración SMTP. `password` es opcional: si va vacía, el backend
-     * conserva la guardada.
-     * @param {{ host, port, encryption, username, password?, from_address, from_name }} data
-     */
-    updateMailSettings: (data) => axios.put('/boletas/mail-settings', data),
+    /** Obtener una cuenta. @returns {Promise} data: MailSetting */
+    getMailSetting: (id) => axios.get(`/boletas/mail-settings/${id}`),
 
     /**
-     * Enviar correo de prueba con la configuración guardada.
+     * Crear cuenta. `password` obligatoria. La primera cuenta creada se marca
+     * predeterminada automáticamente.
+     * @param {{ label, host, port, encryption, username?, password, from_address, from_name, is_default?, is_active? }} data
+     * @returns {Promise} 201, data: MailSetting
+     */
+    createMailSetting: (data) => axios.post('/boletas/mail-settings', data),
+
+    /**
+     * Actualizar cuenta. `password` opcional: si va vacía, el backend conserva la
+     * guardada.
+     * @param {{ label, host, port, encryption, username?, password?, from_address, from_name, is_default?, is_active? }} data
+     */
+    updateMailSetting: (id, data) => axios.put(`/boletas/mail-settings/${id}`, data),
+
+    /** Eliminar cuenta. 422 si es la predeterminada o está en uso por campañas. */
+    deleteMailSetting: (id) => axios.delete(`/boletas/mail-settings/${id}`),
+
+    /** Marcar una cuenta como predeterminada. 422 si está deshabilitada. */
+    setDefaultMailSetting: (id) => axios.put(`/boletas/mail-settings/${id}/default`),
+
+    /**
+     * Enviar correo de prueba con una cuenta concreta.
      * @param {{ to: string }} data
      * @returns {Promise} 200 si funcionó; 422 con el error SMTP si falló.
      */
-    testMailSettings: (data) => axios.post('/boletas/mail-settings/test', data)
+    testMailSetting: (id, data) => axios.post(`/boletas/mail-settings/${id}/test`, data)
 };
