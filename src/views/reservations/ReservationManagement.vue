@@ -44,6 +44,15 @@ const vAutofocus = {
 // Color palette for multi-doctor calendar
 const DOCTOR_COLORS = ['#3b82f6', '#10b981', '#f59e0b', '#8b5cf6', '#ef4444', '#06b6d4', '#f97316', '#ec4899'];
 
+// Escapes user-controlled values before interpolating them into the raw HTML
+// strings rendered by FullCalendar (dayCellContent). Without this, a doctor name
+// or absence reason containing ", <, > or & would break the markup and, worse,
+// allow stored XSS since the returned { html } is injected as innerHTML.
+const escapeHtml = (value) => {
+    if (value == null) return '';
+    return String(value).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&#39;');
+};
+
 // ============================================================================
 // STATE: FILTERS
 // ============================================================================
@@ -153,7 +162,7 @@ const calendarOptions = computed(() => {
                         const displayName = parts.length >= 2 ? `${parts[parts.length - 2]} ${parts[parts.length - 1].charAt(0)}.` : doctorName.substring(0, 12);
                         const typeClass = a.is_full_day ? 'rm-abs-full' : 'rm-abs-partial';
                         const timeStr = !a.is_full_day && a.start_time && a.end_time ? ` ${a.start_time.substring(0, 5)}-${a.end_time.substring(0, 5)}` : '';
-                        return `<div class="rm-absence-badge ${typeClass}" title="${doctorName}: ${a.reason}"><span class="pi pi-ban rm-abs-icon"></span><span>${displayName}${timeStr}</span></div>`;
+                        return `<div class="rm-absence-badge ${typeClass}" title="${escapeHtml(doctorName)}: ${escapeHtml(a.reason)}"><span class="pi pi-ban rm-abs-icon"></span><span>${escapeHtml(displayName)}${escapeHtml(timeStr)}</span></div>`;
                     })
                     .join('');
                 absenceHtml = `<div class="rm-absences-container">${badges}</div>`;

@@ -182,9 +182,9 @@ const handleDelete = () => {
 
         <template #footer>
             <div class="dialog-footer">
-                <Button v-if="isEditing" label="Eliminar" icon="pi pi-trash" severity="danger" outlined :disabled="saving" @click="handleDelete" />
+                <Button v-if="isEditing" label="Cancelar ausencia" icon="pi pi-ban" severity="danger" outlined :disabled="saving" @click="handleDelete" />
                 <div class="footer-actions">
-                    <Button label="Cancelar" icon="pi pi-times" severity="secondary" outlined :disabled="saving" @click="dialogVisible = false" />
+                    <Button label="Cerrar" icon="pi pi-times" severity="secondary" outlined :disabled="saving" @click="dialogVisible = false" />
                     <Button :label="isEditing ? 'Actualizar' : 'Registrar'" :icon="saving ? 'pi pi-spin pi-spinner' : 'pi pi-check'" :loading="saving" @click="handleSave" />
                 </div>
             </div>

@@ -388,6 +388,31 @@ export const useDoctorSchedulesStore = defineStore('doctorSchedules', () => {
         }
     };
 
+    // Restores a cancelled (soft-deleted) absence.
+    // NOTE: requires backend support to list trashed absences (GET /absences?trashed=1)
+    // before this can be surfaced in the UI. See src/api/absences.js.
+    const restoreAbsence = async (id) => {
+        state.isSaving = true;
+        try {
+            const response = await absencesApi.restore(id);
+            if (apiUtils.isSuccess(response)) {
+                const restored = apiUtils.getData(response);
+                if (restored?.id) {
+                    const index = state.absences.findIndex((a) => a.id === restored.id);
+                    if (index !== -1) {
+                        state.absences[index] = { ...state.absences[index], ...restored };
+                    } else {
+                        state.absences.push(restored);
+                    }
+                }
+                return response;
+            }
+            throw response;
+        } finally {
+            state.isSaving = false;
+        }
+    };
+
     const fetchAbsenceStats = async () => {
         state.isLoading = true;
         try {
@@ -467,6 +492,7 @@ export const useDoctorSchedulesStore = defineStore('doctorSchedules', () => {
         createAbsence,
         updateAbsence,
         deleteAbsence,
+        restoreAbsence,
         fetchAbsenceStats,
         // Medical Shifts
         allMedicalShifts,

@@ -290,11 +290,33 @@ export function useDoctorSchedules() {
             toast.add({
                 severity: 'success',
                 summary: 'Éxito',
-                detail: 'Ausencia eliminada correctamente',
+                detail: 'Ausencia cancelada correctamente',
                 life: 3000
             });
         } catch (error) {
-            handleError(error, 'Error al eliminar la ausencia');
+            handleError(error, 'Error al cancelar la ausencia');
+            throw error;
+        } finally {
+            operationInProgress.value = false;
+        }
+    };
+
+    // Restores a cancelled (soft-deleted) absence.
+    // DEPENDENCIA BACKEND: necesita GET /absences?trashed=1 para poder listar las
+    // canceladas y ofrecer esta acción desde la UI (ver src/api/absences.js).
+    const restoreAbsence = async (id) => {
+        operationInProgress.value = true;
+        try {
+            const response = await schedulesStore.restoreAbsence(id);
+            toast.add({
+                severity: 'success',
+                summary: 'Éxito',
+                detail: 'Ausencia restaurada correctamente',
+                life: 3000
+            });
+            return response;
+        } catch (error) {
+            handleError(error, 'Error al restaurar la ausencia');
             throw error;
         } finally {
             operationInProgress.value = false;
@@ -423,6 +445,7 @@ export function useDoctorSchedules() {
         createAbsence,
         updateAbsence,
         deleteAbsence,
+        restoreAbsence,
         fetchAbsenceStats,
         // Medical Shifts
         medicalShifts,

@@ -260,6 +260,19 @@ const editAbsence = (absence) => {
     absenceDialogVisible.value = true;
 };
 
+// Opens the schedule dialog prefilled for a given date (extracted so it can be
+// invoked from the absence-conflict choice dialog as well as the calendar select).
+const openScheduleForDate = (dateStr) => {
+    selectedSchedule.value = {
+        date: dateStr,
+        start_time: '08:00:00',
+        end_time: '09:00:00',
+        doctor_id: doctorFilter.value
+    };
+    isEditingSchedule.value = false;
+    scheduleDialogVisible.value = true;
+};
+
 const handleSaveAbsence = async (absenceData) => {
     try {
         isSavingAbsence.value = true;
@@ -281,11 +294,11 @@ const handleSaveAbsence = async (absenceData) => {
 
 const confirmDeleteAbsence = (absence) => {
     confirm.require({
-        message: `¿Está seguro que desea eliminar esta ausencia?`,
-        header: 'Confirmar Eliminación',
+        message: `¿Está seguro que desea cancelar esta ausencia?`,
+        header: 'Confirmar Cancelación',
         icon: 'pi pi-exclamation-triangle',
-        acceptLabel: 'Sí, eliminar',
-        rejectLabel: 'Cancelar',
+        acceptLabel: 'Sí, cancelar ausencia',
+        rejectLabel: 'No',
         acceptClass: 'p-button-danger',
         accept: async () => {
             try {
@@ -448,6 +461,15 @@ const truncateDoctorName = (name, maxLength = 12) => {
     return name.substring(0, maxLength) + '...';
 };
 
+// Escapes user-controlled values before interpolating them into the raw HTML
+// strings rendered by FullCalendar (dayCellContent). Without this, a doctor name
+// or absence reason containing ", <, > or & would break the markup and, worse,
+// allow stored XSS since the returned { html } is injected as innerHTML.
+const escapeHtml = (value) => {
+    if (value == null) return '';
+    return String(value).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&#39;');
+};
+
 const getDoctorById = (doctorId) => {
     return doctors.value.find((d) => d.id === doctorId);
 };
@@ -516,33 +538,33 @@ const calendarOptions = ref({
         if (quickFillMode.value) {
             // Quick fill mode: Add day to queue
             handleQuickDateSelect(arg);
-        } else {
-            const dateStr = arg.startStr.split('T')[0];
-
-            // Warn if selected doctor has a full-day absence on this date
-            if (doctorFilter.value) {
-                const fullDayAbsence = absences.value.find((a) => a.date === dateStr && a.id_doctor === doctorFilter.value && a.is_full_day);
-                if (fullDayAbsence) {
-                    toast.add({
-                        severity: 'warn',
-                        summary: 'Médico con Ausencia',
-                        detail: `${fullDayAbsence.doctor?.name || 'El médico'} tiene ausencia de día completo: "${fullDayAbsence.reason}"`,
-                        life: 6000
-                    });
-                    return;
-                }
-            }
-
-            // Normal mode: Open dialog
-            selectedSchedule.value = {
-                date: dateStr,
-                start_time: '08:00:00',
-                end_time: '09:00:00',
-                doctor_id: doctorFilter.value
-            };
-            isEditingSchedule.value = false;
-            scheduleDialogVisible.value = true;
+            return;
         }
+
+        const dateStr = arg.startStr.split('T')[0];
+
+        // If the filtered doctor has a full-day absence on this date, offer an
+        // explicit choice instead of blocking with just a warning (no dead-end).
+        if (doctorFilter.value) {
+            const fullDayAbsence = absences.value.find((a) => a.date === dateStr && String(a.id_doctor) === String(doctorFilter.value) && a.is_full_day);
+            if (fullDayAbsence) {
+                confirm.require({
+                    header: 'Médico con Ausencia',
+                    message: `${fullDayAbsence.doctor?.name || 'El médico'} tiene ausencia de día completo: "${fullDayAbsence.reason}". ¿Qué desea hacer?`,
+                    icon: 'pi pi-ban',
+                    acceptLabel: 'Editar ausencia',
+                    acceptIcon: 'pi pi-pencil',
+                    rejectLabel: 'Crear horario igual',
+                    rejectClass: 'p-button-secondary p-button-outlined',
+                    accept: () => editAbsence(fullDayAbsence),
+                    reject: () => openScheduleForDate(dateStr)
+                });
+                return;
+            }
+        }
+
+        // Normal mode: Open dialog
+        openScheduleForDate(dateStr);
     },
     eventClick: (arg) => {
         const originalSchedule = schedules.value.find((s) => s.id == arg.event.id);
@@ -692,7 +714,7 @@ const calendarOptions = ref({
                             const colorIndex = doctorColorMap.value[group.doctorId] || 0;
                             return `
                             <div class="quick-fill-indicator doctor-${colorIndex} ${group.hasConflict ? 'has-conflict' : ''}">
-                                <div class="doctor-name" title="${group.doctorName}">${truncateDoctorName(group.doctorName, indicatorCount === 1 ? 15 : indicatorCount === 2 ? 10 : 8)}</div>
+                                <div class="doctor-name" title="${escapeHtml(group.doctorName)}">${escapeHtml(truncateDoctorName(group.doctorName, indicatorCount === 1 ? 15 : indicatorCount === 2 ? 10 : 8))}</div>
                                 <div class="shift-display">${group.shiftsDisplay}</div>
                             </div>
                         `;
@@ -702,18 +724,15 @@ const calendarOptions = ref({
             `;
         }
 
-        // Absence indicators for this date — only visible when a specific doctor is selected
+        // Absence indicators for this date.
+        // If a doctor is filtered, show only that doctor's absences; otherwise show all
+        // visible doctors' absences so they remain discoverable/editable without a filter.
         let absenceHtml = '';
-        const dateAbsences = (() => {
-            if (!doctorFilter.value) return []; // Solo mostrar ausencias si hay un médico seleccionado
-
-            return absences.value.filter((a) => {
-                if (a.date !== dateStr) return false;
-
-                // Only show the selected doctor's absences
-                return String(a.id_doctor) === String(doctorFilter.value);
-            });
-        })();
+        const dateAbsences = absences.value.filter((a) => {
+            if (a.date !== dateStr) return false;
+            if (doctorFilter.value) return String(a.id_doctor) === String(doctorFilter.value);
+            return true;
+        });
         if (dateAbsences.length > 0) {
             const absenceItems = dateAbsences
                 .map((absence) => {
@@ -724,9 +743,12 @@ const calendarOptions = ref({
                     return `
                         <div class="absence-indicator ${isFullDay ? 'full-day' : 'partial'}"
                              data-absence-id="${absence.id}"
-                             title="${doctorName}: ${absence.reason}">
+                             role="button"
+                             tabindex="0"
+                             title="${escapeHtml(doctorName)}: ${escapeHtml(absence.reason)} — Clic para editar">
                             <span class="pi pi-ban absence-icon"></span>
-                            <span class="absence-name">${truncated}${timeStr}</span>
+                            <span class="absence-name">${escapeHtml(truncated)}${escapeHtml(timeStr)}</span>
+                            <span class="pi pi-pencil absence-edit-hint"></span>
                         </div>
                     `;
                 })
@@ -750,13 +772,18 @@ const calendarOptions = ref({
         // Attach click handlers to absence indicators rendered in dayCellContent
         const absenceEls = info.el.querySelectorAll('.absence-indicator[data-absence-id]');
         absenceEls.forEach((el) => {
-            el.addEventListener('click', (e) => {
+            const openEdit = (e) => {
                 e.stopPropagation();
                 const absenceId = parseInt(el.dataset.absenceId, 10);
                 const absence = absences.value.find((a) => a.id === absenceId);
                 if (absence) {
                     editAbsence(absence);
                 }
+            };
+            el.addEventListener('click', openEdit);
+            // Keyboard accessibility: the chip is role="button" tabindex="0"
+            el.addEventListener('keydown', (e) => {
+                if (e.key === 'Enter' || e.key === ' ') openEdit(e);
             });
         });
     },
@@ -2628,7 +2655,8 @@ onMounted(() => {
     align-items: center;
     gap: 4px;
     border-radius: 4px;
-    padding: 2px 6px;
+    padding: 3px 8px;
+    min-height: 22px;
     font-size: 0.65rem;
     font-weight: 600;
     cursor: pointer;
@@ -2642,6 +2670,25 @@ onMounted(() => {
 :deep(.absence-indicator:hover) {
     transform: translateY(-1px);
     box-shadow: 0 2px 6px rgba(0, 0, 0, 0.15);
+}
+
+:deep(.absence-indicator:focus-visible) {
+    outline: 2px solid #ef4444;
+    outline-offset: 1px;
+}
+
+/* Pencil hint appears on hover/focus to signal the chip is editable */
+:deep(.absence-edit-hint) {
+    font-size: 0.6rem;
+    margin-left: auto;
+    opacity: 0;
+    flex-shrink: 0;
+    transition: opacity 0.15s ease;
+}
+
+:deep(.absence-indicator:hover .absence-edit-hint),
+:deep(.absence-indicator:focus-visible .absence-edit-hint) {
+    opacity: 0.8;
 }
 
 :deep(.absence-indicator.full-day) {

@@ -35,11 +35,24 @@ export const absences = {
     update: (id, absenceData) => axios.put(`/absences/${id}`, absenceData),
 
     /**
-     * Deletes an absence.
+     * Cancels an absence (backend performs a soft delete).
      * @param {number} id - Absence ID
      * @returns {Promise}
      */
     delete: (id) => axios.delete(`/absences/${id}`),
+
+    /**
+     * Restores a previously cancelled (soft-deleted) absence.
+     * Backend endpoint: POST /absences/{id}/restore
+     *
+     * DEPENDENCIA BACKEND: para poder LISTAR las ausencias canceladas y ofrecer
+     * la acción de restaurar en la UI, GET /absences debe soportar un parámetro
+     * `trashed` (p.ej. ?trashed=1) que incluya los registros soft-deleted.
+     * Mientras eso no exista, este método queda disponible pero sin UI que lo invoque.
+     * @param {number} id - Absence ID
+     * @returns {Promise}
+     */
+    restore: (id) => axios.post(`/absences/${id}/restore`),
 
     /**
      * Gets absences statistics.
