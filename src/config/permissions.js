@@ -555,6 +555,19 @@ export const MODULE_PERMISSIONS = {
         menuSection: 'Admisión'
     },
 
+    // Liquidación de Servicios: genera el PDF de liquidación de una hospitalización
+    // a partir de un número de admisión. Gateado por el permiso dinámico
+    // `liquidaciones.view` (por defecto ADMISION y FACTURACION, pero editable
+    // desde Roles y Permisos). El backend igual responde 403 como respaldo.
+    liquidacionServicios: {
+        name: 'liquidacion-servicios',
+        path: '/liquidaciones',
+        permission: 'liquidaciones.view',
+        label: 'Liquidación de Servicios',
+        icon: 'pi pi-fw pi-file-pdf',
+        menuSection: 'Admisión'
+    },
+
     // ── Envío Masivo de Documentos (Boletas) ──────────────────────────────────
     // Visibilidad del menú: `boletas.view` O `boletas.manage`. Las acciones de
     // escritura se gobiernan en la UI con `boletas.manage` (ver useBoletas).

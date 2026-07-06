@@ -255,6 +255,13 @@ const router = createRouter({
                     component: () => import('@/views/admision/PatientScan.vue'),
                     meta: { requiresAuth: true, positions: MODULE_PERMISSIONS.admisionScan.positions }
                 },
+                // ── Liquidación de Servicios ──
+                {
+                    path: MODULE_PERMISSIONS.liquidacionServicios.path,
+                    name: MODULE_PERMISSIONS.liquidacionServicios.name,
+                    component: () => import('@/views/liquidaciones/LiquidacionServicios.vue'),
+                    meta: { requiresAuth: true, permission: MODULE_PERMISSIONS.liquidacionServicios.permission }
+                },
                 // ── Envío Masivo de Documentos (Boletas) ──
                 {
                     path: MODULE_PERMISSIONS.boletasEmployees.path,
