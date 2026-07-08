@@ -54,18 +54,17 @@ export const TIPO_ATENCION = {
 
 /**
  * Estado de la cobranza a la aseguradora (`pago.seguro.estado_cobranza`), solo
- * en atenciones de SEGURO. Refleja si ya se facturó a crédito y si la
- * aseguradora pagó; es independiente del copago que paga el paciente.
- *  - NO_FACTURADO  neutro · aún no se emitió factura a la aseguradora
- *  - FACTURADO     ámbar  · factura emitida a crédito, sin pago aún
- *  - PARCIAL       ámbar  · varias facturas, algunas pagadas y otras no
- *  - LIQUIDADO     verde  · la(s) aseguradora(s) ya pagó/pagaron
+ * en atenciones de SEGURO. Refleja si ya se facturó a crédito (series 003/004) y
+ * si la aseguradora pagó; es independiente del copago que paga el paciente. Es
+ * "todo o nada" por atención (si hubo refacturación, basta una factura pagada).
+ *  - NO_FACTURADO  neutro · aún no se emite factura a la aseguradora
+ *  - PENDIENTE     ámbar  · factura(s) a crédito emitida(s), sin pago aún
+ *  - PAGADO        verde  · la aseguradora ya pagó
  */
 export const SEGURO_COBRANZA = {
     NO_FACTURADO: { label: 'No facturado', severity: 'secondary', icon: 'pi pi-hourglass' },
-    FACTURADO: { label: 'Facturado', severity: 'warn', icon: 'pi pi-file' },
-    PARCIAL: { label: 'Cobro parcial', severity: 'warn', icon: 'pi pi-chart-pie' },
-    LIQUIDADO: { label: 'Liquidado', severity: 'success', icon: 'pi pi-check-circle' }
+    PENDIENTE: { label: 'Por cobrar', severity: 'warn', icon: 'pi pi-file' },
+    PAGADO: { label: 'Cobrado', severity: 'success', icon: 'pi pi-check-circle' }
 };
 
 export const pagoStatusInfo = (estado) => PAGO_STATUS[estado] || { label: estado || '—', severity: 'secondary', icon: 'pi pi-question-circle' };

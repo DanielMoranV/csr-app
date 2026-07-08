@@ -89,6 +89,15 @@ const togglePendientes = (atencionId) => {
 };
 const isPagoExpanded = (atencionId) => expandedPagos.value.has(atencionId);
 
+// Detalle de facturas a la aseguradora (expandible por tarjeta de hoy).
+const expandedFacturas = ref(new Set());
+const toggleFacturas = (atencionId) => {
+    const next = new Set(expandedFacturas.value);
+    next.has(atencionId) ? next.delete(atencionId) : next.add(atencionId);
+    expandedFacturas.value = next;
+};
+const isFacturasExpanded = (atencionId) => expandedFacturas.value.has(atencionId);
+
 // ── Datos derivados del paciente ─────────────────────────────────────────────
 const paciente = computed(() => scanResult.value?.paciente || null);
 const financiamientoDefault = computed(() => scanResult.value?.financiamiento_default || null);
@@ -134,14 +143,26 @@ const medicoOServicio = (cita) => cita?.servicio?.nombre_servicio || cita?.servi
 // Vacío si la atención aún no tiene detalles de servicio.
 const procedimientosTexto = (cita) => (Array.isArray(cita?.procedimientos) ? cita.procedimientos.join(', ') : '');
 
-// Monto que falta cobrar en ventanilla (0 si no aplica o no viene informado).
-const montoPendiente = (pago) => Number(pago?.monto_pendiente) || 0;
+// Resumen "pagador × estado" (`pago.resumen`), FUENTE PRINCIPAL para los montos
+// accionables. `copago_pendiente` = lo que FALTA cobrar al paciente en ventanilla
+// (sólo servicios cobrables aquí; excluye farmacia/lab trasladados). `aseguradora_*`
+// = neto de la atención facturado a crédito, "todo o nada" (0 en particulares).
+// OJO: NO usar los campos legacy `total_copago` (suma todo, incluye trasladados) ni
+// `monto_pendiente` (es el bruto) para "copago" ni "falta pagar".
+const pagoResumen = (pago) => {
+    const r = pago?.resumen;
+    if (r) return r;
+    // Fallback defensivo para respuestas antiguas sin `resumen` consolidado.
+    return { copago_pagado: 0, copago_pendiente: Number(pago?.total_copago) || 0, aseguradora_pagado: 0, aseguradora_pendiente: 0 };
+};
+const copagoPendiente = (pago) => Number(pagoResumen(pago).copago_pendiente) || 0;
+const copagoPagado = (pago) => Number(pagoResumen(pago).copago_pagado) || 0;
+const aseguradoraPagado = (pago) => Number(pagoResumen(pago).aseguradora_pagado) || 0;
+const aseguradoraPendiente = (pago) => Number(pagoResumen(pago).aseguradora_pendiente) || 0;
 
-// Desglose consolidado de montos (`pago.montos`, fuente oficial de Sisclin).
-// `bruto` = valor del servicio; `copago` = lo que paga el paciente en ventanilla;
-// `total_neto` = lo que realmente se factura (a la aseguradora en seguro, o el
-// total con IGV que paga el paciente en particular). Con fallback para datos
-// antiguos/en caché sin el objeto `montos` consolidado.
+// Desglose consolidado del total (`pago.montos`, fuente oficial de Sisclin).
+// `bruto` = valor del servicio; `total_neto` = lo que realmente se factura (= el
+// nuevo `pago.total`). Con fallback para datos antiguos/en caché sin `montos`.
 const pagoMontos = (pago) => {
     const m = pago?.montos;
     if (m) return m;
@@ -154,9 +175,6 @@ const pagoMontos = (pago) => {
         fuente: null
     };
 };
-
-// Copago a cobrar en ventanilla (lo accionable). 0 en particulares.
-const copagoCobrar = (pago) => Number(pagoMontos(pago).copago) || 0;
 </script>
 
 <template>
@@ -286,21 +304,24 @@ const copagoCobrar = (pago) => Number(pagoMontos(pago).copago) || 0;
                                         {{ pagoStatusInfo(cita.pago?.estado).label }}
                                     </Tag>
                                     <div class="pago-amounts">
-                                        <!-- Seguro: lo accionable es el copago que paga el paciente en ventanilla -->
+                                        <!-- Seguro: lo accionable es el copago que falta cobrar al paciente en ventanilla -->
                                         <template v-if="cita.financiamiento?.tipo === 'SEGURO'">
                                             <span class="copago-highlight"
-                                                >Copago a cobrar: <strong>{{ formatMoney(copagoCobrar(cita.pago)) }}</strong></span
+                                                >Copago a cobrar: <strong>{{ formatMoney(copagoPendiente(cita.pago)) }}</strong></span
                                             >
-                                            <span>Facturado a aseguradora: {{ formatMoney(pagoMontos(cita.pago).total_neto) }}</span>
+                                            <span v-if="copagoPagado(cita.pago) > 0">Copago pagado: {{ formatMoney(copagoPagado(cita.pago)) }}</span>
+                                            <span>Total facturado: {{ formatMoney(pagoMontos(cita.pago).total_neto) }}</span>
                                         </template>
                                         <!-- Particular: total con IGV que paga el paciente -->
-                                        <span v-else
-                                            >Total: <strong>{{ formatMoney(pagoMontos(cita.pago).total_neto) }}</strong></span
-                                        >
+                                        <template v-else>
+                                            <span
+                                                >Total facturado: <strong>{{ formatMoney(pagoMontos(cita.pago).total_neto) }}</strong></span
+                                            >
+                                            <span v-if="copagoPendiente(cita.pago) > 0" class="falta"
+                                                >Falta pagar: <strong>{{ formatMoney(copagoPendiente(cita.pago)) }}</strong></span
+                                            >
+                                        </template>
                                         <span v-if="cita.pago?.servicios_evaluables">{{ cita.pago.servicios_pagados ?? 0 }}/{{ cita.pago.servicios_evaluables }} servicios pagados</span>
-                                        <span v-if="montoPendiente(cita.pago) > 0" class="falta"
-                                            >Falta pagar: <strong>{{ formatMoney(cita.pago.monto_pendiente) }}</strong></span
-                                        >
                                     </div>
                                 </div>
                             </div>
@@ -327,9 +348,27 @@ const copagoCobrar = (pago) => Number(pagoMontos(pago).copago) || 0;
                                     </Tag>
                                 </div>
                                 <div class="seguro-meta">
+                                    <span
+                                        >Aseguradora: pagado <strong>{{ formatMoney(aseguradoraPagado(cita.pago)) }}</strong> · pendiente <strong>{{ formatMoney(aseguradoraPendiente(cita.pago)) }}</strong></span
+                                    >
                                     <span v-if="cita.pago.seguro.num_facturas">{{ cita.pago.seguro.facturas_pagadas ?? 0 }}/{{ cita.pago.seguro.num_facturas }} facturas pagadas</span>
                                     <span v-if="cita.pago.seguro.tiene_ajustes" class="seguro-ajustes"><i class="pi pi-exclamation-triangle"></i> Con notas de crédito / devoluciones</span>
                                 </div>
+                                <!-- Detalle de facturas emitidas a la aseguradora (expandible) -->
+                                <template v-if="cita.pago.seguro.facturas?.length">
+                                    <button type="button" class="facturas-toggle" @click="toggleFacturas(cita.atencion_id)">
+                                        {{ isFacturasExpanded(cita.atencion_id) ? 'Ocultar' : 'Ver' }} facturas ({{ cita.pago.seguro.facturas.length }})
+                                        <i :class="isFacturasExpanded(cita.atencion_id) ? 'pi pi-chevron-up' : 'pi pi-chevron-down'"></i>
+                                    </button>
+                                    <ul v-if="isFacturasExpanded(cita.atencion_id)" class="facturas-list">
+                                        <li v-for="(fac, idx) in cita.pago.seguro.facturas" :key="fac.numero || idx">
+                                            <span class="mono factura-num">{{ fac.numero || '—' }}</span>
+                                            <span class="factura-fecha">{{ formatDate(fac.fecha) }}</span>
+                                            <span class="factura-total">{{ formatMoney(fac.total) }}</span>
+                                            <Tag :severity="fac.pagado ? 'success' : 'warn'" :value="fac.pagado ? 'Pagada' : 'Pendiente'" class="factura-badge" />
+                                        </li>
+                                    </ul>
+                                </template>
                             </div>
                         </article>
                     </div>
@@ -393,18 +432,18 @@ const copagoCobrar = (pago) => Number(pagoMontos(pago).copago) || 0;
                                     {{ pagoStatusInfo(data.pago?.estado).label }}
                                 </Tag>
                                 <div class="cell-sub">
-                                    {{ formatMoney(pagoMontos(data.pago).total_neto) }}<template v-if="data.financiamiento?.tipo === 'SEGURO'"> · Copago {{ formatMoney(copagoCobrar(data.pago)) }}</template>
+                                    {{ formatMoney(pagoMontos(data.pago).total_neto) }}<template v-if="data.financiamiento?.tipo === 'SEGURO'"> · Copago {{ formatMoney(copagoPendiente(data.pago)) }}</template>
                                 </div>
                                 <div v-if="data.pago?.seguro" class="cell-cobranza">
                                     <Tag :severity="seguroCobranzaInfo(data.pago.seguro.estado_cobranza).severity" :value="seguroCobranzaInfo(data.pago.seguro.estado_cobranza).label" />
                                     <i v-if="data.pago.seguro.tiene_ajustes" class="pi pi-exclamation-triangle cobranza-ajustes" v-tooltip.top="'Con notas de crédito / devoluciones'"></i>
                                 </div>
-                                <!-- Desglose expandible cuando hay servicios pendientes -->
+                                <!-- Desglose expandible cuando hay servicios pendientes de cobro en ventanilla -->
                                 <button v-if="data.pago?.pendientes?.length" type="button" class="pendientes-toggle falta" @click="togglePendientes(data.atencion_id)">
-                                    Falta {{ formatMoney(data.pago.monto_pendiente) }}
+                                    Falta {{ formatMoney(copagoPendiente(data.pago)) }}
                                     <i :class="isPagoExpanded(data.atencion_id) ? 'pi pi-chevron-up' : 'pi pi-chevron-down'"></i>
                                 </button>
-                                <div v-else-if="montoPendiente(data.pago) > 0" class="cell-sub falta">Falta {{ formatMoney(data.pago.monto_pendiente) }}</div>
+                                <div v-else-if="copagoPendiente(data.pago) > 0" class="cell-sub falta">Falta {{ formatMoney(copagoPendiente(data.pago)) }}</div>
                                 <ul v-if="isPagoExpanded(data.atencion_id) && data.pago?.pendientes?.length" class="cell-pendientes">
                                     <li v-for="(serv, idx) in data.pago.pendientes" :key="serv.codigo_servicio || idx">
                                         <span class="mono pendiente-cod">{{ serv.codigo_servicio || '—' }}</span>
@@ -825,6 +864,57 @@ const copagoCobrar = (pago) => Number(pagoMontos(pago).copago) || 0;
 }
 .seguro-ajustes i {
     margin-right: 0.25rem;
+}
+
+/* Detalle expandible de facturas a la aseguradora */
+.facturas-toggle {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.3rem;
+    align-self: flex-start;
+    background: none;
+    border: none;
+    padding: 0;
+    font: inherit;
+    font-size: 0.8rem;
+    color: var(--primary-color);
+    cursor: pointer;
+}
+.facturas-toggle i {
+    font-size: 0.7rem;
+}
+.facturas-list {
+    list-style: none;
+    margin: 0.25rem 0 0;
+    padding: 0.4rem 0.5rem;
+    border-radius: 8px;
+    background: var(--surface-ground);
+    display: flex;
+    flex-direction: column;
+    gap: 0.3rem;
+}
+.facturas-list li {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    font-size: 0.8rem;
+}
+.factura-num {
+    color: var(--text-color);
+    flex-shrink: 0;
+}
+.factura-fecha {
+    color: var(--text-color-secondary);
+    flex-shrink: 0;
+}
+.factura-total {
+    flex: 1;
+    text-align: right;
+    font-weight: 600;
+    color: var(--text-color);
+}
+.factura-badge {
+    flex-shrink: 0;
 }
 
 /* Badge de cobranza en la tabla de historial */
