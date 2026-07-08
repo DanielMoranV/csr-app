@@ -15,7 +15,7 @@ import { computed, defineAsyncComponent, nextTick, ref } from 'vue';
 // no penalizar la carga de la vista (la mayoría busca por teclado / lector físico).
 const BarcodeScannerDialog = defineAsyncComponent(() => import('@/components/admision/BarcodeScannerDialog.vue'));
 
-const { scanResult, isScanning, notFound, lastQuery, error, syncPatient, clearScan, pagoStatusInfo, financiamientoInfo, turnoStatusInfo, tipoAtencionInfo } = useAdmision();
+const { scanResult, isScanning, notFound, lastQuery, error, syncPatient, clearScan, pagoStatusInfo, financiamientoInfo, turnoStatusInfo, tipoAtencionInfo, seguroCobranzaInfo } = useAdmision();
 
 // ── Búsqueda ───────────────────────────────────────────────────────────────
 const documento = ref('');
@@ -136,6 +136,27 @@ const procedimientosTexto = (cita) => (Array.isArray(cita?.procedimientos) ? cit
 
 // Monto que falta cobrar en ventanilla (0 si no aplica o no viene informado).
 const montoPendiente = (pago) => Number(pago?.monto_pendiente) || 0;
+
+// Desglose consolidado de montos (`pago.montos`, fuente oficial de Sisclin).
+// `bruto` = valor del servicio; `copago` = lo que paga el paciente en ventanilla;
+// `total_neto` = lo que realmente se factura (a la aseguradora en seguro, o el
+// total con IGV que paga el paciente en particular). Con fallback para datos
+// antiguos/en caché sin el objeto `montos` consolidado.
+const pagoMontos = (pago) => {
+    const m = pago?.montos;
+    if (m) return m;
+    return {
+        bruto: null,
+        copago: Number(pago?.total_copago) || 0,
+        valor_venta: null,
+        igv: null,
+        total_neto: pago?.total ?? null,
+        fuente: null
+    };
+};
+
+// Copago a cobrar en ventanilla (lo accionable). 0 en particulares.
+const copagoCobrar = (pago) => Number(pagoMontos(pago).copago) || 0;
 </script>
 
 <template>
@@ -265,15 +286,20 @@ const montoPendiente = (pago) => Number(pago?.monto_pendiente) || 0;
                                         {{ pagoStatusInfo(cita.pago?.estado).label }}
                                     </Tag>
                                     <div class="pago-amounts">
-                                        <span
-                                            >Total: <strong>{{ formatMoney(cita.pago?.total) }}</strong></span
+                                        <!-- Seguro: lo accionable es el copago que paga el paciente en ventanilla -->
+                                        <template v-if="cita.financiamiento?.tipo === 'SEGURO'">
+                                            <span class="copago-highlight"
+                                                >Copago a cobrar: <strong>{{ formatMoney(copagoCobrar(cita.pago)) }}</strong></span
+                                            >
+                                            <span>Facturado a aseguradora: {{ formatMoney(pagoMontos(cita.pago).total_neto) }}</span>
+                                        </template>
+                                        <!-- Particular: total con IGV que paga el paciente -->
+                                        <span v-else
+                                            >Total: <strong>{{ formatMoney(pagoMontos(cita.pago).total_neto) }}</strong></span
                                         >
                                         <span v-if="cita.pago?.servicios_evaluables">{{ cita.pago.servicios_pagados ?? 0 }}/{{ cita.pago.servicios_evaluables }} servicios pagados</span>
                                         <span v-if="montoPendiente(cita.pago) > 0" class="falta"
                                             >Falta pagar: <strong>{{ formatMoney(cita.pago.monto_pendiente) }}</strong></span
-                                        >
-                                        <span v-if="cita.financiamiento?.tipo === 'SEGURO'" class="copago"
-                                            >Copago: <strong>{{ formatMoney(cita.pago?.total_copago) }}</strong></span
                                         >
                                     </div>
                                 </div>
@@ -289,6 +315,21 @@ const montoPendiente = (pago) => Number(pago?.monto_pendiente) || 0;
                                         <span class="pendiente-total">{{ formatMoney(serv.total) }}</span>
                                     </li>
                                 </ul>
+                            </div>
+
+                            <!-- Estado de la cobranza a la aseguradora (solo atenciones de seguro) -->
+                            <div v-if="cita.pago?.seguro" class="seguro-box">
+                                <div class="seguro-head">
+                                    <span class="seguro-title"><i class="pi pi-money-bill"></i> Cobranza a aseguradora</span>
+                                    <Tag :severity="seguroCobranzaInfo(cita.pago.seguro.estado_cobranza).severity" class="seguro-badge">
+                                        <i :class="seguroCobranzaInfo(cita.pago.seguro.estado_cobranza).icon" class="mr-1"></i>
+                                        {{ seguroCobranzaInfo(cita.pago.seguro.estado_cobranza).label }}
+                                    </Tag>
+                                </div>
+                                <div class="seguro-meta">
+                                    <span v-if="cita.pago.seguro.num_facturas">{{ cita.pago.seguro.facturas_pagadas ?? 0 }}/{{ cita.pago.seguro.num_facturas }} facturas pagadas</span>
+                                    <span v-if="cita.pago.seguro.tiene_ajustes" class="seguro-ajustes"><i class="pi pi-exclamation-triangle"></i> Con notas de crédito / devoluciones</span>
+                                </div>
                             </div>
                         </article>
                     </div>
@@ -352,7 +393,11 @@ const montoPendiente = (pago) => Number(pago?.monto_pendiente) || 0;
                                     {{ pagoStatusInfo(data.pago?.estado).label }}
                                 </Tag>
                                 <div class="cell-sub">
-                                    {{ formatMoney(data.pago?.total) }}<template v-if="data.financiamiento?.tipo === 'SEGURO'"> · Copago {{ formatMoney(data.pago?.total_copago) }}</template>
+                                    {{ formatMoney(pagoMontos(data.pago).total_neto) }}<template v-if="data.financiamiento?.tipo === 'SEGURO'"> · Copago {{ formatMoney(copagoCobrar(data.pago)) }}</template>
+                                </div>
+                                <div v-if="data.pago?.seguro" class="cell-cobranza">
+                                    <Tag :severity="seguroCobranzaInfo(data.pago.seguro.estado_cobranza).severity" :value="seguroCobranzaInfo(data.pago.seguro.estado_cobranza).label" />
+                                    <i v-if="data.pago.seguro.tiene_ajustes" class="pi pi-exclamation-triangle cobranza-ajustes" v-tooltip.top="'Con notas de crédito / devoluciones'"></i>
                                 </div>
                                 <!-- Desglose expandible cuando hay servicios pendientes -->
                                 <button v-if="data.pago?.pendientes?.length" type="button" class="pendientes-toggle falta" @click="togglePendientes(data.atencion_id)">
@@ -723,13 +768,75 @@ const montoPendiente = (pago) => Number(pago?.monto_pendiente) || 0;
     font-size: 0.85rem;
     color: var(--text-color-secondary);
 }
-.copago {
+/* Copago a cobrar en ventanilla: es el número accionable, se destaca. */
+.copago-highlight {
+    font-size: 0.95rem;
     color: var(--text-color);
-    font-weight: 600;
+}
+.copago-highlight strong {
+    color: var(--primary-color);
+    font-size: 1.05rem;
 }
 .falta {
     color: var(--red-500, #ef4444);
     font-weight: 600;
+}
+
+/* Estado de cobranza a la aseguradora (solo seguro) */
+.seguro-box {
+    border-top: 1px dashed var(--surface-border);
+    padding-top: 0.6rem;
+    display: flex;
+    flex-direction: column;
+    gap: 0.3rem;
+}
+.seguro-head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.5rem;
+}
+.seguro-title {
+    font-size: 0.75rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    color: var(--text-color-secondary);
+}
+.seguro-title i {
+    margin-right: 0.3rem;
+    opacity: 0.75;
+}
+.seguro-badge {
+    font-size: 0.8rem;
+    padding: 0.3rem 0.6rem;
+    flex-shrink: 0;
+}
+.seguro-meta {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.25rem 0.9rem;
+    font-size: 0.8rem;
+    color: var(--text-color-secondary);
+}
+.seguro-ajustes {
+    color: var(--yellow-600, #ca8a04);
+    font-weight: 600;
+}
+.seguro-ajustes i {
+    margin-right: 0.25rem;
+}
+
+/* Badge de cobranza en la tabla de historial */
+.cell-cobranza {
+    display: flex;
+    align-items: center;
+    gap: 0.35rem;
+    margin-top: 0.25rem;
+}
+.cobranza-ajustes {
+    color: var(--yellow-600, #ca8a04);
+    font-size: 0.85rem;
 }
 
 /* Detalle de servicios pendientes en ventanilla */

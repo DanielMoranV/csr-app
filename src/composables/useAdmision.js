@@ -52,10 +52,27 @@ export const TIPO_ATENCION = {
     PROCESO: { label: 'Proceso', severity: 'contrast', icon: 'pi pi-sync' }
 };
 
+/**
+ * Estado de la cobranza a la aseguradora (`pago.seguro.estado_cobranza`), solo
+ * en atenciones de SEGURO. Refleja si ya se facturó a crédito y si la
+ * aseguradora pagó; es independiente del copago que paga el paciente.
+ *  - NO_FACTURADO  neutro · aún no se emitió factura a la aseguradora
+ *  - FACTURADO     ámbar  · factura emitida a crédito, sin pago aún
+ *  - PARCIAL       ámbar  · varias facturas, algunas pagadas y otras no
+ *  - LIQUIDADO     verde  · la(s) aseguradora(s) ya pagó/pagaron
+ */
+export const SEGURO_COBRANZA = {
+    NO_FACTURADO: { label: 'No facturado', severity: 'secondary', icon: 'pi pi-hourglass' },
+    FACTURADO: { label: 'Facturado', severity: 'warn', icon: 'pi pi-file' },
+    PARCIAL: { label: 'Cobro parcial', severity: 'warn', icon: 'pi pi-chart-pie' },
+    LIQUIDADO: { label: 'Liquidado', severity: 'success', icon: 'pi pi-check-circle' }
+};
+
 export const pagoStatusInfo = (estado) => PAGO_STATUS[estado] || { label: estado || '—', severity: 'secondary', icon: 'pi pi-question-circle' };
 export const financiamientoInfo = (tipo) => FINANCIAMIENTO[tipo] || { label: tipo || '—', severity: 'secondary', icon: 'pi pi-wallet' };
 export const turnoStatusInfo = (estado) => TURNO_STATUS[estado] || { label: estado || '—', severity: 'secondary' };
 export const tipoAtencionInfo = (tipo) => TIPO_ATENCION[tipo] || { label: tipo || '—', severity: 'contrast', icon: 'pi pi-tag' };
+export const seguroCobranzaInfo = (estado) => SEGURO_COBRANZA[estado] || { label: estado || '—', severity: 'secondary', icon: 'pi pi-question-circle' };
 
 /**
  * Composable del módulo de Admisión (ventanilla). Envuelve el store del
@@ -151,6 +168,7 @@ export function useAdmision() {
         pagoStatusInfo,
         financiamientoInfo,
         turnoStatusInfo,
-        tipoAtencionInfo
+        tipoAtencionInfo,
+        seguroCobranzaInfo
     };
 }
