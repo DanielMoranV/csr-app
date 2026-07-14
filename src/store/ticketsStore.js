@@ -497,18 +497,26 @@ export const useTicketsStore = defineStore('tickets', () => {
 
     // --- IMPLEMENTATION DATES ---
     const updateImplementation = async (ticketId, payload) => {
-        try {
-            const response = await TicketService.updateImplementation(ticketId, payload);
-            const updated = response?.data?.data ?? response?.data;
-            if (updated) {
-                const index = state.tickets.findIndex((t) => t.id === updated.id);
-                if (index !== -1) state.tickets[index] = updated;
-                if (state.currentTicket?.id === updated.id) state.currentTicket = updated;
-            }
-            return response;
-        } catch (error) {
-            throw error;
+        const response = await TicketService.updateImplementation(ticketId, payload);
+        const updated = response?.data?.data ?? response?.data;
+        if (updated) {
+            const index = state.tickets.findIndex((t) => t.id === updated.id);
+            if (index !== -1) state.tickets[index] = updated;
+            if (state.currentTicket?.id === updated.id) state.currentTicket = updated;
         }
+        return response;
+    };
+
+    // --- CREATOR CONFORMITY ---
+    const submitConformity = async (ticketId, payload) => {
+        const response = await TicketService.submitConformity(ticketId, payload);
+        const updated = response?.data?.data ?? response?.data;
+        if (updated) {
+            const index = state.tickets.findIndex((t) => t.id === updated.id);
+            if (index !== -1) state.tickets[index] = updated;
+            if (state.currentTicket?.id === updated.id) state.currentTicket = updated;
+        }
+        return response;
     };
 
     // --- GLOBAL UNREAD COMMENTS COUNT ---
@@ -641,6 +649,7 @@ export const useTicketsStore = defineStore('tickets', () => {
         deleteTicket,
         updateTicketStatus,
         updateImplementation,
+        submitConformity,
         fetchGlobalUnreadCount,
         clearTicketUnreadCount,
         fetchMySummary,

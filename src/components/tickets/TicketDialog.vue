@@ -13,6 +13,7 @@ import TabPanel from 'primevue/tabpanel';
 import TabView from 'primevue/tabview';
 import Textarea from 'primevue/textarea';
 import { useConfirm } from 'primevue/useconfirm';
+import { useToast } from 'primevue/usetoast';
 import { computed, nextTick, reactive, ref, watch } from 'vue';
 import TicketAttachments from './TicketAttachments.vue';
 import TicketImplementationForm from './TicketImplementationForm.vue';
@@ -53,6 +54,7 @@ const authStore = useAuthStore();
 const ticketCommentsStore = useTicketCommentsStore();
 const ticketsStore = useTicketsStore();
 const confirm = useConfirm();
+const toast = useToast();
 
 // Reactive variables for search results
 const clientSearchResults = ref([]);
@@ -660,6 +662,86 @@ const confirmDeleteComment = (comment) => {
         }
     });
 };
+
+// --- Creator Conformity State & Actions ---
+const submittingConformity = ref(false);
+const conformitySelected = ref(null); // null, true, false
+const conformityComment = ref('');
+const conformityCommentError = ref('');
+
+const resetConformityState = () => {
+    conformitySelected.value = null;
+    conformityComment.value = '';
+    conformityCommentError.value = '';
+};
+
+// Reset conformity state when ticket changes
+watch(
+    () => props.ticket?.id,
+    () => {
+        resetConformityState();
+    }
+);
+
+const formatConformityDate = (dateString) => {
+    if (!dateString) return '';
+    const date = new Date(dateString);
+    return date.toLocaleString('es-ES', {
+        day: 'numeric',
+        month: 'long',
+        year: 'numeric',
+        hour: '2-digit',
+        minute: '2-digit'
+    });
+};
+
+const handleConformitySubmit = async () => {
+    if (conformitySelected.value === false && !conformityComment.value.trim()) {
+        conformityCommentError.value = 'Por favor, indique el motivo por el cual la solución no fue satisfactoria.';
+        return;
+    }
+
+    if (conformityComment.value.length > 1000) {
+        conformityCommentError.value = 'El comentario no puede exceder los 1000 caracteres.';
+        return;
+    }
+
+    conformityCommentError.value = '';
+    submittingConformity.value = true;
+
+    try {
+        const payload = {
+            conformity: conformitySelected.value,
+            comment: conformityComment.value.trim() || null
+        };
+
+        await ticketsStore.submitConformity(currentTicket.value.id, payload);
+
+        if (currentTicket.value) {
+            loadTicketData(currentTicket.value);
+        }
+
+        toast.add({
+            severity: 'success',
+            summary: payload.conformity ? 'Solución Aprobada' : 'Solución Rechazada',
+            detail: payload.conformity ? '¡Gracias por confirmar! El ticket ha sido cerrado de forma conforme.' : 'El ticket ha sido devuelto al estado En Proceso.',
+            life: 5000
+        });
+
+        resetConformityState();
+    } catch (error) {
+        console.error('Error al enviar conformidad:', error);
+        const backendMessage = error?.response?.data?.message || error?.message || 'Error desconocido';
+        toast.add({
+            severity: 'error',
+            summary: 'Error',
+            detail: `No se pudo enviar la conformidad: ${backendMessage}`,
+            life: 5000
+        });
+    } finally {
+        submittingConformity.value = false;
+    }
+};
 </script>
 
 <template>
@@ -868,6 +950,84 @@ const confirmDeleteComment = (comment) => {
 
                 <!-- Planificación de implementación (solo tickets existentes) -->
                 <TicketImplementationForm v-if="isEditing && currentTicket" :ticket="currentTicket" @updated="loadTicketData" />
+
+                <!-- Sección Conformidad del Creador (Solo para tickets existentes en estado Concluido) -->
+                <div v-if="isEditing && currentTicket && currentTicket.status === 'concluido'" class="creator-conformity-card mt-4">
+                    <div class="flex align-items-center mb-3">
+                        <i class="pi pi-verified text-xl mr-2" :class="currentTicket.creator_conformity === null ? 'text-primary' : currentTicket.creator_conformity ? 'text-success' : 'text-danger'"></i>
+                        <h4 class="conformity-title">Conformidad de la Solución</h4>
+                    </div>
+
+                    <!-- PENDIENTE DE RESPUESTA -->
+                    <div v-if="currentTicket.creator_conformity === null || currentTicket.creator_conformity === undefined">
+                        <!-- Si es el creador original: Mostrar formulario de conformidad -->
+                        <div v-if="isCreator">
+                            <p class="conformity-subtitle">¿Se solucionó tu requerimiento satisfactoriamente?</p>
+
+                            <div v-if="conformitySelected === null" class="flex gap-3">
+                                <Button label="Sí, aprobar solución" icon="pi pi-check" severity="success" class="p-button-raised" @click="conformitySelected = true" />
+                                <Button label="No, rechazar solución" icon="pi pi-times" severity="danger" class="p-button-outlined" @click="conformitySelected = false" />
+                            </div>
+
+                            <!-- Entrada de comentario al seleccionar una opción -->
+                            <div v-else class="conformity-comment-section">
+                                <div class="field mb-3">
+                                    <label for="conformity_comment" class="block font-medium mb-2">
+                                        {{ conformitySelected ? 'Comentario adicional (Opcional)' : 'Motivo del rechazo (Obligatorio)' }}
+                                    </label>
+                                    <Textarea id="conformity_comment" v-model="conformityComment" rows="3" class="w-full compact-input-select" :class="{ 'p-invalid': conformityCommentError }" placeholder="Escriba su comentario aquí..." fluid />
+                                    <small class="p-error block mt-1" v-if="conformityCommentError">{{ conformityCommentError }}</small>
+                                </div>
+                                <div class="flex gap-2 justify-content-end">
+                                    <Button label="Cancelar" icon="pi pi-times" severity="secondary" text :disabled="submittingConformity" @click="resetConformityState" />
+                                    <Button
+                                        :label="conformitySelected ? 'Confirmar Aprobación' : 'Enviar Rechazo'"
+                                        :icon="submittingConformity ? 'pi pi-spinner pi-spin' : 'pi pi-check'"
+                                        :severity="conformitySelected ? 'success' : 'danger'"
+                                        :loading="submittingConformity"
+                                        :disabled="submittingConformity"
+                                        @click="handleConformitySubmit"
+                                    />
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Si NO es el creador original -->
+                        <div v-else class="text-500 flex align-items-center">
+                            <i class="pi pi-clock mr-2 text-primary"></i>
+                            <span>Esperando que el creador del ticket confirme la solución.</span>
+                        </div>
+                    </div>
+
+                    <!-- RESPUESTA REGISTRADA -->
+                    <div v-else class="conformity-response-box">
+                        <div v-if="currentTicket.creator_conformity" class="p-message-success-custom p-3 border-round">
+                            <div class="flex align-items-start gap-3">
+                                <i class="pi pi-check-circle text-2xl mt-1"></i>
+                                <div>
+                                    <p class="m-0 font-medium">
+                                        {{ isCreator ? 'Confirmaste que la solución fue satisfactoria' : 'El creador indicó que está conforme con la solución' }}
+                                        el {{ formatConformityDate(currentTicket.creator_conformity_at) }}.
+                                    </p>
+                                    <p v-if="currentTicket.creator_conformity_comment" class="m-0 mt-2 conformity-comment-text">"{{ currentTicket.creator_conformity_comment }}"</p>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div v-else class="p-message-error-custom p-3 border-round">
+                            <div class="flex align-items-start gap-3">
+                                <i class="pi pi-times-circle text-2xl mt-1"></i>
+                                <div>
+                                    <p class="m-0 font-medium">
+                                        {{ isCreator ? 'Rechazaste la solución' : 'El creador rechazó la solución' }}
+                                        el {{ formatConformityDate(currentTicket.creator_conformity_at) }}.
+                                    </p>
+                                    <p v-if="currentTicket.creator_conformity_comment" class="m-0 mt-2 conformity-comment-text">Motivo: "{{ currentTicket.creator_conformity_comment }}"</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
             </TabPanel>
 
             <TabPanel header="📈 Historial de Estados" :disabled="!isEditing">
@@ -1695,6 +1855,94 @@ const confirmDeleteComment = (comment) => {
     padding: 0.5rem;
     border-radius: 4px;
     transition: all 0.2s ease;
+}
+
+/* --- Creator Conformity Card --- */
+.creator-conformity-card {
+    background: var(--surface-card);
+    border: 1px solid var(--surface-border);
+    border-radius: 12px;
+    padding: 1.5rem;
+    margin-top: 1.5rem;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.05);
+    transition: all 0.3s ease;
+}
+
+:root.app-dark .creator-conformity-card {
+    background: rgba(30, 41, 59, 0.5);
+    border-color: rgba(255, 255, 255, 0.08);
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
+}
+
+.creator-conformity-card:hover {
+    box-shadow: 0 8px 30px rgba(0, 0, 0, 0.08);
+    transform: translateY(-2px);
+}
+
+:root.app-dark .creator-conformity-card:hover {
+    box-shadow: 0 8px 30px rgba(0, 0, 0, 0.4);
+}
+
+.conformity-title {
+    font-size: 1.1rem;
+    font-weight: 600;
+    color: var(--text-color);
+    margin: 0;
+}
+
+.conformity-subtitle {
+    font-size: 0.95rem;
+    color: var(--text-color-secondary);
+    margin: 0.25rem 0 1rem 0;
+}
+
+.conformity-response-box {
+    margin-top: 0.5rem;
+}
+
+.p-message-success-custom {
+    background: rgba(16, 185, 129, 0.08);
+    border: 1px solid rgba(16, 185, 129, 0.2);
+    color: var(--green-600, #10b981);
+}
+
+:root.app-dark .p-message-success-custom {
+    background: rgba(16, 185, 129, 0.15);
+    border-color: rgba(16, 185, 129, 0.3);
+    color: var(--green-400, #34d399);
+}
+
+.p-message-error-custom {
+    background: rgba(239, 68, 68, 0.08);
+    border: 1px solid rgba(239, 68, 68, 0.2);
+    color: var(--red-600, #ef4444);
+}
+
+:root.app-dark .p-message-error-custom {
+    background: rgba(239, 68, 68, 0.15);
+    border-color: rgba(239, 68, 68, 0.3);
+    color: var(--red-400, #f87171);
+}
+
+.conformity-comment-text {
+    font-size: 0.9rem;
+    line-height: 1.5;
+    background: rgba(0, 0, 0, 0.02);
+    border-left: 3px solid var(--surface-border);
+    padding: 0.5rem 0.75rem;
+    border-radius: 0 4px 4px 0;
+}
+
+.p-message-success-custom .conformity-comment-text {
+    border-left-color: rgba(16, 185, 129, 0.5);
+}
+
+.p-message-error-custom .conformity-comment-text {
+    border-left-color: rgba(239, 68, 68, 0.5);
+}
+
+:root.app-dark .conformity-comment-text {
+    background: rgba(255, 255, 255, 0.03);
 }
 
 /* Responsive ultra compacto */

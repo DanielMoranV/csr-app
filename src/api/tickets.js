@@ -101,5 +101,16 @@ export const TicketService = {
     async getCompliance(params = {}) {
         const response = await api.get('/tickets/compliance', { params });
         return response;
+    },
+
+    /**
+     * Submit creator conformity response for a ticket.
+     * POST /api/tickets/{ticket_id}/conformity
+     * @param {number|string} id
+     * @param {{ conformity: boolean, comment?: string }} data
+     */
+    async submitConformity(id, data) {
+        const response = await api.post(`/tickets/${id}/conformity`, data);
+        return response;
     }
 };
