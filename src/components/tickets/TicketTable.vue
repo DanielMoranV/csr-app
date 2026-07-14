@@ -385,6 +385,10 @@ const getActionItems = (ticketData) => {
                                 <Tag :severity="getStatusSeverity(data.status)" class="mobile-status-tag" rounded>
                                     <i :class="getStatusIcon(data.status)"></i>
                                 </Tag>
+                                <span v-if="data.status === 'concluido'" class="mobile-conformity-badge">
+                                    <i v-if="data.creator_conformity === true" class="pi pi-verified text-green-500 text-sm" v-tooltip.top="'Solución aprobada'"></i>
+                                    <i v-else-if="data.creator_conformity === null || data.creator_conformity === undefined" class="pi pi-clock text-cyan-500 text-sm" v-tooltip.top="'Conformidad pendiente'"></i>
+                                </span>
                             </div>
                         </div>
                     </div>
@@ -410,10 +414,18 @@ const getActionItems = (ticketData) => {
             <!-- Estado - Oculta en móvil (se muestra en título) -->
             <Column field="status" header="Estado" :sortable="true" style="min-width: 160px; text-align: center" class="column-status">
                 <template #body="{ data }">
-                    <Tag :severity="getStatusSeverity(data.status)" class="ticket-status-tag-display" rounded>
-                        <i :class="getStatusIcon(data.status)" class="mr-1"></i>
-                        <span>{{ data.status }}</span>
-                    </Tag>
+                    <div class="flex align-items-center justify-content-center gap-2">
+                        <Tag :severity="getStatusSeverity(data.status)" class="ticket-status-tag-display" rounded>
+                            <i :class="getStatusIcon(data.status)" class="mr-1"></i>
+                            <span>{{ data.status }}</span>
+                        </Tag>
+                        
+                        <!-- Conformity Icon -->
+                        <span v-if="data.status === 'concluido'" class="conformity-list-badge">
+                            <i v-if="data.creator_conformity === true" class="pi pi-verified text-green-500 text-lg" v-tooltip.top="'Solución aprobada por el creador'"></i>
+                            <i v-else-if="data.creator_conformity === null || data.creator_conformity === undefined" class="pi pi-clock text-cyan-500 text-lg" v-tooltip.top="'Conformidad del creador pendiente'"></i>
+                        </span>
+                    </div>
                 </template>
             </Column>
 
@@ -1328,6 +1340,32 @@ const getActionItems = (ticketData) => {
     background: var(--primary-100) !important;
     outline: 2px solid var(--primary-500);
     outline-offset: -2px;
+}
+
+/* --- Creator Conformity List Symbols --- */
+.conformity-list-badge {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    vertical-align: middle;
+    animation: scaleIn 0.3s ease-out;
+}
+
+.mobile-conformity-badge {
+    display: inline-flex;
+    align-items: center;
+    margin-left: 0.5rem;
+}
+
+@keyframes scaleIn {
+    0% {
+        transform: scale(0);
+        opacity: 0;
+    }
+    100% {
+        transform: scale(1);
+        opacity: 1;
+    }
 }
 
 /* Modo alto contraste */
