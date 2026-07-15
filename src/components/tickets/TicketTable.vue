@@ -6,8 +6,10 @@ import Button from 'primevue/button';
 import Column from 'primevue/column';
 import DataTable from 'primevue/datatable';
 import Tag from 'primevue/tag';
+import MultiSelect from 'primevue/multiselect';
 import { useToast } from 'primevue/usetoast';
-import { ref } from 'vue';
+import { computed, ref } from 'vue';
+import { FilterMatchMode } from '@primevue/core/api';
 
 const props = defineProps({
     tickets: {
@@ -39,6 +41,26 @@ const authStore = useAuthStore();
 
 // Campos para filtro global
 const globalFilterFields = ['title', 'description', 'status', 'creator.name', 'assignee.name', 'assignee_position'];
+
+// Estado para filtrado local
+const filters = ref({
+    global: { value: null, matchMode: FilterMatchMode.CONTAINS },
+    'creator.name': { value: null, matchMode: FilterMatchMode.IN }
+});
+
+// Lista única de creadores para el MultiSelect
+const creatorOptions = computed(() => {
+    const creatorsMap = new Map();
+    props.tickets.forEach((ticket) => {
+        if (ticket.creator?.name) {
+            creatorsMap.set(ticket.creator.name, {
+                name: ticket.creator.name,
+                url_photo_profile: ticket.creator.url_photo_profile
+            });
+        }
+    });
+    return Array.from(creatorsMap.values()).sort((a, b) => a.name.localeCompare(b.name));
+});
 
 // Métodos de utilidad
 const getStatusIcon = (status) => {
@@ -318,6 +340,8 @@ const getActionItems = (ticketData) => {
             columnResizeMode="expand"
             :reorderableColumns="true"
             :globalFilterFields="globalFilterFields"
+            v-model:filters="filters"
+            filterDisplay="menu"
             :sortMode="'multiple'"
             :removableSort="true"
             selectionMode="single"
@@ -358,14 +382,14 @@ const getActionItems = (ticketData) => {
             </template>
 
             <!-- Id del Ticket -->
-            <Column field="id" header="ID" :sortable="true" style="min-width: 80px" class="column-id">
+            <Column field="id" header="ID" :sortable="true" style="min-width: 80px" class="column-id" :showFilterMenu="false">
                 <template #body="{ data }">
                     <span class="ticket-id">#{{ data.id }}</span>
                 </template>
             </Column>
 
             <!-- Título del Ticket -->
-            <Column field="title" header="Título" :sortable="true" style="min-width: 200px; max-width: 280px" class="column-title">
+            <Column field="title" header="Título" :sortable="true" style="min-width: 200px; max-width: 280px" class="column-title" :showFilterMenu="false">
                 <template #body="{ data }">
                     <div class="ticket-title-cell">
                         <i class="pi pi-tag title-icon"></i>
@@ -396,14 +420,14 @@ const getActionItems = (ticketData) => {
             </Column>
 
             <!-- Descripción (truncada) - Oculta en móvil -->
-            <Column field="description" header="Descripción" style="min-width: 250px; max-width: 300px" class="column-description">
+            <Column field="description" header="Descripción" style="min-width: 250px; max-width: 300px" class="column-description" :showFilterMenu="false">
                 <template #body="{ data }">
                     <span class="ticket-description">{{ data.description }}</span>
                 </template>
             </Column>
 
             <!-- Prioridad - Oculta en móvil (se muestra en título) -->
-            <Column field="priority" header="Prioridad" :sortable="true" style="min-width: 100px; text-align: center" class="column-priority">
+            <Column field="priority" header="Prioridad" :sortable="true" style="min-width: 100px; text-align: center" class="column-priority" :showFilterMenu="false">
                 <template #body="{ data }">
                     <Tag v-tooltip.top="data.priority" :severity="getPrioritySeverity(data.priority)" class="ticket-priority-tag" rounded>
                         <i :class="getPriorityIcon(data.priority)"></i>
@@ -412,14 +436,14 @@ const getActionItems = (ticketData) => {
             </Column>
 
             <!-- Estado - Oculta en móvil (se muestra en título) -->
-            <Column field="status" header="Estado" :sortable="true" style="min-width: 160px; text-align: center" class="column-status">
+            <Column field="status" header="Estado" :sortable="true" style="min-width: 160px; text-align: center" class="column-status" :showFilterMenu="false">
                 <template #body="{ data }">
                     <div class="flex align-items-center justify-content-center gap-2">
                         <Tag :severity="getStatusSeverity(data.status)" class="ticket-status-tag-display" rounded>
                             <i :class="getStatusIcon(data.status)" class="mr-1"></i>
                             <span>{{ data.status }}</span>
                         </Tag>
-                        
+
                         <!-- Conformity Icon -->
                         <span v-if="data.status === 'concluido'" class="conformity-list-badge">
                             <i v-if="data.creator_conformity === true" class="pi pi-verified text-green-500 text-lg" v-tooltip.top="'Solución aprobada por el creador'"></i>
@@ -430,7 +454,7 @@ const getActionItems = (ticketData) => {
             </Column>
 
             <!-- Creador - Oculta en móvil -->
-            <Column field="creator.name" header="Creador" :sortable="true" style="min-width: 150px" class="column-creator">
+            <Column field="creator.name" header="Creador" :sortable="true" style="min-width: 150px" class="column-creator" :showFilterMatchModes="false" :filterMenuStyle="{ width: '16rem' }">
                 <template #body="{ data }">
                     <div class="ticket-user-cell">
                         <div class="ticket-avatar-container">
@@ -442,10 +466,25 @@ const getActionItems = (ticketData) => {
                         <span class="ticket-user-name">{{ data.creator?.name || 'N/A' }}</span>
                     </div>
                 </template>
+                <template #filter="{ filterModel }">
+                    <MultiSelect v-model="filterModel.value" :options="creatorOptions" optionLabel="name" optionValue="name" placeholder="Seleccionar Creadores" class="p-column-filter" :maxSelectedLabels="2" style="min-width: 15rem" :filter="true">
+                        <template #option="slotProps">
+                            <div class="flex align-items-center gap-2">
+                                <div class="ticket-avatar-container" style="width: 24px; height: 24px">
+                                    <img v-if="slotProps.option.url_photo_profile" :src="slotProps.option.url_photo_profile" :alt="slotProps.option.name" class="ticket-avatar" style="width: 24px; height: 24px; border-radius: 50%" />
+                                    <div v-else class="ticket-avatar-fallback" :style="{ backgroundColor: getAvatarColor(slotProps.option.name), width: '24px', height: '24px', fontSize: '0.65rem' }">
+                                        {{ getInitials(slotProps.option.name) }}
+                                    </div>
+                                </div>
+                                <span>{{ slotProps.option.name }}</span>
+                            </div>
+                        </template>
+                    </MultiSelect>
+                </template>
             </Column>
 
             <!-- Asignado -->
-            <Column field="assignee.name" header="Asignado" :sortable="true" style="min-width: 150px" class="column-assignee">
+            <Column field="assignee.name" header="Asignado" :sortable="true" style="min-width: 150px" class="column-assignee" :showFilterMenu="false">
                 <template #body="{ data }">
                     <div v-if="data.assignee || data.assignee_position" class="ticket-user-cell">
                         <div class="ticket-avatar-container" v-if="data.assignee">
@@ -469,7 +508,7 @@ const getActionItems = (ticketData) => {
             </Column>
 
             <!-- Fecha de Creación - Oculta en móvil -->
-            <Column field="created_at" header="Creado" :sortable="true" style="min-width: 140px" class="column-created">
+            <Column field="created_at" header="Creado" :sortable="true" style="min-width: 140px" class="column-created" :showFilterMenu="false">
                 <template #body="{ data }">
                     <div class="ticket-date-cell">
                         <div class="date-main">
@@ -482,7 +521,7 @@ const getActionItems = (ticketData) => {
             </Column>
 
             <!-- Fecha Límite - Oculta en móvil -->
-            <Column field="due_date" header="Fecha Límite" :sortable="true" style="min-width: 140px" class="column-due-date">
+            <Column field="due_date" header="Fecha Límite" :sortable="true" style="min-width: 140px" class="column-due-date" :showFilterMenu="false">
                 <template #body="{ data }">
                     <div v-if="data.due_date" class="ticket-date-cell">
                         <div class="date-main">
@@ -499,7 +538,7 @@ const getActionItems = (ticketData) => {
             </Column>
 
             <!-- Plan de Implementación - Oculta en móvil -->
-            <Column field="implementation_start" header="Implementación" :sortable="true" style="min-width: 165px" class="column-implementation">
+            <Column field="implementation_start" header="Implementación" :sortable="true" style="min-width: 165px" class="column-implementation" :showFilterMenu="false">
                 <template #body="{ data }">
                     <div v-if="data.implementation_start || data.implementation_end" class="ticket-date-cell implementation-cell">
                         <div v-if="data.implementation_start" class="date-main compact">
@@ -524,7 +563,7 @@ const getActionItems = (ticketData) => {
             </Column>
 
             <!-- Acciones -->
-            <Column header="Acciones" :exportable="false" style="min-width: 110px" class="column-actions">
+            <Column header="Acciones" :exportable="false" style="min-width: 110px" class="column-actions" :showFilterMenu="false">
                 <template #body="{ data }">
                     <div class="ticket-actions-compact" role="group" :aria-label="`Acciones para ticket ${data.title}`" @click.stop>
                         <Button icon="pi pi-eye" size="small" severity="info" text rounded v-tooltip.top="'Ver detalles'" @click="handleViewTicket(data)" />
