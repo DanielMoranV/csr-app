@@ -175,6 +175,14 @@ const pagoMontos = (pago) => {
         fuente: null
     };
 };
+
+// Información de estado de la historia clínica digital
+const historiaStatusInfo = (historia) => {
+    if (!historia) return null;
+    return historia.firmada
+        ? { label: 'H.C. Firmada', icon: 'pi pi-lock', severity: 'success' }
+        : { label: 'H.C. Borrador', icon: 'pi pi-file-edit', severity: 'warn' };
+};
 </script>
 
 <template>
@@ -274,10 +282,16 @@ const pagoMontos = (pago) => {
                                     <span v-if="cita.servicio?.especialidad" class="today-especialidad">{{ cita.servicio.especialidad }}</span>
                                     <span v-if="procedimientosTexto(cita)" class="today-proc"><i class="pi pi-file-o"></i> {{ procedimientosTexto(cita) }}</span>
                                 </div>
-                                <Tag :severity="tipoAtencionInfo(cita.tipo_atencion).severity" class="tipo-tag">
-                                    <i :class="tipoAtencionInfo(cita.tipo_atencion).icon" class="mr-1"></i>
-                                    {{ tipoAtencionInfo(cita.tipo_atencion).label }}
-                                </Tag>
+                                <div class="today-tags">
+                                    <Tag :severity="tipoAtencionInfo(cita.tipo_atencion).severity" class="tipo-tag">
+                                        <i :class="tipoAtencionInfo(cita.tipo_atencion).icon" class="mr-1"></i>
+                                        {{ tipoAtencionInfo(cita.tipo_atencion).label }}
+                                    </Tag>
+                                    <Tag v-if="cita.historia_digital" :severity="historiaStatusInfo(cita.historia_digital).severity" class="historia-tag">
+                                        <i :class="historiaStatusInfo(cita.historia_digital).icon" class="mr-1"></i>
+                                        {{ historiaStatusInfo(cita.historia_digital).label }}
+                                    </Tag>
+                                </div>
                             </div>
 
                             <div class="today-details">
@@ -408,6 +422,12 @@ const pagoMontos = (pago) => {
                                     <i :class="tipoAtencionInfo(data.tipo_atencion).icon" class="mr-1"></i>
                                     {{ tipoAtencionInfo(data.tipo_atencion).label }}
                                 </Tag>
+                                <div v-if="data.historia_digital" class="mt-1">
+                                    <Tag :severity="historiaStatusInfo(data.historia_digital).severity">
+                                        <i :class="historiaStatusInfo(data.historia_digital).icon" class="mr-1"></i>
+                                        {{ historiaStatusInfo(data.historia_digital).label }}
+                                    </Tag>
+                                </div>
                             </template>
                         </Column>
                         <Column header="Financiamiento" style="min-width: 150px">
@@ -753,8 +773,18 @@ const pagoMontos = (pago) => {
     margin-right: 0.25rem;
     opacity: 0.75;
 }
-.tipo-tag {
+.today-tags {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-end;
+    gap: 0.4rem;
     flex-shrink: 0;
+}
+.tipo-tag, .historia-tag {
+    flex-shrink: 0;
+}
+.mt-1 {
+    margin-top: 0.25rem;
 }
 .today-details {
     display: flex;
