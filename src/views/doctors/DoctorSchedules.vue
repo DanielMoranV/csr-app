@@ -407,8 +407,9 @@ const handleExportPDF = async () => {
         // Get selected specialty object
         const specialty = medicalSpecialties.value.find((s) => s.id === specialtyFilter.value);
 
-        // Generate PDF
-        const fileName = generatePDF(schedules.value, specialty, month, year, medicalShifts.value, categoryFilter.value);
+        // Generate PDF - exluir horarios cancelados (ausencias)
+        const validSchedules = schedules.value.filter(s => s.status !== 'cancelled');
+        const fileName = generatePDF(validSchedules, specialty, month, year, medicalShifts.value, categoryFilter.value);
 
         toast.add({
             severity: 'success',
@@ -731,6 +732,7 @@ const calendarOptions = ref({
         const dateAbsences = absences.value.filter((a) => {
             if (a.date !== dateStr) return false;
             if (doctorFilter.value) return String(a.id_doctor) === String(doctorFilter.value);
+            if (specialtyFilter.value) return filteredDoctors.value.some((d) => String(d.id) === String(a.id_doctor));
             return true;
         });
         if (dateAbsences.length > 0) {
